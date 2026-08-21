@@ -1,0 +1,10 @@
+{
+  "description": "Streamlines system management by providing users with an intuitive interface to monitor, control, and optimize their operations efficiently.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

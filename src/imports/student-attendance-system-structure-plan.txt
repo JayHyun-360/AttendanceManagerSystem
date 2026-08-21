@@ -1,0 +1,274 @@
+====================================================================
+STUDENT EVENT ATTENDANCE SYSTEM — FULL STRUCTURE PLAN
+Offline-First PWA | QR Attendance | DLSJBC
+====================================================================
+Prepared for: Figma AI (design generation) -> GitHub (repo) -> Vercel (deploy)
+Format: Plain text, copy-paste ready
+
+
+--------------------------------------------------------------------
+1. PROJECT SUMMARY
+--------------------------------------------------------------------
+A lightweight, offline-first Progressive Web App (PWA) for student
+event attendance, inspired by Facebook Lite's "always loads something,
+syncs quietly when it can" approach. Students log in once with Google,
+get a personal QR code stored on their device, and can view events,
+announcements, and updates even with zero connection. Admins scan QR
+codes to mark attendance; scans queue locally and sync to Supabase
+once internet returns.
+
+Core values driving every design decision:
+- LESS HASSLE over strict security (practical student tool, not a bank)
+- WORKS ON WEAK MOBILE DATA, not just wifi
+- FEELS FAST even when the connection isn't
+
+
+--------------------------------------------------------------------
+2. TECH STACK
+--------------------------------------------------------------------
+Frontend Framework   : Next.js (App Router)
+Styling              : Tailwind CSS
+Hosting/Deployment   : Vercel
+Database/Auth/Realtime: Supabase (Postgres + Auth + Realtime + Storage)
+Domain               : Hostinger (DNS pointed to Vercel)
+Version Control       : GitHub
+Auth Provider        : Google OAuth (via Supabase Auth)
+Offline Support       : next-pwa (service worker) + IndexedDB / localStorage
+QR Generation         : qrcode.react or similar (client-side generation)
+QR Scanning (admin)   : html5-qrcode or similar (camera-based scanner)
+State/Sync Queue      : IndexedDB-backed queue, synced via Supabase client
+Design Handoff         : Figma AI -> exported to Tailwind-compatible components
+
+
+--------------------------------------------------------------------
+3. DESIGN SYSTEM — GREEN & WHITE, MODERN FEEL
+--------------------------------------------------------------------
+Overall mood: clean, breathable, "campus tech" — confident but not
+corporate. Rounded corners, soft shadows, generous white space,
+green as the single strong accent color so it feels alive without
+being noisy.
+
+COLOR PALETTE
+  Primary Green (brand)     : #16A34A  (main buttons, active states)
+  Deep Green (headers/hover): #15803D
+  Light Green (backgrounds) : #DCFCE7  (highlight panels, badges)
+  Mint Accent (tags/success): #4ADE80
+  Base White                : #FFFFFF
+  Off-White (page bg)       : #F8FAF9
+  Neutral Gray (body text)  : #4B5563
+  Dark Slate (headings)     : #111827
+  Border/Divider Gray       : #E5E7EB
+  Alert Red (errors only)   : #EF4444
+  Warning Amber (offline/queued): #F59E0B
+
+TYPOGRAPHY
+  Font family      : Inter or Plus Jakarta Sans (Google Fonts, modern sans-serif)
+  Headings         : Bold, tight letter-spacing, Dark Slate
+  Body text        : Regular, Neutral Gray, comfortable line-height (1.6)
+  Scale            : H1 32-40px / H2 24-28px / H3 18-20px / Body 15-16px / Caption 12-13px
+
+SHAPE & ELEVATION
+  Border radius     : 12-16px on cards/buttons (soft, modern, not sharp)
+  Shadows           : Soft, low-opacity (shadow-sm to shadow-md), green-tinted on hover for interactive cards
+  Spacing rhythm    : 8px base unit (8/16/24/32/48px spacing scale)
+
+COMPONENT STYLE NOTES
+  Buttons (primary) : Solid green bg, white text, rounded-xl, subtle scale/shadow on hover
+  Buttons (secondary): White bg, green border/text
+  Cards              : White bg, light border, rounded-2xl, hover lift effect
+  Badges/Status pills: Light green bg + deep green text ("Synced"), amber for "Queued Offline"
+  Icons              : Line-style (Lucide icons), not filled, 2px stroke
+  Motion             : Micro-interactions only — fade/slide-in on content load, smooth tab switches, subtle pulse on "live" badges (announcement count, sync status)
+
+INTERACTIVITY / "HIGH-CONVERTING" FEEL
+  - Animated hero section on landing/login page (subtle gradient blobs or soft motion graphic, green-toned)
+  - Sticky bottom nav on mobile (Home / Events / QR / Profile) — thumb-friendly, app-like
+  - Real-feeling skeleton loaders (not blank white flashes) while cached content refreshes
+  - Toast notifications for sync status ("3 attendance records synced", "You're offline — showing saved data")
+  - Progress/step indicators during profile completion
+  - Live badge counters (e.g. "2 new announcements") that animate in when polling detects updates
+
+
+--------------------------------------------------------------------
+4. SITE MAP / PAGE STRUCTURE
+--------------------------------------------------------------------
+
+PUBLIC SHELL (no login required — cached, always loads)
+  /                      -> Landing / App Shell entry (redirects into shell)
+  /events                -> Events list (cached, public)
+  /events/[id]           -> Event detail page (cached, public)
+  /announcements         -> Announcements feed (cached, public, polling updates)
+  /updates                -> General updates/news feed
+  /faq                    -> FAQ page (static-ish, cached)
+  /about                  -> About the system / how it works
+
+AUTH
+  /login                  -> Google OAuth sign-in screen
+  /onboarding              -> Profile completion (name, student ID, program, year level) — first-time only
+
+STUDENT (login required, cached after first load)
+  /dashboard               -> Student home (quick view: next event, latest announcement)
+  /my-qr                   -> Student's personal QR code (large, screen-brightness-optimized display)
+  /attendance-history       -> List of past attendance records + sync status per record
+  /profile                  -> View/edit profile info
+
+ADMIN (role-gated)
+  /admin/dashboard          -> Overview: active event, live scan count, sync queue status
+  /admin/events              -> Manage events (create/edit/close events)
+  /admin/events/[id]/scan     -> QR Scanner screen (camera view + last-scanned name/ID confirmation)
+  /admin/events/[id]/attendees -> Live attendee list for an event
+  /admin/announcements        -> Create/manage announcements
+  /admin/reports               -> Export attendance reports (by program / year level / event)
+  /admin/logs                  -> Access/action logs (admin + programmer activity)
+
+SYSTEM / UTILITY
+  /offline                 -> Fallback offline screen (only shown if literally nothing is cached yet)
+  /403                      -> Unauthorized access screen
+  /404                      -> Not found
+
+
+--------------------------------------------------------------------
+5. APP SHELL & NAVIGATION STRUCTURE
+--------------------------------------------------------------------
+GLOBAL SHELL (always cached, loads instantly):
+  - Top bar: Logo, sync status indicator (green dot = synced, amber = queued), profile avatar
+  - Sidebar (desktop) / Bottom nav (mobile): Home, Events, Announcements, FAQ, My QR, Profile
+  - Admin-only nav items appear conditionally after role check
+
+TAB BEHAVIOR (as discussed — public content, same for all students):
+  - Events / Announcements / Updates / FAQ tabs render from local cache immediately
+  - Background poll every 30-60 seconds while app is open, checks Supabase for "newer than last cached timestamp"
+  - New content triggers a small animated badge + silent cache update (no jarring reload)
+  - Pull-to-refresh gesture on mobile for manual refresh
+
+
+--------------------------------------------------------------------
+6. KEY USER FLOWS
+--------------------------------------------------------------------
+
+FLOW A — First-time student onboarding
+  1. Land on public shell (can browse events/FAQ without logging in)
+  2. Tap "Sign In" -> Google OAuth (requires connection, one-time)
+  3. Redirect to /onboarding -> fill name, student ID, program, year level
+  4. System generates personal QR code -> cached to device (IndexedDB/localStorage)
+  5. Redirect to /dashboard -> from here on, works offline
+
+FLOW B — Returning student, no connection
+  1. Open app -> service worker loads shell instantly from cache
+  2. Session token already cached -> skips login
+  3. /my-qr loads QR directly from local storage, no network call needed
+  4. Events/Announcements show last-synced version with a subtle "offline" indicator
+
+FLOW C — Admin scanning attendance
+  1. Admin opens /admin/events/[id]/scan
+  2. Camera scans student QR -> decodes token
+  3. Screen shows student's name + ID photo/initials for visual confirmation
+  4. Admin confirms -> record saved locally with fingerprint (student_id + event_id + time window)
+  5. If online: instantly pushed to Supabase
+  6. If offline: queued locally, synced automatically once connection returns
+  7. Duplicate fingerprint scans are silently rejected (first scan wins)
+
+FLOW D — Announcement goes out
+  1. Admin posts announcement in /admin/announcements
+  2. Saved to Supabase instantly
+  3. Student devices poll every 30-60s -> detect new item -> update cache + show badge
+  4. Student taps badge -> smooth transition into updated Announcements tab
+
+
+--------------------------------------------------------------------
+7. DATABASE STRUCTURE (SUPABASE / POSTGRES) — HIGH LEVEL
+--------------------------------------------------------------------
+students
+  id (uuid, PK), auth_user_id (FK to Supabase auth), full_name,
+  student_id_number, program, year_level, qr_token (encrypted),
+  created_at
+
+events
+  id (uuid, PK), title, description, location, start_time, end_time,
+  status (upcoming/active/closed), created_by (admin id), created_at
+
+attendance_records
+  id (uuid, PK), student_id (FK), event_id (FK), scanned_by (admin id),
+  scan_fingerprint (unique: student_id + event_id + time_window),
+  synced_at, created_offline (bool), created_at
+
+announcements
+  id (uuid, PK), title, body, posted_by (admin id), created_at, updated_at
+
+admin_users
+  id (uuid, PK), auth_user_id, role (admin/programmer), full_name
+
+access_logs
+  id (uuid, PK), user_id, action, target_table, target_id, timestamp
+
+
+--------------------------------------------------------------------
+8. FOLDER STRUCTURE (NEXT.JS APP ROUTER)
+--------------------------------------------------------------------
+/app
+  /(public)
+    /events
+    /announcements
+    /updates
+    /faq
+    /about
+  /(auth)
+    /login
+    /onboarding
+  /(student)
+    /dashboard
+    /my-qr
+    /attendance-history
+    /profile
+  /(admin)
+    /admin/dashboard
+    /admin/events
+    /admin/announcements
+    /admin/reports
+    /admin/logs
+  /api
+    (route handlers if needed for server-side logic)
+/components
+  /ui           (buttons, cards, badges, inputs — Tailwind-based)
+  /layout        (Sidebar, TopBar, BottomNav, ShellWrapper)
+  /qr             (QRDisplay, QRScanner)
+  /events          (EventCard, EventList)
+  /announcements    (AnnouncementCard, AnnouncementFeed)
+/lib
+  /supabase        (client setup, queries)
+  /offline          (IndexedDB helpers, sync queue logic)
+  /auth              (Google OAuth helpers, session cache)
+/public
+  /icons, /manifest.json (PWA manifest), /service-worker (next-pwa output)
+/styles
+  globals.css (Tailwind base + design tokens as CSS variables)
+
+
+--------------------------------------------------------------------
+9. PWA / OFFLINE CONFIGURATION NOTES
+--------------------------------------------------------------------
+- next-pwa configured to precache: app shell, static assets, fonts, icons
+- Runtime caching strategy:
+    - Shell + static pages -> Cache First
+    - Events/Announcements API calls -> Stale-While-Revalidate (show cached, refresh in background)
+    - Attendance scan submissions -> Network First with offline queue fallback
+- manifest.json: app name, green theme_color (#16A34A), white background_color, icons (192x192, 512x512), display: standalone
+- IndexedDB stores: student_profile, qr_token, cached_events, cached_announcements, sync_queue
+
+
+--------------------------------------------------------------------
+10. WHAT TO HAND TO FIGMA AI
+--------------------------------------------------------------------
+When prompting Figma AI, include:
+  - "Green and white modern web app design system, Tailwind CSS compatible"
+  - The full page list from Section 4 (as separate frames/screens)
+  - Component list: buttons, cards, badges, bottom nav, top bar, QR display card,
+    scanner camera view, toast notifications, skeleton loaders
+  - Mobile-first layouts (primary), with desktop/tablet responsive variants
+  - Reference feel: "Facebook Lite simplicity meets modern SaaS polish"
+  - Emphasize: sticky bottom nav (mobile), card-based content, soft shadows,
+    rounded-2xl corners, light green highlight states, one strong green accent color
+
+====================================================================
+END OF STRUCTURE PLAN
+====================================================================
