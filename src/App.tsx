@@ -7,7 +7,7 @@ type Page =
   | "announcements" | "attendance-history" | "my-fines" | "profile"
   | "admin-dashboard" | "admin-events" | "admin-scanner"
   | "admin-attendees" | "admin-announcements" | "admin-reports"
-  | "admin-excuse-requests" | "admin-students";
+  | "admin-excuse-requests" | "admin-students" | "admin-settings";
 
 type Role = "student" | "admin" | null;
 type FineStatus = "unpaid" | "paid" | "excused";
@@ -16,7 +16,7 @@ type EventStatus = "active" | "upcoming" | "closed";
 interface User {
   firstName: string; middleInitial: string; surname: string;
   studentId: string; program: string; yearLevel: string; section: string;
-  phone: string; contactEmail: string; role: Role;
+  phone: string; contactEmail: string; role: Role; photoUrl?: string;
 }
 
 interface EventData {
@@ -55,13 +55,12 @@ function fullName(u: Pick<User, "firstName" | "middleInitial" | "surname">) {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const INITIAL_EVENTS: EventData[] = [
-  { id: "1", title: "TapIn Foundation Day Celebration",     date: "Aug 29, 2026", time: "8:00 AM – 5:00 PM", location: "Main Gymnasium",      status: "upcoming", attendees: 0,   program: "All Programs", fineAmount: 150, description: "Annual Foundation Day celebration featuring cultural shows, sports competitions, and academic exhibits. Attendance is required for all enrolled students." },
-  { id: "2", title: "SSC General Assembly — 1st Semester",  date: "Aug 22, 2026", time: "1:00 PM – 4:00 PM", location: "Audio-Visual Room 2", status: "active",   attendees: 6,   program: "All Programs", fineAmount: 100, description: "Supreme Student Council general assembly for the first semester. Agenda includes budget presentation, committee reports, and open forum." },
-  { id: "3", title: "Tech Talk: AI in Education",           date: "Aug 15, 2026", time: "2:00 PM – 5:00 PM", location: "ICT Laboratory",      status: "closed",   attendees: 8,   program: "BSIT / BSCS", fineAmount: 50,  description: "Integration of artificial intelligence tools in modern education. Guest speaker from the Department of Information Technology." },
-  { id: "4", title: "Intramural Opening Ceremony",          date: "Sep 5, 2026",  time: "7:30 AM – 12:00 PM",location: "Covered Court",       status: "upcoming", attendees: 0,   program: "All Programs", fineAmount: 200, description: "Opening ceremony for the annual intramural sports festival. Parade of athletes, oath-taking, and opening of games." },
+  { id: "1", title: "TapIn Foundation Day Celebration",      date: "Aug 29, 2026", time: "8:00 AM – 5:00 PM",  location: "Main Gymnasium",      status: "upcoming", attendees: 0, program: "All Programs", fineAmount: 150, description: "Annual Foundation Day celebration featuring cultural shows, sports competitions, and academic exhibits. Attendance is required for all enrolled students." },
+  { id: "2", title: "SSG General Assembly — 1st Semester",   date: "Aug 22, 2026", time: "1:00 PM – 4:00 PM",  location: "Audio-Visual Room 2", status: "active",   attendees: 6, program: "All Programs", fineAmount: 100, description: "Supreme Student Government general assembly for the first semester. Agenda includes budget presentation, committee reports, and open forum." },
+  { id: "3", title: "Tech Talk: AI in Education",            date: "Aug 15, 2026", time: "2:00 PM – 5:00 PM",  location: "ICT Laboratory",      status: "closed",   attendees: 8, program: "BSIT / BSCS", fineAmount: 50,  description: "Integration of artificial intelligence tools in modern education. Guest speaker from the Department of Information Technology." },
+  { id: "4", title: "Intramural Opening Ceremony",           date: "Sep 5, 2026",  time: "7:30 AM – 12:00 PM", location: "Covered Court",       status: "upcoming", attendees: 0, program: "All Programs", fineAmount: 200, description: "Opening ceremony for the annual intramural sports festival. Parade of athletes, oath-taking, and opening of games." },
 ];
 
-// Per-event scan data keyed by event ID
 const EVENT_SCANS: Record<string, ScanRecord[]> = {
   "2": [
     { name: "Maria Luisa Santos",    id: "2440014", program: "BSIT", section: "IT-2A", time: "1:14 PM", status: "confirmed", dbId: 0 },
@@ -97,14 +96,14 @@ const ALL_STUDENTS: StudentProfile[] = [
 ];
 
 const INITIAL_ANNOUNCEMENTS = [
-  { id: "1", title: "Enrollment for 2nd Semester Now Open", body: "Online enrollment for the second semester of AY 2026–2027 is now open. Complete enrollment on or before September 15, 2026. Late enrollees are subject to a ₱200 surcharge.", date: "Aug 20, 2026", author: "Registrar's Office", badge: "Academic", photoUrl: "" },
-  { id: "2", title: "Afternoon Classes Suspended — Aug 22", body: "Due to the SSC General Assembly on August 22, all afternoon classes from 1:00 PM onward are suspended. Morning classes proceed as scheduled.", date: "Aug 19, 2026", author: "Office of the Principal", badge: "Schedule", photoUrl: "" },
-  { id: "3", title: "Library Hours Extended During Finals Week", body: "The library will be open 7:00 AM to 7:00 PM starting August 25 until September 6. Laptops allowed; food and drinks are not permitted.", date: "Aug 18, 2026", author: "Library Services", badge: "Facilities", photoUrl: "" },
-  { id: "4", title: "Scholarship Application Deadline — Aug 28", body: "All scholarship applicants must submit complete documentary requirements to the Scholarship Office by August 28, 2026.", date: "Aug 17, 2026", author: "Scholarship Office", badge: "Financial", photoUrl: "" },
+  { id: "1", title: "Enrollment for 2nd Semester Now Open",       body: "Online enrollment for the second semester of AY 2026-2027 is now open. Complete enrollment on or before September 15, 2026. Late enrollees are subject to a P200 surcharge.", date: "Aug 20, 2026", author: "Registrar's Office",    badge: "Academic",   photoUrl: "" },
+  { id: "2", title: "Afternoon Classes Suspended — Aug 22",       body: "Due to the SSG General Assembly on August 22, all afternoon classes from 1:00 PM onward are suspended. Morning classes proceed as scheduled.",                              date: "Aug 19, 2026", author: "Office of the Principal", badge: "Schedule",   photoUrl: "" },
+  { id: "3", title: "Library Hours Extended During Finals Week",  body: "The library will be open 7:00 AM to 7:00 PM starting August 25 until September 6. Laptops allowed; food and drinks are not permitted.",                                      date: "Aug 18, 2026", author: "Library Services",         badge: "Facilities", photoUrl: "" },
+  { id: "4", title: "Scholarship Application Deadline — Aug 28",  body: "All scholarship applicants must submit complete documentary requirements to the Scholarship Office by August 28, 2026.",                                                      date: "Aug 17, 2026", author: "Scholarship Office",       badge: "Financial",  photoUrl: "" },
 ];
 
 const ATTENDANCE_RECORDS = [
-  { id: "a1", eventId: "2", event: "SSC General Assembly — 1st Semester", date: "Aug 22, 2026", time: "1:14 PM", status: "present" },
+  { id: "a1", eventId: "2", event: "SSG General Assembly — 1st Semester", date: "Aug 22, 2026", time: "1:14 PM", status: "present" },
   { id: "a2", eventId: "3", event: "Tech Talk: AI in Education",           date: "Aug 15, 2026", time: "2:03 PM", status: "present" },
   { id: "a3", eventId: "5", event: "College Orientation 2026",             date: "Aug 5, 2026",  time: "—",       status: "absent" },
   { id: "a4", eventId: "6", event: "Leadership & Values Seminar",          date: "Jul 28, 2026", time: "—",       status: "absent" },
@@ -132,7 +131,7 @@ const Icons = {
   MapPin:         () => <svg viewBox="0 0 24 24" className={ic} {...sv}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>,
   ChevronRight:   () => <svg viewBox="0 0 24 24" className={ic} {...sv}><polyline points="9 18 15 12 9 6"/></svg>,
   ChevronLeft:    () => <svg viewBox="0 0 24 24" className={ic} {...sv}><polyline points="15 18 9 12 15 6"/></svg>,
-  Scan:           () => <svg viewBox="0 0 24 24" className={ic} {...sv}><path d="M3 7V5a2 2 0 012-2h2"/><path d="M17 3h2a2 2 0 012 2v2"/><path d="M21 17v2a2 2 0 01-2 2h-2"/><path d="M7 21H5a2 2 0 01-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>,
+  Scan:           () => <svg viewBox="0 0 24 24" className={ic} {...sv}><path d="M3 7V5a2 2 0 012-2h2"/><path d="M17 3h2a2 2 0 012 2v2"/><path d="M21 17v2a2 2 0 01-2 2h-2"/><path d="M7 21H5a2 2 0 01-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>,
   Users:          () => <svg viewBox="0 0 24 24" className={ic} {...sv}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
   BarChart:       () => <svg viewBox="0 0 24 24" className={ic} {...sv}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>,
   FileText:       () => <svg viewBox="0 0 24 24" className={ic} {...sv}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
@@ -152,9 +151,31 @@ const Icons = {
   Video:          () => <svg viewBox="0 0 24 24" className={ic} {...sv}><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>,
   Search:         () => <svg viewBox="0 0 24 24" className={ic} {...sv}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
   Radio:          () => <svg viewBox="0 0 24 24" className={ic} {...sv}><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>,
-  Peso:           () => <svg viewBox="0 0 24 24" className={ic} fill="currentColor"><text x="3" y="19" fontSize="17" fontWeight="700" fontFamily="sans-serif">₱</text></svg>,
+  Settings:       () => <svg viewBox="0 0 24 24" className={ic} {...sv}><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="white" stroke="currentColor" strokeWidth="2"/><circle cx="16" cy="12" r="2" fill="white" stroke="currentColor" strokeWidth="2"/><circle cx="10" cy="18" r="2" fill="white" stroke="currentColor" strokeWidth="2"/></svg>,
+  Camera:         () => <svg viewBox="0 0 24 24" className={ic} {...sv}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+  Peso:           () => <svg viewBox="0 0 24 24" className={ic} fill="currentColor"><text x="3" y="19" fontSize="17" fontWeight="700" fontFamily="sans-serif">&#8369;</text></svg>,
   Google:         () => <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>,
 };
+
+// ─── Toggle ───────────────────────────────────────────────────────────────────
+function Toggle({ on, onToggle, label, desc }: { on: boolean; onToggle: () => void; label: string; desc?: string }) {
+  return (
+    <div className="flex items-center justify-between py-4 gap-4">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-slate-900">{label}</p>
+        {desc && <p className="text-xs text-slate-400 mt-1 leading-relaxed">{desc}</p>}
+      </div>
+      <button
+        onClick={onToggle}
+        role="switch"
+        aria-checked={on}
+        className={`relative w-11 h-6 rounded-full transition-all duration-200 shrink-0 focus:outline-none focus:ring-2 focus:ring-offset-2 ${on ? "bg-green-600 focus:ring-green-500" : "bg-slate-200 focus:ring-slate-400"}`}
+      >
+        <span className={`absolute top-[3px] left-[3px] w-[18px] h-[18px] bg-white rounded-full shadow-md transition-transform duration-200 ${on ? "translate-x-5" : "translate-x-0"}`} />
+      </button>
+    </div>
+  );
+}
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 function FieldInput({ label, ...p }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
@@ -207,8 +228,10 @@ function Badge({ status }: { status: string }) {
   );
 }
 
-function Avatar({ name, size = "md" }: { name: string; size?: "xs" | "sm" | "md" | "lg" }) {
+// ─── Avatar / ProfileIcon ─────────────────────────────────────────────────────
+function Avatar({ name, photoUrl, size = "md" }: { name: string; photoUrl?: string; size?: "xs" | "sm" | "md" | "lg" }) {
   const sz = { xs: "w-6 h-6", sm: "w-7 h-7", md: "w-9 h-9", lg: "w-14 h-14" }[size];
+  if (photoUrl) return <img src={photoUrl} alt={name} className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200`} />;
   const letters = name.split(" ").filter(Boolean).map(w => w[0]).slice(0, 2).join("").toUpperCase();
   if (letters) {
     const textSz = { xs: "text-[9px]", sm: "text-xs", md: "text-sm", lg: "text-lg" }[size];
@@ -221,8 +244,9 @@ function Avatar({ name, size = "md" }: { name: string; size?: "xs" | "sm" | "md"
   );
 }
 
-function ProfileIcon({ size = "sm" }: { size?: "xs" | "sm" | "md" | "lg" }) {
+function ProfileIcon({ photoUrl, size = "sm" }: { photoUrl?: string; size?: "xs" | "sm" | "md" | "lg" }) {
   const sz = { xs: "w-6 h-6", sm: "w-7 h-7", md: "w-9 h-9", lg: "w-14 h-14" }[size];
+  if (photoUrl) return <img src={photoUrl} alt="Profile" className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200`} />;
   return (
     <div className={`${sz} rounded-full bg-[#b0b3b8] flex items-end justify-center overflow-hidden shrink-0`}>
       <svg viewBox="0 0 36 40" className="w-[70%] h-[70%]" fill="white"><ellipse cx="18" cy="13" rx="9" ry="10"/><ellipse cx="18" cy="42" rx="18" ry="15"/></svg>
@@ -294,108 +318,6 @@ function TapInMark({ className = "w-7 h-7" }: { className?: string }) {
   );
 }
 
-// ─── Top Bar ──────────────────────────────────────────────────────────────────
-function TopBar({ user, onNav }: { user: User | null; onNav: (p: Page) => void }) {
-  const dest = user?.role === "admin" ? "admin-dashboard" : user ? "dashboard" : "landing";
-  return (
-    <header className="h-12 sticky top-0 z-40 bg-white border-b border-slate-100 flex items-center justify-between px-5 gap-4 shrink-0">
-      <button className="flex items-center gap-2.5" onClick={() => onNav(dest)}>
-        <TapInMark />
-        <div className="flex flex-col leading-none">
-          <span className="text-sm font-bold text-slate-900 tracking-tight">TapIn</span>
-          <span className="text-[9px] text-slate-400 font-medium hidden sm:block leading-tight">Attendance &amp; Fee Tracking</span>
-        </div>
-      </button>
-      <div>
-        {user ? (
-          <button onClick={() => onNav("profile")} className="rounded-full ring-2 ring-transparent hover:ring-green-200 transition-all">
-            <ProfileIcon size="sm" />
-          </button>
-        ) : (
-          <button onClick={() => onNav("login")} className="text-xs font-semibold text-slate-700 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">Sign in</button>
-        )}
-      </div>
-    </header>
-  );
-}
-
-// ─── Sidebar ──────────────────────────────────────────────────────────────────
-function Sidebar({ page, user, onNav, onLogout }: { page: Page; user: User | null; onNav: (p: Page) => void; onLogout: () => void }) {
-  if (!user) return null;
-  const isAdmin = user.role === "admin";
-  const nav = isAdmin ? [
-    { p: "admin-dashboard" as Page,       l: "Overview",        I: Icons.Home },
-    { p: "admin-events" as Page,          l: "Events",          I: Icons.Calendar },
-    { p: "admin-scanner" as Page,         l: "QR Scanner",      I: Icons.Scan },
-    { p: "admin-attendees" as Page,       l: "Attendees",       I: Icons.Users },
-    { p: "admin-students" as Page,        l: "Students",        I: Icons.User },
-    { p: "admin-announcements" as Page,   l: "Announcements",   I: Icons.Bell },
-    { p: "admin-excuse-requests" as Page, l: "Excuse Requests", I: Icons.FileText },
-    { p: "admin-reports" as Page,         l: "Reports",         I: Icons.BarChart },
-  ] : [
-    { p: "dashboard" as Page,          l: "Home",          I: Icons.Home },
-    { p: "events" as Page,             l: "Events",        I: Icons.Calendar },
-    { p: "my-qr" as Page,              l: "My QR Code",    I: Icons.QrCode },
-    { p: "announcements" as Page,      l: "Announcements", I: Icons.Bell },
-    { p: "attendance-history" as Page, l: "Attendance",    I: Icons.CheckCircle },
-    { p: "my-fines" as Page,           l: "My Fines",      I: Icons.Peso },
-    { p: "profile" as Page,            l: "Profile",       I: Icons.User },
-  ];
-  return (
-    <aside className="hidden lg:flex flex-col w-52 shrink-0 border-r border-slate-100 bg-white h-full">
-      <nav className="flex-1 px-2 pt-4 pb-2 space-y-0.5 overflow-y-auto">
-        {nav.map(({ p, l, I }) => {
-          const active = page === p;
-          return (
-            <button key={p + l} onClick={() => onNav(p)} className={`w-full flex items-center gap-2.5 px-3 h-9 rounded-lg text-sm transition-all ${active ? "bg-slate-100 text-slate-900 font-semibold" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 font-medium"}`}>
-              <span className={active ? "text-green-600" : "text-slate-400"}><I /></span>{l}
-            </button>
-          );
-        })}
-      </nav>
-      <div className="px-2 py-3 border-t border-slate-100 space-y-0.5">
-        <button onClick={() => onNav("profile")} className="w-full flex items-center gap-2.5 px-3 h-10 rounded-lg hover:bg-slate-50 transition-colors">
-          <ProfileIcon size="xs" />
-          <div className="flex-1 min-w-0 text-left">
-            <p className="text-xs font-semibold text-slate-800 truncate">{fullName(user) || "Set up profile"}</p>
-            <p className="text-[10px] text-slate-400 truncate">{user.studentId || "No ID yet"}</p>
-          </div>
-        </button>
-        <button onClick={onLogout} className="w-full flex items-center gap-2.5 px-3 h-9 rounded-lg text-sm font-medium text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
-          <span className="text-slate-300"><Icons.LogOut /></span>Sign out
-        </button>
-      </div>
-    </aside>
-  );
-}
-
-// ─── Bottom Nav ───────────────────────────────────────────────────────────────
-function BottomNav({ page, user, onNav }: { page: Page; user: User | null; onNav: (p: Page) => void }) {
-  if (!user) return null;
-  const isAdmin = user.role === "admin";
-  const items = isAdmin ? [
-    { p: "admin-dashboard" as Page, l: "Home",     I: Icons.Home },
-    { p: "admin-events" as Page,    l: "Events",   I: Icons.Calendar },
-    { p: "admin-scanner" as Page,   l: "Scan",     I: Icons.Scan },
-    { p: "admin-students" as Page,  l: "Students", I: Icons.Users },
-    { p: "admin-reports" as Page,   l: "Reports",  I: Icons.BarChart },
-  ] : [
-    { p: "dashboard" as Page,          l: "Home",    I: Icons.Home },
-    { p: "events" as Page,             l: "Events",  I: Icons.Calendar },
-    { p: "my-qr" as Page,              l: "QR",      I: Icons.QrCode },
-    { p: "my-fines" as Page,           l: "Fines",   I: Icons.Peso },
-    { p: "profile" as Page,            l: "Profile", I: Icons.User },
-  ];
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-100 flex lg:hidden">
-      {items.map(({ p, l, I }) => {
-        const active = page === p;
-        return <button key={p} onClick={() => onNav(p)} className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-semibold transition-colors ${active ? "text-green-600" : "text-slate-400"}`}><I />{l}</button>;
-      })}
-    </nav>
-  );
-}
-
 // ─── QR Matrix ────────────────────────────────────────────────────────────────
 const QR_CELLS = [
   [1,1,1,1,1,1,1,0,1,0,0,1,0,0,1,1,1,1,1,1,1],[1,0,0,0,0,0,1,0,0,1,0,0,1,0,1,0,0,0,0,0,1],
@@ -413,9 +335,112 @@ const QR_CELLS = [
 function QRSvg({ size }: { size: number }) {
   const cell = size / 21;
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: "block" }}>
       {QR_CELLS.map((row, r) => row.map((v, c) => v ? <rect key={`${r}-${c}`} x={c * cell} y={r * cell} width={cell} height={cell} fill="#111827" /> : null))}
     </svg>
+  );
+}
+
+// ─── Top Bar ──────────────────────────────────────────────────────────────────
+function TopBar({ user, onNav }: { user: User | null; onNav: (p: Page) => void }) {
+  const dest = user?.role === "admin" ? "admin-dashboard" : user ? "dashboard" : "landing";
+  return (
+    <header className="h-12 sticky top-0 z-40 bg-white border-b border-slate-100 flex items-center justify-between px-5 gap-4 shrink-0">
+      <button className="flex items-center gap-2.5" onClick={() => onNav(dest)}>
+        <TapInMark />
+        <div className="flex flex-col leading-none">
+          <span className="text-sm font-bold text-slate-900 tracking-tight">TapIn</span>
+          <span className="text-[9px] text-slate-400 font-medium hidden sm:block leading-tight">Attendance &amp; Fee Tracking</span>
+        </div>
+      </button>
+      <div>
+        {user ? (
+          <button onClick={() => onNav("profile")} className="rounded-full ring-2 ring-transparent hover:ring-green-200 transition-all">
+            <ProfileIcon photoUrl={user.photoUrl} size="sm" />
+          </button>
+        ) : (
+          <button onClick={() => onNav("login")} className="text-xs font-semibold text-slate-700 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">Sign in</button>
+        )}
+      </div>
+    </header>
+  );
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+function Sidebar({ page, user, onNav, onLogout }: { page: Page; user: User | null; onNav: (p: Page) => void; onLogout: () => void }) {
+  if (!user) return null;
+  const isMod = user.role === "admin";
+  const nav = isMod ? [
+    { p: "admin-dashboard" as Page,       l: "Overview",              I: Icons.Home },
+    { p: "admin-events" as Page,          l: "Events",                I: Icons.Calendar },
+    { p: "admin-scanner" as Page,         l: "QR Scanner",            I: Icons.Scan },
+    { p: "admin-attendees" as Page,       l: "Attendees",             I: Icons.Users },
+    { p: "admin-students" as Page,        l: "Students",              I: Icons.User },
+    { p: "admin-announcements" as Page,   l: "Announcements",         I: Icons.Bell },
+    { p: "admin-excuse-requests" as Page, l: "Excuse Requests",       I: Icons.FileText },
+    { p: "admin-reports" as Page,         l: "Reports",               I: Icons.BarChart },
+    { p: "admin-settings" as Page,        l: "Settings",              I: Icons.Settings },
+  ] : [
+    { p: "dashboard" as Page,          l: "Home",          I: Icons.Home },
+    { p: "events" as Page,             l: "Events",        I: Icons.Calendar },
+    { p: "my-qr" as Page,              l: "My QR Code",    I: Icons.QrCode },
+    { p: "announcements" as Page,      l: "Announcements", I: Icons.Bell },
+    { p: "attendance-history" as Page, l: "Attendance",    I: Icons.CheckCircle },
+    { p: "my-fines" as Page,           l: "My Fines",      I: Icons.Peso },
+    { p: "profile" as Page,            l: "Profile",       I: Icons.User },
+  ];
+  return (
+    <aside className="hidden lg:flex flex-col w-56 shrink-0 border-r border-slate-100 bg-white h-full">
+      <nav className="flex-1 px-2 pt-4 pb-2 space-y-0.5 overflow-y-auto">
+        {nav.map(({ p, l, I }) => {
+          const active = page === p;
+          return (
+            <button key={p + l} onClick={() => onNav(p)} className={`w-full flex items-center gap-2.5 px-3 h-9 rounded-lg text-sm transition-all ${active ? "bg-slate-100 text-slate-900 font-semibold" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 font-medium"}`}>
+              <span className={active ? "text-green-600" : "text-slate-400"}><I /></span>{l}
+            </button>
+          );
+        })}
+      </nav>
+      <div className="px-2 py-3 border-t border-slate-100 space-y-0.5">
+        <button onClick={() => onNav("profile")} className="w-full flex items-center gap-2.5 px-3 h-10 rounded-lg hover:bg-slate-50 transition-colors">
+          <ProfileIcon photoUrl={user.photoUrl} size="xs" />
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-xs font-semibold text-slate-800 truncate">{fullName(user) || "Set up profile"}</p>
+            <p className="text-[10px] text-slate-400 truncate">{isMod ? "Moderator" : user.studentId || "No ID yet"}</p>
+          </div>
+        </button>
+        <button onClick={onLogout} className="w-full flex items-center gap-2.5 px-3 h-9 rounded-lg text-sm font-medium text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
+          <span className="text-slate-300"><Icons.LogOut /></span>Sign out
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+// ─── Bottom Nav ───────────────────────────────────────────────────────────────
+function BottomNav({ page, user, onNav }: { page: Page; user: User | null; onNav: (p: Page) => void }) {
+  if (!user) return null;
+  const isMod = user.role === "admin";
+  const items = isMod ? [
+    { p: "admin-dashboard" as Page, l: "Home",     I: Icons.Home },
+    { p: "admin-events" as Page,    l: "Events",   I: Icons.Calendar },
+    { p: "admin-scanner" as Page,   l: "Scan",     I: Icons.Scan },
+    { p: "admin-students" as Page,  l: "Students", I: Icons.Users },
+    { p: "admin-settings" as Page,  l: "Settings", I: Icons.Settings },
+  ] : [
+    { p: "dashboard" as Page,          l: "Home",    I: Icons.Home },
+    { p: "events" as Page,             l: "Events",  I: Icons.Calendar },
+    { p: "my-qr" as Page,              l: "QR",      I: Icons.QrCode },
+    { p: "my-fines" as Page,           l: "Fines",   I: Icons.Peso },
+    { p: "profile" as Page,            l: "Profile", I: Icons.User },
+  ];
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-100 flex lg:hidden">
+      {items.map(({ p, l, I }) => {
+        const active = page === p;
+        return <button key={p} onClick={() => onNav(p)} className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-semibold transition-colors ${active ? "text-green-600" : "text-slate-400"}`}><I />{l}</button>;
+      })}
+    </nav>
   );
 }
 
@@ -427,7 +452,7 @@ function LandingPage({ onNav }: { onNav: (p: Page) => void }) {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gradient-to-b from-green-50 to-transparent rounded-full blur-3xl opacity-60 pointer-events-none" />
         <div className="relative">
           <div className="inline-flex items-center gap-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full mb-8">
-            <span className="w-1.5 h-1.5 bg-green-500 rounded-full" style={{ animation: "pulse 2s infinite" }} />AY 2026–2027 · 1st Semester
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full" style={{ animation: "pulse 2s infinite" }} />AY 2026-2027 · 1st Semester
           </div>
           <div className="flex items-center justify-center gap-3 mb-4"><TapInMark className="w-14 h-14" /></div>
           <h1 className="text-5xl font-extrabold text-slate-900 tracking-tight leading-tight mb-2">TapIn</h1>
@@ -443,7 +468,7 @@ function LandingPage({ onNav }: { onNav: (p: Page) => void }) {
         <div className="grid md:grid-cols-3 gap-4">
           {[
             { I: Icons.QrCode, t: "Personal QR Code",       d: "Each student gets a unique QR code tied to their profile. Present it at any event entrance for instant logging." },
-            { I: Icons.Scan,   t: "Instant scan & confirm", d: "Admins scan student QR codes in real time with automatic duplicate detection and confirmation." },
+            { I: Icons.Scan,   t: "Instant scan & confirm", d: "Moderators scan student QR codes in real time with automatic duplicate detection and confirmation." },
             { I: Icons.Peso,   t: "Automatic fee tracking", d: "Absent students are fined per event policy. Students can view, track, and clear fees from their personal dashboard." },
           ].map(f => (
             <div key={f.t} className="bg-white border border-slate-100 rounded-2xl p-6 hover:border-slate-200 hover:shadow-sm transition-all">
@@ -481,7 +506,7 @@ function LoginPage({ onLogin, onBack }: { onLogin: (role: Role) => void; onBack:
               </button>
               <button onClick={() => setRole("admin")} className="w-full bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 text-left hover:border-slate-300 hover:shadow-sm transition-all group">
                 <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 shrink-0 group-hover:bg-slate-200 transition-colors"><Icons.Shield /></div>
-                <div className="flex-1"><p className="font-semibold text-slate-900 text-sm">Login as Admin</p><p className="text-xs text-slate-400 font-medium mt-0.5">Manage events, scan QR codes, view reports</p></div>
+                <div className="flex-1"><p className="font-semibold text-slate-900 text-sm">Login as Moderator</p><p className="text-xs text-slate-400 font-medium mt-0.5">Manage events, scan QR codes, view reports</p></div>
                 <span className="text-slate-300 group-hover:text-slate-500 transition-colors"><Icons.ChevronRight /></span>
               </button>
               <p className="text-xs text-slate-400 text-center pt-1">New student? <button onClick={() => setRole("student")} className="text-green-600 font-semibold hover:text-green-700">Create an account</button></p>
@@ -493,7 +518,7 @@ function LoginPage({ onLogin, onBack }: { onLogin: (role: Role) => void; onBack:
           <>
             <div className="text-center mb-8">
               <div className="flex justify-center mb-4"><TapInMark className="w-12 h-12" /></div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-1">{role === "student" ? "Student login" : "Admin login"}</h1>
+              <h1 className="text-2xl font-bold text-slate-900 mb-1">{role === "student" ? "Student login" : "Moderator login"}</h1>
               <p className="text-sm text-slate-400">Choose how you would like to sign in</p>
             </div>
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
@@ -542,7 +567,7 @@ function OnboardingPage({ onComplete }: { onComplete: (d: OBForm) => void }) {
             {step === 1 && (<><div className="grid grid-cols-3 gap-3"><div className="col-span-2"><FieldInput label="First Name" placeholder="e.g. Maria Luisa" value={f.firstName} onChange={set("firstName")} /></div><FieldInput label="M.I." placeholder="A" maxLength={2} value={f.middleInitial} onChange={set("middleInitial")} /></div><FieldInput label="Surname" placeholder="e.g. Santos" value={f.surname} onChange={set("surname")} /></>)}
             {step === 2 && (<><FieldInput label="Phone" type="tel" placeholder="e.g. 09XX XXX XXXX" value={f.phone} onChange={set("phone")} /><FieldInput label="Email" type="email" placeholder="e.g. student@email.com" value={f.contactEmail} onChange={set("contactEmail")} /></>)}
             {step === 3 && <FieldInput label="Student ID (7 digits, starts with 244...)" placeholder="e.g. 2440001" value={f.studentId} onChange={set("studentId")} />}
-            {step === 4 && (<><FieldSelect label="Program" value={f.program} onChange={set("program")}><option value="">Select program</option><option>BSIT — Information Technology</option><option>BSCS — Computer Science</option><option>BSBA — Business Administration</option><option>BSEd — Secondary Education</option><option>BSHM — Hospitality Management</option></FieldSelect><FieldSelect label="Year Level" value={f.yearLevel} onChange={set("yearLevel")}><option value="">Select year level</option><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></FieldSelect><FieldInput label="Section" placeholder="e.g. IT-2A" value={f.section} onChange={set("section")} /></>)}
+            {step === 4 && (<><FieldSelect label="Program" value={f.program} onChange={set("program")}><option value="">Select program</option><option>BSIT - Information Technology</option><option>BSCS - Computer Science</option><option>BSBA - Business Administration</option><option>BSEd - Secondary Education</option><option>BSHM - Hospitality Management</option></FieldSelect><FieldSelect label="Year Level" value={f.yearLevel} onChange={set("yearLevel")}><option value="">Select year level</option><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></FieldSelect><FieldInput label="Section" placeholder="e.g. IT-2A" value={f.section} onChange={set("section")} /></>)}
           </div>
           <div className="px-6 pb-5 flex gap-2.5">
             {step > 1 && <button onClick={() => setStep(s => s - 1)} className="h-10 px-4 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"><Icons.ChevronLeft />Back</button>}
@@ -565,7 +590,7 @@ function ExcuseModal({ record, onClose, onSubmit }: { record: typeof ATTENDANCE_
           <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 flex items-center gap-3"><span className="text-red-400 shrink-0"><Icons.XCircle /></span><div><p className="text-sm font-semibold text-slate-900">Marked Absent</p><p className="text-xs text-slate-400">{record.date}</p></div></div>
           <FieldTextarea label="Reason" placeholder="Describe why you were unable to attend..." rows={4} value={reason} onChange={e => setReason(e.target.value)} />
           <div>
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">Document <span className="text-slate-300 normal-case tracking-normal">(optional)</span></label>
+            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">Document (optional)</label>
             <input ref={ref} type="file" accept="image/*,.pdf" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
             <button onClick={() => ref.current?.click()} className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm font-medium text-slate-400 hover:border-green-400 hover:text-green-600 transition-all flex items-center justify-center gap-2"><Icons.Paperclip />{file ? file.name : "Attach photo or PDF"}</button>
           </div>
@@ -579,37 +604,57 @@ function ExcuseModal({ record, onClose, onSubmit }: { record: typeof ATTENDANCE_
   );
 }
 
-// ─── Student Profile Modal (for admin) ────────────────────────────────────────
+// ─── Student Profile Modal (Moderator view, with QR) ─────────────────────────
 function StudentProfileModal({ student, onClose }: { student: StudentProfile; onClose: () => void }) {
+  const [tab, setTab] = useState<"info" | "qr">("info");
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100"><p className="font-bold text-slate-900">Student Profile</p><button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"><Icons.X /></button></div>
-        <div className="px-5 py-5">
-          <div className="flex items-center gap-4 mb-5">
-            <Avatar name={student.name} size="lg" />
-            <div>
-              <p className="font-bold text-slate-900 text-lg leading-tight">{student.name}</p>
-              <p className="text-sm text-slate-400 font-medium">{student.id}</p>
-              <div className="flex flex-wrap gap-1.5 mt-2">{[student.program, student.yearLevel, student.section].filter(Boolean).map(t => <span key={t} className="text-[11px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded">{t}</span>)}</div>
-            </div>
-          </div>
-          <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
-            {[{ l: "Phone", v: student.phone }, { l: "Email", v: student.email }, { l: "Joined TapIn", v: student.joinedDate }].map((f, i, arr) => (
-              <div key={f.l} className={`flex items-center justify-between px-4 py-3 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}>
-                <span className="text-xs font-semibold text-slate-400">{f.l}</span>
-                <span className="text-sm font-semibold text-slate-900 text-right max-w-[60%] truncate">{f.v}</span>
-              </div>
-            ))}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <p className="font-bold text-slate-900">Student Profile</p>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"><Icons.X /></button>
+        </div>
+        <div className="px-5 pt-4 pb-3 flex items-center gap-4">
+          <Avatar name={student.name} size="lg" />
+          <div>
+            <p className="font-bold text-slate-900 text-base leading-tight">{student.name}</p>
+            <p className="text-sm text-slate-400 font-medium">{student.id}</p>
+            <div className="flex flex-wrap gap-1.5 mt-1.5">{[student.program, student.yearLevel, student.section].filter(Boolean).map(t => <span key={t} className="text-[11px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded">{t}</span>)}</div>
           </div>
         </div>
+        <div className="flex gap-1 mx-5 mb-4 bg-slate-100 p-1 rounded-xl">
+          <button onClick={() => setTab("info")} className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-all ${tab === "info" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Profile Info</button>
+          <button onClick={() => setTab("qr")} className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${tab === "qr" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}><Icons.QrCode />QR Code</button>
+        </div>
+        {tab === "info" && (
+          <div className="px-5 pb-5">
+            <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
+              {[{ l: "Phone", v: student.phone }, { l: "Email", v: student.email }, { l: "Joined TapIn", v: student.joinedDate }].map((f, i, arr) => (
+                <div key={f.l} className={`flex items-center justify-between px-4 py-3 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}>
+                  <span className="text-xs font-semibold text-slate-400">{f.l}</span>
+                  <span className="text-sm font-semibold text-slate-900 text-right max-w-[60%] truncate">{f.v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {tab === "qr" && (
+          <div className="px-5 pb-5 text-center">
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 inline-block mb-3">
+              <QRSvg size={160} />
+            </div>
+            <p className="text-xs font-semibold text-slate-900">{student.name}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">{student.id} · {student.program}</p>
+            <p className="text-[10px] text-slate-300 mt-2">Moderator view — for in-person check-in assist</p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 // ─── STUDENT: Dashboard ───────────────────────────────────────────────────────
-function DashboardPage({ user, onNav, fines }: { user: User; onNav: (p: Page) => void; fines: FineRecord[] }) {
+function DashboardPage({ user, onNav, fines, showFees }: { user: User; onNav: (p: Page) => void; fines: FineRecord[]; showFees: boolean }) {
   const nextEvent = INITIAL_EVENTS.find(e => e.status !== "closed");
   const unpaidFines = fines.filter(f => f.status === "unpaid");
   const total = unpaidFines.reduce((s, f) => s + f.amount, 0);
@@ -619,9 +664,9 @@ function DashboardPage({ user, onNav, fines }: { user: User; onNav: (p: Page) =>
       <div className="grid grid-cols-3 gap-3 mb-5">
         {[{ l: "Present", v: "2" }, { l: "Absent", v: "2" }, { l: "Upcoming", v: "2" }].map(s => (<div key={s.l} className="bg-white border border-slate-100 rounded-xl px-4 py-4"><p className="text-2xl font-bold text-slate-900">{s.v}</p><p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">{s.l}</p></div>))}
       </div>
-      {unpaidFines.length > 0 && (
+      {showFees && unpaidFines.length > 0 && (
         <button onClick={() => onNav("my-fines")} className="w-full bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between mb-5 hover:bg-red-100 transition-all group">
-          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center text-red-500 shrink-0"><Icons.Peso /></div><div className="text-left"><p className="text-sm font-bold text-red-700">Unpaid fines — ₱{total.toLocaleString()}</p><p className="text-xs text-red-500 mt-0.5">{unpaidFines.length} outstanding fine{unpaidFines.length > 1 ? "s" : ""}</p></div></div>
+          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center text-red-500 shrink-0"><Icons.Peso /></div><div className="text-left"><p className="text-sm font-bold text-red-700">Unpaid fines — P{total.toLocaleString()}</p><p className="text-xs text-red-500 mt-0.5">{unpaidFines.length} outstanding fine{unpaidFines.length > 1 ? "s" : ""}</p></div></div>
           <span className="text-red-400 group-hover:text-red-600"><Icons.ChevronRight /></span>
         </button>
       )}
@@ -630,7 +675,6 @@ function DashboardPage({ user, onNav, fines }: { user: User; onNav: (p: Page) =>
           <div className="flex items-center justify-between mb-3"><Badge status={nextEvent.status} /><span className="text-green-300 text-xs font-medium">Up next</span></div>
           <h2 className="font-semibold text-base leading-snug mb-3">{nextEvent.title}</h2>
           <div className="flex flex-wrap gap-4 text-sm text-green-200 font-medium"><span className="flex items-center gap-1.5"><Icons.Calendar />{nextEvent.date}</span><span className="flex items-center gap-1.5"><Icons.MapPin />{nextEvent.location}</span></div>
-          <p className="text-green-300 text-xs mt-3 font-medium">₱{nextEvent.fineAmount} fine for non-attendance</p>
         </button>
       )}
       <button onClick={() => onNav("my-qr")} className="w-full bg-white border border-slate-100 rounded-xl px-5 py-4 flex items-center justify-between hover:border-slate-200 hover:shadow-sm transition-all mb-5 group">
@@ -650,14 +694,14 @@ function DashboardPage({ user, onNav, fines }: { user: User; onNav: (p: Page) =>
   );
 }
 
-// ─── STUDENT: Events (fines hidden for public/unauthenticated) ────────────────
-function EventsPage({ onNav, onSelectEvent, user }: { onNav: (p: Page) => void; onSelectEvent: (id: string) => void; user: User | null }) {
+// ─── STUDENT: Events ──────────────────────────────────────────────────────────
+function EventsPage({ onNav, onSelectEvent, user, showFees }: { onNav: (p: Page) => void; onSelectEvent: (id: string) => void; user: User | null; showFees: boolean }) {
   const [filter, setFilter] = useState("all");
   const items = filter === "all" ? INITIAL_EVENTS : INITIAL_EVENTS.filter(e => e.status === filter);
-  const showFines = user?.role === "student";
+  const canSeeFees = user?.role === "student" && showFees;
   return (
     <PageShell>
-      <PageHeader title="Events" subtitle="AY 2026–2027, 1st Semester" />
+      <PageHeader title="Events" subtitle="AY 2026-2027, 1st Semester" />
       <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
         {[{ k: "all", l: "All" }, { k: "active", l: "Live" }, { k: "upcoming", l: "Upcoming" }, { k: "closed", l: "Ended" }].map(f => (
           <button key={f.k} onClick={() => setFilter(f.k)} className={`shrink-0 h-8 px-3.5 rounded-lg text-xs font-semibold transition-all ${filter === f.k ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300"}`}>{f.l}</button>
@@ -673,7 +717,7 @@ function EventsPage({ onNav, onSelectEvent, user }: { onNav: (p: Page) => void; 
               <span className="flex items-center gap-1.5"><Icons.Calendar />{e.date}</span>
               <span className="flex items-center gap-1.5"><Icons.Clock />{e.time}</span>
               <span className="flex items-center gap-1.5"><Icons.MapPin />{e.location}</span>
-              {showFines && e.fineAmount > 0 && <span className="flex items-center gap-1.5 text-red-400 font-semibold"><Icons.Peso />₱{e.fineAmount} fine</span>}
+              {canSeeFees && e.fineAmount > 0 && <span className="flex items-center gap-1.5 text-red-400 font-semibold"><Icons.Peso />P{e.fineAmount} fine</span>}
             </div>
           </div>
         ))}
@@ -683,9 +727,9 @@ function EventsPage({ onNav, onSelectEvent, user }: { onNav: (p: Page) => void; 
 }
 
 // ─── STUDENT: Event Detail ────────────────────────────────────────────────────
-function EventDetailPage({ eventId, user, onBack }: { eventId: string; user: User | null; onBack: () => void }) {
+function EventDetailPage({ eventId, user, showFees, onBack }: { eventId: string; user: User | null; showFees: boolean; onBack: () => void }) {
   const ev = INITIAL_EVENTS.find(e => e.id === eventId) ?? INITIAL_EVENTS[0];
-  const showFines = user?.role === "student";
+  const canSeeFees = user?.role === "student" && showFees;
   return (
     <PageShell>
       <BackButton onClick={onBack} label="Back to Events" />
@@ -695,7 +739,7 @@ function EventDetailPage({ eventId, user, onBack }: { eventId: string; user: Use
         <div className="grid grid-cols-2 gap-3">
           {[{ l: "DATE", v: ev.date }, { l: "TIME", v: ev.time }].map(d => (<div key={d.l} className="bg-white/10 rounded-lg px-3 py-2.5"><p className="text-green-300 text-[10px] font-bold uppercase tracking-widest mb-1">{d.l}</p><p className="text-sm font-semibold">{d.v}</p></div>))}
           <div className="bg-white/10 rounded-lg px-3 py-2.5 col-span-2"><p className="text-green-300 text-[10px] font-bold uppercase tracking-widest mb-1">LOCATION</p><p className="text-sm font-semibold">{ev.location}</p></div>
-          {showFines && ev.fineAmount > 0 && <div className="bg-white/10 rounded-lg px-3 py-2.5 col-span-2"><p className="text-green-300 text-[10px] font-bold uppercase tracking-widest mb-1">ABSENCE FEE</p><p className="text-sm font-semibold">₱{ev.fineAmount}</p></div>}
+          {canSeeFees && ev.fineAmount > 0 && <div className="bg-white/10 rounded-lg px-3 py-2.5 col-span-2"><p className="text-green-300 text-[10px] font-bold uppercase tracking-widest mb-1">ABSENCE FEE</p><p className="text-sm font-semibold">P{ev.fineAmount}</p></div>}
         </div>
       </div>
       <div className="bg-white border border-slate-100 rounded-xl p-5 mb-3">
@@ -726,11 +770,11 @@ function MyQRPage({ user, qrVersion, onBack }: { user: User; qrVersion: number; 
     const cell = size / 21; ctx.fillStyle = "#111827";
     QR_CELLS.forEach((row, r) => row.forEach((v, c) => { if (v) ctx.fillRect(pad + c * cell, pad + r * cell, cell, cell); }));
     ctx.strokeStyle = "#f1f5f9"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pad, size + pad + 12); ctx.lineTo(W - pad, size + pad + 12); ctx.stroke();
-    ctx.fillStyle = "#111827"; ctx.font = `bold 13px sans-serif`; ctx.textAlign = "center";
+    ctx.fillStyle = "#111827"; ctx.font = "bold 13px sans-serif"; ctx.textAlign = "center";
     ctx.fillText(name, W / 2, size + pad + 32);
-    ctx.fillStyle = "#94a3b8"; ctx.font = `11px sans-serif`;
+    ctx.fillStyle = "#94a3b8"; ctx.font = "11px sans-serif";
     ctx.fillText(`${user.studentId} · ${user.program} ${user.yearLevel}`, W / 2, size + pad + 50);
-    ctx.fillStyle = "#16a34a"; ctx.font = `bold 10px sans-serif`;
+    ctx.fillStyle = "#16a34a"; ctx.font = "bold 10px sans-serif";
     ctx.fillText("TapIn · Student Attendance & Fee Tracking System", W / 2, size + pad + 66);
     const a = document.createElement("a"); a.download = `tapin-qr-${user.studentId}-v${qrVersion}.png`; a.href = canvas.toDataURL("image/png"); a.click();
   };
@@ -779,12 +823,12 @@ function AnnouncementsPage({ onBack }: { onBack: () => void }) {
 }
 
 // ─── STUDENT: Attendance ──────────────────────────────────────────────────────
-function AttendanceHistoryPage({ excuseRequests, fines, onSubmitExcuse, onBack }: { excuseRequests: ExcuseRequest[]; fines: FineRecord[]; onSubmitExcuse: (r: ExcuseRequest) => void; onBack: () => void }) {
+function AttendanceHistoryPage({ excuseRequests, fines, showFees, onSubmitExcuse, onBack }: { excuseRequests: ExcuseRequest[]; fines: FineRecord[]; showFees: boolean; onSubmitExcuse: (r: ExcuseRequest) => void; onBack: () => void }) {
   const [modal, setModal] = useState<typeof ATTENDANCE_RECORDS[0] | null>(null);
   return (
     <PageShell>
       <BackButton onClick={onBack} label="Back to Home" />
-      <PageHeader title="My Attendance" subtitle="AY 2026–2027, 1st Semester" />
+      <PageHeader title="My Attendance" subtitle="AY 2026-2027, 1st Semester" />
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
         {ATTENDANCE_RECORDS.map((r, i) => {
           const req = excuseRequests.find(x => x.event === r.event);
@@ -796,7 +840,7 @@ function AttendanceHistoryPage({ excuseRequests, fines, onSubmitExcuse, onBack }
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-900 truncate">{r.event}</p>
                 <p className="text-xs text-slate-400 mt-0.5">{r.date}{r.time !== "—" ? ` · ${r.time}` : ""}</p>
-                {fine && eff === "absent" && <p className="text-xs text-red-500 font-semibold mt-0.5">Fee: ₱{fine.amount}</p>}
+                {showFees && fine && eff === "absent" && <p className="text-xs text-red-500 font-semibold mt-0.5">Fee: P{fine.amount}</p>}
               </div>
               {eff === "absent" ? <button onClick={() => setModal(r)} className="shrink-0 h-8 px-3 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-semibold rounded-lg flex items-center gap-1.5"><Icons.Send />Excuse</button> : <Badge status={eff} />}
             </div>
@@ -810,9 +854,22 @@ function AttendanceHistoryPage({ excuseRequests, fines, onSubmitExcuse, onBack }
 }
 
 // ─── STUDENT: My Fines ────────────────────────────────────────────────────────
-function MyFinesPage({ fines, onBack }: { fines: FineRecord[]; onBack: () => void }) {
+function MyFinesPage({ fines, showFees, onBack }: { fines: FineRecord[]; showFees: boolean; onBack: () => void }) {
   const unpaid = fines.filter(f => f.status === "unpaid");
   const total = unpaid.reduce((s, f) => s + f.amount, 0);
+  if (!showFees) {
+    return (
+      <PageShell>
+        <BackButton onClick={onBack} label="Back to Home" />
+        <PageHeader title="My Fines" />
+        <div className="bg-white border border-slate-100 rounded-xl px-5 py-12 text-center">
+          <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3 text-slate-400"><Icons.Peso /></div>
+          <p className="font-semibold text-slate-900 text-sm">Fee information not yet available</p>
+          <p className="text-xs text-slate-400 mt-1.5 max-w-[220px] mx-auto leading-relaxed">Fee details will be shown when the payment period opens. Check back soon.</p>
+        </div>
+      </PageShell>
+    );
+  }
   return (
     <PageShell>
       <BackButton onClick={onBack} label="Back to Home" />
@@ -820,30 +877,38 @@ function MyFinesPage({ fines, onBack }: { fines: FineRecord[]; onBack: () => voi
       {fines.length === 0 ? (
         <div className="bg-white border border-slate-100 rounded-xl px-5 py-12 text-center"><div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-3 text-green-500"><Icons.Check /></div><p className="font-semibold text-slate-900 text-sm">No outstanding fines</p><p className="text-xs text-slate-400 mt-1">Your attendance record is clean.</p></div>
       ) : (<>
-        {unpaid.length > 0 && <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 mb-5 flex items-center justify-between"><div><p className="font-bold text-red-800">Total outstanding</p><p className="text-xs text-red-600 mt-0.5">{unpaid.length} unpaid fine{unpaid.length > 1 ? "s" : ""}</p></div><p className="text-2xl font-extrabold text-red-700">₱{total.toLocaleString()}</p></div>}
+        {unpaid.length > 0 && <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 mb-5 flex items-center justify-between"><div><p className="font-bold text-red-800">Total outstanding</p><p className="text-xs text-red-600 mt-0.5">{unpaid.length} unpaid fine{unpaid.length > 1 ? "s" : ""}</p></div><p className="text-2xl font-extrabold text-red-700">P{total.toLocaleString()}</p></div>}
         <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
           {fines.map((fine, i) => (
             <div key={fine.id} className={`flex items-center gap-4 px-5 py-4 ${i < fines.length - 1 ? "border-b border-slate-50" : ""}`}>
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${fine.status === "unpaid" ? "bg-red-50 text-red-400" : fine.status === "excused" ? "bg-violet-50 text-violet-500" : "bg-green-50 text-green-600"}`}><Icons.Peso /></div>
               <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{fine.eventTitle}</p><p className="text-xs text-slate-400 mt-0.5">{fine.eventDate}</p></div>
-              <div className="text-right shrink-0"><p className={`text-sm font-bold ${fine.status === "unpaid" ? "text-red-600" : fine.status === "excused" ? "text-violet-600" : "text-green-600"}`}>₱{fine.amount}</p><Badge status={fine.status} /></div>
+              <div className="text-right shrink-0"><p className={`text-sm font-bold ${fine.status === "unpaid" ? "text-red-600" : fine.status === "excused" ? "text-violet-600" : "text-green-600"}`}>P{fine.amount}</p><Badge status={fine.status} /></div>
             </div>
           ))}
         </div>
-        <div className="mt-4 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 flex items-start gap-3"><span className="text-slate-400 shrink-0 mt-0.5"><Icons.AlertCircle /></span><p className="text-xs text-slate-500 leading-relaxed">Pay fines at the SSC office or Accounting window. Bring your student ID. Approved excuse requests automatically waive the corresponding fee.</p></div>
+        <div className="mt-4 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 flex items-start gap-3"><span className="text-slate-400 shrink-0 mt-0.5"><Icons.AlertCircle /></span><p className="text-xs text-slate-500 leading-relaxed">Pay fines at the SSG office or Accounting window. Bring your student ID. Approved excuse requests automatically waive the corresponding fee.</p></div>
       </>)}
     </PageShell>
   );
 }
 
-// ─── STUDENT: Profile ─────────────────────────────────────────────────────────
+// ─── Profile (shared: student + moderator) ────────────────────────────────────
 function ProfilePage({ user, onSave, onBack }: { user: User; onSave: (u: User) => void; onBack: () => void }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ ...user });
+  const photoRef = useRef<HTMLInputElement>(null);
   const setF = (k: keyof User) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setDraft(d => ({ ...d, [k]: e.target.value }));
+  const isMod = user.role === "admin";
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setDraft(d => ({ ...d, photoUrl: URL.createObjectURL(file) }));
+  };
+
   return (
     <PageShell>
-      <BackButton onClick={onBack} label={user.role === "admin" ? "Back to Overview" : "Back to Home"} />
+      <BackButton onClick={onBack} label={isMod ? "Back to Overview" : "Back to Home"} />
       <PageHeader title="Profile" action={
         editing ? (
           <div className="flex items-center gap-2">
@@ -854,12 +919,38 @@ function ProfilePage({ user, onSave, onBack }: { user: User; onSave: (u: User) =
       } />
       <div className="max-w-sm">
         <div className="bg-white border border-slate-100 rounded-xl p-5 flex items-center gap-4 mb-4">
-          <ProfileIcon size="lg" />
-          <div><p className="font-bold text-slate-900">{fullName(editing ? draft : user) || "Your name"}</p><p className="text-sm text-slate-400 mt-0.5">{(editing ? draft : user).studentId || "No ID"}</p><div className="flex flex-wrap gap-1.5 mt-2">{[(editing ? draft : user).program, (editing ? draft : user).yearLevel, (editing ? draft : user).section].filter(Boolean).map(t => <span key={t} className="text-[11px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded">{t}</span>)}</div></div>
+          <div className="relative">
+            <ProfileIcon photoUrl={(editing ? draft : user).photoUrl} size="lg" />
+            {editing && (
+              <>
+                <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+                <button onClick={() => photoRef.current?.click()} className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center shadow-md transition-colors">
+                  <Icons.Camera />
+                </button>
+              </>
+            )}
+          </div>
+          <div>
+            <p className="font-bold text-slate-900">{fullName(editing ? draft : user) || "Your name"}</p>
+            <p className="text-sm text-slate-400 mt-0.5">{(editing ? draft : user).studentId || (isMod ? "Moderator" : "No ID")}</p>
+            <div className="flex flex-wrap gap-1.5 mt-2">{[(editing ? draft : user).program, (editing ? draft : user).yearLevel, (editing ? draft : user).section].filter(Boolean).map(t => <span key={t} className="text-[11px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded">{t}</span>)}</div>
+          </div>
         </div>
+        {editing && (
+          <p className="text-[11px] text-slate-400 mb-3 flex items-center gap-1.5 -mt-1"><Icons.Camera />Tap the camera icon on the photo to change it</p>
+        )}
         {!editing ? (
           <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
-            {[{ l: "First name", v: user.firstName }, { l: "Middle initial", v: user.middleInitial ? user.middleInitial + "." : "—" }, { l: "Surname", v: user.surname }, { l: "Student ID", v: user.studentId }, { l: "Program", v: user.program }, { l: "Year level", v: user.yearLevel }, { l: "Section", v: user.section || "—" }, { l: "Phone", v: user.phone || "—" }, { l: "Email", v: user.contactEmail || "—" }].map((f, i, arr) => (
+            {[
+              { l: "First name",     v: user.firstName },
+              { l: "Middle initial", v: user.middleInitial ? user.middleInitial + "." : "—" },
+              { l: "Surname",        v: user.surname },
+              ...(!isMod ? [{ l: "Student ID", v: user.studentId }] : []),
+              { l: "Program",   v: user.program },
+              ...(!isMod ? [{ l: "Year level", v: user.yearLevel }, { l: "Section", v: user.section || "—" }] : []),
+              { l: "Phone", v: user.phone || "—" },
+              { l: "Email", v: user.contactEmail || "—" },
+            ].map((f, i, arr) => (
               <div key={f.l} className={`flex items-center justify-between px-5 py-3 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}><span className="text-xs font-semibold text-slate-400">{f.l}</span><span className="text-sm font-semibold text-slate-900">{f.v}</span></div>
             ))}
           </div>
@@ -869,14 +960,16 @@ function ProfilePage({ user, onSave, onBack }: { user: User; onSave: (u: User) =
             <div className="px-5 py-4 space-y-3"><div className="grid grid-cols-3 gap-3"><div className="col-span-2"><FieldInput label="First Name" value={draft.firstName} onChange={setF("firstName")} /></div><FieldInput label="M.I." value={draft.middleInitial} maxLength={2} onChange={setF("middleInitial")} /></div><FieldInput label="Surname" value={draft.surname} onChange={setF("surname")} /></div>
             <div className="px-5 py-3.5 border-t border-slate-100 border-b border-slate-100"><SectionLabel>Contact</SectionLabel></div>
             <div className="px-5 py-4 space-y-3"><FieldInput label="Phone" type="tel" placeholder="09XX XXX XXXX" value={draft.phone} onChange={setF("phone")} /><FieldInput label="Email" type="email" value={draft.contactEmail} onChange={setF("contactEmail")} /></div>
-            <div className="px-5 py-3.5 border-t border-slate-100 border-b border-slate-100"><SectionLabel>Enrollment</SectionLabel></div>
-            <div className="px-5 py-4 space-y-3">
-              <FieldInput label="Student ID (7 digits)" value={draft.studentId} onChange={setF("studentId")} />
-              <FieldSelect label="Program" value={draft.program} onChange={setF("program")}><option value="">Select program</option><option>BSIT — Information Technology</option><option>BSCS — Computer Science</option><option>BSBA — Business Administration</option><option>BSEd — Secondary Education</option><option>BSHM — Hospitality Management</option></FieldSelect>
-              <FieldSelect label="Year Level" value={draft.yearLevel} onChange={setF("yearLevel")}><option value="">Select year level</option><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></FieldSelect>
-              <FieldInput label="Section" placeholder="e.g. IT-2A" value={draft.section} onChange={setF("section")} />
-            </div>
-            <div className="px-5 py-3.5 bg-amber-50 border-t border-amber-100 flex items-start gap-2.5"><span className="text-amber-500 shrink-0 mt-0.5"><Icons.AlertCircle /></span><p className="text-xs text-amber-700 leading-relaxed">Saving changes will regenerate your QR code. Previously downloaded images will be invalidated.</p></div>
+            {!isMod && (<>
+              <div className="px-5 py-3.5 border-t border-slate-100 border-b border-slate-100"><SectionLabel>Enrollment</SectionLabel></div>
+              <div className="px-5 py-4 space-y-3">
+                <FieldInput label="Student ID (7 digits)" value={draft.studentId} onChange={setF("studentId")} />
+                <FieldSelect label="Program" value={draft.program} onChange={setF("program")}><option value="">Select program</option><option>BSIT - Information Technology</option><option>BSCS - Computer Science</option><option>BSBA - Business Administration</option><option>BSEd - Secondary Education</option><option>BSHM - Hospitality Management</option></FieldSelect>
+                <FieldSelect label="Year Level" value={draft.yearLevel} onChange={setF("yearLevel")}><option value="">Select year level</option><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></FieldSelect>
+                <FieldInput label="Section" placeholder="e.g. IT-2A" value={draft.section} onChange={setF("section")} />
+              </div>
+              <div className="px-5 py-3.5 bg-amber-50 border-t border-amber-100 flex items-start gap-2.5"><span className="text-amber-500 shrink-0 mt-0.5"><Icons.AlertCircle /></span><p className="text-xs text-amber-700 leading-relaxed">Saving changes will regenerate your QR code. Previously downloaded images will be invalidated.</p></div>
+            </>)}
           </div>
         )}
       </div>
@@ -884,17 +977,17 @@ function ProfilePage({ user, onSave, onBack }: { user: User; onSave: (u: User) =
   );
 }
 
-// ─── ADMIN: Dashboard ─────────────────────────────────────────────────────────
+// ─── MODERATOR: Dashboard ─────────────────────────────────────────────────────
 function AdminDashboard({ onNav, excuseRequests }: { onNav: (p: Page) => void; excuseRequests: ExcuseRequest[] }) {
   const pending = excuseRequests.filter(r => r.status === "pending").length;
   return (
     <PageShell>
       <div className="flex items-start justify-between mb-6">
-        <div><p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Aug 22, 2026 · Friday</p><h1 className="text-xl font-bold text-slate-900">Admin Overview</h1><p className="text-sm text-slate-400 mt-0.5">SSC General Assembly is live now</p></div>
+        <div><p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Aug 22, 2026 · Friday</p><h1 className="text-xl font-bold text-slate-900">Moderator Overview</h1><p className="text-sm text-slate-400 mt-0.5">SSG General Assembly is live now</p></div>
         <span className="flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full shrink-0"><span className="w-1.5 h-1.5 bg-green-500 rounded-full" style={{ animation: "pulse 2s infinite" }} />Live</span>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        {[{ l: "Scanned today", v: "6", sub: "SSC Assembly", c: "text-green-600" }, { l: "Duplicates", v: "1", sub: "Rejected", c: "text-red-500" }, { l: "Active events", v: "1", sub: "Live now", c: "text-sky-600" }, { l: "Students on TapIn", v: String(ALL_STUDENTS.length), sub: "Registered", c: "text-slate-700" }].map(s => (
+        {[{ l: "Scanned today", v: "6", sub: "SSG Assembly", c: "text-green-600" }, { l: "Duplicates", v: "1", sub: "Rejected", c: "text-red-500" }, { l: "Active events", v: "1", sub: "Live now", c: "text-sky-600" }, { l: "Students on TapIn", v: String(ALL_STUDENTS.length), sub: "Registered", c: "text-slate-700" }].map(s => (
           <div key={s.l} className="bg-white border border-slate-100 rounded-xl px-4 py-4"><p className={`text-2xl font-bold ${s.c}`}>{s.v}</p><p className="text-xs font-semibold text-slate-600 mt-1">{s.l}</p><p className="text-[10px] text-slate-400 mt-0.5">{s.sub}</p></div>
         ))}
       </div>
@@ -905,7 +998,7 @@ function AdminDashboard({ onNav, excuseRequests }: { onNav: (p: Page) => void; e
           {pending > 0 && <span className="absolute top-3 right-3 w-5 h-5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{pending}</span>}
         </button>
       </div>
-      <div className="flex items-center justify-between mb-3"><p className="text-sm font-semibold text-slate-900">Recent scans — SSC General Assembly</p><button onClick={() => onNav("admin-attendees")} className="text-xs text-green-600 font-semibold hover:text-green-700 flex items-center gap-0.5">View all<Icons.ChevronRight /></button></div>
+      <div className="flex items-center justify-between mb-3"><p className="text-sm font-semibold text-slate-900">Recent scans — SSG General Assembly</p><button onClick={() => onNav("admin-attendees")} className="text-xs text-green-600 font-semibold hover:text-green-700 flex items-center gap-0.5">View all<Icons.ChevronRight /></button></div>
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
         {(EVENT_SCANS["2"] ?? []).slice(0, 5).map((s, i) => (
           <div key={i} className={`flex items-center gap-3 px-5 py-3.5 ${i < 4 ? "border-b border-slate-50" : ""}`}>
@@ -918,7 +1011,7 @@ function AdminDashboard({ onNav, excuseRequests }: { onNav: (p: Page) => void; e
   );
 }
 
-// ─── ADMIN: Events ────────────────────────────────────────────────────────────
+// ─── MODERATOR: Events ────────────────────────────────────────────────────────
 interface NewEventDraft { title: string; date: string; time: string; location: string; description: string; program: string; fineAmount: string; photos: File[]; videos: File[]; }
 
 function AdminEventsPage({ onNav }: { onNav: (p: Page) => void }) {
@@ -944,41 +1037,34 @@ function AdminEventsPage({ onNav }: { onNav: (p: Page) => void }) {
   const saveEdit = () => { if (!editDraft) return; setEvents(ev => ev.map(e => e.id === editDraft.id ? editDraft : e)); setEditId(null); setEditDraft(null); };
   const deleteEvent = (id: string) => setEvents(ev => ev.filter(e => e.id !== id));
   const setStatus = (id: string, status: EventStatus) => setEvents(ev => ev.map(e => e.id === id ? { ...e, status } : e));
-
   const statusOptions = (current: EventStatus): { status: EventStatus; label: string; icon: React.ReactNode }[] =>
-    ([
-      { status: "active"   as EventStatus, label: "Mark as Live",     icon: <Icons.Radio /> },
-      { status: "upcoming" as EventStatus, label: "Mark as Upcoming", icon: <Icons.Calendar /> },
-      { status: "closed"   as EventStatus, label: "Mark as Ended",    icon: <Icons.Check /> },
-    ]).filter(o => o.status !== current);
+    ([{ status: "active" as EventStatus, label: "Mark as Live", icon: <Icons.Radio /> }, { status: "upcoming" as EventStatus, label: "Mark as Upcoming", icon: <Icons.Calendar /> }, { status: "closed" as EventStatus, label: "Mark as Ended", icon: <Icons.Check /> }]).filter(o => o.status !== current);
 
   return (
     <PageShell>
-      <PageHeader title="Events" subtitle="AY 2026–2027, 1st Semester" action={
+      <PageHeader title="Events" subtitle="AY 2026-2027, 1st Semester" action={
         <button onClick={() => { setShowForm(!showForm); setEditId(null); setEditDraft(null); }} className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"><Icons.Plus />New event</button>
       } />
-
       {showForm && (
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-5">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><p className="text-sm font-bold text-slate-900">Create New Event</p><button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600"><Icons.X /></button></div>
           <div className="px-5 py-4 space-y-3">
             <FieldInput label="Event title *" placeholder="e.g. Foundation Day Celebration" value={draft.title} onChange={setD("title")} />
-            <div className="grid grid-cols-2 gap-3"><FieldInput label="Date *" type="date" value={draft.date} onChange={setD("date")} /><FieldInput label="Time" placeholder="e.g. 8:00 AM – 5:00 PM" value={draft.time} onChange={setD("time")} /></div>
+            <div className="grid grid-cols-2 gap-3"><FieldInput label="Date *" type="date" value={draft.date} onChange={setD("date")} /><FieldInput label="Time" placeholder="e.g. 8:00 AM - 5:00 PM" value={draft.time} onChange={setD("time")} /></div>
             <FieldInput label="Location" placeholder="e.g. Main Gymnasium" value={draft.location} onChange={setD("location")} />
-            <div className="grid grid-cols-2 gap-3"><FieldSelect label="Program" value={draft.program} onChange={setD("program")}><option>All Programs</option><option>BSIT / BSCS</option><option>BSIT</option><option>BSCS</option><option>BSBA</option></FieldSelect><FieldInput label="Absence Fee (₱)" type="number" min="0" placeholder="0 = no fee" value={draft.fineAmount} onChange={setD("fineAmount")} /></div>
+            <div className="grid grid-cols-2 gap-3"><FieldSelect label="Program" value={draft.program} onChange={setD("program")}><option>All Programs</option><option>BSIT / BSCS</option><option>BSIT</option><option>BSCS</option><option>BSBA</option></FieldSelect><FieldInput label="Absence Fee (P)" type="number" min="0" placeholder="0 = no fee" value={draft.fineAmount} onChange={setD("fineAmount")} /></div>
             <FieldTextarea label="Description" placeholder="What is this event about?" rows={3} value={draft.description} onChange={setD("description")} />
             <div>
               <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-2">Media</label>
               <input ref={photoRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { const files = Array.from(e.target.files ?? []); setDraft(d => ({ ...d, photos: [...d.photos, ...files] })); files.forEach(f => setPhotoUrls(u => [...u, URL.createObjectURL(f)])); }} />
               <input ref={videoRef} type="file" accept="video/*" multiple className="hidden" onChange={e => { const files = Array.from(e.target.files ?? []); setDraft(d => ({ ...d, videos: [...d.videos, ...files] })); files.forEach(f => setVideoNames(n => [...n, f.name])); }} />
               <div className="flex gap-2"><button onClick={() => photoRef.current?.click()} className="flex-1 h-9 border border-slate-200 rounded-lg text-xs font-semibold text-slate-500 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"><Icons.Image />Photos</button><button onClick={() => videoRef.current?.click()} className="flex-1 h-9 border border-slate-200 rounded-lg text-xs font-semibold text-slate-500 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"><Icons.Video />Videos</button></div>
-              {(photoUrls.length > 0 || videoNames.length > 0) && <div className="mt-2.5 flex flex-wrap gap-2">{photoUrls.map((url, i) => (<div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200"><img src={url} alt="" className="w-full h-full object-cover" /><button onClick={() => { setPhotoUrls(u => u.filter((_, j) => j !== i)); setDraft(d => ({ ...d, photos: d.photos.filter((_, j) => j !== i) })); }} className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px]">×</button></div>))}{videoNames.map((n, i) => (<div key={i} className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-slate-600"><Icons.Video /><span className="max-w-[80px] truncate">{n}</span></div>))}</div>}
+              {(photoUrls.length > 0 || videoNames.length > 0) && <div className="mt-2.5 flex flex-wrap gap-2">{photoUrls.map((url, i) => (<div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200"><img src={url} alt="" className="w-full h-full object-cover" /><button onClick={() => { setPhotoUrls(u => u.filter((_, j) => j !== i)); setDraft(d => ({ ...d, photos: d.photos.filter((_, j) => j !== i) })); }} className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px]">x</button></div>))}{videoNames.map((n, i) => (<div key={i} className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-slate-600"><Icons.Video /><span className="max-w-[80px] truncate">{n}</span></div>))}</div>}
             </div>
           </div>
           <div className="px-5 pb-4 flex gap-2.5"><button onClick={handleCreate} disabled={!draft.title || !draft.date} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40">Create event</button><button onClick={() => setShowForm(false)} className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50">Cancel</button></div>
         </div>
       )}
-
       {editId && editDraft && (
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-5">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><p className="text-sm font-bold text-slate-900">Edit Event</p><button onClick={() => { setEditId(null); setEditDraft(null); }} className="text-slate-400 hover:text-slate-600"><Icons.X /></button></div>
@@ -986,19 +1072,18 @@ function AdminEventsPage({ onNav }: { onNav: (p: Page) => void }) {
             <FieldInput label="Title" value={editDraft.title} onChange={e => setEditDraft(d => d ? { ...d, title: e.target.value } : d)} />
             <div className="grid grid-cols-2 gap-3"><FieldInput label="Date" value={editDraft.date} onChange={e => setEditDraft(d => d ? { ...d, date: e.target.value } : d)} /><FieldInput label="Time" value={editDraft.time} onChange={e => setEditDraft(d => d ? { ...d, time: e.target.value } : d)} /></div>
             <FieldInput label="Location" value={editDraft.location} onChange={e => setEditDraft(d => d ? { ...d, location: e.target.value } : d)} />
-            <FieldInput label="Absence Fee (₱)" type="number" min="0" value={editDraft.fineAmount.toString()} onChange={e => setEditDraft(d => d ? { ...d, fineAmount: parseInt(e.target.value) || 0 } : d)} />
+            <FieldInput label="Absence Fee (P)" type="number" min="0" value={editDraft.fineAmount.toString()} onChange={e => setEditDraft(d => d ? { ...d, fineAmount: parseInt(e.target.value) || 0 } : d)} />
             <FieldTextarea label="Description" rows={3} value={editDraft.description} onChange={e => setEditDraft(d => d ? { ...d, description: e.target.value } : d)} />
             <div>
               <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-2">Photos</label>
               <input ref={editPhotoRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { Array.from(e.target.files ?? []).forEach(f => { const url = URL.createObjectURL(f); setEditDraft(d => d ? { ...d, mediaUrls: [...(d.mediaUrls ?? []), url] } : d); }); }} />
-              {editDraft.mediaUrls && editDraft.mediaUrls.length > 0 && <div className="flex flex-wrap gap-2 mb-2">{editDraft.mediaUrls.map((url, i) => (<div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200"><img src={url} alt="" className="w-full h-full object-cover" /><button onClick={() => setEditDraft(d => d ? { ...d, mediaUrls: d.mediaUrls?.filter((_, j) => j !== i) } : d)} className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px]">×</button></div>))}</div>}
+              {editDraft.mediaUrls && editDraft.mediaUrls.length > 0 && <div className="flex flex-wrap gap-2 mb-2">{editDraft.mediaUrls.map((url, i) => (<div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200"><img src={url} alt="" className="w-full h-full object-cover" /><button onClick={() => setEditDraft(d => d ? { ...d, mediaUrls: d.mediaUrls?.filter((_, j) => j !== i) } : d)} className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px]">x</button></div>))}</div>}
               <button onClick={() => editPhotoRef.current?.click()} className="w-full h-9 border border-dashed border-slate-200 rounded-lg text-xs font-semibold text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"><Icons.Image />Add photos</button>
             </div>
           </div>
           <div className="px-5 pb-4 flex gap-2.5"><button onClick={saveEdit} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm">Save changes</button><button onClick={() => { setEditId(null); setEditDraft(null); }} className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50">Cancel</button></div>
         </div>
       )}
-
       <div className="space-y-3">
         {events.map(e => (
           <div key={e.id} className="bg-white border border-slate-100 rounded-xl overflow-hidden">
@@ -1007,7 +1092,7 @@ function AdminEventsPage({ onNav }: { onNav: (p: Page) => void }) {
               <div className="flex items-start justify-between mb-3">
                 <Badge status={e.status} />
                 <div className="flex items-center gap-2">
-                  {e.fineAmount > 0 && <span className="text-xs text-red-500 font-semibold flex items-center gap-0.5"><Icons.Peso />₱{e.fineAmount}</span>}
+                  {e.fineAmount > 0 && <span className="text-xs text-red-500 font-semibold flex items-center gap-0.5"><Icons.Peso />P{e.fineAmount}</span>}
                   <span className="text-xs text-slate-400">{e.date}</span>
                   <DotMenu items={[
                     ...statusOptions(e.status).map(o => ({ label: o.label, icon: o.icon, onClick: () => setStatus(e.id, o.status) })),
@@ -1030,7 +1115,7 @@ function AdminEventsPage({ onNav }: { onNav: (p: Page) => void }) {
   );
 }
 
-// ─── ADMIN: QR Scanner ────────────────────────────────────────────────────────
+// ─── MODERATOR: QR Scanner ────────────────────────────────────────────────────
 function AdminScannerPage() {
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [last, setLast] = useState<ScanRecord | null>(null);
@@ -1062,7 +1147,7 @@ function AdminScannerPage() {
         {selectedEventId && (<>
           <div className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3"><span className="text-green-600 shrink-0"><Icons.Scan /></span><div><p className="text-xs font-bold text-slate-700">Scanning for</p><p className="text-sm font-semibold text-slate-900 truncate max-w-[180px]">{selectedEvent?.title}</p></div></div>
-            {selectedEvent?.fineAmount ? <span className="text-xs text-red-500 font-semibold shrink-0">₱{selectedEvent.fineAmount} fee</span> : null}
+            {selectedEvent?.fineAmount ? <span className="text-xs text-red-500 font-semibold shrink-0">P{selectedEvent.fineAmount} fee</span> : null}
           </div>
           <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-lg relative" style={{ aspectRatio: "1" }}>
             <style>{`@keyframes scanline{0%,100%{top:12%}50%{top:80%}}`}</style>
@@ -1081,14 +1166,13 @@ function AdminScannerPage() {
   );
 }
 
-// ─── ADMIN: Attendees (per-event, Present/Absent tabs) ────────────────────────
+// ─── MODERATOR: Attendees ─────────────────────────────────────────────────────
 function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
   const [selectedEventId, setSelectedEventId] = useState("2");
   const [scanState, setScanState] = useState<Record<string, ScanRecord[]>>(
     Object.fromEntries(Object.entries(EVENT_SCANS).map(([k, v]) => [k, v.map(s => ({ ...s }))]))
   );
   const [tab, setTab] = useState<"present" | "absent">("present");
-
   const selectedEvent = INITIAL_EVENTS.find(e => e.id === selectedEventId) ?? INITIAL_EVENTS[0];
   const scans = scanState[selectedEventId] ?? [];
   const confirmed = scans.filter(s => s.status === "confirmed");
@@ -1096,51 +1180,38 @@ function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
   const attendedIds = new Set(confirmed.map(s => s.id));
   const absentees = ALL_STUDENTS.filter(s => !attendedIds.has(s.id));
   const deleteRecord = (dbId: number) => setScanState(st => ({ ...st, [selectedEventId]: (st[selectedEventId] ?? []).filter(r => r.dbId !== dbId) }));
-
   return (
     <PageShell>
       <BackButton onClick={() => onNav("admin-events")} label="Back to Events" />
       <PageHeader title="Attendees" action={<button className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 flex items-center gap-1.5"><Icons.Download />Export</button>} />
-
       <div className="mb-5">
         <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Event</label>
         <select value={selectedEventId} onChange={e => { setSelectedEventId(e.target.value); setTab("present"); }} className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium outline-none focus:border-green-500 appearance-none">
           {INITIAL_EVENTS.map(e => <option key={e.id} value={e.id}>{e.title} · {e.date}</option>)}
         </select>
       </div>
-
       <p className="text-xs text-slate-400 font-medium mb-4">{selectedEvent.location} · {selectedEvent.time}</p>
-
       <div className="flex gap-1 mb-5 bg-slate-100 p-1 rounded-xl">
         <button onClick={() => setTab("present")} className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${tab === "present" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Present ({confirmed.length})</button>
         <button onClick={() => setTab("absent")} className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${tab === "absent" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>
-          Absent ({absentees.length}){selectedEvent.fineAmount > 0 && <span className="text-red-500 ml-1">· ₱{selectedEvent.fineAmount}</span>}
+          Absent ({absentees.length}){selectedEvent.fineAmount > 0 && <span className="text-red-500 ml-1">· P{selectedEvent.fineAmount}</span>}
         </button>
       </div>
-
       {tab === "present" && (<>
-        {confirmed.length === 0 ? (
-          <div className="bg-white border border-slate-100 rounded-xl px-5 py-10 text-center"><p className="text-slate-400 text-sm font-medium">No scans recorded for this event yet.</p></div>
-        ) : (
+        {confirmed.length === 0 ? (<div className="bg-white border border-slate-100 rounded-xl px-5 py-10 text-center"><p className="text-slate-400 text-sm font-medium">No scans recorded for this event yet.</p></div>) : (
           <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-4">
             <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 grid grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-widest"><span className="col-span-5">Student</span><span className="col-span-3">Program</span><span className="col-span-2">Time</span><span className="col-span-2 text-right">Status</span></div>
             {confirmed.map((s, i) => (<div key={s.dbId} className={`px-5 py-3.5 grid grid-cols-12 items-center ${i < confirmed.length - 1 ? "border-b border-slate-50" : ""}`}><div className="col-span-5 flex items-center gap-3 min-w-0"><Avatar name={s.name} size="sm" /><div className="min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{s.name}</p><p className="text-[11px] text-slate-400">{s.id}</p></div></div><span className="col-span-3 text-xs text-slate-500">{s.program}</span><span className="col-span-2 text-xs text-slate-500">{s.time}</span><div className="col-span-2 flex justify-end"><Badge status={s.status} /></div></div>))}
           </div>
         )}
-        {duplicates.length > 0 && (<>
-          <SectionLabel>Duplicate scans — tap trash to remove</SectionLabel>
-          <div className="bg-white border border-red-100 rounded-xl overflow-hidden">
-            {duplicates.map((s, i) => (<div key={s.dbId} className={`px-5 py-3.5 flex items-center gap-3 ${i < duplicates.length - 1 ? "border-b border-slate-50" : ""}`}><Avatar name={s.name} size="sm" /><div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{s.name}</p><p className="text-[11px] text-slate-400">{s.id} · scanned {s.time}</p></div><Badge status={s.status} /><button onClick={() => deleteRecord(s.dbId)} className="w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"><Icons.Trash /></button></div>))}
-          </div>
-        </>)}
+        {duplicates.length > 0 && (<><SectionLabel>Duplicate scans — tap trash to remove</SectionLabel><div className="bg-white border border-red-100 rounded-xl overflow-hidden">{duplicates.map((s, i) => (<div key={s.dbId} className={`px-5 py-3.5 flex items-center gap-3 ${i < duplicates.length - 1 ? "border-b border-slate-50" : ""}`}><Avatar name={s.name} size="sm" /><div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{s.name}</p><p className="text-[11px] text-slate-400">{s.id} · scanned {s.time}</p></div><Badge status={s.status} /><button onClick={() => deleteRecord(s.dbId)} className="w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"><Icons.Trash /></button></div>))}</div></>)}
       </>)}
-
       {tab === "absent" && (<>
-        {selectedEvent.fineAmount > 0 && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3"><span className="text-red-400 shrink-0"><Icons.Peso /></span><p className="text-sm text-red-700">Each absentee is automatically fined <span className="font-bold">₱{selectedEvent.fineAmount}</span>.</p></div>}
+        {selectedEvent.fineAmount > 0 && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3"><span className="text-red-400 shrink-0"><Icons.Peso /></span><p className="text-sm text-red-700">Each absentee is automatically fined <span className="font-bold">P{selectedEvent.fineAmount}</span>.</p></div>}
         {absentees.length === 0 ? (<div className="bg-white border border-slate-100 rounded-xl px-5 py-10 text-center"><div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-3 text-green-500"><Icons.CheckCircle /></div><p className="font-semibold text-slate-900 text-sm">Full attendance</p><p className="text-xs text-slate-400 mt-1">All enrolled students have been scanned.</p></div>) : (
           <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
             <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 grid grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-widest"><span className="col-span-5">Student</span><span className="col-span-4">Program</span><span className="col-span-3 text-right">Fee</span></div>
-            {absentees.map((s, i) => (<div key={s.id} className={`px-5 py-3.5 grid grid-cols-12 items-center ${i < absentees.length - 1 ? "border-b border-slate-50" : ""}`}><div className="col-span-5 flex items-center gap-3 min-w-0"><Avatar name={s.name} size="sm" /><div className="min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{s.name}</p><p className="text-[11px] text-slate-400">{s.id}</p></div></div><span className="col-span-4 text-xs text-slate-500">{s.program} · {s.section}</span><div className="col-span-3 flex justify-end">{selectedEvent.fineAmount > 0 ? <span className="text-sm font-bold text-red-600">₱{selectedEvent.fineAmount}</span> : <span className="text-xs text-slate-400">—</span>}</div></div>))}
+            {absentees.map((s, i) => (<div key={s.id} className={`px-5 py-3.5 grid grid-cols-12 items-center ${i < absentees.length - 1 ? "border-b border-slate-50" : ""}`}><div className="col-span-5 flex items-center gap-3 min-w-0"><Avatar name={s.name} size="sm" /><div className="min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{s.name}</p><p className="text-[11px] text-slate-400">{s.id}</p></div></div><span className="col-span-4 text-xs text-slate-500">{s.program} · {s.section}</span><div className="col-span-3 flex justify-end">{selectedEvent.fineAmount > 0 ? <span className="text-sm font-bold text-red-600">P{selectedEvent.fineAmount}</span> : <span className="text-xs text-slate-400">—</span>}</div></div>))}
           </div>
         )}
       </>)}
@@ -1148,7 +1219,7 @@ function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
   );
 }
 
-// ─── ADMIN: Student Directory ─────────────────────────────────────────────────
+// ─── MODERATOR: Students ──────────────────────────────────────────────────────
 function AdminStudentsPage() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<StudentProfile | null>(null);
@@ -1161,11 +1232,11 @@ function AdminStudentsPage() {
       <PageHeader title="Students" subtitle={`${ALL_STUDENTS.length} students registered on TapIn`} />
       <div className="relative mb-5">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Icons.Search /></span>
-        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by name, ID, program, or section…" className="w-full h-10 pl-9 pr-9 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all" />
+        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by name, ID, program, or section..." className="w-full h-10 pl-9 pr-9 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all" />
         {query && <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"><Icons.X /></button>}
       </div>
       {filtered.length === 0 ? (
-        <div className="bg-white border border-slate-100 rounded-xl px-5 py-10 text-center"><p className="text-slate-400 text-sm">No students match &ldquo;{query}&rdquo;</p></div>
+        <div className="bg-white border border-slate-100 rounded-xl px-5 py-10 text-center"><p className="text-slate-400 text-sm">No students match "{query}"</p></div>
       ) : (
         <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
           <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 grid grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -1186,7 +1257,7 @@ function AdminStudentsPage() {
   );
 }
 
-// ─── ADMIN: Announcements ─────────────────────────────────────────────────────
+// ─── MODERATOR: Announcements ─────────────────────────────────────────────────
 function AdminAnnouncementsPage() {
   const [posts, setPosts] = useState(INITIAL_ANNOUNCEMENTS.map(a => ({ ...a })));
   const [showForm, setShowForm] = useState(false);
@@ -1211,9 +1282,9 @@ function AdminAnnouncementsPage() {
           <div className="px-5 py-4 space-y-3">
             <FieldInput label="Title" placeholder="e.g. Enrollment Now Open" value={newTitle} onChange={e => setNewTitle(e.target.value)} />
             <FieldSelect label="Category" value={newBadge} onChange={e => setNewBadge(e.target.value)}><option>General</option><option>Academic</option><option>Schedule</option><option>Financial</option><option>Facilities</option><option>Events</option></FieldSelect>
-            <FieldTextarea label="Body" placeholder="Write your announcement…" rows={4} value={newBody} onChange={e => setNewBody(e.target.value)} />
+            <FieldTextarea label="Body" placeholder="Write your announcement..." rows={4} value={newBody} onChange={e => setNewBody(e.target.value)} />
             <div>
-              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">Photo <span className="text-slate-300 normal-case tracking-normal">(optional)</span></label>
+              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">Photo (optional)</label>
               <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) setNewPhoto(URL.createObjectURL(f)); }} />
               {newPhoto ? (<div className="relative rounded-xl overflow-hidden border border-slate-200"><img src={newPhoto} alt="" className="w-full h-40 object-cover" /><button onClick={() => setNewPhoto(null)} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><Icons.X /></button></div>) : <button onClick={() => photoRef.current?.click()} className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2"><Icons.Image />Attach photo</button>}
             </div>
@@ -1252,7 +1323,7 @@ function AdminAnnouncementsPage() {
   );
 }
 
-// ─── ADMIN: Excuse Requests ───────────────────────────────────────────────────
+// ─── MODERATOR: Excuse Requests ───────────────────────────────────────────────
 function AdminExcuseRequestsPage({ requests, onAction, onBack }: { requests: ExcuseRequest[]; onAction: (id: string, a: "approved" | "denied") => void; onBack: () => void }) {
   const pending = requests.filter(r => r.status === "pending");
   const reviewed = requests.filter(r => r.status !== "pending");
@@ -1267,22 +1338,139 @@ function AdminExcuseRequestsPage({ requests, onAction, onBack }: { requests: Exc
   );
 }
 
-// ─── ADMIN: Reports ───────────────────────────────────────────────────────────
+// ─── MODERATOR: Reports ───────────────────────────────────────────────────────
 function AdminReportsPage() {
   return (
     <PageShell>
-      <PageHeader title="Reports" subtitle="AY 2026–2027, 1st Semester" action={<button className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 flex items-center gap-1.5"><Icons.Download />Export CSV</button>} />
+      <PageHeader title="Reports" subtitle="AY 2026-2027, 1st Semester" action={<button className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 flex items-center gap-1.5"><Icons.Download />Export CSV</button>} />
       <SectionLabel>Attendance by program</SectionLabel>
       <div className="grid md:grid-cols-2 gap-3 mb-6">{[{ l: "BSIT", n: 234, total: 301, pct: 78, c: "bg-green-500" }, { l: "BSCS", n: 198, total: 304, pct: 65, c: "bg-sky-500" }, { l: "BSBA", n: 156, total: 300, pct: 52, c: "bg-violet-400" }, { l: "BSEd", n: 89, total: 197, pct: 45, c: "bg-amber-400" }].map(r => (<div key={r.l} className="bg-white border border-slate-100 rounded-xl px-5 py-4"><div className="flex items-center justify-between mb-3"><span className="font-bold text-slate-900 text-sm">{r.l}</span><span className="text-xs text-slate-400 font-semibold">{r.n} / {r.total}</span></div><div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2"><div className={`h-full ${r.c} rounded-full`} style={{ width: `${r.pct}%` }} /></div><p className="text-[11px] text-slate-400 font-semibold">{r.pct}% attendance rate</p></div>))}</div>
       <SectionLabel>Fees summary</SectionLabel>
-      <div className="grid grid-cols-3 gap-3 mb-6">{[{ l: "Total fees issued", v: "₱42,500", c: "text-red-600" }, { l: "Collected", v: "₱18,200", c: "text-green-600" }, { l: "Pending", v: "₱24,300", c: "text-amber-600" }].map(s => (<div key={s.l} className="bg-white border border-slate-100 rounded-xl px-4 py-4"><p className={`text-xl font-bold ${s.c}`}>{s.v}</p><p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">{s.l}</p></div>))}</div>
+      <div className="grid grid-cols-3 gap-3 mb-6">{[{ l: "Total fees issued", v: "P42,500", c: "text-red-600" }, { l: "Collected", v: "P18,200", c: "text-green-600" }, { l: "Pending", v: "P24,300", c: "text-amber-600" }].map(s => (<div key={s.l} className="bg-white border border-slate-100 rounded-xl px-4 py-4"><p className={`text-xl font-bold ${s.c}`}>{s.v}</p><p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">{s.l}</p></div>))}</div>
       <SectionLabel>By event</SectionLabel>
-      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">{INITIAL_EVENTS.filter(e => e.status !== "upcoming").map((e, i, arr) => (<div key={e.id} className={`flex items-center justify-between px-5 py-4 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}><div><p className="text-sm font-semibold text-slate-900">{e.title}</p><p className="text-[11px] text-slate-400 mt-0.5">{e.date} · ₱{e.fineAmount} fee</p></div><div className="text-right"><p className="font-bold text-green-600 text-lg">{e.attendees}</p><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">attended</p></div></div>))}</div>
+      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">{INITIAL_EVENTS.filter(e => e.status !== "upcoming").map((e, i, arr) => (<div key={e.id} className={`flex items-center justify-between px-5 py-4 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}><div><p className="text-sm font-semibold text-slate-900">{e.title}</p><p className="text-[11px] text-slate-400 mt-0.5">{e.date} · P{e.fineAmount} fee</p></div><div className="text-right"><p className="font-bold text-green-600 text-lg">{e.attendees}</p><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">attended</p></div></div>))}</div>
+    </PageShell>
+  );
+}
+
+// ─── MODERATOR: Management & Settings ────────────────────────────────────────
+interface SystemSettings {
+  showFees: boolean;
+  allowExcuseRequests: boolean;
+  requirePhotoId: boolean;
+  academicYear: string;
+  semester: string;
+  institution: string;
+}
+
+function AdminSettingsPage({ settings, onSave, showToast }: { settings: SystemSettings; onSave: (s: SystemSettings) => void; showToast: (m: string) => void }) {
+  const [draft, setDraft] = useState({ ...settings });
+  const toggle = (k: keyof SystemSettings) => setDraft(d => ({ ...d, [k]: !d[k as keyof SystemSettings] }));
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(settings);
+  const save = () => { onSave(draft); showToast("Settings saved"); };
+  const discard = () => setDraft({ ...settings });
+  return (
+    <PageShell>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Management &amp; Settings</h1>
+          <p className="text-sm text-slate-400 font-medium mt-0.5">System-wide controls for TapIn</p>
+        </div>
+        {isDirty && (
+          <div className="flex items-center gap-2">
+            <button onClick={discard} className="h-9 px-4 border border-slate-200 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-50 transition-colors">Discard</button>
+            <button onClick={save} className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">Save</button>
+          </div>
+        )}
+      </div>
+
+      {/* Fee Visibility */}
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Fee Visibility</p>
+      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
+        <div className="px-5 divide-y divide-slate-50">
+          <Toggle
+            on={draft.showFees}
+            onToggle={() => toggle("showFees")}
+            label="Show fees to students"
+            desc="Enable during fee-paying week so students can see absence fine amounts across events, attendance history, and their Fines page."
+          />
+        </div>
+        <div className={`mx-5 mb-4 rounded-lg px-3.5 py-2.5 flex items-center gap-2.5 ${draft.showFees ? "bg-green-50 border border-green-200" : "bg-slate-50 border border-slate-200"}`}>
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${draft.showFees ? "bg-green-500" : "bg-slate-400"}`} style={draft.showFees ? { animation: "pulse 2s infinite" } : {}} />
+          <p className={`text-xs font-medium leading-relaxed ${draft.showFees ? "text-green-800" : "text-slate-500"}`}>
+            Fees are <span className="font-bold">{draft.showFees ? "visible" : "hidden"}</span> to students
+            {!draft.showFees && " — enable when the payment period opens"}
+          </p>
+        </div>
+      </div>
+
+      {/* Attendance & Requests */}
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Attendance &amp; Requests</p>
+      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
+        <div className="px-5 divide-y divide-slate-50">
+          <Toggle
+            on={draft.allowExcuseRequests}
+            onToggle={() => toggle("allowExcuseRequests")}
+            label="Accept excuse requests"
+            desc="Absent students can submit a reason and supporting document for review."
+          />
+          <Toggle
+            on={draft.requirePhotoId}
+            onToggle={() => toggle("requirePhotoId")}
+            label="Require photo ID on scan"
+            desc="Moderators must verify a photo ID alongside the QR code during check-in."
+          />
+        </div>
+      </div>
+
+      {/* Academic Information */}
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Academic Information</p>
+      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
+        <div className="px-5 py-4 space-y-3">
+          <FieldInput label="Institution name" value={draft.institution} onChange={e => setDraft(d => ({ ...d, institution: e.target.value }))} />
+          <div className="grid grid-cols-2 gap-3">
+            <FieldInput label="Academic year" placeholder="e.g. 2026-2027" value={draft.academicYear} onChange={e => setDraft(d => ({ ...d, academicYear: e.target.value }))} />
+            <FieldSelect label="Semester" value={draft.semester} onChange={e => setDraft(d => ({ ...d, semester: e.target.value }))}>
+              <option>1st Semester</option>
+              <option>2nd Semester</option>
+              <option>Summer</option>
+            </FieldSelect>
+          </div>
+        </div>
+      </div>
+
+      {/* System Info */}
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">System</p>
+      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
+        {[{ l: "System name", v: "TapIn" }, { l: "Version", v: "1.0.0" }, { l: "Environment", v: "Production" }].map((r, i, arr) => (
+          <div key={r.l} className={`flex items-center justify-between px-5 py-3.5 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}>
+            <span className="text-sm text-slate-500">{r.l}</span>
+            <span className="text-sm font-semibold text-slate-900">{r.v}</span>
+          </div>
+        ))}
+      </div>
+
+      {isDirty && (
+        <div className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 bg-slate-950 text-white text-xs font-semibold pl-4 pr-1.5 py-1.5 rounded-full shadow-2xl flex items-center gap-3 z-40" style={{ animation: "slideUp .2s ease" }}>
+          <span className="text-slate-400 font-medium">Unsaved changes</span>
+          <button onClick={save} className="h-7 px-3 bg-green-600 hover:bg-green-500 text-white rounded-full transition-colors">Save</button>
+          <button onClick={discard} className="h-7 px-3 text-slate-400 hover:text-white transition-colors rounded-full hover:bg-white/10 mr-0.5">Discard</button>
+        </div>
+      )}
     </PageShell>
   );
 }
 
 // ─── App root ─────────────────────────────────────────────────────────────────
+const DEFAULT_SETTINGS: SystemSettings = {
+  showFees: false,
+  allowExcuseRequests: true,
+  requirePhotoId: false,
+  academicYear: "2026-2027",
+  semester: "1st Semester",
+  institution: "TapIn",
+};
+
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
   const [user, setUser] = useState<User | null>(null);
@@ -1291,12 +1479,13 @@ export default function App() {
   const [qrVersion, setQrVersion] = useState(1);
   const [excuseRequests, setExcuseRequests] = useState<ExcuseRequest[]>([]);
   const [fines, setFines] = useState<FineRecord[]>(STUDENT_FINES);
+  const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
 
   const show = (msg: string, variant: "success" | "error" = "success") => { setToast({ msg, variant }); setTimeout(() => setToast(null), 3500); };
 
   const handleLogin = (role: Role) => {
     if (role === "student") { setUser({ firstName: "", middleInitial: "", surname: "", studentId: "", program: "", yearLevel: "", section: "", phone: "", contactEmail: "", role: "student" }); setPage("onboarding"); }
-    else { setUser({ firstName: "Rafael", middleInitial: "M", surname: "Rivera", studentId: "ADMIN-001", program: "Admin", yearLevel: "", section: "", phone: "09171234567", contactEmail: "admin@tapin.edu", role: "admin" }); setPage("admin-dashboard"); }
+    else { setUser({ firstName: "Rafael", middleInitial: "M", surname: "Rivera", studentId: "ADMIN-001", program: "Moderator", yearLevel: "", section: "", phone: "09171234567", contactEmail: "moderator@tapin.edu", role: "admin" }); setPage("admin-dashboard"); }
   };
   const handleOnboarding = (d: OBForm) => {
     setUser({ firstName: d.firstName || "Maria Luisa", middleInitial: d.middleInitial || "A", surname: d.surname || "Santos", studentId: d.studentId || "2440014", program: d.program || "BSIT", yearLevel: d.yearLevel || "2nd Year", section: d.section || "IT-2A", phone: d.phone || "09XX XXX XXXX", contactEmail: d.contactEmail || "mls.santos@tapin.edu", role: "student" });
@@ -1309,7 +1498,7 @@ export default function App() {
     else show("Request denied");
   };
   const handleLogout = () => { setUser(null); setPage("landing"); };
-  const isAdmin = user?.role === "admin";
+  const isMod = user?.role === "admin";
   const bare: Page[] = ["landing", "login", "onboarding"];
   const isBare = bare.includes(page);
   const goBack = (fallback: Page) => () => setPage(fallback);
@@ -1323,22 +1512,23 @@ export default function App() {
           {page === "landing"               && <LandingPage onNav={setPage} />}
           {page === "login"                 && <LoginPage onLogin={handleLogin} onBack={() => setPage("landing")} />}
           {page === "onboarding"            && <OnboardingPage onComplete={handleOnboarding} />}
-          {page === "dashboard"    && user  && !isAdmin && <DashboardPage user={user} onNav={setPage} fines={fines} />}
-          {page === "events"                && <EventsPage onNav={setPage} onSelectEvent={setSelectedEventId} user={user} />}
-          {page === "event-detail"          && <EventDetailPage eventId={selectedEventId} user={user} onBack={goBack("events")} />}
-          {page === "my-qr"        && user  && <MyQRPage user={user} qrVersion={qrVersion} onBack={goBack("dashboard")} />}
-          {page === "announcements"         && <AnnouncementsPage onBack={goBack(isAdmin ? "admin-dashboard" : "dashboard")} />}
-          {page === "attendance-history"    && <AttendanceHistoryPage excuseRequests={excuseRequests} fines={fines} onSubmitExcuse={r => { setExcuseRequests(p => [...p, r]); show("Excuse request submitted"); }} onBack={goBack("dashboard")} />}
-          {page === "my-fines"     && user  && <MyFinesPage fines={fines} onBack={goBack("dashboard")} />}
-          {page === "profile"      && user  && <ProfilePage user={user} onSave={handleProfileSave} onBack={goBack(isAdmin ? "admin-dashboard" : "dashboard")} />}
-          {page === "admin-dashboard"       && isAdmin && <AdminDashboard onNav={setPage} excuseRequests={excuseRequests} />}
-          {page === "admin-events"          && isAdmin && <AdminEventsPage onNav={setPage} />}
-          {page === "admin-scanner"         && isAdmin && <AdminScannerPage />}
-          {page === "admin-attendees"       && isAdmin && <AdminAttendeesPage onNav={setPage} />}
-          {page === "admin-students"        && isAdmin && <AdminStudentsPage />}
-          {page === "admin-announcements"   && isAdmin && <AdminAnnouncementsPage />}
-          {page === "admin-excuse-requests" && isAdmin && <AdminExcuseRequestsPage requests={excuseRequests} onAction={handleExcuseAction} onBack={goBack("admin-dashboard")} />}
-          {page === "admin-reports"         && isAdmin && <AdminReportsPage />}
+          {page === "dashboard"   && user   && !isMod && <DashboardPage user={user} onNav={setPage} fines={fines} showFees={settings.showFees} />}
+          {page === "events"                && <EventsPage onNav={setPage} onSelectEvent={setSelectedEventId} user={user} showFees={settings.showFees} />}
+          {page === "event-detail"          && <EventDetailPage eventId={selectedEventId} user={user} showFees={settings.showFees} onBack={goBack("events")} />}
+          {page === "my-qr"       && user   && <MyQRPage user={user} qrVersion={qrVersion} onBack={goBack("dashboard")} />}
+          {page === "announcements"         && <AnnouncementsPage onBack={goBack(isMod ? "admin-dashboard" : "dashboard")} />}
+          {page === "attendance-history"    && <AttendanceHistoryPage excuseRequests={excuseRequests} fines={fines} showFees={settings.showFees} onSubmitExcuse={r => { setExcuseRequests(p => [...p, r]); show("Excuse request submitted"); }} onBack={goBack("dashboard")} />}
+          {page === "my-fines"    && user   && <MyFinesPage fines={fines} showFees={settings.showFees} onBack={goBack("dashboard")} />}
+          {page === "profile"     && user   && <ProfilePage user={user} onSave={handleProfileSave} onBack={goBack(isMod ? "admin-dashboard" : "dashboard")} />}
+          {page === "admin-dashboard"       && isMod && <AdminDashboard onNav={setPage} excuseRequests={excuseRequests} />}
+          {page === "admin-events"          && isMod && <AdminEventsPage onNav={setPage} />}
+          {page === "admin-scanner"         && isMod && <AdminScannerPage />}
+          {page === "admin-attendees"       && isMod && <AdminAttendeesPage onNav={setPage} />}
+          {page === "admin-students"        && isMod && <AdminStudentsPage />}
+          {page === "admin-announcements"   && isMod && <AdminAnnouncementsPage />}
+          {page === "admin-excuse-requests" && isMod && <AdminExcuseRequestsPage requests={excuseRequests} onAction={handleExcuseAction} onBack={goBack("admin-dashboard")} />}
+          {page === "admin-reports"         && isMod && <AdminReportsPage />}
+          {page === "admin-settings"        && isMod && <AdminSettingsPage settings={settings} onSave={setSettings} showToast={show} />}
         </main>
       </div>
       {!isBare && <BottomNav page={page} user={user} onNav={setPage} />}
