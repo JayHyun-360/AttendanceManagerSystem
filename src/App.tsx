@@ -155,6 +155,7 @@ const Icons = {
   Camera:         () => <svg viewBox="0 0 24 24" className={ic} {...sv}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>,
   Peso:           () => <svg viewBox="0 0 24 24" className={ic} fill="currentColor"><text x="3" y="19" fontSize="17" fontWeight="700" fontFamily="sans-serif">&#8369;</text></svg>,
   Google:         () => <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>,
+  Menu:           () => <svg viewBox="0 0 24 24" className={ic} {...sv}><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
 };
 
 // ─── Toggle ───────────────────────────────────────────────────────────────────
@@ -293,7 +294,7 @@ function BackButton({ label = "Back", onClick }: { label?: string; onClick: () =
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
 function PageShell({ children }: { children: React.ReactNode }) {
-  return <div className="px-5 py-6 max-w-3xl mx-auto pb-24 lg:pb-8">{children}</div>;
+  return <div className="px-5 py-6 max-w-3xl mx-auto pb-8">{children}</div>;
 }
 function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   return (
@@ -342,17 +343,24 @@ function QRSvg({ size }: { size: number }) {
 }
 
 // ─── Top Bar ──────────────────────────────────────────────────────────────────
-function TopBar({ user, onNav }: { user: User | null; onNav: (p: Page) => void }) {
+function TopBar({ user, onNav, onMenuOpen }: { user: User | null; onNav: (p: Page) => void; onMenuOpen: () => void }) {
   const dest = user?.role === "admin" ? "admin-dashboard" : user ? "dashboard" : "landing";
   return (
-    <header className="h-12 sticky top-0 z-40 bg-white border-b border-slate-100 flex items-center justify-between px-5 gap-4 shrink-0">
-      <button className="flex items-center gap-2.5" onClick={() => onNav(dest)}>
-        <TapInMark />
-        <div className="flex flex-col leading-none">
-          <span className="text-sm font-bold text-slate-900 tracking-tight">TapIn</span>
-          <span className="text-[9px] text-slate-400 font-medium hidden sm:block leading-tight">Attendance &amp; Fee Tracking</span>
-        </div>
-      </button>
+    <header className="h-13 sticky top-0 z-40 bg-white border-b border-slate-100 flex items-center justify-between px-4 gap-3 shrink-0" style={{ height: "52px" }}>
+      <div className="flex items-center gap-2">
+        {user && (
+          <button onClick={onMenuOpen} className="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors" aria-label="Open menu">
+            <Icons.Menu />
+          </button>
+        )}
+        <button className="flex items-center gap-2.5" onClick={() => onNav(dest)}>
+          <TapInMark />
+          <div className="flex flex-col leading-none">
+            <span className="text-sm font-bold text-slate-900 tracking-tight">TapIn</span>
+            <span className="text-[9px] text-slate-400 font-medium hidden sm:block leading-tight">Attendance &amp; Fee Tracking</span>
+          </div>
+        </button>
+      </div>
       <div>
         {user ? (
           <button onClick={() => onNav("profile")} className="rounded-full ring-2 ring-transparent hover:ring-green-200 transition-all">
@@ -366,20 +374,23 @@ function TopBar({ user, onNav }: { user: User | null; onNav: (p: Page) => void }
   );
 }
 
-// ─── Sidebar ──────────────────────────────────────────────────────────────────
-function Sidebar({ page, user, onNav, onLogout }: { page: Page; user: User | null; onNav: (p: Page) => void; onLogout: () => void }) {
+// ─── Sidebar (desktop + mobile drawer) ───────────────────────────────────────
+function Sidebar({ page, user, open, onNav, onClose, onLogout }: {
+  page: Page; user: User | null; open: boolean;
+  onNav: (p: Page) => void; onClose: () => void; onLogout: () => void;
+}) {
   if (!user) return null;
   const isMod = user.role === "admin";
   const nav = isMod ? [
-    { p: "admin-dashboard" as Page,       l: "Overview",              I: Icons.Home },
-    { p: "admin-events" as Page,          l: "Events",                I: Icons.Calendar },
-    { p: "admin-scanner" as Page,         l: "QR Scanner",            I: Icons.Scan },
-    { p: "admin-attendees" as Page,       l: "Attendees",             I: Icons.Users },
-    { p: "admin-students" as Page,        l: "Students",              I: Icons.User },
-    { p: "admin-announcements" as Page,   l: "Announcements",         I: Icons.Bell },
-    { p: "admin-excuse-requests" as Page, l: "Excuse Requests",       I: Icons.FileText },
-    { p: "admin-reports" as Page,         l: "Reports",               I: Icons.BarChart },
-    { p: "admin-settings" as Page,        l: "Settings",              I: Icons.Settings },
+    { p: "admin-dashboard" as Page,       l: "Overview",        I: Icons.Home },
+    { p: "admin-events" as Page,          l: "Events",          I: Icons.Calendar },
+    { p: "admin-scanner" as Page,         l: "QR Scanner",      I: Icons.Scan },
+    { p: "admin-attendees" as Page,       l: "Attendees",       I: Icons.Users },
+    { p: "admin-students" as Page,        l: "Students",        I: Icons.User },
+    { p: "admin-announcements" as Page,   l: "Announcements",   I: Icons.Bell },
+    { p: "admin-excuse-requests" as Page, l: "Excuse Requests", I: Icons.FileText },
+    { p: "admin-reports" as Page,         l: "Reports",         I: Icons.BarChart },
+    { p: "admin-settings" as Page,        l: "Settings",        I: Icons.Settings },
   ] : [
     { p: "dashboard" as Page,          l: "Home",          I: Icons.Home },
     { p: "events" as Page,             l: "Events",        I: Icons.Calendar },
@@ -389,58 +400,79 @@ function Sidebar({ page, user, onNav, onLogout }: { page: Page; user: User | nul
     { p: "my-fines" as Page,           l: "My Fines",      I: Icons.Peso },
     { p: "profile" as Page,            l: "Profile",       I: Icons.User },
   ];
-  return (
-    <aside className="hidden lg:flex flex-col w-56 shrink-0 border-r border-slate-100 bg-white h-full">
-      <nav className="flex-1 px-2 pt-4 pb-2 space-y-0.5 overflow-y-auto">
+
+  const handleNav = (p: Page) => { onNav(p); onClose(); };
+
+  const inner = (
+    <div className="flex flex-col h-full bg-white">
+      {/* Mobile header inside drawer */}
+      <div className="flex items-center justify-between px-4 h-[52px] border-b border-slate-100 lg:hidden shrink-0">
+        <div className="flex items-center gap-2.5">
+          <TapInMark />
+          <span className="text-sm font-bold text-slate-900 tracking-tight">TapIn</span>
+        </div>
+        <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" aria-label="Close menu">
+          <Icons.X />
+        </button>
+      </div>
+
+      {/* Nav items */}
+      <nav className="flex-1 px-2 pt-3 pb-2 space-y-0.5 overflow-y-auto">
         {nav.map(({ p, l, I }) => {
           const active = page === p;
           return (
-            <button key={p + l} onClick={() => onNav(p)} className={`w-full flex items-center gap-2.5 px-3 h-9 rounded-lg text-sm transition-all ${active ? "bg-slate-100 text-slate-900 font-semibold" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 font-medium"}`}>
-              <span className={active ? "text-green-600" : "text-slate-400"}><I /></span>{l}
+            <button key={p} onClick={() => handleNav(p)} className={`w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm transition-all ${active ? "bg-green-50 text-green-800 font-semibold" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium"}`}>
+              <span className={`shrink-0 ${active ? "text-green-600" : "text-slate-400"}`}><I /></span>
+              <span className="truncate">{l}</span>
+              {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />}
             </button>
           );
         })}
       </nav>
-      <div className="px-2 py-3 border-t border-slate-100 space-y-0.5">
-        <button onClick={() => onNav("profile")} className="w-full flex items-center gap-2.5 px-3 h-10 rounded-lg hover:bg-slate-50 transition-colors">
+
+      {/* User footer */}
+      <div className="px-2 py-3 border-t border-slate-100 space-y-0.5 shrink-0">
+        <button onClick={() => handleNav("profile")} className="w-full flex items-center gap-3 px-3 h-11 rounded-xl hover:bg-slate-50 transition-colors group">
           <ProfileIcon photoUrl={user.photoUrl} size="xs" />
           <div className="flex-1 min-w-0 text-left">
             <p className="text-xs font-semibold text-slate-800 truncate">{fullName(user) || "Set up profile"}</p>
             <p className="text-[10px] text-slate-400 truncate">{isMod ? "Moderator" : user.studentId || "No ID yet"}</p>
           </div>
+          <span className="text-slate-300 group-hover:text-slate-500 shrink-0"><Icons.ChevronRight /></span>
         </button>
-        <button onClick={onLogout} className="w-full flex items-center gap-2.5 px-3 h-9 rounded-lg text-sm font-medium text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
-          <span className="text-slate-300"><Icons.LogOut /></span>Sign out
+        <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm font-medium text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all">
+          <span className="text-slate-300 shrink-0"><Icons.LogOut /></span>Sign out
         </button>
       </div>
-    </aside>
+    </div>
   );
-}
 
-// ─── Bottom Nav ───────────────────────────────────────────────────────────────
-function BottomNav({ page, user, onNav }: { page: Page; user: User | null; onNav: (p: Page) => void }) {
-  if (!user) return null;
-  const isMod = user.role === "admin";
-  const items = isMod ? [
-    { p: "admin-dashboard" as Page, l: "Home",     I: Icons.Home },
-    { p: "admin-events" as Page,    l: "Events",   I: Icons.Calendar },
-    { p: "admin-scanner" as Page,   l: "Scan",     I: Icons.Scan },
-    { p: "admin-students" as Page,  l: "Students", I: Icons.Users },
-    { p: "admin-settings" as Page,  l: "Settings", I: Icons.Settings },
-  ] : [
-    { p: "dashboard" as Page,          l: "Home",    I: Icons.Home },
-    { p: "events" as Page,             l: "Events",  I: Icons.Calendar },
-    { p: "my-qr" as Page,              l: "QR",      I: Icons.QrCode },
-    { p: "my-fines" as Page,           l: "Fines",   I: Icons.Peso },
-    { p: "profile" as Page,            l: "Profile", I: Icons.User },
-  ];
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-100 flex lg:hidden">
-      {items.map(({ p, l, I }) => {
-        const active = page === p;
-        return <button key={p} onClick={() => onNav(p)} className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-semibold transition-colors ${active ? "text-green-600" : "text-slate-400"}`}><I />{l}</button>;
-      })}
-    </nav>
+    <>
+      {/* ── Desktop: persistent sidebar ── */}
+      <aside className="hidden lg:flex flex-col w-60 shrink-0 border-r border-slate-100 h-full">
+        {inner}
+      </aside>
+
+      {/* ── Mobile: slide-in drawer overlay ── */}
+      <div className="lg:hidden">
+        {/* Backdrop */}
+        <div
+          onClick={onClose}
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300"
+          style={{ opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none" }}
+          aria-hidden="true"
+        />
+        {/* Drawer panel */}
+        <aside
+          className="fixed top-0 left-0 z-50 h-full w-72 shadow-2xl transition-transform duration-300 ease-in-out"
+          style={{ transform: open ? "translateX(0)" : "translateX(-100%)" }}
+          aria-label="Navigation menu"
+        >
+          {inner}
+        </aside>
+      </div>
+    </>
   );
 }
 
@@ -1451,7 +1483,7 @@ function AdminSettingsPage({ settings, onSave, showToast }: { settings: SystemSe
       </div>
 
       {isDirty && (
-        <div className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 bg-slate-950 text-white text-xs font-semibold pl-4 pr-1.5 py-1.5 rounded-full shadow-2xl flex items-center gap-3 z-40" style={{ animation: "slideUp .2s ease" }}>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-950 text-white text-xs font-semibold pl-4 pr-1.5 py-1.5 rounded-full shadow-2xl flex items-center gap-3 z-40" style={{ animation: "slideUp .2s ease" }}>
           <span className="text-slate-400 font-medium">Unsaved changes</span>
           <button onClick={save} className="h-7 px-3 bg-green-600 hover:bg-green-500 text-white rounded-full transition-colors">Save</button>
           <button onClick={discard} className="h-7 px-3 text-slate-400 hover:text-white transition-colors rounded-full hover:bg-white/10 mr-0.5">Discard</button>
@@ -1480,6 +1512,7 @@ export default function App() {
   const [excuseRequests, setExcuseRequests] = useState<ExcuseRequest[]>([]);
   const [fines, setFines] = useState<FineRecord[]>(STUDENT_FINES);
   const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const show = (msg: string, variant: "success" | "error" = "success") => { setToast({ msg, variant }); setTimeout(() => setToast(null), 3500); };
 
@@ -1497,33 +1530,43 @@ export default function App() {
     if (action === "approved") { const req = excuseRequests.find(r => r.id === id); if (req) setFines(f => f.map(fi => fi.eventTitle === req.event ? { ...fi, status: "excused" as FineStatus } : fi)); show("Excuse approved — fee waived"); }
     else show("Request denied");
   };
-  const handleLogout = () => { setUser(null); setPage("landing"); };
+  const handleLogout = () => { setUser(null); setPage("landing"); setMenuOpen(false); };
   const isMod = user?.role === "admin";
   const bare: Page[] = ["landing", "login", "onboarding"];
   const isBare = bare.includes(page);
   const goBack = (fallback: Page) => () => setPage(fallback);
+  const navigate = (p: Page) => { setPage(p); setMenuOpen(false); };
 
   return (
     <div className="h-full flex flex-col bg-[#f8faf9]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
-      {!isBare && <TopBar user={user} onNav={setPage} />}
+      {!isBare && <TopBar user={user} onNav={navigate} onMenuOpen={() => setMenuOpen(true)} />}
       <div className={`flex-1 flex min-h-0 ${!isBare ? "overflow-hidden" : ""}`}>
-        {!isBare && user && <Sidebar page={page} user={user} onNav={setPage} onLogout={handleLogout} />}
+        {!isBare && user && (
+          <Sidebar
+            page={page}
+            user={user}
+            open={menuOpen}
+            onNav={navigate}
+            onClose={() => setMenuOpen(false)}
+            onLogout={handleLogout}
+          />
+        )}
         <main className={`flex-1 bg-[#f8faf9] ${!isBare ? "overflow-y-auto" : ""}`}>
-          {page === "landing"               && <LandingPage onNav={setPage} />}
-          {page === "login"                 && <LoginPage onLogin={handleLogin} onBack={() => setPage("landing")} />}
+          {page === "landing"               && <LandingPage onNav={navigate} />}
+          {page === "login"                 && <LoginPage onLogin={handleLogin} onBack={() => navigate("landing")} />}
           {page === "onboarding"            && <OnboardingPage onComplete={handleOnboarding} />}
-          {page === "dashboard"   && user   && !isMod && <DashboardPage user={user} onNav={setPage} fines={fines} showFees={settings.showFees} />}
-          {page === "events"                && <EventsPage onNav={setPage} onSelectEvent={setSelectedEventId} user={user} showFees={settings.showFees} />}
+          {page === "dashboard"   && user   && !isMod && <DashboardPage user={user} onNav={navigate} fines={fines} showFees={settings.showFees} />}
+          {page === "events"                && <EventsPage onNav={navigate} onSelectEvent={setSelectedEventId} user={user} showFees={settings.showFees} />}
           {page === "event-detail"          && <EventDetailPage eventId={selectedEventId} user={user} showFees={settings.showFees} onBack={goBack("events")} />}
           {page === "my-qr"       && user   && <MyQRPage user={user} qrVersion={qrVersion} onBack={goBack("dashboard")} />}
           {page === "announcements"         && <AnnouncementsPage onBack={goBack(isMod ? "admin-dashboard" : "dashboard")} />}
           {page === "attendance-history"    && <AttendanceHistoryPage excuseRequests={excuseRequests} fines={fines} showFees={settings.showFees} onSubmitExcuse={r => { setExcuseRequests(p => [...p, r]); show("Excuse request submitted"); }} onBack={goBack("dashboard")} />}
           {page === "my-fines"    && user   && <MyFinesPage fines={fines} showFees={settings.showFees} onBack={goBack("dashboard")} />}
           {page === "profile"     && user   && <ProfilePage user={user} onSave={handleProfileSave} onBack={goBack(isMod ? "admin-dashboard" : "dashboard")} />}
-          {page === "admin-dashboard"       && isMod && <AdminDashboard onNav={setPage} excuseRequests={excuseRequests} />}
-          {page === "admin-events"          && isMod && <AdminEventsPage onNav={setPage} />}
+          {page === "admin-dashboard"       && isMod && <AdminDashboard onNav={navigate} excuseRequests={excuseRequests} />}
+          {page === "admin-events"          && isMod && <AdminEventsPage onNav={navigate} />}
           {page === "admin-scanner"         && isMod && <AdminScannerPage />}
-          {page === "admin-attendees"       && isMod && <AdminAttendeesPage onNav={setPage} />}
+          {page === "admin-attendees"       && isMod && <AdminAttendeesPage onNav={navigate} />}
           {page === "admin-students"        && isMod && <AdminStudentsPage />}
           {page === "admin-announcements"   && isMod && <AdminAnnouncementsPage />}
           {page === "admin-excuse-requests" && isMod && <AdminExcuseRequestsPage requests={excuseRequests} onAction={handleExcuseAction} onBack={goBack("admin-dashboard")} />}
@@ -1531,7 +1574,6 @@ export default function App() {
           {page === "admin-settings"        && isMod && <AdminSettingsPage settings={settings} onSave={setSettings} showToast={show} />}
         </main>
       </div>
-      {!isBare && <BottomNav page={page} user={user} onNav={setPage} />}
       {toast && <Toast message={toast.msg} variant={toast.variant} />}
     </div>
   );
