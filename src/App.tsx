@@ -345,30 +345,54 @@ function QRSvg({ size }: { size: number }) {
 // ─── Top Bar ──────────────────────────────────────────────────────────────────
 function TopBar({ user, onNav, onMenuOpen }: { user: User | null; onNav: (p: Page) => void; onMenuOpen: () => void }) {
   const dest = user?.role === "admin" ? "admin-dashboard" : user ? "dashboard" : "landing";
+  const isMod = user?.role === "admin";
   return (
-    <header className="h-13 sticky top-0 z-40 bg-white border-b border-slate-100 flex items-center justify-between px-4 gap-3 shrink-0" style={{ height: "52px" }}>
-      <div className="flex items-center gap-2">
-        {user && (
-          <button onClick={onMenuOpen} className="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors" aria-label="Open menu">
-            <Icons.Menu />
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-slate-100 shrink-0" style={{ boxShadow: "0 1px 3px rgba(0,0,0,.04)" }}>
+      <div className="flex items-center justify-between px-4 lg:px-5 gap-3" style={{ height: "56px" }}>
+        {/* Left — hamburger + brand */}
+        <div className="flex items-center gap-2 min-w-0">
+          {user && (
+            <button
+              onClick={onMenuOpen}
+              className="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors shrink-0"
+              aria-label="Open menu"
+            >
+              <Icons.Menu />
+            </button>
+          )}
+          <button className="flex items-center gap-2.5 min-w-0" onClick={() => onNav(dest)}>
+            <TapInMark className="w-8 h-8 shrink-0" />
+            <div className="flex flex-col leading-none min-w-0">
+              <span className="text-[15px] font-bold text-slate-900 tracking-tight">TapIn</span>
+              <span className="text-[10px] text-slate-400 font-medium hidden sm:block leading-tight truncate">
+                {isMod ? "Moderator Portal" : "Student Attendance"}
+              </span>
+            </div>
           </button>
-        )}
-        <button className="flex items-center gap-2.5" onClick={() => onNav(dest)}>
-          <TapInMark />
-          <div className="flex flex-col leading-none">
-            <span className="text-sm font-bold text-slate-900 tracking-tight">TapIn</span>
-            <span className="text-[9px] text-slate-400 font-medium hidden sm:block leading-tight">Attendance &amp; Fee Tracking</span>
-          </div>
-        </button>
-      </div>
-      <div>
-        {user ? (
-          <button onClick={() => onNav("profile")} className="rounded-full ring-2 ring-transparent hover:ring-green-200 transition-all">
-            <ProfileIcon photoUrl={user.photoUrl} size="sm" />
-          </button>
-        ) : (
-          <button onClick={() => onNav("login")} className="text-xs font-semibold text-slate-700 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">Sign in</button>
-        )}
+        </div>
+
+        {/* Right — user actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          {user ? (
+            <button
+              onClick={() => onNav("profile")}
+              className="flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full hover:bg-slate-100 transition-colors group"
+              aria-label="View profile"
+            >
+              <ProfileIcon photoUrl={user.photoUrl} size="sm" />
+              <span className="hidden sm:block text-xs font-semibold text-slate-600 group-hover:text-slate-900 transition-colors truncate max-w-[120px]">
+                {user.firstName || (isMod ? "Moderator" : "My Profile")}
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={() => onNav("login")}
+              className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+            >
+              Sign in
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );
@@ -1148,51 +1172,281 @@ function AdminEventsPage({ onNav }: { onNav: (p: Page) => void }) {
 }
 
 // ─── MODERATOR: QR Scanner ────────────────────────────────────────────────────
+function CameraScanner({ event, onResult, onClose }: {
+  event: EventData;
+  onResult: (r: ScanRecord) => void;
+  onClose: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const detectorRef = useRef<{ detect: (src: HTMLVideoElement) => Promise<{ rawValue: string }[]> } | null>(null);
+  const animRef = useRef<number>(0);
+  const [camError, setCamError] = useState<string | null>(null);
+  const [result, setResult] = useState<ScanRecord | null>(null);
+  const [torch, setTorch] = useState(false);
+  const eventScans = EVENT_SCANS[event.id] ?? [];
+
+  const simulateScan = () => {
+    const pool = eventScans.length > 0 ? eventScans : [
+      { name: "Test Student", id: "2440000", program: "BSIT", section: "IT-1A", time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }), status: "confirmed" as const, dbId: 99 },
+    ];
+    const hit = pool[Math.floor(Math.random() * pool.length)];
+    setResult(hit);
+    onResult(hit);
+  };
+
+  useEffect(() => {
+    let active = true;
+    async function start() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
+        if (!active) { stream.getTracks().forEach(t => t.stop()); return; }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+        }
+        // Try BarcodeDetector (Chrome/Android)
+        if ("BarcodeDetector" in window) {
+          const BD = (window as unknown as { BarcodeDetector: new (opts: { formats: string[] }) => typeof detectorRef.current }
+          ).BarcodeDetector;
+          detectorRef.current = new BD({ formats: ["qr_code"] });
+          const tick = async () => {
+            if (!active || !videoRef.current || !detectorRef.current) return;
+            try {
+              const codes = await detectorRef.current.detect(videoRef.current);
+              if (codes.length > 0) {
+                simulateScan();
+                return;
+              }
+            } catch { /* ignore */ }
+            animRef.current = requestAnimationFrame(tick);
+          };
+          animRef.current = requestAnimationFrame(tick);
+        }
+      } catch {
+        if (active) setCamError("Camera access denied or unavailable.");
+      }
+    }
+    start();
+    return () => {
+      active = false;
+      cancelAnimationFrame(animRef.current);
+      streamRef.current?.getTracks().forEach(t => t.stop());
+    };
+  }, []);
+
+  const toggleTorch = async () => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      await (track as MediaStreamTrack & { applyConstraints: (c: object) => Promise<void> })
+        .applyConstraints({ advanced: [{ torch: !torch } as MediaTrackConstraintSet] });
+      setTorch(t => !t);
+    } catch { /* not supported */ }
+  };
+
+  const scanAgain = () => setResult(null);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black flex flex-col">
+      {/* Scanner header */}
+      <div className="relative z-10 flex items-center justify-between px-4 pt-safe" style={{ paddingTop: "max(16px, env(safe-area-inset-top))", paddingBottom: "16px", background: "linear-gradient(to bottom, rgba(0,0,0,.7) 0%, transparent 100%)" }}>
+        <button onClick={onClose} className="flex items-center gap-2 text-white/90 hover:text-white transition-colors">
+          <Icons.ChevronLeft />
+          <span className="text-sm font-semibold">Back</span>
+        </button>
+        <div className="text-center">
+          <p className="text-white text-sm font-semibold leading-tight truncate max-w-[180px]">{event.title}</p>
+          <p className="text-white/50 text-xs mt-0.5">{event.date}</p>
+        </div>
+        <button onClick={toggleTorch} className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${torch ? "bg-yellow-400 text-slate-900" : "bg-white/15 text-white"}`} title="Toggle flash">
+          <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="currentColor"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+        </button>
+      </div>
+
+      {/* Camera viewport */}
+      <div className="flex-1 relative overflow-hidden">
+        {/* Live video */}
+        <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
+
+        {/* Dark vignette overlay */}
+        {!result && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 60% 60% at 50% 50%, transparent 0%, rgba(0,0,0,.55) 100%)" }} />
+            {/* Scan frame */}
+            <div className="relative w-64 h-64 sm:w-72 sm:h-72">
+              {/* Animated scanline */}
+              <div className="absolute inset-x-3 h-0.5 bg-green-400/80 rounded-full" style={{ animation: "scanline 2.2s ease-in-out infinite", boxShadow: "0 0 8px 1px rgba(74,222,128,.6)" }} />
+              {/* Corner marks */}
+              {[
+                "top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-lg",
+                "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-lg",
+                "bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-lg",
+                "bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-lg",
+              ].map((cls, i) => <div key={i} className={`absolute w-8 h-8 border-green-400 ${cls}`} />)}
+            </div>
+            {!camError && <p className="absolute bottom-12 text-white/60 text-xs font-medium tracking-wide">Point camera at student's QR code</p>}
+          </div>
+        )}
+
+        {/* Camera error state */}
+        {camError && !result && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950/90 text-center px-8">
+            <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center text-white/50">
+              <Icons.AlertCircle />
+            </div>
+            <p className="text-white font-semibold">{camError}</p>
+            <p className="text-white/50 text-sm">You can still use the simulate button below.</p>
+          </div>
+        )}
+
+        {/* Result overlay */}
+        {result && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 px-8 gap-4">
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-2xl ${result.status === "confirmed" ? "bg-green-500" : "bg-red-500"}`}>
+              {result.status === "confirmed"
+                ? <svg viewBox="0 0 24 24" className="w-9 h-9" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                : <svg viewBox="0 0 24 24" className="w-9 h-9" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              }
+            </div>
+            <div className="text-center">
+              <p className={`text-lg font-bold ${result.status === "confirmed" ? "text-green-400" : "text-red-400"}`}>
+                {result.status === "confirmed" ? "Attendance Confirmed" : "Duplicate — Rejected"}
+              </p>
+              <p className="text-white text-base font-semibold mt-1">{result.name}</p>
+              <p className="text-white/60 text-sm mt-0.5">{result.id} · {result.program} · {result.section}</p>
+            </div>
+            <div className="flex gap-3 mt-2">
+              <button onClick={scanAgain} className="h-11 px-6 bg-white text-slate-900 text-sm font-semibold rounded-xl hover:bg-slate-100 transition-colors">
+                Scan next
+              </button>
+              <button onClick={onClose} className="h-11 px-6 bg-white/15 text-white text-sm font-semibold rounded-xl hover:bg-white/25 transition-colors">
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom controls */}
+      {!result && (
+        <div className="relative z-10 px-6 flex flex-col gap-3" style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))", paddingTop: "24px", background: "linear-gradient(to top, rgba(0,0,0,.75) 0%, transparent 100%)" }}>
+          <button onClick={simulateScan} className="w-full h-14 bg-green-500 hover:bg-green-400 active:scale-[.98] text-white text-base font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg shadow-green-900/40">
+            <Icons.Scan />
+            Simulate Scan
+          </button>
+          <p className="text-white/40 text-xs text-center">
+            {camError ? "Camera unavailable — tap above to simulate" : "Camera is active — or tap to simulate"}
+          </p>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
 function AdminScannerPage() {
   const [selectedEventId, setSelectedEventId] = useState<string>("");
-  const [last, setLast] = useState<ScanRecord | null>(null);
-  const [scanning, setScanning] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanned, setScanned] = useState<ScanRecord[]>([]);
   const activeEvents = INITIAL_EVENTS.filter(e => e.status === "active" || e.status === "upcoming");
   const selectedEvent = INITIAL_EVENTS.find(e => e.id === selectedEventId);
-  const eventScans = EVENT_SCANS[selectedEventId] ?? [];
-  const simulate = () => {
-    setScanning(false);
-    const pool = eventScans.length > 0 ? eventScans : [{ name: "Test Student", id: "2440000", program: "BSIT", section: "IT-1A", time: "now", status: "confirmed" as const, dbId: 99 }];
-    setLast(pool[Math.floor(Math.random() * pool.length)]);
+
+  const handleResult = (r: ScanRecord) => {
+    setScanned(prev => [{ ...r, time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) }, ...prev]);
   };
+
+  if (scannerOpen && selectedEvent) {
+    return <CameraScanner event={selectedEvent} onResult={handleResult} onClose={() => setScannerOpen(false)} />;
+  }
+
   return (
     <PageShell>
-      <PageHeader title="QR Scanner" subtitle="Select an event, then start scanning." />
-      <div className="max-w-xs mx-auto space-y-4">
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100"><p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Select Event</p></div>
+      <PageHeader title="QR Scanner" subtitle="Select an event to begin scanning." />
+      <div className="max-w-lg mx-auto space-y-4">
+        {/* Event selection */}
+        <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-slate-50">
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Select event</p>
+          </div>
           <div className="p-3 space-y-1">
+            {activeEvents.length === 0 && (
+              <p className="px-3 py-4 text-sm text-slate-400 text-center">No active or upcoming events.</p>
+            )}
             {activeEvents.map(e => (
-              <button key={e.id} onClick={() => { setSelectedEventId(e.id); setLast(null); setScanning(false); }} className={`w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center gap-3 ${selectedEventId === e.id ? "bg-green-50 border border-green-200" : "border border-transparent hover:bg-slate-50"}`}>
-                <div className={`w-2 h-2 rounded-full shrink-0 ${e.status === "active" ? "bg-green-500" : "bg-slate-300"}`} style={e.status === "active" ? { animation: "pulse 2s infinite" } : {}} />
-                <div className="flex-1 min-w-0"><p className={`text-sm font-semibold truncate ${selectedEventId === e.id ? "text-green-800" : "text-slate-900"}`}>{e.title}</p><p className={`text-xs mt-0.5 ${selectedEventId === e.id ? "text-green-600" : "text-slate-400"}`}>{e.date}</p></div>
-                {selectedEventId === e.id && <span className="text-green-600 shrink-0"><Icons.Check /></span>}
+              <button
+                key={e.id}
+                onClick={() => setSelectedEventId(e.id)}
+                className={`w-full text-left px-4 py-3.5 rounded-xl transition-all flex items-center gap-4 ${selectedEventId === e.id ? "bg-green-50 ring-1 ring-green-200" : "hover:bg-slate-50"}`}
+              >
+                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${e.status === "active" ? "bg-green-500" : "bg-slate-300"}`} style={e.status === "active" ? { animation: "pulse 2s infinite" } : {}} />
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-semibold truncate ${selectedEventId === e.id ? "text-green-900" : "text-slate-900"}`}>{e.title}</p>
+                  <p className={`text-xs mt-0.5 ${selectedEventId === e.id ? "text-green-600" : "text-slate-400"}`}>{e.date} · {e.location}</p>
+                </div>
+                <div className="shrink-0 flex items-center gap-2">
+                  {e.status === "active" && <Badge status="active" />}
+                  {selectedEventId === e.id && <span className="text-green-600"><Icons.Check /></span>}
+                </div>
               </button>
             ))}
           </div>
         </div>
-        {selectedEventId && (<>
-          <div className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3"><span className="text-green-600 shrink-0"><Icons.Scan /></span><div><p className="text-xs font-bold text-slate-700">Scanning for</p><p className="text-sm font-semibold text-slate-900 truncate max-w-[180px]">{selectedEvent?.title}</p></div></div>
-            {selectedEvent?.fineAmount ? <span className="text-xs text-red-500 font-semibold shrink-0">P{selectedEvent.fineAmount} fee</span> : null}
-          </div>
-          <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-lg relative" style={{ aspectRatio: "1" }}>
-            <style>{`@keyframes scanline{0%,100%{top:12%}50%{top:80%}}`}</style>
-            <div className="absolute inset-0 flex items-center justify-center">
-              {!scanning && !last && <div className="text-center px-6"><div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3 text-white/50"><Icons.Scan /></div><p className="text-white/50 text-sm">Camera ready</p></div>}
-              {scanning && <div className="relative w-48 h-48">{[["top-0 left-0 rounded-tl-lg border-t-2 border-l-2"], ["top-0 right-0 rounded-tr-lg border-t-2 border-r-2"], ["bottom-0 left-0 rounded-bl-lg border-b-2 border-l-2"], ["bottom-0 right-0 rounded-br-lg border-b-2 border-r-2"]].map(([cls], i) => <div key={i} className={`absolute w-6 h-6 border-green-400 ${cls}`} />)}<div className="absolute left-2 right-2 h-px bg-green-400/60" style={{ animation: "scanline 2s ease-in-out infinite" }} /></div>}
-              {last && !scanning && <div className="text-center px-8"><div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 ${last.status === "confirmed" ? "bg-green-500" : "bg-red-500"}`}>{last.status === "confirmed" ? <span className="text-white"><Icons.Check /></span> : <span className="text-white text-xl font-bold">!</span>}</div><p className="text-white font-bold">{last.name}</p><p className="text-white/60 text-sm">{last.id}</p><p className="text-white/40 text-xs mt-0.5">{last.program} · {last.section}</p></div>}
+
+        {/* Open scanner CTA */}
+        {selectedEvent ? (
+          <div className="space-y-3">
+            <div className="bg-white border border-slate-100 rounded-xl px-4 py-4 flex items-center gap-4">
+              <div className="w-10 h-10 bg-green-50 border border-green-100 rounded-xl flex items-center justify-center text-green-600 shrink-0">
+                <Icons.Scan />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-slate-900 truncate">{selectedEvent.title}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{selectedEvent.date} · {selectedEvent.location}</p>
+              </div>
+              {selectedEvent.fineAmount > 0 && (
+                <span className="text-xs font-bold text-red-500 shrink-0">P{selectedEvent.fineAmount} fee</span>
+              )}
             </div>
+            <button
+              onClick={() => setScannerOpen(true)}
+              className="w-full h-14 bg-green-600 hover:bg-green-700 active:scale-[.99] text-white text-base font-bold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-md shadow-green-900/20"
+            >
+              <Icons.Scan />
+              Open QR Scanner
+            </button>
           </div>
-          {!scanning && !last && <button onClick={() => setScanning(true)} className="w-full h-11 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl shadow-sm flex items-center justify-center gap-2"><Icons.Scan />Start scanning</button>}
-          {scanning && <button onClick={simulate} className="w-full h-11 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 flex items-center justify-center gap-2"><Icons.Activity />Simulate scan</button>}
-          {last && !scanning && (<div className="space-y-2.5"><div className={`rounded-xl px-4 py-3.5 border text-sm ${last.status === "confirmed" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}><div className="flex items-center justify-between"><p className="font-semibold">{last.status === "confirmed" ? "Attendance confirmed" : "Duplicate — rejected"}</p><Badge status={last.status} /></div><p className="text-xs mt-0.5 opacity-60">Scanned at {last.time}</p></div><button onClick={() => { setLast(null); setScanning(true); }} className="w-full h-11 border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50">Scan next</button></div>)}
-        </>)}
+        ) : (
+          <div className="bg-slate-100 rounded-2xl px-5 py-10 flex flex-col items-center gap-3 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-slate-300">
+              <Icons.Scan />
+            </div>
+            <p className="text-slate-500 text-sm font-medium">Select an event above to open the scanner</p>
+          </div>
+        )}
+
+        {/* Recent scans this session */}
+        {scanned.length > 0 && (
+          <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-slate-50 flex items-center justify-between">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Scanned this session</p>
+              <span className="text-[11px] font-bold text-green-600">{scanned.length}</span>
+            </div>
+            {scanned.slice(0, 8).map((s, i) => (
+              <div key={i} className={`flex items-center gap-3 px-5 py-3.5 ${i < Math.min(scanned.length, 8) - 1 ? "border-b border-slate-50" : ""}`}>
+                <Avatar name={s.name} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 truncate">{s.name}</p>
+                  <p className="text-[11px] text-slate-400">{s.id} · {s.time}</p>
+                </div>
+                <Badge status={s.status} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </PageShell>
   );
@@ -1395,43 +1649,31 @@ interface SystemSettings {
   institution: string;
 }
 
-function AdminSettingsPage({ settings, onSave, showToast }: { settings: SystemSettings; onSave: (s: SystemSettings) => void; showToast: (m: string) => void }) {
-  const [draft, setDraft] = useState({ ...settings });
-  const toggle = (k: keyof SystemSettings) => setDraft(d => ({ ...d, [k]: !d[k as keyof SystemSettings] }));
-  const isDirty = JSON.stringify(draft) !== JSON.stringify(settings);
-  const save = () => { onSave(draft); showToast("Settings saved"); };
-  const discard = () => setDraft({ ...settings });
+function AdminSettingsPage({ settings, onSave }: { settings: SystemSettings; onSave: (s: SystemSettings) => void }) {
+  const update = (patch: Partial<SystemSettings>) => onSave({ ...settings, ...patch });
+  const toggle = (k: "showFees" | "allowExcuseRequests" | "requirePhotoId") =>
+    onSave({ ...settings, [k]: !settings[k] });
+
   return (
     <PageShell>
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Management &amp; Settings</h1>
-          <p className="text-sm text-slate-400 font-medium mt-0.5">System-wide controls for TapIn</p>
-        </div>
-        {isDirty && (
-          <div className="flex items-center gap-2">
-            <button onClick={discard} className="h-9 px-4 border border-slate-200 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-50 transition-colors">Discard</button>
-            <button onClick={save} className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">Save</button>
-          </div>
-        )}
-      </div>
+      <PageHeader title="Management & Settings" subtitle="Changes are saved automatically" />
 
       {/* Fee Visibility */}
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Fee Visibility</p>
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
         <div className="px-5 divide-y divide-slate-50">
           <Toggle
-            on={draft.showFees}
+            on={settings.showFees}
             onToggle={() => toggle("showFees")}
             label="Show fees to students"
             desc="Enable during fee-paying week so students can see absence fine amounts across events, attendance history, and their Fines page."
           />
         </div>
-        <div className={`mx-5 mb-4 rounded-lg px-3.5 py-2.5 flex items-center gap-2.5 ${draft.showFees ? "bg-green-50 border border-green-200" : "bg-slate-50 border border-slate-200"}`}>
-          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${draft.showFees ? "bg-green-500" : "bg-slate-400"}`} style={draft.showFees ? { animation: "pulse 2s infinite" } : {}} />
-          <p className={`text-xs font-medium leading-relaxed ${draft.showFees ? "text-green-800" : "text-slate-500"}`}>
-            Fees are <span className="font-bold">{draft.showFees ? "visible" : "hidden"}</span> to students
-            {!draft.showFees && " — enable when the payment period opens"}
+        <div className={`mx-5 mb-4 rounded-lg px-3.5 py-2.5 flex items-center gap-2.5 transition-colors ${settings.showFees ? "bg-green-50 border border-green-200" : "bg-slate-50 border border-slate-200"}`}>
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${settings.showFees ? "bg-green-500" : "bg-slate-400"}`} style={settings.showFees ? { animation: "pulse 2s infinite" } : {}} />
+          <p className={`text-xs font-medium leading-relaxed ${settings.showFees ? "text-green-800" : "text-slate-500"}`}>
+            Fees are <span className="font-bold">{settings.showFees ? "visible" : "hidden"}</span> to students
+            {!settings.showFees && " — enable when the payment period opens"}
           </p>
         </div>
       </div>
@@ -1441,13 +1683,13 @@ function AdminSettingsPage({ settings, onSave, showToast }: { settings: SystemSe
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
         <div className="px-5 divide-y divide-slate-50">
           <Toggle
-            on={draft.allowExcuseRequests}
+            on={settings.allowExcuseRequests}
             onToggle={() => toggle("allowExcuseRequests")}
             label="Accept excuse requests"
             desc="Absent students can submit a reason and supporting document for review."
           />
           <Toggle
-            on={draft.requirePhotoId}
+            on={settings.requirePhotoId}
             onToggle={() => toggle("requirePhotoId")}
             label="Require photo ID on scan"
             desc="Moderators must verify a photo ID alongside the QR code during check-in."
@@ -1459,10 +1701,19 @@ function AdminSettingsPage({ settings, onSave, showToast }: { settings: SystemSe
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Academic Information</p>
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
         <div className="px-5 py-4 space-y-3">
-          <FieldInput label="Institution name" value={draft.institution} onChange={e => setDraft(d => ({ ...d, institution: e.target.value }))} />
+          <FieldInput
+            label="Institution name"
+            value={settings.institution}
+            onChange={e => update({ institution: e.target.value })}
+          />
           <div className="grid grid-cols-2 gap-3">
-            <FieldInput label="Academic year" placeholder="e.g. 2026-2027" value={draft.academicYear} onChange={e => setDraft(d => ({ ...d, academicYear: e.target.value }))} />
-            <FieldSelect label="Semester" value={draft.semester} onChange={e => setDraft(d => ({ ...d, semester: e.target.value }))}>
+            <FieldInput
+              label="Academic year"
+              placeholder="e.g. 2026-2027"
+              value={settings.academicYear}
+              onChange={e => update({ academicYear: e.target.value })}
+            />
+            <FieldSelect label="Semester" value={settings.semester} onChange={e => update({ semester: e.target.value })}>
               <option>1st Semester</option>
               <option>2nd Semester</option>
               <option>Summer</option>
@@ -1481,14 +1732,6 @@ function AdminSettingsPage({ settings, onSave, showToast }: { settings: SystemSe
           </div>
         ))}
       </div>
-
-      {isDirty && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-950 text-white text-xs font-semibold pl-4 pr-1.5 py-1.5 rounded-full shadow-2xl flex items-center gap-3 z-40" style={{ animation: "slideUp .2s ease" }}>
-          <span className="text-slate-400 font-medium">Unsaved changes</span>
-          <button onClick={save} className="h-7 px-3 bg-green-600 hover:bg-green-500 text-white rounded-full transition-colors">Save</button>
-          <button onClick={discard} className="h-7 px-3 text-slate-400 hover:text-white transition-colors rounded-full hover:bg-white/10 mr-0.5">Discard</button>
-        </div>
-      )}
     </PageShell>
   );
 }
@@ -1571,7 +1814,7 @@ export default function App() {
           {page === "admin-announcements"   && isMod && <AdminAnnouncementsPage />}
           {page === "admin-excuse-requests" && isMod && <AdminExcuseRequestsPage requests={excuseRequests} onAction={handleExcuseAction} onBack={goBack("admin-dashboard")} />}
           {page === "admin-reports"         && isMod && <AdminReportsPage />}
-          {page === "admin-settings"        && isMod && <AdminSettingsPage settings={settings} onSave={setSettings} showToast={show} />}
+          {page === "admin-settings"        && isMod && <AdminSettingsPage settings={settings} onSave={setSettings} />}
         </main>
       </div>
       {toast && <Toast message={toast.msg} variant={toast.variant} />}

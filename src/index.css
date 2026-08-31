@@ -90,3 +90,18 @@ body {
   50% { box-shadow: 0 0 0 16px rgba(22, 163, 74, 0); }
 }
 .qr-glow { animation: qr-glow 2.5s ease-in-out infinite; }
+
+/* QR scanner scanline */
+@keyframes scanline {
+  0%, 100% { top: 8%; }
+  50% { top: 84%; }
+}
+
+/* Slide-up for toasts */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Disable global transition on video elements */
+video { transition: none !important; }
