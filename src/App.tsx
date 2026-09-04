@@ -1,4 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import jsQR from "jsqr";
+import QRCode from "qrcode";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Page =
@@ -319,27 +321,19 @@ function TapInMark({ className = "w-7 h-7" }: { className?: string }) {
   );
 }
 
-// ─── QR Matrix ────────────────────────────────────────────────────────────────
-const QR_CELLS = [
-  [1,1,1,1,1,1,1,0,1,0,0,1,0,0,1,1,1,1,1,1,1],[1,0,0,0,0,0,1,0,0,1,0,0,1,0,1,0,0,0,0,0,1],
-  [1,0,1,1,1,0,1,0,1,0,1,1,0,0,1,0,1,1,1,0,1],[1,0,1,1,1,0,1,0,0,0,1,0,1,0,1,0,1,1,1,0,1],
-  [1,0,1,1,1,0,1,0,1,1,0,1,0,0,1,0,1,1,1,0,1],[1,0,0,0,0,0,1,0,0,1,1,0,0,0,1,0,0,0,0,0,1],
-  [1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,1,1,0,1,1,0,0,0,0,0,0,0,0],
-  [1,0,1,1,0,1,1,1,0,0,1,0,1,1,1,0,1,0,1,1,0],[0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,0,1],
-  [1,1,1,0,1,1,1,0,0,1,1,0,1,1,1,0,0,1,1,0,1],[0,0,1,0,0,1,0,1,1,0,0,1,0,0,1,1,1,0,0,1,0],
-  [1,0,0,1,1,0,1,0,1,1,1,0,1,0,0,0,1,0,1,0,1],[0,0,0,0,0,0,0,0,1,0,0,1,1,0,1,1,0,1,0,1,0],
-  [1,1,1,1,1,1,1,0,0,1,1,0,0,0,1,0,1,0,0,1,1],[1,0,0,0,0,0,1,0,1,0,0,1,0,1,1,0,0,1,1,0,0],
-  [1,0,1,1,1,0,1,0,0,1,1,0,1,0,0,1,1,0,0,1,0],[1,0,1,1,1,0,1,0,1,0,0,1,0,1,1,0,1,1,0,0,1],
-  [1,0,1,1,1,0,1,0,0,1,1,0,1,0,0,1,0,0,1,1,0],[1,0,0,0,0,0,1,0,1,0,0,1,1,0,1,0,1,0,0,1,1],
-  [1,1,1,1,1,1,1,0,0,1,0,0,0,1,0,1,0,1,1,0,1],
-];
-function QRSvg({ size }: { size: number }) {
-  const cell = size / 21;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: "block" }}>
-      {QR_CELLS.map((row, r) => row.map((v, c) => v ? <rect key={`${r}-${c}`} x={c * cell} y={r * cell} width={cell} height={cell} fill="#111827" /> : null))}
-    </svg>
-  );
+// ─── QR Code ──────────────────────────────────────────────────────────────────
+function StudentQR({ studentId, size }: { studentId: string; size: number }) {
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  useEffect(() => {
+    QRCode.toDataURL(`TAPIN:${studentId}`, {
+      width: size * 2,
+      margin: 1,
+      color: { dark: "#111827", light: "#ffffff" },
+      errorCorrectionLevel: "H",
+    }).then(setDataUrl).catch(() => setDataUrl(null));
+  }, [studentId, size]);
+  if (!dataUrl) return <div style={{ width: size, height: size }} className="bg-slate-100 rounded animate-pulse" />;
+  return <img src={dataUrl} width={size} height={size} alt="Student QR Code" style={{ display: "block", imageRendering: "pixelated" }} />;
 }
 
 // ─── Top Bar ──────────────────────────────────────────────────────────────────
@@ -601,22 +595,32 @@ function LoginPage({ onLogin, onBack }: { onLogin: (role: Role) => void; onBack:
 }
 
 // ─── ONBOARDING ───────────────────────────────────────────────────────────────
-interface OBForm { firstName: string; middleInitial: string; surname: string; phone: string; contactEmail: string; studentId: string; program: string; yearLevel: string; section: string; }
+interface OBForm { firstName: string; middleInitial: string; surname: string; phone: string; contactEmail: string; studentId: string; program: string; yearLevel: string; section: string; idPhotoUrl?: string; agreedToTerms?: boolean; }
 
 function OnboardingPage({ onComplete }: { onComplete: (d: OBForm) => void }) {
   const [step, setStep] = useState(1);
   const [f, setF] = useState<OBForm>({ firstName: "", middleInitial: "", surname: "", phone: "", contactEmail: "", studentId: "", program: "", yearLevel: "", section: "" });
+  const [agreed, setAgreed] = useState(false);
+  const idPhotoRef = useRef<HTMLInputElement>(null);
   const set = (k: keyof OBForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF(p => ({ ...p, [k]: e.target.value }));
+  const TOTAL = 6;
   const steps = [
     { t: "Your name",           d: "Enter your full name as it appears on your school ID." },
     { t: "Contact information", d: "Used for important notices and updates." },
     { t: "Student ID",          d: "Your 7-digit school-issued ID number." },
     { t: "Enrollment details",  d: "Used to group attendance records by program and section." },
+    { t: "School ID photo",     d: "Take or upload a clear photo of your school-issued ID." },
+    { t: "Terms & Privacy",     d: "Please read and agree to continue." },
   ];
+  const canContinue = () => {
+    if (step === 5) return !!f.idPhotoUrl;
+    if (step === 6) return agreed;
+    return true;
+  };
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#f8faf9]">
       <div className="w-full max-w-md">
-        <div className="mb-6"><div className="flex gap-1 mb-3">{steps.map((_, i) => <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i < step ? "bg-green-600" : "bg-slate-200"}`} />)}</div><p className="text-xs text-slate-400 font-medium">Step {step} of {steps.length}</p></div>
+        <div className="mb-6"><div className="flex gap-1 mb-3">{steps.map((_, i) => <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i < step ? "bg-green-600" : "bg-slate-200"}`} />)}</div><p className="text-xs text-slate-400 font-medium">Step {step} of {TOTAL}</p></div>
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
           <div className="px-6 py-5 border-b border-slate-100"><h2 className="font-bold text-slate-900 text-lg">{steps[step - 1].t}</h2><p className="text-sm text-slate-400 mt-0.5">{steps[step - 1].d}</p></div>
           <div className="px-6 py-5 space-y-4">
@@ -624,10 +628,51 @@ function OnboardingPage({ onComplete }: { onComplete: (d: OBForm) => void }) {
             {step === 2 && (<><FieldInput label="Phone" type="tel" placeholder="e.g. 09XX XXX XXXX" value={f.phone} onChange={set("phone")} /><FieldInput label="Email" type="email" placeholder="e.g. student@email.com" value={f.contactEmail} onChange={set("contactEmail")} /></>)}
             {step === 3 && <FieldInput label="Student ID (7 digits, starts with 244...)" placeholder="e.g. 2440001" value={f.studentId} onChange={set("studentId")} />}
             {step === 4 && (<><FieldSelect label="Program" value={f.program} onChange={set("program")}><option value="">Select program</option><option>BSIT - Information Technology</option><option>BSCS - Computer Science</option><option>BSBA - Business Administration</option><option>BSEd - Secondary Education</option><option>BSHM - Hospitality Management</option></FieldSelect><FieldSelect label="Year Level" value={f.yearLevel} onChange={set("yearLevel")}><option value="">Select year level</option><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></FieldSelect><FieldInput label="Section" placeholder="e.g. IT-2A" value={f.section} onChange={set("section")} /></>)}
+            {step === 5 && (
+              <div className="flex flex-col items-center gap-4">
+                <input ref={idPhotoRef} type="file" accept="image/*" capture="environment" className="hidden"
+                  onChange={e => { const file = e.target.files?.[0]; if (file) setF(p => ({ ...p, idPhotoUrl: URL.createObjectURL(file) })); }} />
+                {f.idPhotoUrl ? (
+                  <div className="relative w-full rounded-xl overflow-hidden border-2 border-green-400" style={{ aspectRatio: "16/10" }}>
+                    <img src={f.idPhotoUrl} alt="School ID" className="w-full h-full object-cover" />
+                    <button onClick={() => setF(p => ({ ...p, idPhotoUrl: undefined }))} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"><Icons.X /></button>
+                  </div>
+                ) : (
+                  <button onClick={() => idPhotoRef.current?.click()} className="w-full border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center gap-3 py-10 hover:border-green-400 hover:bg-green-50/50 transition-all text-slate-400 hover:text-green-600">
+                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center"><Icons.Camera /></div>
+                    <div className="text-center"><p className="text-sm font-semibold">Take or upload ID photo</p><p className="text-xs mt-0.5">Position your school ID clearly in frame</p></div>
+                  </button>
+                )}
+                <p className="text-[11px] text-slate-400 text-center leading-relaxed">Make sure all text on your ID is visible and legible. This is used to verify your identity.</p>
+              </div>
+            )}
+            {step === 6 && (
+              <div className="flex flex-col gap-4">
+                <div className="h-52 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500 leading-relaxed space-y-3">
+                  <p className="font-semibold text-slate-700">Terms of Use</p>
+                  <p>By creating an account on TapIn, you agree to use this system solely for legitimate attendance tracking purposes. You must not share your QR code with others or attempt to record attendance on behalf of another student. Any misuse may result in disciplinary action.</p>
+                  <p className="font-semibold text-slate-700">Privacy Policy</p>
+                  <p>TapIn collects your name, student ID, contact information, and attendance records to facilitate event attendance and fee management within your institution. Your data is stored securely and is accessible only to authorized moderators and system administrators within your school.</p>
+                  <p>We do not sell or share your personal information with third parties. Attendance records and fine statuses are visible only to moderators of your institution. Your ID photo is used solely for identity verification during account review.</p>
+                  <p className="font-semibold text-slate-700">Data Retention</p>
+                  <p>Your records are retained for the duration of your enrollment and may be archived thereafter per institutional policy. You may request data correction or deletion by contacting your school's SSG office.</p>
+                </div>
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${agreed ? "bg-green-600 border-green-600" : "border-slate-300 group-hover:border-green-400"}`} onClick={() => setAgreed(v => !v)}>
+                    {agreed && <svg viewBox="0 0 24 24" className="w-3 h-3" fill="none" stroke="white" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                  </div>
+                  <span className="text-sm text-slate-600 leading-snug" onClick={() => setAgreed(v => !v)}>I have read and agree to the <span className="font-semibold text-slate-800">Terms of Use</span> and <span className="font-semibold text-slate-800">Privacy Policy</span>.</span>
+                </label>
+              </div>
+            )}
           </div>
           <div className="px-6 pb-5 flex gap-2.5">
             {step > 1 && <button onClick={() => setStep(s => s - 1)} className="h-10 px-4 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"><Icons.ChevronLeft />Back</button>}
-            <button onClick={() => step < steps.length ? setStep(s => s + 1) : onComplete(f)} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-all shadow-sm">{step === steps.length ? "Complete setup" : "Continue"}</button>
+            <button
+              disabled={!canContinue()}
+              onClick={() => step < TOTAL ? setStep(s => s + 1) : onComplete({ ...f, agreedToTerms: agreed })}
+              className={`flex-1 h-10 text-white text-sm font-semibold rounded-lg transition-all shadow-sm ${canContinue() ? "bg-green-600 hover:bg-green-700" : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"}`}
+            >{step === TOTAL ? "Complete setup" : "Continue"}</button>
           </div>
         </div>
       </div>
@@ -697,7 +742,7 @@ function StudentProfileModal({ student, onClose }: { student: StudentProfile; on
         {tab === "qr" && (
           <div className="px-5 pb-5 text-center">
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 inline-block mb-3">
-              <QRSvg size={160} />
+              <StudentQR studentId={student.id} size={160} />
             </div>
             <p className="text-xs font-semibold text-slate-900">{student.name}</p>
             <p className="text-[11px] text-slate-400 mt-0.5">{student.id} · {student.program}</p>
@@ -816,15 +861,17 @@ function EventDetailPage({ eventId, user, showFees, onBack }: { eventId: string;
 // ─── STUDENT: My QR ───────────────────────────────────────────────────────────
 function MyQRPage({ user, qrVersion, onBack }: { user: User; qrVersion: number; onBack: () => void }) {
   const name = fullName(user);
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const size = 240, pad = 24, footH = 72, dpr = 2;
     const canvas = document.createElement("canvas");
     canvas.width = (size + pad * 2) * dpr; canvas.height = (size + pad * 2 + footH) * dpr;
     const ctx = canvas.getContext("2d")!; ctx.scale(dpr, dpr);
     const W = size + pad * 2;
     ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.roundRect(0, 0, W, size + pad * 2 + footH, 16); ctx.fill();
-    const cell = size / 21; ctx.fillStyle = "#111827";
-    QR_CELLS.forEach((row, r) => row.forEach((v, c) => { if (v) ctx.fillRect(pad + c * cell, pad + r * cell, cell, cell); }));
+    const qrDataUrl = await QRCode.toDataURL(`TAPIN:${user.studentId}`, { width: size, margin: 0, color: { dark: "#111827", light: "#ffffff" }, errorCorrectionLevel: "H" });
+    const img = new Image(); img.src = qrDataUrl;
+    await new Promise(r => { img.onload = r; });
+    ctx.drawImage(img, pad, pad, size, size);
     ctx.strokeStyle = "#f1f5f9"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pad, size + pad + 12); ctx.lineTo(W - pad, size + pad + 12); ctx.stroke();
     ctx.fillStyle = "#111827"; ctx.font = "bold 13px sans-serif"; ctx.textAlign = "center";
     ctx.fillText(name, W / 2, size + pad + 32);
@@ -841,7 +888,7 @@ function MyQRPage({ user, qrVersion, onBack }: { user: User; qrVersion: number; 
       <div className="max-w-xs mx-auto">
         <div className="bg-white border border-slate-100 rounded-2xl p-6 text-center shadow-sm relative">
           {qrVersion > 1 && <div className="absolute top-3 right-3 flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full"><span className="w-1.5 h-1.5 bg-green-500 rounded-full" />Renewed</div>}
-          <div className="flex justify-center mb-5"><QRSvg size={192} /></div>
+          <div className="flex justify-center mb-5"><StudentQR studentId={user.studentId} size={192} /></div>
           <div className="border-t border-slate-100 pt-4">
             <p className="font-bold text-slate-900">{name || "Your name"}</p>
             <p className="text-sm text-slate-400 mt-0.5">{user.studentId || "No ID set"}</p>
@@ -1178,21 +1225,26 @@ function CameraScanner({ event, onResult, onClose }: {
   onClose: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const detectorRef = useRef<{ detect: (src: HTMLVideoElement) => Promise<{ rawValue: string }[]> } | null>(null);
   const animRef = useRef<number>(0);
+  const scannedRef = useRef<boolean>(false);
   const [camError, setCamError] = useState<string | null>(null);
   const [result, setResult] = useState<ScanRecord | null>(null);
   const [torch, setTorch] = useState(false);
   const eventScans = EVENT_SCANS[event.id] ?? [];
 
-  const simulateScan = () => {
-    const pool = eventScans.length > 0 ? eventScans : [
-      { name: "Test Student", id: "2440000", program: "BSIT", section: "IT-1A", time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }), status: "confirmed" as const, dbId: 99 },
-    ];
-    const hit = pool[Math.floor(Math.random() * pool.length)];
-    setResult(hit);
-    onResult(hit);
+  const resolveQr = (raw: string) => {
+    if (scannedRef.current) return;
+    scannedRef.current = true;
+    const id = raw.startsWith("TAPIN:") ? raw.slice(6) : raw;
+    const existing = eventScans.find(s => s.id === id);
+    const time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    const rec: ScanRecord = existing
+      ? { ...existing, status: "duplicate" as const }
+      : { name: `Student ${id}`, id, program: "BSIT", section: "IT-1A", time, status: "confirmed" as const, dbId: Date.now() };
+    setResult(rec);
+    onResult(rec);
   };
 
   useEffect(() => {
@@ -1206,28 +1258,28 @@ function CameraScanner({ event, onResult, onClose }: {
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.play();
+          await videoRef.current.play();
         }
-        // Try BarcodeDetector (Chrome/Android)
-        if ("BarcodeDetector" in window) {
-          const BD = (window as unknown as { BarcodeDetector: new (opts: { formats: string[] }) => typeof detectorRef.current }
-          ).BarcodeDetector;
-          detectorRef.current = new BD({ formats: ["qr_code"] });
-          const tick = async () => {
-            if (!active || !videoRef.current || !detectorRef.current) return;
-            try {
-              const codes = await detectorRef.current.detect(videoRef.current);
-              if (codes.length > 0) {
-                simulateScan();
-                return;
-              }
-            } catch { /* ignore */ }
-            animRef.current = requestAnimationFrame(tick);
-          };
-          animRef.current = requestAnimationFrame(tick);
-        }
+        tickRef.current = () => {
+          if (!active || scannedRef.current) return;
+          const video = videoRef.current;
+          const canvas = canvasRef.current;
+          if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
+            const { videoWidth: w, videoHeight: h } = video;
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            if (ctx) {
+              ctx.drawImage(video, 0, 0, w, h);
+              const imageData = ctx.getImageData(0, 0, w, h);
+              const code = jsQR(imageData.data, w, h, { inversionAttempts: "dontInvert" });
+              if (code?.data) { resolveQr(code.data); return; }
+            }
+          }
+          animRef.current = requestAnimationFrame(tickRef.current);
+        };
+        animRef.current = requestAnimationFrame(tickRef.current);
       } catch {
-        if (active) setCamError("Camera access denied or unavailable.");
+        if (active) setCamError("Camera access denied. Please allow camera permission and try again.");
       }
     }
     start();
@@ -1248,7 +1300,8 @@ function CameraScanner({ event, onResult, onClose }: {
     } catch { /* not supported */ }
   };
 
-  const scanAgain = () => setResult(null);
+  const tickRef = useRef<() => void>(() => {});
+  const scanAgain = () => { scannedRef.current = false; setResult(null); animRef.current = requestAnimationFrame(tickRef.current); };
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
@@ -1271,6 +1324,8 @@ function CameraScanner({ event, onResult, onClose }: {
       <div className="flex-1 relative overflow-hidden">
         {/* Live video */}
         <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
+        {/* Hidden canvas for jsQR frame decoding */}
+        <canvas ref={canvasRef} className="hidden" />
 
         {/* Dark vignette overlay */}
         {!result && (
@@ -1299,7 +1354,7 @@ function CameraScanner({ event, onResult, onClose }: {
               <Icons.AlertCircle />
             </div>
             <p className="text-white font-semibold">{camError}</p>
-            <p className="text-white/50 text-sm">You can still use the simulate button below.</p>
+            <p className="text-white/50 text-sm">Ensure camera permissions are allowed in your browser settings.</p>
           </div>
         )}
 
@@ -1331,16 +1386,10 @@ function CameraScanner({ event, onResult, onClose }: {
         )}
       </div>
 
-      {/* Bottom controls */}
-      {!result && (
-        <div className="relative z-10 px-6 flex flex-col gap-3" style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))", paddingTop: "24px", background: "linear-gradient(to top, rgba(0,0,0,.75) 0%, transparent 100%)" }}>
-          <button onClick={simulateScan} className="w-full h-14 bg-green-500 hover:bg-green-400 active:scale-[.98] text-white text-base font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg shadow-green-900/40">
-            <Icons.Scan />
-            Simulate Scan
-          </button>
-          <p className="text-white/40 text-xs text-center">
-            {camError ? "Camera unavailable — tap above to simulate" : "Camera is active — or tap to simulate"}
-          </p>
+      {/* Bottom hint */}
+      {!result && !camError && (
+        <div className="relative z-10 px-6 flex flex-col gap-2 items-center" style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))", paddingTop: "16px", background: "linear-gradient(to top, rgba(0,0,0,.75) 0%, transparent 100%)" }}>
+          <p className="text-white/50 text-xs text-center">Camera active · Scanning automatically</p>
         </div>
       )}
 
