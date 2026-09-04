@@ -91,10 +91,14 @@ body {
 }
 .qr-glow { animation: qr-glow 2.5s ease-in-out infinite; }
 
-/* QR scanner scanline */
-@keyframes scanline {
-  0%, 100% { top: 8%; }
-  50% { top: 84%; }
+/* QR scanner — single sweep (plays once on scan detect) */
+@keyframes scan-sweep {
+  0%   { top: 8%;  opacity: 1; }
+  85%  { top: 84%; opacity: 1; }
+  100% { top: 84%; opacity: 0; }
+}
+.scan-sweep {
+  animation: scan-sweep 0.65s cubic-bezier(0.4, 0, 0.2, 1) 1 forwards;
 }
 
 /* Slide-up for toasts */

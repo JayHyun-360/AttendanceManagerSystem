@@ -313,11 +313,19 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // ─── TapIn Logomark ───────────────────────────────────────────────────────────
 function TapInMark({ className = "w-7 h-7" }: { className?: string }) {
   return (
-    <div className={`${className} rounded-lg bg-green-600 flex items-center justify-center shadow-sm shrink-0`}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-[55%] h-[55%]">
-        <path d="M9 12l2 2 4-4"/><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18"/>
-      </svg>
-    </div>
+    <svg viewBox="0 0 40 44" className={`${className} shrink-0`} fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Attendance list (clipboard-style sheet) */}
+      <rect x="2" y="2" width="36" height="40" rx="5" fill="#16a34a" />
+      {/* Header strip */}
+      <rect x="2" y="2" width="36" height="11" rx="5" fill="#15803d" />
+      <rect x="2" y="8" width="36" height="5" fill="#15803d" />
+      {/* List lines */}
+      <line x1="9" y1="20" x2="31" y2="20" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.35" />
+      <line x1="9" y1="26" x2="31" y2="26" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.35" />
+      <line x1="9" y1="32" x2="24" y2="32" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.35" />
+      {/* Bold checkmark overlay */}
+      <polyline points="11,27 18,35 31,17" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
@@ -393,9 +401,10 @@ function TopBar({ user, onNav, onMenuOpen }: { user: User | null; onNav: (p: Pag
 }
 
 // ─── Sidebar (desktop + mobile drawer) ───────────────────────────────────────
-function Sidebar({ page, user, open, onNav, onClose, onLogout }: {
+function Sidebar({ page, user, open, onNav, onClose, onLogout, badges }: {
   page: Page; user: User | null; open: boolean;
   onNav: (p: Page) => void; onClose: () => void; onLogout: () => void;
+  badges?: Partial<Record<Page, number>>;
 }) {
   if (!user) return null;
   const isMod = user.role === "admin";
@@ -438,11 +447,19 @@ function Sidebar({ page, user, open, onNav, onClose, onLogout }: {
       <nav className="flex-1 px-2 pt-3 pb-2 space-y-0.5 overflow-y-auto">
         {nav.map(({ p, l, I }) => {
           const active = page === p;
+          const count = badges?.[p] ?? 0;
+          const badgeLabel = count > 9 ? "9+" : count > 0 ? String(count) : null;
           return (
             <button key={p} onClick={() => handleNav(p)} className={`w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm transition-all ${active ? "bg-green-50 text-green-800 font-semibold" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium"}`}>
-              <span className={`shrink-0 ${active ? "text-green-600" : "text-slate-400"}`}><I /></span>
+              <span className={`relative shrink-0 ${active ? "text-green-600" : "text-slate-400"}`}>
+                <I />
+                {badgeLabel && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-[3px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+                    {badgeLabel}
+                  </span>
+                )}
+              </span>
               <span className="truncate">{l}</span>
-              {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />}
             </button>
           );
         })}
@@ -705,6 +722,25 @@ function ExcuseModal({ record, onClose, onSubmit }: { record: typeof ATTENDANCE_
   );
 }
 
+// ─── Shared Form Modal ────────────────────────────────────────────────────────
+function FormModal({ title, onClose, footer, children }: {
+  title: string; onClose: () => void;
+  footer?: React.ReactNode; children: React.ReactNode;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col" style={{ maxHeight: "90vh" }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+          <p className="text-base font-bold text-slate-900">{title}</p>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"><Icons.X /></button>
+        </div>
+        <div className="px-5 py-4 space-y-3 overflow-y-auto flex-1">{children}</div>
+        {footer && <div className="px-5 pt-3 pb-5 flex gap-2.5 shrink-0 border-t border-slate-100">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
 // ─── Student Profile Modal (Moderator view, with QR) ─────────────────────────
 function StudentProfileModal({ student, onClose }: { student: StudentProfile; onClose: () => void }) {
   const [tab, setTab] = useState<"info" | "qr">("info");
@@ -767,7 +803,7 @@ function DashboardPage({ user, onNav, fines, showFees }: { user: User; onNav: (p
       </div>
       {showFees && unpaidFines.length > 0 && (
         <button onClick={() => onNav("my-fines")} className="w-full bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between mb-5 hover:bg-red-100 transition-all group">
-          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center text-red-500 shrink-0"><Icons.Peso /></div><div className="text-left"><p className="text-sm font-bold text-red-700">Unpaid fines — P{total.toLocaleString()}</p><p className="text-xs text-red-500 mt-0.5">{unpaidFines.length} outstanding fine{unpaidFines.length > 1 ? "s" : ""}</p></div></div>
+          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center text-red-500 shrink-0"><Icons.Peso /></div><div className="text-left"><p className="text-sm font-bold text-red-700">Unpaid fines — ₱{total.toLocaleString()}</p><p className="text-xs text-red-500 mt-0.5">{unpaidFines.length} outstanding fine{unpaidFines.length > 1 ? "s" : ""}</p></div></div>
           <span className="text-red-400 group-hover:text-red-600"><Icons.ChevronRight /></span>
         </button>
       )}
@@ -818,7 +854,7 @@ function EventsPage({ onNav, onSelectEvent, user, showFees }: { onNav: (p: Page)
               <span className="flex items-center gap-1.5"><Icons.Calendar />{e.date}</span>
               <span className="flex items-center gap-1.5"><Icons.Clock />{e.time}</span>
               <span className="flex items-center gap-1.5"><Icons.MapPin />{e.location}</span>
-              {canSeeFees && e.fineAmount > 0 && <span className="flex items-center gap-1.5 text-red-400 font-semibold"><Icons.Peso />P{e.fineAmount} fine</span>}
+              {canSeeFees && e.fineAmount > 0 && <span className="flex items-center gap-1.5 text-red-400 font-semibold">₱{e.fineAmount} fine</span>}
             </div>
           </div>
         ))}
@@ -840,7 +876,7 @@ function EventDetailPage({ eventId, user, showFees, onBack }: { eventId: string;
         <div className="grid grid-cols-2 gap-3">
           {[{ l: "DATE", v: ev.date }, { l: "TIME", v: ev.time }].map(d => (<div key={d.l} className="bg-white/10 rounded-lg px-3 py-2.5"><p className="text-green-300 text-[10px] font-bold uppercase tracking-widest mb-1">{d.l}</p><p className="text-sm font-semibold">{d.v}</p></div>))}
           <div className="bg-white/10 rounded-lg px-3 py-2.5 col-span-2"><p className="text-green-300 text-[10px] font-bold uppercase tracking-widest mb-1">LOCATION</p><p className="text-sm font-semibold">{ev.location}</p></div>
-          {canSeeFees && ev.fineAmount > 0 && <div className="bg-white/10 rounded-lg px-3 py-2.5 col-span-2"><p className="text-green-300 text-[10px] font-bold uppercase tracking-widest mb-1">ABSENCE FEE</p><p className="text-sm font-semibold">P{ev.fineAmount}</p></div>}
+          {canSeeFees && ev.fineAmount > 0 && <div className="bg-white/10 rounded-lg px-3 py-2.5 col-span-2"><p className="text-green-300 text-[10px] font-bold uppercase tracking-widest mb-1">ABSENCE FEE</p><p className="text-sm font-semibold">₱{ev.fineAmount}</p></div>}
         </div>
       </div>
       <div className="bg-white border border-slate-100 rounded-xl p-5 mb-3">
@@ -943,7 +979,7 @@ function AttendanceHistoryPage({ excuseRequests, fines, showFees, onSubmitExcuse
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-900 truncate">{r.event}</p>
                 <p className="text-xs text-slate-400 mt-0.5">{r.date}{r.time !== "—" ? ` · ${r.time}` : ""}</p>
-                {showFees && fine && eff === "absent" && <p className="text-xs text-red-500 font-semibold mt-0.5">Fee: P{fine.amount}</p>}
+                {showFees && fine && eff === "absent" && <p className="text-xs text-red-500 font-semibold mt-0.5">Fee: ₱{fine.amount}</p>}
               </div>
               {eff === "absent" ? <button onClick={() => setModal(r)} className="shrink-0 h-8 px-3 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-semibold rounded-lg flex items-center gap-1.5"><Icons.Send />Excuse</button> : <Badge status={eff} />}
             </div>
@@ -980,13 +1016,13 @@ function MyFinesPage({ fines, showFees, onBack }: { fines: FineRecord[]; showFee
       {fines.length === 0 ? (
         <div className="bg-white border border-slate-100 rounded-xl px-5 py-12 text-center"><div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-3 text-green-500"><Icons.Check /></div><p className="font-semibold text-slate-900 text-sm">No outstanding fines</p><p className="text-xs text-slate-400 mt-1">Your attendance record is clean.</p></div>
       ) : (<>
-        {unpaid.length > 0 && <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 mb-5 flex items-center justify-between"><div><p className="font-bold text-red-800">Total outstanding</p><p className="text-xs text-red-600 mt-0.5">{unpaid.length} unpaid fine{unpaid.length > 1 ? "s" : ""}</p></div><p className="text-2xl font-extrabold text-red-700">P{total.toLocaleString()}</p></div>}
+        {unpaid.length > 0 && <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 mb-5 flex items-center justify-between"><div><p className="font-bold text-red-800">Total outstanding</p><p className="text-xs text-red-600 mt-0.5">{unpaid.length} unpaid fine{unpaid.length > 1 ? "s" : ""}</p></div><p className="text-2xl font-extrabold text-red-700">₱{total.toLocaleString()}</p></div>}
         <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
           {fines.map((fine, i) => (
             <div key={fine.id} className={`flex items-center gap-4 px-5 py-4 ${i < fines.length - 1 ? "border-b border-slate-50" : ""}`}>
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${fine.status === "unpaid" ? "bg-red-50 text-red-400" : fine.status === "excused" ? "bg-violet-50 text-violet-500" : "bg-green-50 text-green-600"}`}><Icons.Peso /></div>
               <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{fine.eventTitle}</p><p className="text-xs text-slate-400 mt-0.5">{fine.eventDate}</p></div>
-              <div className="text-right shrink-0"><p className={`text-sm font-bold ${fine.status === "unpaid" ? "text-red-600" : fine.status === "excused" ? "text-violet-600" : "text-green-600"}`}>P{fine.amount}</p><Badge status={fine.status} /></div>
+              <div className="text-right shrink-0"><p className={`text-sm font-bold ${fine.status === "unpaid" ? "text-red-600" : fine.status === "excused" ? "text-violet-600" : "text-green-600"}`}>₱{fine.amount}</p><Badge status={fine.status} /></div>
             </div>
           ))}
         </div>
@@ -1146,46 +1182,44 @@ function AdminEventsPage({ onNav }: { onNav: (p: Page) => void }) {
   return (
     <PageShell>
       <PageHeader title="Events" subtitle="AY 2026-2027, 1st Semester" action={
-        <button onClick={() => { setShowForm(!showForm); setEditId(null); setEditDraft(null); }} className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"><Icons.Plus />New event</button>
+        <button onClick={() => { setShowForm(true); setEditId(null); setEditDraft(null); }} className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"><Icons.Plus />New event</button>
       } />
+
+      {/* New event modal */}
       {showForm && (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-5">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><p className="text-sm font-bold text-slate-900">Create New Event</p><button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600"><Icons.X /></button></div>
-          <div className="px-5 py-4 space-y-3">
-            <FieldInput label="Event title *" placeholder="e.g. Foundation Day Celebration" value={draft.title} onChange={setD("title")} />
-            <div className="grid grid-cols-2 gap-3"><FieldInput label="Date *" type="date" value={draft.date} onChange={setD("date")} /><FieldInput label="Time" placeholder="e.g. 8:00 AM - 5:00 PM" value={draft.time} onChange={setD("time")} /></div>
-            <FieldInput label="Location" placeholder="e.g. Main Gymnasium" value={draft.location} onChange={setD("location")} />
-            <div className="grid grid-cols-2 gap-3"><FieldSelect label="Program" value={draft.program} onChange={setD("program")}><option>All Programs</option><option>BSIT / BSCS</option><option>BSIT</option><option>BSCS</option><option>BSBA</option></FieldSelect><FieldInput label="Absence Fee (P)" type="number" min="0" placeholder="0 = no fee" value={draft.fineAmount} onChange={setD("fineAmount")} /></div>
-            <FieldTextarea label="Description" placeholder="What is this event about?" rows={3} value={draft.description} onChange={setD("description")} />
-            <div>
-              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-2">Media</label>
-              <input ref={photoRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { const files = Array.from(e.target.files ?? []); setDraft(d => ({ ...d, photos: [...d.photos, ...files] })); files.forEach(f => setPhotoUrls(u => [...u, URL.createObjectURL(f)])); }} />
-              <input ref={videoRef} type="file" accept="video/*" multiple className="hidden" onChange={e => { const files = Array.from(e.target.files ?? []); setDraft(d => ({ ...d, videos: [...d.videos, ...files] })); files.forEach(f => setVideoNames(n => [...n, f.name])); }} />
-              <div className="flex gap-2"><button onClick={() => photoRef.current?.click()} className="flex-1 h-9 border border-slate-200 rounded-lg text-xs font-semibold text-slate-500 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"><Icons.Image />Photos</button><button onClick={() => videoRef.current?.click()} className="flex-1 h-9 border border-slate-200 rounded-lg text-xs font-semibold text-slate-500 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"><Icons.Video />Videos</button></div>
-              {(photoUrls.length > 0 || videoNames.length > 0) && <div className="mt-2.5 flex flex-wrap gap-2">{photoUrls.map((url, i) => (<div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200"><img src={url} alt="" className="w-full h-full object-cover" /><button onClick={() => { setPhotoUrls(u => u.filter((_, j) => j !== i)); setDraft(d => ({ ...d, photos: d.photos.filter((_, j) => j !== i) })); }} className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px]">x</button></div>))}{videoNames.map((n, i) => (<div key={i} className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-slate-600"><Icons.Video /><span className="max-w-[80px] truncate">{n}</span></div>))}</div>}
-            </div>
+        <FormModal title="Create New Event" onClose={() => setShowForm(false)}
+          footer={<><button onClick={handleCreate} disabled={!draft.title || !draft.date} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40">Create event</button><button onClick={() => setShowForm(false)} className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50">Cancel</button></>}>
+          <FieldInput label="Event title *" placeholder="e.g. Foundation Day Celebration" value={draft.title} onChange={setD("title")} />
+          <div className="grid grid-cols-2 gap-3"><FieldInput label="Date *" type="date" value={draft.date} onChange={setD("date")} /><FieldInput label="Time" placeholder="e.g. 8:00 AM – 5:00 PM" value={draft.time} onChange={setD("time")} /></div>
+          <FieldInput label="Location" placeholder="e.g. Main Gymnasium" value={draft.location} onChange={setD("location")} />
+          <div className="grid grid-cols-2 gap-3"><FieldSelect label="Program" value={draft.program} onChange={setD("program")}><option>All Programs</option><option>BSIT / BSCS</option><option>BSIT</option><option>BSCS</option><option>BSBA</option></FieldSelect><FieldInput label="Absence Fee (₱)" type="number" min="0" placeholder="0 = no fee" value={draft.fineAmount} onChange={setD("fineAmount")} /></div>
+          <FieldTextarea label="Description" placeholder="What is this event about?" rows={3} value={draft.description} onChange={setD("description")} />
+          <div>
+            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-2">Media</label>
+            <input ref={photoRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { const files = Array.from(e.target.files ?? []); setDraft(d => ({ ...d, photos: [...d.photos, ...files] })); files.forEach(f => setPhotoUrls(u => [...u, URL.createObjectURL(f)])); }} />
+            <input ref={videoRef} type="file" accept="video/*" multiple className="hidden" onChange={e => { const files = Array.from(e.target.files ?? []); setDraft(d => ({ ...d, videos: [...d.videos, ...files] })); files.forEach(f => setVideoNames(n => [...n, f.name])); }} />
+            <div className="flex gap-2"><button onClick={() => photoRef.current?.click()} className="flex-1 h-9 border border-slate-200 rounded-lg text-xs font-semibold text-slate-500 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"><Icons.Image />Photos</button><button onClick={() => videoRef.current?.click()} className="flex-1 h-9 border border-slate-200 rounded-lg text-xs font-semibold text-slate-500 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"><Icons.Video />Videos</button></div>
+            {(photoUrls.length > 0 || videoNames.length > 0) && <div className="mt-2.5 flex flex-wrap gap-2">{photoUrls.map((url, i) => (<div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200"><img src={url} alt="" className="w-full h-full object-cover" /><button onClick={() => { setPhotoUrls(u => u.filter((_, j) => j !== i)); setDraft(d => ({ ...d, photos: d.photos.filter((_, j) => j !== i) })); }} className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px]">×</button></div>))}{videoNames.map((n, i) => (<div key={i} className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-slate-600"><Icons.Video /><span className="max-w-[80px] truncate">{n}</span></div>))}</div>}
           </div>
-          <div className="px-5 pb-4 flex gap-2.5"><button onClick={handleCreate} disabled={!draft.title || !draft.date} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40">Create event</button><button onClick={() => setShowForm(false)} className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50">Cancel</button></div>
-        </div>
+        </FormModal>
       )}
+
+      {/* Edit event modal */}
       {editId && editDraft && (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-5">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><p className="text-sm font-bold text-slate-900">Edit Event</p><button onClick={() => { setEditId(null); setEditDraft(null); }} className="text-slate-400 hover:text-slate-600"><Icons.X /></button></div>
-          <div className="px-5 py-4 space-y-3">
-            <FieldInput label="Title" value={editDraft.title} onChange={e => setEditDraft(d => d ? { ...d, title: e.target.value } : d)} />
-            <div className="grid grid-cols-2 gap-3"><FieldInput label="Date" value={editDraft.date} onChange={e => setEditDraft(d => d ? { ...d, date: e.target.value } : d)} /><FieldInput label="Time" value={editDraft.time} onChange={e => setEditDraft(d => d ? { ...d, time: e.target.value } : d)} /></div>
-            <FieldInput label="Location" value={editDraft.location} onChange={e => setEditDraft(d => d ? { ...d, location: e.target.value } : d)} />
-            <FieldInput label="Absence Fee (P)" type="number" min="0" value={editDraft.fineAmount.toString()} onChange={e => setEditDraft(d => d ? { ...d, fineAmount: parseInt(e.target.value) || 0 } : d)} />
-            <FieldTextarea label="Description" rows={3} value={editDraft.description} onChange={e => setEditDraft(d => d ? { ...d, description: e.target.value } : d)} />
-            <div>
-              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-2">Photos</label>
-              <input ref={editPhotoRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { Array.from(e.target.files ?? []).forEach(f => { const url = URL.createObjectURL(f); setEditDraft(d => d ? { ...d, mediaUrls: [...(d.mediaUrls ?? []), url] } : d); }); }} />
-              {editDraft.mediaUrls && editDraft.mediaUrls.length > 0 && <div className="flex flex-wrap gap-2 mb-2">{editDraft.mediaUrls.map((url, i) => (<div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200"><img src={url} alt="" className="w-full h-full object-cover" /><button onClick={() => setEditDraft(d => d ? { ...d, mediaUrls: d.mediaUrls?.filter((_, j) => j !== i) } : d)} className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px]">x</button></div>))}</div>}
-              <button onClick={() => editPhotoRef.current?.click()} className="w-full h-9 border border-dashed border-slate-200 rounded-lg text-xs font-semibold text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"><Icons.Image />Add photos</button>
-            </div>
+        <FormModal title="Edit Event" onClose={() => { setEditId(null); setEditDraft(null); }}
+          footer={<><button onClick={saveEdit} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm">Save changes</button><button onClick={() => { setEditId(null); setEditDraft(null); }} className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50">Cancel</button></>}>
+          <FieldInput label="Title" value={editDraft.title} onChange={e => setEditDraft(d => d ? { ...d, title: e.target.value } : d)} />
+          <div className="grid grid-cols-2 gap-3"><FieldInput label="Date" type="date" value={editDraft.date} onChange={e => setEditDraft(d => d ? { ...d, date: e.target.value } : d)} /><FieldInput label="Time" value={editDraft.time} onChange={e => setEditDraft(d => d ? { ...d, time: e.target.value } : d)} /></div>
+          <FieldInput label="Location" value={editDraft.location} onChange={e => setEditDraft(d => d ? { ...d, location: e.target.value } : d)} />
+          <div className="grid grid-cols-2 gap-3"><FieldSelect label="Program" value={editDraft.program} onChange={e => setEditDraft(d => d ? { ...d, program: e.target.value } : d)}><option>All Programs</option><option>BSIT / BSCS</option><option>BSIT</option><option>BSCS</option><option>BSBA</option></FieldSelect><FieldInput label="Absence Fee (₱)" type="number" min="0" value={editDraft.fineAmount.toString()} onChange={e => setEditDraft(d => d ? { ...d, fineAmount: parseInt(e.target.value) || 0 } : d)} /></div>
+          <FieldTextarea label="Description" rows={3} value={editDraft.description} onChange={e => setEditDraft(d => d ? { ...d, description: e.target.value } : d)} />
+          <div>
+            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-2">Photos</label>
+            <input ref={editPhotoRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { Array.from(e.target.files ?? []).forEach(f => { const url = URL.createObjectURL(f); setEditDraft(d => d ? { ...d, mediaUrls: [...(d.mediaUrls ?? []), url] } : d); }); }} />
+            {editDraft.mediaUrls && editDraft.mediaUrls.length > 0 && <div className="flex flex-wrap gap-2 mb-2">{editDraft.mediaUrls.map((url, i) => (<div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200"><img src={url} alt="" className="w-full h-full object-cover" /><button onClick={() => setEditDraft(d => d ? { ...d, mediaUrls: d.mediaUrls?.filter((_, j) => j !== i) } : d)} className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px]">×</button></div>))}</div>}
+            <button onClick={() => editPhotoRef.current?.click()} className="w-full h-9 border border-dashed border-slate-200 rounded-lg text-xs font-semibold text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"><Icons.Image />Add photos</button>
           </div>
-          <div className="px-5 pb-4 flex gap-2.5"><button onClick={saveEdit} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm">Save changes</button><button onClick={() => { setEditId(null); setEditDraft(null); }} className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50">Cancel</button></div>
-        </div>
+        </FormModal>
       )}
       <div className="space-y-3">
         {events.map(e => (
@@ -1195,7 +1229,7 @@ function AdminEventsPage({ onNav }: { onNav: (p: Page) => void }) {
               <div className="flex items-start justify-between mb-3">
                 <Badge status={e.status} />
                 <div className="flex items-center gap-2">
-                  {e.fineAmount > 0 && <span className="text-xs text-red-500 font-semibold flex items-center gap-0.5"><Icons.Peso />P{e.fineAmount}</span>}
+                  {e.fineAmount > 0 && <span className="text-xs text-red-500 font-semibold">₱{e.fineAmount} fine</span>}
                   <span className="text-xs text-slate-400">{e.date}</span>
                   <DotMenu items={[
                     ...statusOptions(e.status).map(o => ({ label: o.label, icon: o.icon, onClick: () => setStatus(e.id, o.status) })),
@@ -1243,8 +1277,8 @@ function CameraScanner({ event, onResult, onClose }: {
     const rec: ScanRecord = existing
       ? { ...existing, status: "duplicate" as const }
       : { name: `Student ${id}`, id, program: "BSIT", section: "IT-1A", time, status: "confirmed" as const, dbId: Date.now() };
-    setResult(rec);
-    onResult(rec);
+    setSweeping(true);
+    setTimeout(() => { setResult(rec); onResult(rec); }, 700);
   };
 
   useEffect(() => {
@@ -1300,8 +1334,9 @@ function CameraScanner({ event, onResult, onClose }: {
     } catch { /* not supported */ }
   };
 
+  const [sweeping, setSweeping] = useState(false);
   const tickRef = useRef<() => void>(() => {});
-  const scanAgain = () => { scannedRef.current = false; setResult(null); animRef.current = requestAnimationFrame(tickRef.current); };
+  const scanAgain = () => { scannedRef.current = false; setSweeping(false); setResult(null); animRef.current = requestAnimationFrame(tickRef.current); };
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
@@ -1333,8 +1368,17 @@ function CameraScanner({ event, onResult, onClose }: {
             <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 60% 60% at 50% 50%, transparent 0%, rgba(0,0,0,.55) 100%)" }} />
             {/* Scan frame */}
             <div className="relative w-64 h-64 sm:w-72 sm:h-72">
-              {/* Animated scanline */}
-              <div className="absolute inset-x-3 h-0.5 bg-green-400/80 rounded-full" style={{ animation: "scanline 2.2s ease-in-out infinite", boxShadow: "0 0 8px 1px rgba(74,222,128,.6)" }} />
+              {/* Scanline — static when idle, single sweep on QR detect */}
+              <div
+                className={`absolute inset-x-0 h-[2px] rounded-full ${sweeping ? "scan-sweep" : ""}`}
+                style={{
+                  top: sweeping ? "8%" : "50%",
+                  background: "linear-gradient(90deg, transparent 0%, rgba(74,222,128,0.9) 20%, #4ade80 50%, rgba(74,222,128,0.9) 80%, transparent 100%)",
+                  boxShadow: "0 0 10px 2px rgba(74,222,128,0.55)",
+                  opacity: sweeping ? 1 : 0.6,
+                  transition: sweeping ? "none" : "opacity 0.3s",
+                }}
+              />
               {/* Corner marks */}
               {[
                 "top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-lg",
@@ -1457,7 +1501,7 @@ function AdminScannerPage() {
                 <p className="text-xs text-slate-400 mt-0.5">{selectedEvent.date} · {selectedEvent.location}</p>
               </div>
               {selectedEvent.fineAmount > 0 && (
-                <span className="text-xs font-bold text-red-500 shrink-0">P{selectedEvent.fineAmount} fee</span>
+                <span className="text-xs font-bold text-red-500 shrink-0">₱{selectedEvent.fineAmount} fee</span>
               )}
             </div>
             <button
@@ -1542,11 +1586,11 @@ function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
         {duplicates.length > 0 && (<><SectionLabel>Duplicate scans — tap trash to remove</SectionLabel><div className="bg-white border border-red-100 rounded-xl overflow-hidden">{duplicates.map((s, i) => (<div key={s.dbId} className={`px-5 py-3.5 flex items-center gap-3 ${i < duplicates.length - 1 ? "border-b border-slate-50" : ""}`}><Avatar name={s.name} size="sm" /><div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{s.name}</p><p className="text-[11px] text-slate-400">{s.id} · scanned {s.time}</p></div><Badge status={s.status} /><button onClick={() => deleteRecord(s.dbId)} className="w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"><Icons.Trash /></button></div>))}</div></>)}
       </>)}
       {tab === "absent" && (<>
-        {selectedEvent.fineAmount > 0 && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3"><span className="text-red-400 shrink-0"><Icons.Peso /></span><p className="text-sm text-red-700">Each absentee is automatically fined <span className="font-bold">P{selectedEvent.fineAmount}</span>.</p></div>}
+        {selectedEvent.fineAmount > 0 && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3"><Icons.AlertCircle /><p className="text-sm text-red-700">Each absentee is automatically fined <span className="font-bold">₱{selectedEvent.fineAmount}</span>.</p></div>}
         {absentees.length === 0 ? (<div className="bg-white border border-slate-100 rounded-xl px-5 py-10 text-center"><div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-3 text-green-500"><Icons.CheckCircle /></div><p className="font-semibold text-slate-900 text-sm">Full attendance</p><p className="text-xs text-slate-400 mt-1">All enrolled students have been scanned.</p></div>) : (
           <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
             <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 grid grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-widest"><span className="col-span-5">Student</span><span className="col-span-4">Program</span><span className="col-span-3 text-right">Fee</span></div>
-            {absentees.map((s, i) => (<div key={s.id} className={`px-5 py-3.5 grid grid-cols-12 items-center ${i < absentees.length - 1 ? "border-b border-slate-50" : ""}`}><div className="col-span-5 flex items-center gap-3 min-w-0"><Avatar name={s.name} size="sm" /><div className="min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{s.name}</p><p className="text-[11px] text-slate-400">{s.id}</p></div></div><span className="col-span-4 text-xs text-slate-500">{s.program} · {s.section}</span><div className="col-span-3 flex justify-end">{selectedEvent.fineAmount > 0 ? <span className="text-sm font-bold text-red-600">P{selectedEvent.fineAmount}</span> : <span className="text-xs text-slate-400">—</span>}</div></div>))}
+            {absentees.map((s, i) => (<div key={s.id} className={`px-5 py-3.5 grid grid-cols-12 items-center ${i < absentees.length - 1 ? "border-b border-slate-50" : ""}`}><div className="col-span-5 flex items-center gap-3 min-w-0"><Avatar name={s.name} size="sm" /><div className="min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{s.name}</p><p className="text-[11px] text-slate-400">{s.id}</p></div></div><span className="col-span-4 text-xs text-slate-500">{s.program} · {s.section}</span><div className="col-span-3 flex justify-end">{selectedEvent.fineAmount > 0 ? <span className="text-sm font-bold text-red-600">₱{selectedEvent.fineAmount}</span> : <span className="text-xs text-slate-400">—</span>}</div></div>))}
           </div>
         )}
       </>)}
@@ -1610,37 +1654,34 @@ function AdminAnnouncementsPage() {
   const deletePost = (id: string) => setPosts(p => p.filter(a => a.id !== id));
   return (
     <PageShell>
-      <PageHeader title="Announcements" action={<button onClick={() => { setShowForm(!showForm); setEditId(null); setEditDraft(null); }} className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"><Icons.Plus />New post</button>} />
+      <PageHeader title="Announcements" action={<button onClick={() => { setShowForm(true); setEditId(null); setEditDraft(null); }} className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"><Icons.Plus />New post</button>} />
+
       {showForm && (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-4">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><p className="text-sm font-bold text-slate-900">New announcement</p><button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600"><Icons.X /></button></div>
-          <div className="px-5 py-4 space-y-3">
-            <FieldInput label="Title" placeholder="e.g. Enrollment Now Open" value={newTitle} onChange={e => setNewTitle(e.target.value)} />
-            <FieldSelect label="Category" value={newBadge} onChange={e => setNewBadge(e.target.value)}><option>General</option><option>Academic</option><option>Schedule</option><option>Financial</option><option>Facilities</option><option>Events</option></FieldSelect>
-            <FieldTextarea label="Body" placeholder="Write your announcement..." rows={4} value={newBody} onChange={e => setNewBody(e.target.value)} />
-            <div>
-              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">Photo (optional)</label>
-              <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) setNewPhoto(URL.createObjectURL(f)); }} />
-              {newPhoto ? (<div className="relative rounded-xl overflow-hidden border border-slate-200"><img src={newPhoto} alt="" className="w-full h-40 object-cover" /><button onClick={() => setNewPhoto(null)} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><Icons.X /></button></div>) : <button onClick={() => photoRef.current?.click()} className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2"><Icons.Image />Attach photo</button>}
-            </div>
+        <FormModal title="New Announcement" onClose={() => setShowForm(false)}
+          footer={<><button onClick={handlePublish} disabled={!newTitle.trim()} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40">Publish</button><button onClick={() => setShowForm(false)} className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50">Cancel</button></>}>
+          <FieldInput label="Title" placeholder="e.g. Enrollment Now Open" value={newTitle} onChange={e => setNewTitle(e.target.value)} />
+          <FieldSelect label="Category" value={newBadge} onChange={e => setNewBadge(e.target.value)}><option>General</option><option>Academic</option><option>Schedule</option><option>Financial</option><option>Facilities</option><option>Events</option></FieldSelect>
+          <FieldTextarea label="Body" placeholder="Write your announcement..." rows={4} value={newBody} onChange={e => setNewBody(e.target.value)} />
+          <div>
+            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">Photo (optional)</label>
+            <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) setNewPhoto(URL.createObjectURL(f)); }} />
+            {newPhoto ? (<div className="relative rounded-xl overflow-hidden border border-slate-200"><img src={newPhoto} alt="" className="w-full h-40 object-cover" /><button onClick={() => setNewPhoto(null)} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><Icons.X /></button></div>) : <button onClick={() => photoRef.current?.click()} className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2"><Icons.Image />Attach photo</button>}
           </div>
-          <div className="px-5 pb-4 flex gap-2.5"><button onClick={handlePublish} disabled={!newTitle.trim()} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40">Publish</button><button onClick={() => setShowForm(false)} className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50">Cancel</button></div>
-        </div>
+        </FormModal>
       )}
+
       {editId && editDraft && (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-4">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><p className="text-sm font-bold text-slate-900">Edit announcement</p><button onClick={() => { setEditId(null); setEditDraft(null); }} className="text-slate-400 hover:text-slate-600"><Icons.X /></button></div>
-          <div className="px-5 py-4 space-y-3">
-            <FieldInput label="Title" value={editDraft.title} onChange={e => setEditDraft(d => d ? { ...d, title: e.target.value } : d)} />
-            <FieldTextarea label="Body" rows={4} value={editDraft.body} onChange={e => setEditDraft(d => d ? { ...d, body: e.target.value } : d)} />
-            <div>
-              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">Photo</label>
-              <input ref={editPhotoRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) setEditDraft(d => d ? { ...d, photoUrl: URL.createObjectURL(f) } : d); }} />
-              {editDraft.photoUrl ? (<div className="relative rounded-xl overflow-hidden border border-slate-200"><img src={editDraft.photoUrl} alt="" className="w-full h-40 object-cover" /><button onClick={() => setEditDraft(d => d ? { ...d, photoUrl: "" } : d)} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><Icons.X /></button></div>) : <button onClick={() => editPhotoRef.current?.click()} className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2"><Icons.Image />Attach photo</button>}
-            </div>
+        <FormModal title="Edit Announcement" onClose={() => { setEditId(null); setEditDraft(null); }}
+          footer={<><button onClick={saveEdit} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm">Save changes</button><button onClick={() => { setEditId(null); setEditDraft(null); }} className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50">Cancel</button></>}>
+          <FieldInput label="Title" value={editDraft.title} onChange={e => setEditDraft(d => d ? { ...d, title: e.target.value } : d)} />
+          <FieldSelect label="Category" value={editDraft.badge} onChange={e => setEditDraft(d => d ? { ...d, badge: e.target.value } : d)}><option>General</option><option>Academic</option><option>Schedule</option><option>Financial</option><option>Facilities</option><option>Events</option></FieldSelect>
+          <FieldTextarea label="Body" rows={4} value={editDraft.body} onChange={e => setEditDraft(d => d ? { ...d, body: e.target.value } : d)} />
+          <div>
+            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">Photo</label>
+            <input ref={editPhotoRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) setEditDraft(d => d ? { ...d, photoUrl: URL.createObjectURL(f) } : d); }} />
+            {editDraft.photoUrl ? (<div className="relative rounded-xl overflow-hidden border border-slate-200"><img src={editDraft.photoUrl} alt="" className="w-full h-40 object-cover" /><button onClick={() => setEditDraft(d => d ? { ...d, photoUrl: "" } : d)} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><Icons.X /></button></div>) : <button onClick={() => editPhotoRef.current?.click()} className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2"><Icons.Image />Attach photo</button>}
           </div>
-          <div className="px-5 pb-4 flex gap-2.5"><button onClick={saveEdit} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm">Save changes</button><button onClick={() => { setEditId(null); setEditDraft(null); }} className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50">Cancel</button></div>
-        </div>
+        </FormModal>
       )}
       <div className="space-y-3">
         {posts.map(a => (
@@ -1681,9 +1722,9 @@ function AdminReportsPage() {
       <SectionLabel>Attendance by program</SectionLabel>
       <div className="grid md:grid-cols-2 gap-3 mb-6">{[{ l: "BSIT", n: 234, total: 301, pct: 78, c: "bg-green-500" }, { l: "BSCS", n: 198, total: 304, pct: 65, c: "bg-sky-500" }, { l: "BSBA", n: 156, total: 300, pct: 52, c: "bg-violet-400" }, { l: "BSEd", n: 89, total: 197, pct: 45, c: "bg-amber-400" }].map(r => (<div key={r.l} className="bg-white border border-slate-100 rounded-xl px-5 py-4"><div className="flex items-center justify-between mb-3"><span className="font-bold text-slate-900 text-sm">{r.l}</span><span className="text-xs text-slate-400 font-semibold">{r.n} / {r.total}</span></div><div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2"><div className={`h-full ${r.c} rounded-full`} style={{ width: `${r.pct}%` }} /></div><p className="text-[11px] text-slate-400 font-semibold">{r.pct}% attendance rate</p></div>))}</div>
       <SectionLabel>Fees summary</SectionLabel>
-      <div className="grid grid-cols-3 gap-3 mb-6">{[{ l: "Total fees issued", v: "P42,500", c: "text-red-600" }, { l: "Collected", v: "P18,200", c: "text-green-600" }, { l: "Pending", v: "P24,300", c: "text-amber-600" }].map(s => (<div key={s.l} className="bg-white border border-slate-100 rounded-xl px-4 py-4"><p className={`text-xl font-bold ${s.c}`}>{s.v}</p><p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">{s.l}</p></div>))}</div>
+      <div className="grid grid-cols-3 gap-3 mb-6">{[{ l: "Total fees issued", v: "₱42,500", c: "text-red-600" }, { l: "Collected", v: "₱18,200", c: "text-green-600" }, { l: "Pending", v: "₱24,300", c: "text-amber-600" }].map(s => (<div key={s.l} className="bg-white border border-slate-100 rounded-xl px-4 py-4"><p className={`text-xl font-bold ${s.c}`}>{s.v}</p><p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">{s.l}</p></div>))}</div>
       <SectionLabel>By event</SectionLabel>
-      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">{INITIAL_EVENTS.filter(e => e.status !== "upcoming").map((e, i, arr) => (<div key={e.id} className={`flex items-center justify-between px-5 py-4 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}><div><p className="text-sm font-semibold text-slate-900">{e.title}</p><p className="text-[11px] text-slate-400 mt-0.5">{e.date} · P{e.fineAmount} fee</p></div><div className="text-right"><p className="font-bold text-green-600 text-lg">{e.attendees}</p><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">attended</p></div></div>))}</div>
+      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">{INITIAL_EVENTS.filter(e => e.status !== "upcoming").map((e, i, arr) => (<div key={e.id} className={`flex items-center justify-between px-5 py-4 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}><div><p className="text-sm font-semibold text-slate-900">{e.title}</p><p className="text-[11px] text-slate-400 mt-0.5">{e.date} · ₱{e.fineAmount} fee</p></div><div className="text-right"><p className="font-bold text-green-600 text-lg">{e.attendees}</p><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">attended</p></div></div>))}</div>
     </PageShell>
   );
 }
@@ -1805,8 +1846,17 @@ export default function App() {
   const [fines, setFines] = useState<FineRecord[]>(STUDENT_FINES);
   const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [seenAnnouncements, setSeenAnnouncements] = useState(0);
 
   const show = (msg: string, variant: "success" | "error" = "success") => { setToast({ msg, variant }); setTimeout(() => setToast(null), 3500); };
+
+  const isMod = user?.role === "admin";
+  const pendingExcuses = excuseRequests.filter(r => r.status === "pending").length;
+  const unreadAnnouncements = Math.max(0, INITIAL_ANNOUNCEMENTS.length - seenAnnouncements);
+  const unpaidFines = fines.filter(f => f.status === "unpaid").length;
+  const sideBadges: Partial<Record<Page, number>> = isMod
+    ? { "admin-excuse-requests": pendingExcuses }
+    : { "announcements": unreadAnnouncements, "my-fines": unpaidFines };
 
   const handleLogin = (role: Role) => {
     if (role === "student") { setUser({ firstName: "", middleInitial: "", surname: "", studentId: "", program: "", yearLevel: "", section: "", phone: "", contactEmail: "", role: "student" }); setPage("onboarding"); }
@@ -1823,7 +1873,6 @@ export default function App() {
     else show("Request denied");
   };
   const handleLogout = () => { setUser(null); setPage("landing"); setMenuOpen(false); };
-  const isMod = user?.role === "admin";
   const bare: Page[] = ["landing", "login", "onboarding"];
   const isBare = bare.includes(page);
   const goBack = (fallback: Page) => () => setPage(fallback);
@@ -1838,9 +1887,10 @@ export default function App() {
             page={page}
             user={user}
             open={menuOpen}
-            onNav={navigate}
+            onNav={p => { if (p === "announcements") setSeenAnnouncements(INITIAL_ANNOUNCEMENTS.length); navigate(p); }}
             onClose={() => setMenuOpen(false)}
             onLogout={handleLogout}
+            badges={sideBadges}
           />
         )}
         <main className={`flex-1 bg-[#f8faf9] ${!isBare ? "overflow-y-auto" : ""}`}>
