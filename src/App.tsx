@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
+import tapInLogoSrc from "@/imports/Free_Simple_Modern_Design_Studio_Logo.png";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Page =
@@ -210,7 +211,7 @@ function Badge({ status }: { status: string }) {
   const cfg: Record<string, { cls: string; label: string; dot?: boolean }> = {
     active:    { cls: "bg-green-50 text-green-700 ring-1 ring-green-200",    label: "Live",          dot: true },
     upcoming:  { cls: "bg-sky-50 text-sky-700 ring-1 ring-sky-200",          label: "Upcoming" },
-    closed:    { cls: "bg-slate-100 text-slate-500 ring-1 ring-slate-200",   label: "Ended" },
+    closed:    { cls: "bg-slate-100 text-slate-500 ring-1 ring-slate-200",   label: "Closed" },
     present:   { cls: "bg-green-50 text-green-700 ring-1 ring-green-200",    label: "Present" },
     absent:    { cls: "bg-red-50 text-red-600 ring-1 ring-red-200",          label: "Absent" },
     excused:   { cls: "bg-violet-50 text-violet-600 ring-1 ring-violet-200", label: "Excused" },
@@ -313,19 +314,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // ─── TapIn Logomark ───────────────────────────────────────────────────────────
 function TapInMark({ className = "w-7 h-7" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 40 44" className={`${className} shrink-0`} fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Attendance list (clipboard-style sheet) */}
-      <rect x="2" y="2" width="36" height="40" rx="5" fill="#16a34a" />
-      {/* Header strip */}
-      <rect x="2" y="2" width="36" height="11" rx="5" fill="#15803d" />
-      <rect x="2" y="8" width="36" height="5" fill="#15803d" />
-      {/* List lines */}
-      <line x1="9" y1="20" x2="31" y2="20" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.35" />
-      <line x1="9" y1="26" x2="31" y2="26" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.35" />
-      <line x1="9" y1="32" x2="24" y2="32" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.35" />
-      {/* Bold checkmark overlay */}
-      <polyline points="11,27 18,35 31,17" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <img src={tapInLogoSrc} alt="TapIn" className={`${className} shrink-0 rounded-lg object-cover`} />
   );
 }
 
@@ -428,7 +417,7 @@ function Sidebar({ page, user, open, onNav, onClose, onLogout, badges }: {
     { p: "profile" as Page,            l: "Profile",       I: Icons.User },
   ];
 
-  const handleNav = (p: Page) => { onNav(p); onClose(); };
+  const handleNav = (p: Page) => { onNav(p); };
 
   const inner = (
     <div className="flex flex-col h-full bg-white">
@@ -511,27 +500,137 @@ function Sidebar({ page, user, open, onNav, onClose, onLogout, badges }: {
   );
 }
 
+// ─── LANDING CAROUSEL ─────────────────────────────────────────────────────────
+function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStart = useRef<number | null>(null);
+  const n = slides.length;
+
+  const go = (next: number, manual = false) => {
+    setIdx(((next % n) + n) % n);
+    if (manual) {
+      setPaused(true);
+      if (pauseTimer.current) clearTimeout(pauseTimer.current);
+      pauseTimer.current = setTimeout(() => setPaused(false), 8000);
+    }
+  };
+
+  useEffect(() => {
+    if (paused || n <= 1) return;
+    const t = setInterval(() => setIdx(i => (i + 1) % n), 5000);
+    return () => clearInterval(t);
+  }, [paused, n]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") go(idx - 1, true);
+      if (e.key === "ArrowRight") go(idx + 1, true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [idx]);
+
+  if (n === 0) return null;
+  const slide = slides[idx];
+
+  return (
+    <div
+      className="relative w-full overflow-hidden rounded-2xl select-none"
+      style={{ aspectRatio: "16/7" }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onTouchStart={e => { touchStart.current = e.touches[0].clientX; }}
+      onTouchEnd={e => {
+        if (touchStart.current === null) return;
+        const dx = e.changedTouches[0].clientX - touchStart.current;
+        if (Math.abs(dx) > 40) go(dx < 0 ? idx + 1 : idx - 1, true);
+        touchStart.current = null;
+      }}
+    >
+      {/* Slides */}
+      {slides.map((s, i) => (
+        <div key={i} className="absolute inset-0 transition-opacity duration-700" style={{ opacity: i === idx ? 1 : 0, zIndex: i === idx ? 1 : 0 }}>
+          <img src={s.imageUrl} alt={s.caption} className="w-full h-full object-cover" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.18) 55%, transparent 100%)" }} />
+          <div className="absolute bottom-0 left-0 right-0 px-6 py-5">
+            <p className="text-white font-bold text-lg leading-tight drop-shadow">{s.caption}</p>
+            {s.date && <p className="text-white/65 text-sm mt-1">{s.date}</p>}
+          </div>
+        </div>
+      ))}
+
+      {/* Arrow controls */}
+      {n > 1 && (<>
+        <button onClick={() => go(idx - 1, true)} className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-colors backdrop-blur-sm">
+          <Icons.ChevronLeft />
+        </button>
+        <button onClick={() => go(idx + 1, true)} className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-colors backdrop-blur-sm">
+          <Icons.ChevronRight />
+        </button>
+      </>)}
+
+      {/* Dot indicators */}
+      {n > 1 && (
+        <div className="absolute bottom-3 right-5 z-10 flex gap-1.5">
+          {slides.map((_, i) => (
+            <button key={i} onClick={() => go(i, true)} className={`rounded-full transition-all ${i === idx ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/45 hover:bg-white/70"}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── LANDING ──────────────────────────────────────────────────────────────────
-function LandingPage({ onNav }: { onNav: (p: Page) => void }) {
+function LandingPage({ onNav, settings }: { onNav: (p: Page) => void; settings: SystemSettings }) {
+  const hasHero = !!settings.heroImageUrl;
   return (
     <div className="min-h-screen bg-white">
-      <div className="relative max-w-5xl mx-auto px-6 pt-24 pb-20 text-center">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gradient-to-b from-green-50 to-transparent rounded-full blur-3xl opacity-60 pointer-events-none" />
-        <div className="relative">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full mb-8">
-            <span className="w-1.5 h-1.5 bg-green-500 rounded-full" style={{ animation: "pulse 2s infinite" }} />AY 2026-2027 · 1st Semester
+      {/* ── Hero ──────────────────────────────────────────────────── */}
+      <div className={`relative overflow-hidden ${hasHero ? "min-h-[520px] lg:min-h-[580px]" : ""}`}>
+        {/* Background image + gradient */}
+        {hasHero && (
+          <>
+            <img src={settings.heroImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" aria-hidden />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.18) 100%)" }} />
+          </>
+        )}
+        {/* Fallback radial glow when no image */}
+        {!hasHero && (
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gradient-to-b from-green-50 to-transparent rounded-full blur-3xl opacity-60 pointer-events-none" />
+        )}
+
+        {/* Hero content */}
+        <div className={`relative max-w-5xl mx-auto px-6 flex flex-col ${hasHero ? "items-start text-left pt-28 pb-24" : "items-center text-center pt-24 pb-20"}`}>
+          <div className={`inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full mb-8 ${hasHero ? "text-green-300 bg-white/10 border border-white/25 backdrop-blur-sm" : "text-green-700 bg-green-50 border border-green-200"}`}>
+            <span className="w-1.5 h-1.5 bg-green-400 rounded-full" style={{ animation: "pulse 2s infinite" }} />
+            AY 2026-2027 · 1st Semester
           </div>
-          <div className="flex items-center justify-center gap-3 mb-4"><TapInMark className="w-14 h-14" /></div>
-          <h1 className="text-5xl font-extrabold text-slate-900 tracking-tight leading-tight mb-2">TapIn</h1>
-          <p className="text-base font-semibold text-slate-400 mb-6">Student Event Attendance &amp; Fee Tracking System</p>
-          <p className="text-slate-500 text-lg max-w-lg mx-auto mb-10 leading-relaxed">One QR code per student. Real-time attendance logging. Automatic fee tracking.</p>
-          <div className="flex items-center justify-center gap-3">
-            <button onClick={() => onNav("login")} className="h-11 px-6 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl transition-all shadow-sm hover:shadow-md hover:-translate-y-px">Get started</button>
-            <button onClick={() => onNav("events")} className="h-11 px-6 border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-all">Browse events</button>
+          <div className={`flex items-center gap-3 mb-4 ${hasHero ? "" : "justify-center"}`}>
+            <TapInMark className="w-14 h-14" />
+          </div>
+          <h1 className={`text-5xl font-extrabold tracking-tight leading-tight mb-2 ${hasHero ? "text-white" : "text-slate-900"}`}>TapIn</h1>
+          <p className={`text-base font-semibold mb-6 ${hasHero ? "text-white/70" : "text-slate-400"}`}>
+            Student Event Attendance &amp; Fee Tracking System
+          </p>
+          <p className={`text-lg mb-10 leading-relaxed ${hasHero ? "text-white/80 max-w-md" : "text-slate-500 max-w-lg"}`}>
+            One QR code per student. Real-time attendance logging. Automatic fee tracking.
+          </p>
+          <div className={`flex items-center gap-3 ${hasHero ? "" : "justify-center"}`}>
+            <button onClick={() => onNav("login")} className="h-11 px-6 bg-green-500 hover:bg-green-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-px">
+              Get started
+            </button>
+            <button onClick={() => onNav("events")} className={`h-11 px-6 text-sm font-semibold rounded-xl transition-all ${hasHero ? "bg-white/15 text-white border border-white/30 hover:bg-white/25 backdrop-blur-sm" : "border border-slate-200 text-slate-700 hover:bg-slate-50"}`}>
+              Browse events
+            </button>
           </div>
         </div>
       </div>
-      <div className="max-w-5xl mx-auto px-6 pb-20">
+
+      {/* ── Feature cards ─────────────────────────────────────────── */}
+      <div className="max-w-5xl mx-auto px-6 py-16">
         <div className="grid md:grid-cols-3 gap-4">
           {[
             { I: Icons.QrCode, t: "Personal QR Code",       d: "Each student gets a unique QR code tied to their profile. Present it at any event entrance for instant logging." },
@@ -546,6 +645,16 @@ function LandingPage({ onNav }: { onNav: (p: Page) => void }) {
           ))}
         </div>
       </div>
+
+      {/* ── Event carousel ────────────────────────────────────────── */}
+      {settings.carouselSlides.length > 0 && (
+        <div className="max-w-5xl mx-auto px-6 pb-20">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Upcoming Highlights</p>
+          </div>
+          <LandingCarousel slides={settings.carouselSlides} />
+        </div>
+      )}
     </div>
   );
 }
@@ -790,6 +899,91 @@ function StudentProfileModal({ student, onClose }: { student: StudentProfile; on
   );
 }
 
+// ─── Upcoming Event Card (adaptive: photo or green fallback) ──────────────────
+function UpcomingEventCard({ event: ev, onClick }: { event: EventData; onClick: () => void }) {
+  const cover = ev.mediaUrls?.[0] ?? null;
+
+  /* Shared text content */
+  const greenText = (dim?: boolean) => (
+    <>
+      <div className="flex items-center justify-between mb-3">
+        <Badge status={ev.status} />
+        <span className={`text-xs font-medium ${dim ? "text-white/70" : "text-green-300"}`}>Up next</span>
+      </div>
+      <h2 className={`font-semibold text-base leading-snug mb-3 ${dim ? "text-white" : "text-white"}`}>{ev.title}</h2>
+      <div className={`flex flex-wrap gap-3 text-sm font-medium ${dim ? "text-white/75" : "text-green-200"}`}>
+        <span className="flex items-center gap-1.5"><Icons.Calendar />{ev.date}</span>
+        <span className="flex items-center gap-1.5"><Icons.MapPin />{ev.location}</span>
+      </div>
+    </>
+  );
+
+  return (
+    <button onClick={onClick} className="w-full text-left mb-5 block group">
+      {/* ── Mobile ── */}
+      {cover ? (
+        /* Photo full-bleed */
+        <div className="relative md:hidden overflow-hidden rounded-xl" style={{ height: 152 }}>
+          <img src={cover} alt={ev.title} className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,.68) 0%, rgba(0,0,0,.22) 55%, transparent 100%)" }} />
+          <div className="absolute inset-x-0 bottom-0 p-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Badge status={ev.status} />
+              <span className="text-white/70 text-xs font-medium">Up next</span>
+            </div>
+            <h2 className="font-semibold text-base leading-snug text-white mb-1.5 line-clamp-1">{ev.title}</h2>
+            <div className="flex gap-3 text-xs text-white/70 font-medium">
+              <span className="flex items-center gap-1"><Icons.Calendar />{ev.date}</span>
+              <span className="flex items-center gap-1"><Icons.MapPin />{ev.location}</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Green fallback */
+        <div className="md:hidden bg-green-600 group-hover:bg-green-700 rounded-xl p-5 text-white transition-colors shadow-sm">
+          {greenText()}
+        </div>
+      )}
+
+      {/* ── Desktop ── */}
+      {cover ? (
+        /* Split card: green left + concave photo right */
+        <div className="relative hidden md:block overflow-hidden rounded-xl shadow-sm group-hover:shadow-md transition-shadow" style={{ height: 160 }}>
+          {/* SVG clip definition — concave left boundary for photo pane */}
+          <svg width="0" height="0" style={{ position: "absolute" }}>
+            <defs>
+              <clipPath id="ec-photo-clip" clipPathUnits="objectBoundingBox">
+                {/* left edge bows leftward at midpoint creating a crescent notch */}
+                <path d="M 0.2,0 C 0,0.28 0,0.72 0.2,1 L 1,1 L 1,0 Z" />
+              </clipPath>
+            </defs>
+          </svg>
+
+          {/* Green background full-bleed */}
+          <div className="absolute inset-0 bg-green-600 group-hover:bg-green-700 transition-colors" />
+
+          {/* Green content pane — left 62% */}
+          <div className="absolute inset-y-0 left-0 z-10 flex flex-col justify-between px-5 py-5 text-white" style={{ width: "62%" }}>
+            {greenText()}
+          </div>
+
+          {/* Photo pane — right 45%, clipped with concave left arc */}
+          <div className="absolute inset-y-0 right-0" style={{ width: "45%", clipPath: "url(#ec-photo-clip)" }}>
+            <img src={cover} alt={ev.title} className="w-full h-full object-cover" />
+            {/* Subtle left-edge blend into green */}
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(22,101,52,.55) 0%, transparent 35%)" }} />
+          </div>
+        </div>
+      ) : (
+        /* Green fallback */
+        <div className="hidden md:block bg-green-600 group-hover:bg-green-700 rounded-xl p-5 text-white transition-colors shadow-sm">
+          {greenText()}
+        </div>
+      )}
+    </button>
+  );
+}
+
 // ─── STUDENT: Dashboard ───────────────────────────────────────────────────────
 function DashboardPage({ user, onNav, fines, showFees }: { user: User; onNav: (p: Page) => void; fines: FineRecord[]; showFees: boolean }) {
   const nextEvent = INITIAL_EVENTS.find(e => e.status !== "closed");
@@ -807,13 +1001,7 @@ function DashboardPage({ user, onNav, fines, showFees }: { user: User; onNav: (p
           <span className="text-red-400 group-hover:text-red-600"><Icons.ChevronRight /></span>
         </button>
       )}
-      {nextEvent && (
-        <button onClick={() => onNav("events")} className="w-full bg-green-600 hover:bg-green-700 rounded-xl p-5 text-left text-white transition-all mb-5 shadow-sm">
-          <div className="flex items-center justify-between mb-3"><Badge status={nextEvent.status} /><span className="text-green-300 text-xs font-medium">Up next</span></div>
-          <h2 className="font-semibold text-base leading-snug mb-3">{nextEvent.title}</h2>
-          <div className="flex flex-wrap gap-4 text-sm text-green-200 font-medium"><span className="flex items-center gap-1.5"><Icons.Calendar />{nextEvent.date}</span><span className="flex items-center gap-1.5"><Icons.MapPin />{nextEvent.location}</span></div>
-        </button>
-      )}
+      {nextEvent && <UpcomingEventCard event={nextEvent} onClick={() => onNav("events")} />}
       <button onClick={() => onNav("my-qr")} className="w-full bg-white border border-slate-100 rounded-xl px-5 py-4 flex items-center justify-between hover:border-slate-200 hover:shadow-sm transition-all mb-5 group">
         <div className="flex items-center gap-4"><div className="w-10 h-10 bg-green-50 border border-green-100 rounded-xl flex items-center justify-center text-green-600"><Icons.QrCode /></div><div className="text-left"><p className="text-sm font-semibold text-slate-900">My QR Code</p><p className="text-xs text-slate-400 mt-0.5">Show or download your attendance code</p></div></div>
         <span className="text-slate-300 group-hover:text-slate-500"><Icons.ChevronRight /></span>
@@ -840,7 +1028,7 @@ function EventsPage({ onNav, onSelectEvent, user, showFees }: { onNav: (p: Page)
     <PageShell>
       <PageHeader title="Events" subtitle="AY 2026-2027, 1st Semester" />
       <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
-        {[{ k: "all", l: "All" }, { k: "active", l: "Live" }, { k: "upcoming", l: "Upcoming" }, { k: "closed", l: "Ended" }].map(f => (
+        {[{ k: "all", l: "All" }, { k: "active", l: "Live" }, { k: "upcoming", l: "Upcoming" }, { k: "closed", l: "Closed" }].map(f => (
           <button key={f.k} onClick={() => setFilter(f.k)} className={`shrink-0 h-8 px-3.5 rounded-lg text-xs font-semibold transition-all ${filter === f.k ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300"}`}>{f.l}</button>
         ))}
       </div>
@@ -1177,7 +1365,7 @@ function AdminEventsPage({ onNav }: { onNav: (p: Page) => void }) {
   const deleteEvent = (id: string) => setEvents(ev => ev.filter(e => e.id !== id));
   const setStatus = (id: string, status: EventStatus) => setEvents(ev => ev.map(e => e.id === id ? { ...e, status } : e));
   const statusOptions = (current: EventStatus): { status: EventStatus; label: string; icon: React.ReactNode }[] =>
-    ([{ status: "active" as EventStatus, label: "Mark as Live", icon: <Icons.Radio /> }, { status: "upcoming" as EventStatus, label: "Mark as Upcoming", icon: <Icons.Calendar /> }, { status: "closed" as EventStatus, label: "Mark as Ended", icon: <Icons.Check /> }]).filter(o => o.status !== current);
+    ([{ status: "active" as EventStatus, label: "Mark as Live", icon: <Icons.Radio /> }, { status: "upcoming" as EventStatus, label: "Mark as Upcoming", icon: <Icons.Calendar /> }, { status: "closed" as EventStatus, label: "Mark as Closed", icon: <Icons.Check /> }]).filter(o => o.status !== current);
 
   return (
     <PageShell>
@@ -1730,6 +1918,7 @@ function AdminReportsPage() {
 }
 
 // ─── MODERATOR: Management & Settings ────────────────────────────────────────
+interface CarouselSlide { imageUrl: string; caption: string; date: string; }
 interface SystemSettings {
   showFees: boolean;
   allowExcuseRequests: boolean;
@@ -1737,12 +1926,32 @@ interface SystemSettings {
   academicYear: string;
   semester: string;
   institution: string;
+  heroImageUrl: string;
+  carouselSlides: CarouselSlide[];
 }
 
 function AdminSettingsPage({ settings, onSave }: { settings: SystemSettings; onSave: (s: SystemSettings) => void }) {
   const update = (patch: Partial<SystemSettings>) => onSave({ ...settings, ...patch });
   const toggle = (k: "showFees" | "allowExcuseRequests" | "requirePhotoId") =>
     onSave({ ...settings, [k]: !settings[k] });
+  const heroRef = useRef<HTMLInputElement>(null);
+  const slideRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const addSlide = () => {
+    if (settings.carouselSlides.length >= 10) return;
+    update({ carouselSlides: [...settings.carouselSlides, { imageUrl: "", caption: "", date: "" }] });
+  };
+  const removeSlide = (i: number) => update({ carouselSlides: settings.carouselSlides.filter((_, j) => j !== i) });
+  const moveSlide = (i: number, dir: -1 | 1) => {
+    const arr = [...settings.carouselSlides];
+    const t = i + dir;
+    if (t < 0 || t >= arr.length) return;
+    [arr[i], arr[t]] = [arr[t], arr[i]];
+    update({ carouselSlides: arr });
+  };
+  const patchSlide = (i: number, patch: Partial<CarouselSlide>) => {
+    const arr = settings.carouselSlides.map((s, j) => j === i ? { ...s, ...patch } : s);
+    update({ carouselSlides: arr });
+  };
 
   return (
     <PageShell>
@@ -1812,6 +2021,97 @@ function AdminSettingsPage({ settings, onSave }: { settings: SystemSettings; onS
         </div>
       </div>
 
+      {/* Landing Page */}
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Landing Page</p>
+
+      {/* Hero image */}
+      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-3">
+        <div className="px-5 py-4">
+          <p className="text-sm font-semibold text-slate-900 mb-0.5">Hero image</p>
+          <p className="text-xs text-slate-400 mb-3">Shown as the full-width background behind the headline. A dark gradient overlay keeps text readable.</p>
+          <input ref={heroRef} type="file" accept="image/*" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) update({ heroImageUrl: URL.createObjectURL(f) }); }} />
+          {settings.heroImageUrl ? (
+            <div className="relative rounded-xl overflow-hidden border border-slate-200">
+              <img src={settings.heroImageUrl} alt="Hero preview" className="w-full h-36 object-cover" />
+              <div className="absolute inset-0 bg-black/30" />
+              <div className="absolute bottom-2 right-2 flex gap-2">
+                <button onClick={() => heroRef.current?.click()} className="h-7 px-3 bg-white/90 hover:bg-white text-slate-700 text-xs font-semibold rounded-lg transition-colors">Replace</button>
+                <button onClick={() => update({ heroImageUrl: "" })} className="h-7 px-3 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-lg transition-colors">Remove</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => heroRef.current?.click()} className="w-full h-24 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2 transition-colors">
+              <Icons.Image />Upload hero image
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Carousel slides */}
+      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
+        <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Event carousel</p>
+            <p className="text-xs text-slate-400 mt-0.5">Up to 10 slides shown below the feature cards on the landing page.</p>
+          </div>
+          {settings.carouselSlides.length < 10 && (
+            <button onClick={addSlide} className="h-8 px-3 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shrink-0">
+              <Icons.Plus />Add slide
+            </button>
+          )}
+        </div>
+        {settings.carouselSlides.length === 0 ? (
+          <div className="px-5 py-8 text-center">
+            <p className="text-sm text-slate-400">No slides yet — add one above.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-50">
+            {settings.carouselSlides.map((slide, i) => {
+              const ref = (el: HTMLInputElement | null) => { slideRefs.current[i] = el; };
+              return (
+                <div key={i} className="px-5 py-4">
+                  <div className="flex items-start gap-3">
+                    {/* Thumbnail */}
+                    <div className="shrink-0">
+                      <input ref={ref} type="file" accept="image/*" className="hidden"
+                        onChange={e => { const f = e.target.files?.[0]; if (f) patchSlide(i, { imageUrl: URL.createObjectURL(f) }); }} />
+                      {slide.imageUrl ? (
+                        <div className="relative w-20 h-14 rounded-lg overflow-hidden border border-slate-200 cursor-pointer" onClick={() => slideRefs.current[i]?.click()}>
+                          <img src={slide.imageUrl} alt="" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"><Icons.Camera /></div>
+                        </div>
+                      ) : (
+                        <button onClick={() => slideRefs.current[i]?.click()} className="w-20 h-14 border-2 border-dashed border-slate-200 rounded-lg text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center transition-colors">
+                          <Icons.Image />
+                        </button>
+                      )}
+                    </div>
+                    {/* Fields */}
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <FieldInput label="Caption" placeholder="e.g. Foundation Day Celebration" value={slide.caption} onChange={e => patchSlide(i, { caption: e.target.value })} />
+                      <FieldInput label="Date (optional)" placeholder="e.g. Aug 29, 2026" value={slide.date} onChange={e => patchSlide(i, { date: e.target.value })} />
+                    </div>
+                    {/* Controls */}
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <button onClick={() => moveSlide(i, -1)} disabled={i === 0} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 disabled:opacity-30 transition-colors">
+                        <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                      </button>
+                      <button onClick={() => moveSlide(i, 1)} disabled={i === settings.carouselSlides.length - 1} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 disabled:opacity-30 transition-colors">
+                        <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                      </button>
+                      <button onClick={() => removeSlide(i)} className="w-7 h-7 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 transition-colors">
+                        <Icons.Trash />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* System Info */}
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">System</p>
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
@@ -1834,6 +2134,8 @@ const DEFAULT_SETTINGS: SystemSettings = {
   academicYear: "2026-2027",
   semester: "1st Semester",
   institution: "TapIn",
+  heroImageUrl: "",
+  carouselSlides: [],
 };
 
 export default function App() {
@@ -1894,7 +2196,7 @@ export default function App() {
           />
         )}
         <main className={`flex-1 bg-[#f8faf9] ${!isBare ? "overflow-y-auto" : ""}`}>
-          {page === "landing"               && <LandingPage onNav={navigate} />}
+          {page === "landing"               && <LandingPage onNav={navigate} settings={settings} />}
           {page === "login"                 && <LoginPage onLogin={handleLogin} onBack={() => navigate("landing")} />}
           {page === "onboarding"            && <OnboardingPage onComplete={handleOnboarding} />}
           {page === "dashboard"   && user   && !isMod && <DashboardPage user={user} onNav={navigate} fines={fines} showFees={settings.showFees} />}

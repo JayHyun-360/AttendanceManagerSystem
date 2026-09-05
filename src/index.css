@@ -48,8 +48,9 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
 
-/* Smooth transitions globally */
+/* Smooth transitions globally — explicit transform excluded so sidebar slide isn't clobbered */
 * { transition-property: color, background-color, border-color, box-shadow; transition-duration: 150ms; }
+aside { transition-property: transform; }
 
 /* Pulse animation for live badges */
 @keyframes pulse-green {
@@ -109,3 +110,8 @@ body {
 
 /* Disable global transition on video elements */
 video { transition: none !important; }
+
+/* Upcoming event card — concave photo boundary (desktop) */
+.event-photo-clip {
+  clip-path: path('M 0 0 C 60 0 60 100% 0 100% L 100% 100% L 100% 0 Z');
+}
