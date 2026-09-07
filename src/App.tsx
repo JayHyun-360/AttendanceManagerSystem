@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
-import tapInLogoSrc from "@/imports/Free_Simple_Modern_Design_Studio_Logo.png";
+import tapInLogoSrc from "@/imports/Free_Simple_Modern_Design_Studio_Logo-1.png";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Page =
@@ -19,14 +19,14 @@ type EventStatus = "active" | "upcoming" | "closed";
 interface User {
   firstName: string; middleInitial: string; surname: string;
   studentId: string; program: string; yearLevel: string; section: string;
-  phone: string; contactEmail: string; role: Role; photoUrl?: string;
+  phone: string; contactEmail: string; role: Role; photoUrl?: string; idPhotoUrl?: string;
 }
 
 interface EventData {
   id: string; title: string; date: string; time: string;
   location: string; status: EventStatus;
   attendees: number; description: string; program: string;
-  fineAmount: number; mediaUrls?: string[];
+  fineAmount: number; mediaUrls?: string[]; highlightUrl?: string;
 }
 
 interface ScanRecord {
@@ -337,6 +337,7 @@ function StudentQR({ studentId, size }: { studentId: string; size: number }) {
 function TopBar({ user, onNav, onMenuOpen }: { user: User | null; onNav: (p: Page) => void; onMenuOpen: () => void }) {
   const dest = user?.role === "admin" ? "admin-dashboard" : user ? "dashboard" : "landing";
   const isMod = user?.role === "admin";
+  const [dotOpen, setDotOpen] = useState(false);
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-slate-100 shrink-0" style={{ boxShadow: "0 1px 3px rgba(0,0,0,.04)" }}>
       <div className="flex items-center justify-between px-4 lg:px-5 gap-3" style={{ height: "56px" }}>
@@ -363,18 +364,65 @@ function TopBar({ user, onNav, onMenuOpen }: { user: User | null; onNav: (p: Pag
         </div>
 
         {/* Right — user actions */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           {user ? (
-            <button
-              onClick={() => onNav("profile")}
-              className="flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full hover:bg-slate-100 transition-colors group"
-              aria-label="View profile"
-            >
-              <ProfileIcon photoUrl={user.photoUrl} size="sm" />
-              <span className="hidden sm:block text-xs font-semibold text-slate-600 group-hover:text-slate-900 transition-colors truncate max-w-[120px]">
-                {user.firstName || (isMod ? "Moderator" : "My Profile")}
-              </span>
-            </button>
+            <>
+              <button
+                onClick={() => onNav("profile")}
+                className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100 transition-colors group"
+                aria-label="View profile"
+              >
+                <ProfileIcon photoUrl={user.photoUrl} size="sm" />
+                <span className="hidden sm:block text-xs font-semibold text-slate-600 group-hover:text-slate-900 transition-colors truncate max-w-[120px]">
+                  {user.firstName || (isMod ? "Admin" : "My Profile")}
+                </span>
+              </button>
+              {/* Three-dot menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setDotOpen(o => !o)}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                  aria-label="More options"
+                >
+                  <svg viewBox="0 0 18 18" fill="currentColor" className="w-[18px] h-[18px]">
+                    <circle cx="9" cy="3.5" r="1.5"/><circle cx="9" cy="9" r="1.5"/><circle cx="9" cy="14.5" r="1.5"/>
+                  </svg>
+                </button>
+                {dotOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setDotOpen(false)} />
+                    <div className="absolute right-0 top-full mt-1.5 z-50 w-56 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden">
+                      <div className="px-4 py-3 border-b border-slate-50">
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Help & Feedback</p>
+                      </div>
+                      <button className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left group">
+                        <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center text-green-600 shrink-0 mt-0.5 group-hover:bg-green-100 transition-colors">
+                          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-[15px] h-[15px]">
+                            <path d="M9 1C4.58 1 1 4.13 1 8c0 1.74.68 3.33 1.8 4.56L2 17l4.67-1.4A8.27 8.27 0 0 0 9 16c4.42 0 8-3.13 8-7s-3.58-7-8-7Z"/>
+                            <path d="M6 8h6M6 11h4"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">Send helpful feedback</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">Help us improve TapIn for everyone</p>
+                        </div>
+                      </button>
+                      <button className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left group border-t border-slate-50">
+                        <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500 shrink-0 mt-0.5 group-hover:bg-slate-100 transition-colors">
+                          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-[15px] h-[15px]">
+                            <circle cx="9" cy="9" r="8"/><path d="M9 8v4M9 6h.01"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">Help & Support</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">Browse guides and FAQs</p>
+                        </div>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
           ) : (
             <button
               onClick={() => onNav("login")}
@@ -454,15 +502,13 @@ function Sidebar({ page, user, open, onNav, onClose, onLogout, badges }: {
         })}
       </nav>
 
-      {/* User footer */}
+      {/* Sidebar footer */}
       <div className="px-2 py-3 border-t border-slate-100 space-y-0.5 shrink-0">
-        <button onClick={() => handleNav("profile")} className="w-full flex items-center gap-3 px-3 h-11 rounded-xl hover:bg-slate-50 transition-colors group">
-          <ProfileIcon photoUrl={user.photoUrl} size="xs" />
-          <div className="flex-1 min-w-0 text-left">
-            <p className="text-xs font-semibold text-slate-800 truncate">{fullName(user) || "Set up profile"}</p>
-            <p className="text-[10px] text-slate-400 truncate">{isMod ? "Moderator" : user.studentId || "No ID yet"}</p>
-          </div>
-          <span className="text-slate-300 group-hover:text-slate-500 shrink-0"><Icons.ChevronRight /></span>
+        <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm font-medium text-slate-500 hover:text-green-700 hover:bg-green-50 transition-all">
+          <span className="shrink-0 text-slate-400">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]"><path d="M3 9h12M9 3l6 6-6 6"/></svg>
+          </span>
+          Back to Home
         </button>
         <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm font-medium text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all">
           <span className="text-slate-300 shrink-0"><Icons.LogOut /></span>Sign out
@@ -478,24 +524,15 @@ function Sidebar({ page, user, open, onNav, onClose, onLogout, badges }: {
         {inner}
       </aside>
 
-      {/* ── Mobile: slide-in drawer overlay ── */}
-      <div className="lg:hidden">
-        {/* Backdrop */}
-        <div
-          onClick={onClose}
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300"
-          style={{ opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none" }}
-          aria-hidden="true"
-        />
-        {/* Drawer panel */}
-        <aside
-          className="fixed top-0 left-0 z-50 h-full w-72 shadow-2xl transition-transform duration-300 ease-in-out"
-          style={{ transform: open ? "translateX(0)" : "translateX(-100%)" }}
-          aria-label="Navigation menu"
-        >
-          {inner}
-        </aside>
-      </div>
+      {/* ── Mobile: fade overlay ── */}
+      {open && (
+        <div className="lg:hidden">
+          <div onClick={onClose} className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]" aria-hidden="true" />
+          <aside className="fixed top-0 left-0 z-50 h-full w-72 shadow-2xl" aria-label="Navigation menu">
+            {inner}
+          </aside>
+        </div>
+      )}
     </>
   );
 }
@@ -585,17 +622,34 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
 
 // ─── LANDING ──────────────────────────────────────────────────────────────────
 function LandingPage({ onNav, settings }: { onNav: (p: Page) => void; settings: SystemSettings }) {
-  const hasHero = !!settings.heroImageUrl;
+  const heroUrls = settings.heroImageUrls;
+  const hasHero = heroUrls.length > 0;
+  const [heroIdx, setHeroIdx] = useState(0);
+  useEffect(() => {
+    if (heroUrls.length <= 1) return;
+    const t = setInterval(() => setHeroIdx(i => (i + 1) % heroUrls.length), 4000);
+    return () => clearInterval(t);
+  }, [heroUrls.length]);
+  useEffect(() => { setHeroIdx(0); }, [heroUrls.length]);
+
   return (
     <div className="min-h-screen bg-white">
       {/* ── Hero ──────────────────────────────────────────────────── */}
       <div className={`relative overflow-hidden ${hasHero ? "min-h-[520px] lg:min-h-[580px]" : ""}`}>
-        {/* Background image + gradient */}
-        {hasHero && (
-          <>
-            <img src={settings.heroImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" aria-hidden />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.18) 100%)" }} />
-          </>
+        {/* Background images — crossfade */}
+        {hasHero && heroUrls.map((url, i) => (
+          <img key={i} src={url} alt="" aria-hidden
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ opacity: i === heroIdx ? 1 : 0, transition: "opacity 0.8s ease" }} />
+        ))}
+        {hasHero && <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.18) 100%)" }} />}
+        {/* Dot indicators (only when >1 hero image) */}
+        {heroUrls.length > 1 && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+            {heroUrls.map((_, i) => (
+              <span key={i} className={`rounded-full transition-all duration-300 ${i === heroIdx ? "w-4 h-2 bg-white" : "w-2 h-2 bg-white/40"}`} />
+            ))}
+          </div>
         )}
         {/* Fallback radial glow when no image */}
         {!hasHero && (
@@ -682,7 +736,7 @@ function LoginPage({ onLogin, onBack }: { onLogin: (role: Role) => void; onBack:
               </button>
               <button onClick={() => setRole("admin")} className="w-full bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 text-left hover:border-slate-300 hover:shadow-sm transition-all group">
                 <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 shrink-0 group-hover:bg-slate-200 transition-colors"><Icons.Shield /></div>
-                <div className="flex-1"><p className="font-semibold text-slate-900 text-sm">Login as Moderator</p><p className="text-xs text-slate-400 font-medium mt-0.5">Manage events, scan QR codes, view reports</p></div>
+                <div className="flex-1"><p className="font-semibold text-slate-900 text-sm">Login as Admin</p><p className="text-xs text-slate-400 font-medium mt-0.5">Manage events, scan QR codes, view reports</p></div>
                 <span className="text-slate-300 group-hover:text-slate-500 transition-colors"><Icons.ChevronRight /></span>
               </button>
               <p className="text-xs text-slate-400 text-center pt-1">New student? <button onClick={() => setRole("student")} className="text-green-600 font-semibold hover:text-green-700">Create an account</button></p>
@@ -694,7 +748,7 @@ function LoginPage({ onLogin, onBack }: { onLogin: (role: Role) => void; onBack:
           <>
             <div className="text-center mb-8">
               <div className="flex justify-center mb-4"><TapInMark className="w-12 h-12" /></div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-1">{role === "student" ? "Student login" : "Moderator login"}</h1>
+              <h1 className="text-2xl font-bold text-slate-900 mb-1">{role === "student" ? "Student login" : "Admin login"}</h1>
               <p className="text-sm text-slate-400">Choose how you would like to sign in</p>
             </div>
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
@@ -1020,9 +1074,9 @@ function DashboardPage({ user, onNav, fines, showFees }: { user: User; onNav: (p
 }
 
 // ─── STUDENT: Events ──────────────────────────────────────────────────────────
-function EventsPage({ onNav, onSelectEvent, user, showFees }: { onNav: (p: Page) => void; onSelectEvent: (id: string) => void; user: User | null; showFees: boolean }) {
+function EventsPage({ onNav, onSelectEvent, user, showFees, events }: { onNav: (p: Page) => void; onSelectEvent: (id: string) => void; user: User | null; showFees: boolean; events: EventData[] }) {
   const [filter, setFilter] = useState("all");
-  const items = filter === "all" ? INITIAL_EVENTS : INITIAL_EVENTS.filter(e => e.status === filter);
+  const items = filter === "all" ? events : events.filter(e => e.status === filter);
   const canSeeFees = user?.role === "student" && showFees;
   return (
     <PageShell>
@@ -1052,19 +1106,31 @@ function EventsPage({ onNav, onSelectEvent, user, showFees }: { onNav: (p: Page)
 }
 
 // ─── STUDENT: Event Detail ────────────────────────────────────────────────────
-function EventDetailPage({ eventId, user, showFees, onBack }: { eventId: string; user: User | null; showFees: boolean; onBack: () => void }) {
-  const ev = INITIAL_EVENTS.find(e => e.id === eventId) ?? INITIAL_EVENTS[0];
+function EventDetailPage({ eventId, user, showFees, onBack, events }: { eventId: string; user: User | null; showFees: boolean; onBack: () => void; events: EventData[] }) {
+  const ev = events.find(e => e.id === eventId) ?? events[0];
   const canSeeFees = user?.role === "student" && showFees;
+  const [lightbox, setLightbox] = useState<string | null>(null);
   return (
     <PageShell>
       <BackButton onClick={onBack} label="Back to Events" />
-      <div className="bg-green-600 rounded-xl p-6 text-white mb-4 shadow-sm">
-        <Badge status={ev.status} />
-        <h1 className="font-bold text-xl mt-3 mb-4 leading-snug">{ev.title}</h1>
-        <div className="grid grid-cols-2 gap-3">
-          {[{ l: "DATE", v: ev.date }, { l: "TIME", v: ev.time }].map(d => (<div key={d.l} className="bg-white/10 rounded-lg px-3 py-2.5"><p className="text-green-300 text-[10px] font-bold uppercase tracking-widest mb-1">{d.l}</p><p className="text-sm font-semibold">{d.v}</p></div>))}
-          <div className="bg-white/10 rounded-lg px-3 py-2.5 col-span-2"><p className="text-green-300 text-[10px] font-bold uppercase tracking-widest mb-1">LOCATION</p><p className="text-sm font-semibold">{ev.location}</p></div>
-          {canSeeFees && ev.fineAmount > 0 && <div className="bg-white/10 rounded-lg px-3 py-2.5 col-span-2"><p className="text-green-300 text-[10px] font-bold uppercase tracking-widest mb-1">ABSENCE FEE</p><p className="text-sm font-semibold">₱{ev.fineAmount}</p></div>}
+      <div className="relative rounded-xl overflow-hidden mb-4 shadow-sm">
+        {ev.highlightUrl ? (
+          <img src={ev.highlightUrl} alt={ev.title} className="w-full h-52 object-cover" />
+        ) : (
+          <div className="w-full h-52 bg-green-600" />
+        )}
+        {/* Gradient overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+        <div className="absolute inset-0 p-6 flex flex-col justify-between">
+          <Badge status={ev.status} />
+          <div>
+            <h1 className="font-bold text-xl text-white mb-4 leading-snug drop-shadow">{ev.title}</h1>
+            <div className="grid grid-cols-2 gap-2">
+              {[{ l: "DATE", v: ev.date }, { l: "TIME", v: ev.time }].map(d => (<div key={d.l} className="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2.5"><p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">{d.l}</p><p className="text-sm font-semibold text-white">{d.v}</p></div>))}
+              <div className="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2.5 col-span-2"><p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">LOCATION</p><p className="text-sm font-semibold text-white">{ev.location}</p></div>
+              {canSeeFees && ev.fineAmount > 0 && <div className="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2.5 col-span-2"><p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">ABSENCE FEE</p><p className="text-sm font-semibold text-white">₱{ev.fineAmount}</p></div>}
+            </div>
+          </div>
         </div>
       </div>
       <div className="bg-white border border-slate-100 rounded-xl p-5 mb-3">
@@ -1072,6 +1138,34 @@ function EventDetailPage({ eventId, user, showFees, onBack }: { eventId: string;
         <p className="text-sm text-slate-600 leading-relaxed">{ev.description}</p>
         <p className="text-xs text-slate-400 mt-3">For: {ev.program}</p>
       </div>
+      {ev.mediaUrls && ev.mediaUrls.length > 0 && (
+        <div className="bg-white border border-slate-100 rounded-xl p-5 mb-3">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Photos</p>
+          <div className="grid grid-cols-2 gap-2">
+            {ev.mediaUrls.map((url, i) => (
+              <button key={i} onClick={() => setLightbox(url)} className="relative w-full aspect-video rounded-lg overflow-hidden group focus:outline-none">
+                <img src={url} alt={`Event photo ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-white/0 group-hover:bg-white/80 flex items-center justify-center transition-all duration-200 scale-75 group-hover:scale-100">
+                    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-slate-800">
+                      <circle cx="8" cy="8" r="5"/><path d="M15 15l-3.5-3.5M10 8H6M8 6v4"/>
+                    </svg>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Lightbox */}
+      {lightbox && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" onClick={() => setLightbox(null)}>
+          <button className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" onClick={() => setLightbox(null)}>
+            <Icons.X />
+          </button>
+          <img src={lightbox} alt="" className="max-w-full max-h-full rounded-xl object-contain shadow-2xl" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
       {user && ev.status === "active" && (
         <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-3.5 flex items-center gap-3">
           <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600 shrink-0"><Icons.QrCode /></div>
@@ -1130,18 +1224,21 @@ function MyQRPage({ user, qrVersion, onBack }: { user: User; qrVersion: number; 
 }
 
 // ─── STUDENT: Announcements ───────────────────────────────────────────────────
-function AnnouncementsPage({ onBack }: { onBack: () => void }) {
+function AnnouncementsPage({ onBack, announcements }: { onBack: () => void; announcements: typeof INITIAL_ANNOUNCEMENTS }) {
   return (
     <PageShell>
       <BackButton onClick={onBack} label="Back" />
       <PageHeader title="Announcements" />
       <div className="space-y-3">
-        {INITIAL_ANNOUNCEMENTS.map(a => (
-          <div key={a.id} className="bg-white border border-slate-100 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-3"><span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded uppercase tracking-wide">{a.badge}</span><span className="text-[11px] text-slate-400">{a.date}</span></div>
-            <h3 className="font-semibold text-slate-900 mb-2">{a.title}</h3>
-            <p className="text-sm text-slate-500 leading-relaxed">{a.body}</p>
-            <p className="text-[11px] text-slate-400 mt-4 pt-3 border-t border-slate-50">Posted by {a.author}</p>
+        {announcements.map(a => (
+          <div key={a.id} className="bg-white border border-slate-100 rounded-xl overflow-hidden">
+            {a.photoUrl && <img src={a.photoUrl} alt="" className="w-full h-44 object-cover" />}
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-3"><span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded uppercase tracking-wide">{a.badge}</span><span className="text-[11px] text-slate-400">{a.date}</span></div>
+              <h3 className="font-semibold text-slate-900 mb-2">{a.title}</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">{a.body}</p>
+              <p className="text-[11px] text-slate-400 mt-4 pt-3 border-t border-slate-50">Posted by {a.author}</p>
+            </div>
           </div>
         ))}
       </div>
@@ -1259,7 +1356,7 @@ function ProfilePage({ user, onSave, onBack }: { user: User; onSave: (u: User) =
           </div>
           <div>
             <p className="font-bold text-slate-900">{fullName(editing ? draft : user) || "Your name"}</p>
-            <p className="text-sm text-slate-400 mt-0.5">{(editing ? draft : user).studentId || (isMod ? "Moderator" : "No ID")}</p>
+            <p className="text-sm text-slate-400 mt-0.5">{(editing ? draft : user).studentId || (isMod ? "Admin" : "No ID")}</p>
             <div className="flex flex-wrap gap-1.5 mt-2">{[(editing ? draft : user).program, (editing ? draft : user).yearLevel, (editing ? draft : user).section].filter(Boolean).map(t => <span key={t} className="text-[11px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded">{t}</span>)}</div>
           </div>
         </div>
@@ -1299,6 +1396,18 @@ function ProfilePage({ user, onSave, onBack }: { user: User; onSave: (u: User) =
             </>)}
           </div>
         )}
+        {!isMod && user.idPhotoUrl && (
+          <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mt-4">
+            <div className="px-5 py-3.5 border-b border-slate-50 flex items-center justify-between">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">School ID</p>
+              <span className="text-[10px] text-slate-300 font-semibold uppercase tracking-wide">Verification</span>
+            </div>
+            <div className="p-4">
+              <img src={user.idPhotoUrl} alt="School ID" className="w-full rounded-lg object-cover max-h-48" />
+              <p className="text-[11px] text-slate-400 mt-2.5 text-center">Used for identity verification by moderators</p>
+            </div>
+          </div>
+        )}
       </div>
     </PageShell>
   );
@@ -1310,7 +1419,7 @@ function AdminDashboard({ onNav, excuseRequests }: { onNav: (p: Page) => void; e
   return (
     <PageShell>
       <div className="flex items-start justify-between mb-6">
-        <div><p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Aug 22, 2026 · Friday</p><h1 className="text-xl font-bold text-slate-900">Moderator Overview</h1><p className="text-sm text-slate-400 mt-0.5">SSG General Assembly is live now</p></div>
+        <div><p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Aug 22, 2026 · Friday</p><h1 className="text-xl font-bold text-slate-900">Admin Overview</h1><p className="text-sm text-slate-400 mt-0.5">SSG General Assembly is live now</p></div>
         <span className="flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full shrink-0"><span className="w-1.5 h-1.5 bg-green-500 rounded-full" style={{ animation: "pulse 2s infinite" }} />Live</span>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
@@ -1341,24 +1450,26 @@ function AdminDashboard({ onNav, excuseRequests }: { onNav: (p: Page) => void; e
 // ─── MODERATOR: Events ────────────────────────────────────────────────────────
 interface NewEventDraft { title: string; date: string; time: string; location: string; description: string; program: string; fineAmount: string; photos: File[]; videos: File[]; }
 
-function AdminEventsPage({ onNav }: { onNav: (p: Page) => void }) {
-  const [events, setEvents] = useState<EventData[]>(INITIAL_EVENTS.map(e => ({ ...e })));
+function AdminEventsPage({ onNav, events, setEvents }: { onNav: (p: Page) => void; events: EventData[]; setEvents: React.Dispatch<React.SetStateAction<EventData[]>> }) {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<EventData | null>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
   const editPhotoRef = useRef<HTMLInputElement>(null);
+  const highlightRef = useRef<HTMLInputElement>(null);
+  const editHighlightRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<NewEventDraft>({ title: "", date: "", time: "", location: "", description: "", program: "All Programs", fineAmount: "0", photos: [], videos: [] });
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [videoNames, setVideoNames] = useState<string[]>([]);
+  const [highlightUrl, setHighlightUrl] = useState<string | null>(null);
 
   const setD = (k: keyof NewEventDraft) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setDraft(d => ({ ...d, [k]: e.target.value }));
   const handleCreate = () => {
     if (!draft.title || !draft.date) return;
-    setEvents(ev => [{ id: Date.now().toString(), title: draft.title, date: draft.date, time: draft.time, location: draft.location, description: draft.description, program: draft.program, status: "upcoming", attendees: 0, fineAmount: parseInt(draft.fineAmount) || 0, mediaUrls: photoUrls }, ...ev]);
+    setEvents(ev => [{ id: Date.now().toString(), title: draft.title, date: draft.date, time: draft.time, location: draft.location, description: draft.description, program: draft.program, status: "upcoming", attendees: 0, fineAmount: parseInt(draft.fineAmount) || 0, mediaUrls: photoUrls, highlightUrl: highlightUrl ?? undefined }, ...ev]);
     setDraft({ title: "", date: "", time: "", location: "", description: "", program: "All Programs", fineAmount: "0", photos: [], videos: [] });
-    setPhotoUrls([]); setVideoNames([]); setShowForm(false);
+    setPhotoUrls([]); setVideoNames([]); setHighlightUrl(null); setShowForm(false);
   };
   const startEdit = (e: EventData) => { setEditId(e.id); setEditDraft({ ...e }); setShowForm(false); };
   const saveEdit = () => { if (!editDraft) return; setEvents(ev => ev.map(e => e.id === editDraft.id ? editDraft : e)); setEditId(null); setEditDraft(null); };
@@ -1383,6 +1494,18 @@ function AdminEventsPage({ onNav }: { onNav: (p: Page) => void }) {
           <div className="grid grid-cols-2 gap-3"><FieldSelect label="Program" value={draft.program} onChange={setD("program")}><option>All Programs</option><option>BSIT / BSCS</option><option>BSIT</option><option>BSCS</option><option>BSBA</option></FieldSelect><FieldInput label="Absence Fee (₱)" type="number" min="0" placeholder="0 = no fee" value={draft.fineAmount} onChange={setD("fineAmount")} /></div>
           <FieldTextarea label="Description" placeholder="What is this event about?" rows={3} value={draft.description} onChange={setD("description")} />
           <div>
+            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">Highlight Photo</label>
+            <input ref={highlightRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) setHighlightUrl(URL.createObjectURL(f)); }} />
+            {highlightUrl ? (
+              <div className="relative rounded-xl overflow-hidden border border-slate-200">
+                <img src={highlightUrl} alt="" className="w-full h-36 object-cover" />
+                <button onClick={() => setHighlightUrl(null)} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><Icons.X /></button>
+              </div>
+            ) : (
+              <button onClick={() => highlightRef.current?.click()} className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2 transition-colors"><Icons.Image />Upload highlight photo</button>
+            )}
+          </div>
+          <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-2">Media</label>
             <input ref={photoRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { const files = Array.from(e.target.files ?? []); setDraft(d => ({ ...d, photos: [...d.photos, ...files] })); files.forEach(f => setPhotoUrls(u => [...u, URL.createObjectURL(f)])); }} />
             <input ref={videoRef} type="file" accept="video/*" multiple className="hidden" onChange={e => { const files = Array.from(e.target.files ?? []); setDraft(d => ({ ...d, videos: [...d.videos, ...files] })); files.forEach(f => setVideoNames(n => [...n, f.name])); }} />
@@ -1401,6 +1524,18 @@ function AdminEventsPage({ onNav }: { onNav: (p: Page) => void }) {
           <FieldInput label="Location" value={editDraft.location} onChange={e => setEditDraft(d => d ? { ...d, location: e.target.value } : d)} />
           <div className="grid grid-cols-2 gap-3"><FieldSelect label="Program" value={editDraft.program} onChange={e => setEditDraft(d => d ? { ...d, program: e.target.value } : d)}><option>All Programs</option><option>BSIT / BSCS</option><option>BSIT</option><option>BSCS</option><option>BSBA</option></FieldSelect><FieldInput label="Absence Fee (₱)" type="number" min="0" value={editDraft.fineAmount.toString()} onChange={e => setEditDraft(d => d ? { ...d, fineAmount: parseInt(e.target.value) || 0 } : d)} /></div>
           <FieldTextarea label="Description" rows={3} value={editDraft.description} onChange={e => setEditDraft(d => d ? { ...d, description: e.target.value } : d)} />
+          <div>
+            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">Highlight Photo</label>
+            <input ref={editHighlightRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) setEditDraft(d => d ? { ...d, highlightUrl: URL.createObjectURL(f) } : d); }} />
+            {editDraft.highlightUrl ? (
+              <div className="relative rounded-xl overflow-hidden border border-slate-200">
+                <img src={editDraft.highlightUrl} alt="" className="w-full h-36 object-cover" />
+                <button onClick={() => setEditDraft(d => d ? { ...d, highlightUrl: undefined } : d)} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><Icons.X /></button>
+              </div>
+            ) : (
+              <button onClick={() => editHighlightRef.current?.click()} className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2 transition-colors"><Icons.Image />Upload highlight photo</button>
+            )}
+          </div>
           <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-2">Photos</label>
             <input ref={editPhotoRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { Array.from(e.target.files ?? []).forEach(f => { const url = URL.createObjectURL(f); setEditDraft(d => d ? { ...d, mediaUrls: [...(d.mediaUrls ?? []), url] } : d); }); }} />
@@ -1825,8 +1960,7 @@ function AdminStudentsPage() {
 }
 
 // ─── MODERATOR: Announcements ─────────────────────────────────────────────────
-function AdminAnnouncementsPage() {
-  const [posts, setPosts] = useState(INITIAL_ANNOUNCEMENTS.map(a => ({ ...a })));
+function AdminAnnouncementsPage({ posts, setPosts }: { posts: typeof INITIAL_ANNOUNCEMENTS; setPosts: React.Dispatch<React.SetStateAction<typeof INITIAL_ANNOUNCEMENTS>> }) {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<typeof INITIAL_ANNOUNCEMENTS[0] | null>(null);
@@ -1834,7 +1968,7 @@ function AdminAnnouncementsPage() {
   const photoRef = useRef<HTMLInputElement>(null); const editPhotoRef = useRef<HTMLInputElement>(null);
   const handlePublish = () => {
     if (!newTitle.trim()) return;
-    setPosts(p => [{ id: Date.now().toString(), title: newTitle, body: newBody, date: "Aug 22, 2026", author: "Administration", badge: newBadge, photoUrl: newPhoto ?? "" }, ...p]);
+    setPosts(p => [{ id: Date.now().toString(), title: newTitle, body: newBody, date: "Aug 22, 2026", author: "Admin", badge: newBadge, photoUrl: newPhoto ?? "" }, ...p]);
     setNewTitle(""); setNewBody(""); setNewBadge("General"); setNewPhoto(null); setShowForm(false);
   };
   const startEdit = (a: typeof INITIAL_ANNOUNCEMENTS[0]) => { setEditId(a.id); setEditDraft({ ...a }); setShowForm(false); };
@@ -1926,7 +2060,7 @@ interface SystemSettings {
   academicYear: string;
   semester: string;
   institution: string;
-  heroImageUrl: string;
+  heroImageUrls: string[];
   carouselSlides: CarouselSlide[];
 }
 
@@ -1935,6 +2069,8 @@ function AdminSettingsPage({ settings, onSave }: { settings: SystemSettings; onS
   const toggle = (k: "showFees" | "allowExcuseRequests" | "requirePhotoId") =>
     onSave({ ...settings, [k]: !settings[k] });
   const heroRef = useRef<HTMLInputElement>(null);
+  const addHero = () => heroRef.current?.click();
+  const removeHero = (i: number) => update({ heroImageUrls: settings.heroImageUrls.filter((_, j) => j !== i) });
   const slideRefs = useRef<(HTMLInputElement | null)[]>([]);
   const addSlide = () => {
     if (settings.carouselSlides.length >= 10) return;
@@ -2024,25 +2160,39 @@ function AdminSettingsPage({ settings, onSave }: { settings: SystemSettings; onS
       {/* Landing Page */}
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Landing Page</p>
 
-      {/* Hero image */}
+      {/* Hero images */}
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-3">
         <div className="px-5 py-4">
-          <p className="text-sm font-semibold text-slate-900 mb-0.5">Hero image</p>
-          <p className="text-xs text-slate-400 mb-3">Shown as the full-width background behind the headline. A dark gradient overlay keeps text readable.</p>
-          <input ref={heroRef} type="file" accept="image/*" className="hidden"
-            onChange={e => { const f = e.target.files?.[0]; if (f) update({ heroImageUrl: URL.createObjectURL(f) }); }} />
-          {settings.heroImageUrl ? (
-            <div className="relative rounded-xl overflow-hidden border border-slate-200">
-              <img src={settings.heroImageUrl} alt="Hero preview" className="w-full h-36 object-cover" />
-              <div className="absolute inset-0 bg-black/30" />
-              <div className="absolute bottom-2 right-2 flex gap-2">
-                <button onClick={() => heroRef.current?.click()} className="h-7 px-3 bg-white/90 hover:bg-white text-slate-700 text-xs font-semibold rounded-lg transition-colors">Replace</button>
-                <button onClick={() => update({ heroImageUrl: "" })} className="h-7 px-3 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-lg transition-colors">Remove</button>
-              </div>
+          <div className="flex items-center justify-between mb-0.5">
+            <p className="text-sm font-semibold text-slate-900">Hero images</p>
+            <span className="text-[11px] text-slate-400 font-medium">{settings.heroImageUrls.length}/6</span>
+          </div>
+          <p className="text-xs text-slate-400 mb-3">Each image shows for 4 seconds before crossfading to the next. A gradient keeps text readable.</p>
+          <input ref={heroRef} type="file" accept="image/*" multiple className="hidden"
+            onChange={e => {
+              const files = Array.from(e.target.files ?? []);
+              const remaining = 6 - settings.heroImageUrls.length;
+              const toAdd = files.slice(0, remaining).map(f => URL.createObjectURL(f));
+              if (toAdd.length) update({ heroImageUrls: [...settings.heroImageUrls, ...toAdd] });
+              e.target.value = "";
+            }} />
+          {settings.heroImageUrls.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              {settings.heroImageUrls.map((url, i) => (
+                <div key={i} className="relative rounded-xl overflow-hidden border border-slate-200 aspect-video">
+                  <img src={url} alt={`Hero ${i + 1}`} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/25" />
+                  <span className="absolute top-2 left-2 text-[10px] font-bold text-white/80 bg-black/30 px-1.5 py-0.5 rounded">{i + 1}</span>
+                  <button onClick={() => removeHero(i)} className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow transition-colors">
+                    <Icons.X />
+                  </button>
+                </div>
+              ))}
             </div>
-          ) : (
-            <button onClick={() => heroRef.current?.click()} className="w-full h-24 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2 transition-colors">
-              <Icons.Image />Upload hero image
+          )}
+          {settings.heroImageUrls.length < 6 && (
+            <button onClick={addHero} className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2 transition-colors">
+              <Icons.Image />Add hero photo{settings.heroImageUrls.length > 0 ? "s" : ""}
             </button>
           )}
         </div>
@@ -2134,7 +2284,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
   academicYear: "2026-2027",
   semester: "1st Semester",
   institution: "TapIn",
-  heroImageUrl: "",
+  heroImageUrls: [],
   carouselSlides: [],
 };
 
@@ -2149,6 +2299,10 @@ export default function App() {
   const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
   const [menuOpen, setMenuOpen] = useState(false);
   const [seenAnnouncements, setSeenAnnouncements] = useState(0);
+  const [events, setEvents] = useState<EventData[]>(INITIAL_EVENTS.map(e => ({ ...e })));
+  const [announcements, setAnnouncements] = useState(INITIAL_ANNOUNCEMENTS.map(a => ({ ...a })));
+
+  useEffect(() => { document.title = "Event Attendance System"; }, []);
 
   const show = (msg: string, variant: "success" | "error" = "success") => { setToast({ msg, variant }); setTimeout(() => setToast(null), 3500); };
 
@@ -2162,10 +2316,10 @@ export default function App() {
 
   const handleLogin = (role: Role) => {
     if (role === "student") { setUser({ firstName: "", middleInitial: "", surname: "", studentId: "", program: "", yearLevel: "", section: "", phone: "", contactEmail: "", role: "student" }); setPage("onboarding"); }
-    else { setUser({ firstName: "Rafael", middleInitial: "M", surname: "Rivera", studentId: "ADMIN-001", program: "Moderator", yearLevel: "", section: "", phone: "09171234567", contactEmail: "moderator@tapin.edu", role: "admin" }); setPage("admin-dashboard"); }
+    else { setUser({ firstName: "Rafael", middleInitial: "M", surname: "Rivera", studentId: "ADMIN-001", program: "Admin", yearLevel: "", section: "", phone: "09171234567", contactEmail: "moderator@tapin.edu", role: "admin" }); setPage("admin-dashboard"); }
   };
   const handleOnboarding = (d: OBForm) => {
-    setUser({ firstName: d.firstName || "Maria Luisa", middleInitial: d.middleInitial || "A", surname: d.surname || "Santos", studentId: d.studentId || "2440014", program: d.program || "BSIT", yearLevel: d.yearLevel || "2nd Year", section: d.section || "IT-2A", phone: d.phone || "09XX XXX XXXX", contactEmail: d.contactEmail || "mls.santos@tapin.edu", role: "student" });
+    setUser({ firstName: d.firstName || "Maria Luisa", middleInitial: d.middleInitial || "A", surname: d.surname || "Santos", studentId: d.studentId || "2440014", program: d.program || "BSIT", yearLevel: d.yearLevel || "2nd Year", section: d.section || "IT-2A", phone: d.phone || "09XX XXX XXXX", contactEmail: d.contactEmail || "mls.santos@tapin.edu", role: "student", idPhotoUrl: d.idPhotoUrl });
     show("Setup complete — your QR code is ready"); setPage("dashboard");
   };
   const handleProfileSave = (updated: User) => { setUser(updated); setQrVersion(v => v + 1); show("Profile saved — QR code renewed"); };
@@ -2200,19 +2354,19 @@ export default function App() {
           {page === "login"                 && <LoginPage onLogin={handleLogin} onBack={() => navigate("landing")} />}
           {page === "onboarding"            && <OnboardingPage onComplete={handleOnboarding} />}
           {page === "dashboard"   && user   && !isMod && <DashboardPage user={user} onNav={navigate} fines={fines} showFees={settings.showFees} />}
-          {page === "events"                && <EventsPage onNav={navigate} onSelectEvent={setSelectedEventId} user={user} showFees={settings.showFees} />}
-          {page === "event-detail"          && <EventDetailPage eventId={selectedEventId} user={user} showFees={settings.showFees} onBack={goBack("events")} />}
+          {page === "events"                && <EventsPage onNav={navigate} onSelectEvent={setSelectedEventId} user={user} showFees={settings.showFees} events={events} />}
+          {page === "event-detail"          && <EventDetailPage eventId={selectedEventId} user={user} showFees={settings.showFees} onBack={goBack("events")} events={events} />}
           {page === "my-qr"       && user   && <MyQRPage user={user} qrVersion={qrVersion} onBack={goBack("dashboard")} />}
-          {page === "announcements"         && <AnnouncementsPage onBack={goBack(isMod ? "admin-dashboard" : "dashboard")} />}
+          {page === "announcements"         && <AnnouncementsPage onBack={goBack(isMod ? "admin-dashboard" : "dashboard")} announcements={announcements} />}
           {page === "attendance-history"    && <AttendanceHistoryPage excuseRequests={excuseRequests} fines={fines} showFees={settings.showFees} onSubmitExcuse={r => { setExcuseRequests(p => [...p, r]); show("Excuse request submitted"); }} onBack={goBack("dashboard")} />}
           {page === "my-fines"    && user   && <MyFinesPage fines={fines} showFees={settings.showFees} onBack={goBack("dashboard")} />}
           {page === "profile"     && user   && <ProfilePage user={user} onSave={handleProfileSave} onBack={goBack(isMod ? "admin-dashboard" : "dashboard")} />}
           {page === "admin-dashboard"       && isMod && <AdminDashboard onNav={navigate} excuseRequests={excuseRequests} />}
-          {page === "admin-events"          && isMod && <AdminEventsPage onNav={navigate} />}
+          {page === "admin-events"          && isMod && <AdminEventsPage onNav={navigate} events={events} setEvents={setEvents} />}
           {page === "admin-scanner"         && isMod && <AdminScannerPage />}
           {page === "admin-attendees"       && isMod && <AdminAttendeesPage onNav={navigate} />}
           {page === "admin-students"        && isMod && <AdminStudentsPage />}
-          {page === "admin-announcements"   && isMod && <AdminAnnouncementsPage />}
+          {page === "admin-announcements"   && isMod && <AdminAnnouncementsPage posts={announcements} setPosts={setAnnouncements} />}
           {page === "admin-excuse-requests" && isMod && <AdminExcuseRequestsPage requests={excuseRequests} onAction={handleExcuseAction} onBack={goBack("admin-dashboard")} />}
           {page === "admin-reports"         && isMod && <AdminReportsPage />}
           {page === "admin-settings"        && isMod && <AdminSettingsPage settings={settings} onSave={setSettings} />}
