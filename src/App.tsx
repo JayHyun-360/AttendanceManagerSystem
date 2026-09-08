@@ -225,7 +225,7 @@ function Badge({ status }: { status: string }) {
   };
   const c = cfg[status] ?? { cls: "bg-slate-100 text-slate-500", label: status };
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-md ${c.cls}`}>
+    <span className={`inline-flex w-fit items-center gap-1.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${c.cls}`}>
       {c.dot && <span className="w-1.5 h-1.5 rounded-full bg-green-500" style={{ animation: "pulse 2s infinite" }} />}
       {c.label}
     </span>
@@ -1115,21 +1115,36 @@ function EventDetailPage({ eventId, user, showFees, onBack, events }: { eventId:
       <BackButton onClick={onBack} label="Back to Events" />
       <div className="relative rounded-xl overflow-hidden mb-4 shadow-sm">
         {ev.highlightUrl ? (
-          <img src={ev.highlightUrl} alt={ev.title} className="w-full h-52 object-cover" />
+          <img src={ev.highlightUrl} alt={ev.title} className="w-full h-64 object-cover" />
         ) : (
-          <div className="w-full h-52 bg-green-600" />
+          <div className="w-full h-64 bg-green-600" />
         )}
-        {/* Gradient overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-        <div className="absolute inset-0 p-6 flex flex-col justify-between">
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
+        {/* Badge — top-left */}
+        <div className="absolute top-4 left-4">
           <Badge status={ev.status} />
-          <div>
-            <h1 className="font-bold text-xl text-white mb-4 leading-snug drop-shadow">{ev.title}</h1>
-            <div className="grid grid-cols-2 gap-2">
-              {[{ l: "DATE", v: ev.date }, { l: "TIME", v: ev.time }].map(d => (<div key={d.l} className="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2.5"><p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">{d.l}</p><p className="text-sm font-semibold text-white">{d.v}</p></div>))}
-              <div className="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2.5 col-span-2"><p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">LOCATION</p><p className="text-sm font-semibold text-white">{ev.location}</p></div>
-              {canSeeFees && ev.fineAmount > 0 && <div className="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2.5 col-span-2"><p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">ABSENCE FEE</p><p className="text-sm font-semibold text-white">₱{ev.fineAmount}</p></div>}
+        </div>
+        {/* Bottom content — pinned with explicit bottom padding */}
+        <div className="absolute left-0 right-0 bottom-0 px-4 pb-4">
+          <h1 className="font-bold text-lg text-white mb-2.5 leading-snug drop-shadow">{ev.title}</h1>
+          <div className="grid grid-cols-2 gap-1.5">
+            {[{ l: "DATE", v: ev.date }, { l: "TIME", v: ev.time }].map(d => (
+              <div key={d.l} className="bg-white/15 backdrop-blur-sm rounded-lg px-2.5 py-2">
+                <p className="text-white/60 text-[9px] font-bold uppercase tracking-widest mb-0.5">{d.l}</p>
+                <p className="text-xs font-semibold text-white leading-tight">{d.v}</p>
+              </div>
+            ))}
+            <div className="bg-white/15 backdrop-blur-sm rounded-lg px-2.5 py-2 col-span-2">
+              <p className="text-white/60 text-[9px] font-bold uppercase tracking-widest mb-0.5">LOCATION</p>
+              <p className="text-xs font-semibold text-white leading-tight">{ev.location}</p>
             </div>
+            {canSeeFees && ev.fineAmount > 0 && (
+              <div className="bg-white/15 backdrop-blur-sm rounded-lg px-2.5 py-2 col-span-2">
+                <p className="text-white/60 text-[9px] font-bold uppercase tracking-widest mb-0.5">ABSENCE FEE</p>
+                <p className="text-xs font-semibold text-white leading-tight">₱{ev.fineAmount}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
