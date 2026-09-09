@@ -542,7 +542,6 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const touchStart = useRef<number | null>(null);
   const n = slides.length;
 
   const go = (next: number, manual = false) => {
@@ -556,21 +555,11 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
 
   useEffect(() => {
     if (paused || n <= 1) return;
-    const t = setInterval(() => setIdx(i => (i + 1) % n), 5000);
+    const t = setInterval(() => setIdx(i => (i + 1) % n), 4000);
     return () => clearInterval(t);
   }, [paused, n]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") go(idx - 1, true);
-      if (e.key === "ArrowRight") go(idx + 1, true);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [idx]);
-
   if (n === 0) return null;
-  const slide = slides[idx];
 
   return (
     <div
@@ -578,25 +567,23 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
       style={{ aspectRatio: "16/7" }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      onTouchStart={e => { touchStart.current = e.touches[0].clientX; }}
-      onTouchEnd={e => {
-        if (touchStart.current === null) return;
-        const dx = e.changedTouches[0].clientX - touchStart.current;
-        if (Math.abs(dx) > 40) go(dx < 0 ? idx + 1 : idx - 1, true);
-        touchStart.current = null;
-      }}
     >
-      {/* Slides */}
-      {slides.map((s, i) => (
-        <div key={i} className="absolute inset-0 transition-opacity duration-700" style={{ opacity: i === idx ? 1 : 0, zIndex: i === idx ? 1 : 0 }}>
-          <img src={s.imageUrl} alt={s.caption} className="w-full h-full object-cover" />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.18) 55%, transparent 100%)" }} />
-          <div className="absolute bottom-0 left-0 right-0 px-6 py-5">
-            <p className="text-white font-bold text-lg leading-tight drop-shadow">{s.caption}</p>
-            {s.date && <p className="text-white/65 text-sm mt-1">{s.date}</p>}
+      {/* Slide strip — all slides in a row, shifted by translateX */}
+      <div
+        className="flex h-full"
+        style={{ width: `${n * 100}%`, transform: `translateX(-${(idx / n) * 100}%)`, transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)" }}
+      >
+        {slides.map((s, i) => (
+          <div key={i} className="relative h-full flex-shrink-0" style={{ width: `${100 / n}%` }}>
+            <img src={s.imageUrl} alt={s.caption} className="w-full h-full object-cover" />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.18) 55%, transparent 100%)" }} />
+            <div className="absolute bottom-0 left-0 right-0 px-6 py-5">
+              <p className="text-white font-bold text-lg leading-tight drop-shadow">{s.caption}</p>
+              {s.date && <p className="text-white/65 text-sm mt-1">{s.date}</p>}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
       {/* Arrow controls */}
       {n > 1 && (<>
@@ -627,7 +614,7 @@ function LandingPage({ onNav, settings }: { onNav: (p: Page) => void; settings: 
   const [heroIdx, setHeroIdx] = useState(0);
   useEffect(() => {
     if (heroUrls.length <= 1) return;
-    const t = setInterval(() => setHeroIdx(i => (i + 1) % heroUrls.length), 4000);
+    const t = setInterval(() => setHeroIdx(i => (i + 1) % heroUrls.length), 5000);
     return () => clearInterval(t);
   }, [heroUrls.length]);
   useEffect(() => { setHeroIdx(0); }, [heroUrls.length]);
@@ -636,12 +623,11 @@ function LandingPage({ onNav, settings }: { onNav: (p: Page) => void; settings: 
     <div className="min-h-screen bg-white">
       {/* ── Hero ──────────────────────────────────────────────────── */}
       <div className={`relative overflow-hidden ${hasHero ? "min-h-[520px] lg:min-h-[580px]" : ""}`}>
-        {/* Background images — crossfade */}
-        {hasHero && heroUrls.map((url, i) => (
-          <img key={i} src={url} alt="" aria-hidden
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ opacity: i === heroIdx ? 1 : 0, transition: "opacity 0.8s ease" }} />
-        ))}
+        {/* Background images — instant swap, only active image rendered */}
+        {hasHero && (
+          <img key={heroIdx} src={heroUrls[heroIdx]} alt="" aria-hidden
+            className="absolute inset-0 w-full h-full object-cover" />
+        )}
         {hasHero && <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.18) 100%)" }} />}
         {/* Dot indicators (only when >1 hero image) */}
         {heroUrls.length > 1 && (
@@ -1081,7 +1067,7 @@ function EventsPage({ onNav, onSelectEvent, user, showFees, events }: { onNav: (
   return (
     <PageShell>
       <PageHeader title="Events" subtitle="AY 2026-2027, 1st Semester" />
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+      <div className="flex gap-2 sm:gap-2 mb-5 overflow-x-auto pb-1 -mx-1 px-1">
         {[{ k: "all", l: "All" }, { k: "active", l: "Live" }, { k: "upcoming", l: "Upcoming" }, { k: "closed", l: "Closed" }].map(f => (
           <button key={f.k} onClick={() => setFilter(f.k)} className={`shrink-0 h-8 px-3.5 rounded-lg text-xs font-semibold transition-all ${filter === f.k ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300"}`}>{f.l}</button>
         ))}
@@ -2053,13 +2039,140 @@ function AdminExcuseRequestsPage({ requests, onAction, onBack }: { requests: Exc
 
 // ─── MODERATOR: Reports ───────────────────────────────────────────────────────
 function AdminReportsPage() {
+  const exportPDF = () => {
+    const W = 794, pad = 48, dpr = 2;
+    const programRows = [
+      { l: "BSIT", n: 234, total: 301, pct: 78 },
+      { l: "BSCS", n: 198, total: 304, pct: 65 },
+      { l: "BSBA", n: 156, total: 300, pct: 52 },
+      { l: "BSEd",  n: 89,  total: 197, pct: 45 },
+    ];
+    const eventRows = INITIAL_EVENTS.filter(e => e.status !== "upcoming");
+    const fees = [
+      { l: "Total fees issued", v: "₱42,500" },
+      { l: "Collected",         v: "₱18,200" },
+      { l: "Pending",           v: "₱24,300" },
+    ];
+
+    // estimate height
+    const H = 80 + 32 + 20 + 24 + (programRows.length * 26 + 16) + 20 + 24 + (fees.length * 26 + 16) + 20 + 24 + (eventRows.length * 26 + 16) + 48;
+    const canvas = document.createElement("canvas");
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    const ctx = canvas.getContext("2d")!;
+    ctx.scale(dpr, dpr);
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+
+    let y = 0;
+    // ── Header bar
+    ctx.fillStyle = "#16a34a"; ctx.fillRect(0, 0, W, 60);
+    ctx.fillStyle = "#fff"; ctx.font = "bold 18px system-ui, sans-serif"; ctx.textAlign = "left";
+    ctx.fillText("TapIn — Attendance & Fees Report", pad, 38);
+    ctx.font = "12px system-ui, sans-serif"; ctx.textAlign = "right";
+    ctx.fillText(`AY 2026-2027 · 1st Semester`, W - pad, 38);
+    y = 60;
+
+    // generated date
+    ctx.fillStyle = "#94a3b8"; ctx.font = "10px system-ui, sans-serif"; ctx.textAlign = "left";
+    ctx.fillText(`Generated ${new Date().toLocaleString()}`, pad, y + 18);
+    y += 32;
+
+    const sectionTitle = (title: string) => {
+      ctx.fillStyle = "#f1f5f9"; ctx.fillRect(pad, y, W - pad * 2, 22);
+      ctx.fillStyle = "#334155"; ctx.font = "bold 11px system-ui, sans-serif";
+      ctx.fillText(title.toUpperCase(), pad + 8, y + 15);
+      y += 22;
+    };
+    const tableHeader = (cols: { t: string; x: number; align?: CanvasTextAlign }[]) => {
+      ctx.fillStyle = "#f8fafc"; ctx.fillRect(pad, y, W - pad * 2, 22);
+      ctx.strokeStyle = "#e2e8f0"; ctx.lineWidth = 0.5;
+      ctx.strokeRect(pad, y, W - pad * 2, 22);
+      cols.forEach(c => {
+        ctx.fillStyle = "#64748b"; ctx.font = "bold 10px system-ui, sans-serif";
+        ctx.textAlign = c.align ?? "left";
+        ctx.fillText(c.t, c.x, y + 15);
+      });
+      y += 22;
+    };
+    const tableRow = (cols: { t: string; x: number; align?: CanvasTextAlign; color?: string }[], shade: boolean) => {
+      if (shade) { ctx.fillStyle = "#fafafa"; ctx.fillRect(pad, y, W - pad * 2, 24); }
+      ctx.strokeStyle = "#f1f5f9"; ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(pad, y + 24); ctx.lineTo(W - pad, y + 24); ctx.stroke();
+      cols.forEach(c => {
+        ctx.fillStyle = c.color ?? "#1e293b"; ctx.font = "11px system-ui, sans-serif";
+        ctx.textAlign = c.align ?? "left";
+        ctx.fillText(c.t, c.x, y + 16);
+      });
+      y += 24;
+    };
+
+    // ── Attendance by program
+    y += 14;
+    sectionTitle("Attendance by Program");
+    tableHeader([
+      { t: "Program", x: pad + 8 },
+      { t: "Present", x: W - pad - 200, align: "right" },
+      { t: "Total",   x: W - pad - 120, align: "right" },
+      { t: "Rate",    x: W - pad - 8,   align: "right" },
+    ]);
+    programRows.forEach((r, i) => tableRow([
+      { t: r.l,             x: pad + 8 },
+      { t: r.n.toString(),  x: W - pad - 200, align: "right" },
+      { t: r.total.toString(), x: W - pad - 120, align: "right" },
+      { t: `${r.pct}%`,    x: W - pad - 8,   align: "right", color: r.pct >= 70 ? "#16a34a" : r.pct >= 50 ? "#d97706" : "#dc2626" },
+    ], i % 2 === 1));
+    y += 14;
+
+    // ── Fees summary
+    sectionTitle("Fees Summary");
+    tableHeader([
+      { t: "Category", x: pad + 8 },
+      { t: "Amount",   x: W - pad - 8, align: "right" },
+    ]);
+    const feeColors: Record<string, string> = { "Total fees issued": "#dc2626", "Collected": "#16a34a", "Pending": "#d97706" };
+    fees.forEach((f, i) => tableRow([
+      { t: f.l, x: pad + 8 },
+      { t: f.v, x: W - pad - 8, align: "right", color: feeColors[f.l] ?? "#1e293b" },
+    ], i % 2 === 1));
+    y += 14;
+
+    // ── By event
+    sectionTitle("By Event");
+    tableHeader([
+      { t: "Event",     x: pad + 8 },
+      { t: "Date",      x: W - pad - 200 },
+      { t: "Fee",       x: W - pad - 100, align: "right" },
+      { t: "Attended",  x: W - pad - 8,   align: "right" },
+    ]);
+    eventRows.forEach((e, i) => tableRow([
+      { t: e.title.length > 38 ? e.title.slice(0, 36) + "…" : e.title, x: pad + 8 },
+      { t: e.date,                x: W - pad - 200 },
+      { t: `₱${e.fineAmount}`,   x: W - pad - 100, align: "right" },
+      { t: e.attendees.toString(), x: W - pad - 8,  align: "right", color: "#16a34a" },
+    ], i % 2 === 1));
+    y += 20;
+
+    // ── Footer
+    ctx.fillStyle = "#e2e8f0"; ctx.fillRect(pad, y, W - pad * 2, 1);
+    ctx.fillStyle = "#94a3b8"; ctx.font = "10px system-ui, sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("TapIn · Student Event Attendance & Fee Tracking System", W / 2, y + 18);
+
+    // Open as PDF-like image
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `tapin-report-${new Date().toISOString().slice(0,10)}.png`;
+      a.click(); URL.revokeObjectURL(url);
+    }, "image/png");
+  };
+
   return (
     <PageShell>
-      <PageHeader title="Reports" subtitle="AY 2026-2027, 1st Semester" action={<button className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 flex items-center gap-1.5"><Icons.Download />Export CSV</button>} />
+      <PageHeader title="Reports" subtitle="AY 2026-2027, 1st Semester" action={<button onClick={exportPDF} className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 flex items-center gap-1.5"><Icons.Download />Export PDF</button>} />
       <SectionLabel>Attendance by program</SectionLabel>
       <div className="grid md:grid-cols-2 gap-3 mb-6">{[{ l: "BSIT", n: 234, total: 301, pct: 78, c: "bg-green-500" }, { l: "BSCS", n: 198, total: 304, pct: 65, c: "bg-sky-500" }, { l: "BSBA", n: 156, total: 300, pct: 52, c: "bg-violet-400" }, { l: "BSEd", n: 89, total: 197, pct: 45, c: "bg-amber-400" }].map(r => (<div key={r.l} className="bg-white border border-slate-100 rounded-xl px-5 py-4"><div className="flex items-center justify-between mb-3"><span className="font-bold text-slate-900 text-sm">{r.l}</span><span className="text-xs text-slate-400 font-semibold">{r.n} / {r.total}</span></div><div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2"><div className={`h-full ${r.c} rounded-full`} style={{ width: `${r.pct}%` }} /></div><p className="text-[11px] text-slate-400 font-semibold">{r.pct}% attendance rate</p></div>))}</div>
       <SectionLabel>Fees summary</SectionLabel>
-      <div className="grid grid-cols-3 gap-3 mb-6">{[{ l: "Total fees issued", v: "₱42,500", c: "text-red-600" }, { l: "Collected", v: "₱18,200", c: "text-green-600" }, { l: "Pending", v: "₱24,300", c: "text-amber-600" }].map(s => (<div key={s.l} className="bg-white border border-slate-100 rounded-xl px-4 py-4"><p className={`text-xl font-bold ${s.c}`}>{s.v}</p><p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">{s.l}</p></div>))}</div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">{[{ l: "Total fees issued", v: "₱42,500", c: "text-red-600" }, { l: "Collected", v: "₱18,200", c: "text-green-600" }, { l: "Pending", v: "₱24,300", c: "text-amber-600" }].map((s, i) => (<div key={s.l} className={`bg-white border border-slate-100 rounded-xl px-4 py-4 ${i === 0 ? "col-span-2 sm:col-span-1" : ""}`}><p className={`text-xl font-bold ${s.c}`}>{s.v}</p><p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">{s.l}</p></div>))}</div>
       <SectionLabel>By event</SectionLabel>
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">{INITIAL_EVENTS.filter(e => e.status !== "upcoming").map((e, i, arr) => (<div key={e.id} className={`flex items-center justify-between px-5 py-4 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}><div><p className="text-sm font-semibold text-slate-900">{e.title}</p><p className="text-[11px] text-slate-400 mt-0.5">{e.date} · ₱{e.fineAmount} fee</p></div><div className="text-right"><p className="font-bold text-green-600 text-lg">{e.attendees}</p><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">attended</p></div></div>))}</div>
     </PageShell>
