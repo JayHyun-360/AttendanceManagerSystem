@@ -539,23 +539,44 @@ function Sidebar({ page, user, open, onNav, onClose, onLogout, badges }: {
 
 // ─── LANDING CAROUSEL ─────────────────────────────────────────────────────────
 function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
-  const [idx, setIdx] = useState(0);
+  const n = slides.length;
+  // trackIdx can go 0…n (n = clone of slide 0)
+  const [trackIdx, setTrackIdx] = useState(0);
+  const [animated, setAnimated] = useState(true);
   const [paused, setPaused] = useState(false);
   const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const n = slides.length;
+  const realIdx = trackIdx % n;
+  // items: real slides + clone of first
+  const items = n > 1 ? [...slides, slides[0]] : slides;
+  const total = items.length;
 
-  const go = (next: number, manual = false) => {
-    setIdx(((next % n) + n) % n);
-    if (manual) {
-      setPaused(true);
-      if (pauseTimer.current) clearTimeout(pauseTimer.current);
-      pauseTimer.current = setTimeout(() => setPaused(false), 8000);
+  // advance one step forward
+  const advance = () => {
+    setAnimated(true);
+    setTrackIdx(i => i + 1);
+  };
+
+  // manual jump (dots/arrows) — always jumps to real slide
+  const go = (next: number) => {
+    const target = ((next % n) + n) % n;
+    setAnimated(true);
+    setTrackIdx(target);
+    setPaused(true);
+    if (pauseTimer.current) clearTimeout(pauseTimer.current);
+    pauseTimer.current = setTimeout(() => setPaused(false), 8000);
+  };
+
+  // after sliding onto the clone (trackIdx === n), silently snap to real slide 0
+  const handleTransitionEnd = () => {
+    if (trackIdx === n) {
+      setAnimated(false);
+      setTrackIdx(0);
     }
   };
 
   useEffect(() => {
     if (paused || n <= 1) return;
-    const t = setInterval(() => setIdx(i => (i + 1) % n), 4000);
+    const t = setInterval(advance, 4000);
     return () => clearInterval(t);
   }, [paused, n]);
 
@@ -568,13 +589,18 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Slide strip — all slides in a row, shifted by translateX */}
+      {/* Slide strip */}
       <div
         className="flex h-full"
-        style={{ width: `${n * 100}%`, transform: `translateX(-${(idx / n) * 100}%)`, transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)" }}
+        style={{
+          width: `${total * 100}%`,
+          transform: `translateX(-${(trackIdx / total) * 100}%)`,
+          transition: animated ? "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)" : "none",
+        }}
+        onTransitionEnd={handleTransitionEnd}
       >
-        {slides.map((s, i) => (
-          <div key={i} className="relative h-full flex-shrink-0" style={{ width: `${100 / n}%` }}>
+        {items.map((s, i) => (
+          <div key={i} className="relative h-full flex-shrink-0" style={{ width: `${100 / total}%` }}>
             <img src={s.imageUrl} alt={s.caption} className="w-full h-full object-cover" />
             <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.18) 55%, transparent 100%)" }} />
             <div className="absolute bottom-0 left-0 right-0 px-6 py-5">
@@ -587,19 +613,19 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
 
       {/* Arrow controls */}
       {n > 1 && (<>
-        <button onClick={() => go(idx - 1, true)} className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-colors backdrop-blur-sm">
+        <button onClick={() => go(realIdx - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-colors backdrop-blur-sm">
           <Icons.ChevronLeft />
         </button>
-        <button onClick={() => go(idx + 1, true)} className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-colors backdrop-blur-sm">
+        <button onClick={() => go(realIdx + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-colors backdrop-blur-sm">
           <Icons.ChevronRight />
         </button>
       </>)}
 
-      {/* Dot indicators */}
+      {/* Dot indicators — keyed to realIdx */}
       {n > 1 && (
         <div className="absolute bottom-3 right-5 z-10 flex gap-1.5">
           {slides.map((_, i) => (
-            <button key={i} onClick={() => go(i, true)} className={`rounded-full transition-all ${i === idx ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/45 hover:bg-white/70"}`} />
+            <button key={i} onClick={() => go(i)} className={`rounded-full transition-all ${i === realIdx ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/45 hover:bg-white/70"}`} />
           ))}
         </div>
       )}
@@ -611,29 +637,54 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
 function LandingPage({ onNav, settings }: { onNav: (p: Page) => void; settings: SystemSettings }) {
   const heroUrls = settings.heroImageUrls;
   const hasHero = heroUrls.length > 0;
-  const [heroIdx, setHeroIdx] = useState(0);
+  const hn = heroUrls.length;
+  // clone-trick state for hero
+  const [heroTrack, setHeroTrack] = useState(0);
+  const [heroAnim, setHeroAnim] = useState(true);
+  const heroRealIdx = heroTrack % (hn || 1);
+  const heroItems = hn > 1 ? [...heroUrls, heroUrls[0]] : heroUrls;
+  const heroTotal = heroItems.length;
+
+  const heroAdvance = () => { setHeroAnim(true); setHeroTrack(i => i + 1); };
+  const heroTransitionEnd = () => {
+    if (heroTrack === hn) { setHeroAnim(false); setHeroTrack(0); }
+  };
+
   useEffect(() => {
-    if (heroUrls.length <= 1) return;
-    const t = setInterval(() => setHeroIdx(i => (i + 1) % heroUrls.length), 5000);
+    if (hn <= 1) return;
+    const t = setInterval(heroAdvance, 5000);
     return () => clearInterval(t);
-  }, [heroUrls.length]);
-  useEffect(() => { setHeroIdx(0); }, [heroUrls.length]);
+  }, [hn]);
+  useEffect(() => { setHeroTrack(0); setHeroAnim(false); }, [hn]);
 
   return (
     <div className="min-h-screen bg-white">
       {/* ── Hero ──────────────────────────────────────────────────── */}
       <div className={`relative overflow-hidden ${hasHero ? "min-h-[520px] lg:min-h-[580px]" : ""}`}>
-        {/* Background images — instant swap, only active image rendered */}
+        {/* Background images — sliding clone-loop track */}
         {hasHero && (
-          <img key={heroIdx} src={heroUrls[heroIdx]} alt="" aria-hidden
-            className="absolute inset-0 w-full h-full object-cover" />
+          <div
+            className="absolute inset-y-0 left-0 flex"
+            style={{
+              width: `${heroTotal * 100}%`,
+              transform: `translateX(-${(heroTrack / heroTotal) * 100}%)`,
+              transition: heroAnim ? "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)" : "none",
+            }}
+            onTransitionEnd={heroTransitionEnd}
+          >
+            {heroItems.map((url, i) => (
+              <div key={i} className="relative h-full flex-shrink-0" style={{ width: `${100 / heroTotal}%` }}>
+                <img src={url} alt="" aria-hidden className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
         )}
         {hasHero && <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.18) 100%)" }} />}
-        {/* Dot indicators (only when >1 hero image) */}
-        {heroUrls.length > 1 && (
+        {/* Dot indicators */}
+        {hn > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
             {heroUrls.map((_, i) => (
-              <span key={i} className={`rounded-full transition-all duration-300 ${i === heroIdx ? "w-4 h-2 bg-white" : "w-2 h-2 bg-white/40"}`} />
+              <span key={i} className={`rounded-full transition-all duration-300 ${i === heroRealIdx ? "w-4 h-2 bg-white" : "w-2 h-2 bg-white/40"}`} />
             ))}
           </div>
         )}
