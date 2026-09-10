@@ -27,6 +27,17 @@ interface EventData {
   location: string; status: EventStatus;
   attendees: number; description: string; program: string;
   fineAmount: number; mediaUrls?: string[]; highlightUrl?: string;
+  // attendance settings
+  multiSession?: boolean;
+  strictMorning?: boolean; strictAfternoon?: boolean;
+  morningStart?: string; morningEnd?: string; morningLateCutoff?: string;
+  afternoonStart?: string; afternoonEnd?: string; afternoonLateCutoff?: string;
+  // fine settings
+  absentFine?: number; lateFine?: number;
+  morningAbsentFine?: number; morningLateFine?: number;
+  afternoonAbsentFine?: number; afternoonLateFine?: number;
+  // optimistic concurrency version for multi-admin conflict detection
+  version?: number;
 }
 
 interface ScanRecord {
@@ -1500,35 +1511,188 @@ function AdminDashboard({ onNav, excuseRequests }: { onNav: (p: Page) => void; e
 }
 
 // ─── MODERATOR: Events ────────────────────────────────────────────────────────
-interface NewEventDraft { title: string; date: string; time: string; location: string; description: string; program: string; fineAmount: string; photos: File[]; videos: File[]; }
+interface NewEventDraft {
+  title: string; date: string; time: string; location: string;
+  description: string; program: string; fineAmount: string;
+  photos: File[]; videos: File[];
+  multiSession: boolean;
+  strictMorning: boolean; strictAfternoon: boolean;
+  morningStart: string; morningEnd: string; morningLateCutoff: string;
+  afternoonStart: string; afternoonEnd: string; afternoonLateCutoff: string;
+  absentFine: string; lateFine: string;
+  morningAbsentFine: string; morningLateFine: string;
+  afternoonAbsentFine: string; afternoonLateFine: string;
+}
 
 function AdminEventsPage({ onNav, events, setEvents }: { onNav: (p: Page) => void; events: EventData[]; setEvents: React.Dispatch<React.SetStateAction<EventData[]>> }) {
+  const EMPTY_DRAFT: NewEventDraft = {
+    title: "", date: "", time: "", location: "", description: "",
+    program: "All Programs", fineAmount: "0", photos: [], videos: [],
+    multiSession: false, strictMorning: false, strictAfternoon: false,
+    morningStart: "", morningEnd: "", morningLateCutoff: "",
+    afternoonStart: "", afternoonEnd: "", afternoonLateCutoff: "",
+    absentFine: "0", lateFine: "0",
+    morningAbsentFine: "0", morningLateFine: "0",
+    afternoonAbsentFine: "0", afternoonLateFine: "0",
+  };
+
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<EventData | null>(null);
+  const [editOriginal, setEditOriginal] = useState<EventData | null>(null);
+  const [showSensitiveWarning, setShowSensitiveWarning] = useState(false);
+
   const photoRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
   const editPhotoRef = useRef<HTMLInputElement>(null);
   const highlightRef = useRef<HTMLInputElement>(null);
   const editHighlightRef = useRef<HTMLInputElement>(null);
-  const [draft, setDraft] = useState<NewEventDraft>({ title: "", date: "", time: "", location: "", description: "", program: "All Programs", fineAmount: "0", photos: [], videos: [] });
+
+  const [draft, setDraft] = useState<NewEventDraft>(EMPTY_DRAFT);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [videoNames, setVideoNames] = useState<string[]>([]);
   const [highlightUrl, setHighlightUrl] = useState<string | null>(null);
 
-  const setD = (k: keyof NewEventDraft) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setDraft(d => ({ ...d, [k]: e.target.value }));
+  const setD = (k: keyof NewEventDraft) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setDraft(d => ({ ...d, [k]: e.target.value }));
+  const toggleD = (k: keyof NewEventDraft) => () => setDraft(d => ({ ...d, [k]: !d[k] }));
+
   const handleCreate = () => {
     if (!draft.title || !draft.date) return;
-    setEvents(ev => [{ id: Date.now().toString(), title: draft.title, date: draft.date, time: draft.time, location: draft.location, description: draft.description, program: draft.program, status: "upcoming", attendees: 0, fineAmount: parseInt(draft.fineAmount) || 0, mediaUrls: photoUrls, highlightUrl: highlightUrl ?? undefined }, ...ev]);
-    setDraft({ title: "", date: "", time: "", location: "", description: "", program: "All Programs", fineAmount: "0", photos: [], videos: [] });
-    setPhotoUrls([]); setVideoNames([]); setHighlightUrl(null); setShowForm(false);
+    const newEvent: EventData = {
+      id: Date.now().toString(), title: draft.title, date: draft.date,
+      time: draft.multiSession ? "" : draft.time,
+      location: draft.location, description: draft.description, program: draft.program,
+      status: "upcoming", attendees: 0, version: 1,
+      fineAmount: draft.multiSession
+        ? (parseInt(draft.morningAbsentFine) || 0) + (parseInt(draft.afternoonAbsentFine) || 0)
+        : (parseInt(draft.absentFine) || 0),
+      mediaUrls: photoUrls, highlightUrl: highlightUrl ?? undefined,
+      multiSession: draft.multiSession,
+      strictMorning: draft.strictMorning, strictAfternoon: draft.strictAfternoon,
+      morningStart: draft.morningStart, morningEnd: draft.morningEnd, morningLateCutoff: draft.morningLateCutoff,
+      afternoonStart: draft.afternoonStart, afternoonEnd: draft.afternoonEnd, afternoonLateCutoff: draft.afternoonLateCutoff,
+      absentFine: parseInt(draft.absentFine) || 0, lateFine: parseInt(draft.lateFine) || 0,
+      morningAbsentFine: parseInt(draft.morningAbsentFine) || 0, morningLateFine: parseInt(draft.morningLateFine) || 0,
+      afternoonAbsentFine: parseInt(draft.afternoonAbsentFine) || 0, afternoonLateFine: parseInt(draft.afternoonLateFine) || 0,
+    };
+    setEvents(ev => [newEvent, ...ev]);
+    setDraft(EMPTY_DRAFT); setPhotoUrls([]); setVideoNames([]); setHighlightUrl(null); setShowForm(false);
   };
-  const startEdit = (e: EventData) => { setEditId(e.id); setEditDraft({ ...e }); setShowForm(false); };
-  const saveEdit = () => { if (!editDraft) return; setEvents(ev => ev.map(e => e.id === editDraft.id ? editDraft : e)); setEditId(null); setEditDraft(null); };
+
+  const startEdit = (e: EventData) => {
+    setEditId(e.id); setEditDraft({ ...e }); setEditOriginal({ ...e });
+    setShowSensitiveWarning(false); setShowForm(false);
+  };
+
+  const SENSITIVE_KEYS: (keyof EventData)[] = [
+    "time", "fineAmount", "morningStart", "morningEnd", "morningLateCutoff",
+    "afternoonStart", "afternoonEnd", "afternoonLateCutoff",
+    "absentFine", "lateFine", "morningAbsentFine", "morningLateFine",
+    "afternoonAbsentFine", "afternoonLateFine",
+  ];
+
+  const hasSensitiveChanges = () => {
+    if (!editDraft || !editOriginal) return false;
+    return SENSITIVE_KEYS.some(k => String(editDraft[k] ?? "") !== String(editOriginal[k] ?? ""));
+  };
+
+  const commitSave = () => {
+    if (!editDraft) return;
+    // multi-admin conflict check: compare version in current state
+    const current = events.find(e => e.id === editDraft.id);
+    if (current && editOriginal && (current.version ?? 1) !== (editOriginal.version ?? 1)) {
+      alert("Another admin modified this event — please review and try again.");
+      setEditId(null); setEditDraft(null); setEditOriginal(null); setShowSensitiveWarning(false);
+      return;
+    }
+    const saved: EventData = {
+      ...editDraft,
+      version: (editOriginal?.version ?? 1) + 1,
+      fineAmount: editDraft.multiSession
+        ? (editDraft.morningAbsentFine ?? 0) + (editDraft.afternoonAbsentFine ?? 0)
+        : (editDraft.absentFine ?? editDraft.fineAmount),
+    };
+    setEvents(ev => ev.map(e => e.id === saved.id ? saved : e));
+    setEditId(null); setEditDraft(null); setEditOriginal(null); setShowSensitiveWarning(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (hasSensitiveChanges()) { setShowSensitiveWarning(true); return; }
+    commitSave();
+  };
+
   const deleteEvent = (id: string) => setEvents(ev => ev.filter(e => e.id !== id));
-  const setStatus = (id: string, status: EventStatus) => setEvents(ev => ev.map(e => e.id === id ? { ...e, status } : e));
+  const setStatus = (id: string, status: EventStatus) =>
+    setEvents(ev => ev.map(e => e.id === id ? { ...e, status, version: (e.version ?? 1) + 1 } : e));
+
   const statusOptions = (current: EventStatus): { status: EventStatus; label: string; icon: React.ReactNode }[] =>
-    ([{ status: "active" as EventStatus, label: "Mark as Live", icon: <Icons.Radio /> }, { status: "upcoming" as EventStatus, label: "Mark as Upcoming", icon: <Icons.Calendar /> }, { status: "closed" as EventStatus, label: "Mark as Closed", icon: <Icons.Check /> }]).filter(o => o.status !== current);
+    ([{ status: "active" as EventStatus, label: "Mark as Live", icon: <Icons.Radio /> },
+      { status: "upcoming" as EventStatus, label: "Mark as Upcoming", icon: <Icons.Calendar /> },
+      { status: "closed" as EventStatus, label: "Mark as Closed", icon: <Icons.Check /> }])
+    .filter(o => o.status !== current);
+
+  // Compact inline toggle for use inside modals
+  const InlineToggle = ({ on, onToggle, label }: { on: boolean; onToggle: () => void; label: string }) => (
+    <div className="flex items-center justify-between py-2">
+      <span className="text-xs font-semibold text-slate-700">{label}</span>
+      <button onClick={onToggle} role="switch" aria-checked={on}
+        className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 focus:outline-none ${on ? "bg-green-600" : "bg-slate-200"}`}>
+        <span className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${on ? "translate-x-4" : "translate-x-0"}`} />
+      </button>
+    </div>
+  );
+
+  // Session fields block (reused for create and edit)
+  const SessionFields = ({
+    prefix, label,
+    start, onStart, end, onEnd, cutoff, onCutoff, strict, onStrict,
+  }: {
+    prefix: string; label: string;
+    start: string; onStart: (v: string) => void;
+    end: string; onEnd: (v: string) => void;
+    cutoff: string; onCutoff: (v: string) => void;
+    strict: boolean; onStrict: () => void;
+  }) => (
+    <div className="border border-slate-100 rounded-xl p-3 space-y-2.5">
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label} Session</p>
+      <div className="grid grid-cols-2 gap-2">
+        <FieldInput label="Start time" type="time" value={start} onChange={e => onStart(e.target.value)} />
+        <FieldInput label="End time" type="time" value={end} onChange={e => onEnd(e.target.value)} />
+      </div>
+      <FieldInput label="Late cutoff time" type="time" value={cutoff} onChange={e => onCutoff(e.target.value)} />
+      <InlineToggle on={strict} onToggle={onStrict} label="Strict attendance (require time-out scan)" />
+    </div>
+  );
+
+  const FineFields = ({
+    multi, values, onChange,
+  }: {
+    multi: boolean;
+    values: { absentFine: string; lateFine: string; morningAbsentFine: string; morningLateFine: string; afternoonAbsentFine: string; afternoonLateFine: string };
+    onChange: (k: string, v: string) => void;
+  }) => (
+    <div className="space-y-2.5">
+      <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block">Fines (₱)</label>
+      {!multi ? (
+        <div className="grid grid-cols-2 gap-2">
+          <FieldInput label="Absent fine" type="number" min="0" value={values.absentFine} onChange={e => onChange("absentFine", e.target.value)} />
+          <FieldInput label="Late fine" type="number" min="0" value={values.lateFine} onChange={e => onChange("lateFine", e.target.value)} />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            <FieldInput label="Morning absent" type="number" min="0" value={values.morningAbsentFine} onChange={e => onChange("morningAbsentFine", e.target.value)} />
+            <FieldInput label="Morning late" type="number" min="0" value={values.morningLateFine} onChange={e => onChange("morningLateFine", e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <FieldInput label="Afternoon absent" type="number" min="0" value={values.afternoonAbsentFine} onChange={e => onChange("afternoonAbsentFine", e.target.value)} />
+            <FieldInput label="Afternoon late" type="number" min="0" value={values.afternoonLateFine} onChange={e => onChange("afternoonLateFine", e.target.value)} />
+          </div>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <PageShell>
@@ -1536,15 +1700,57 @@ function AdminEventsPage({ onNav, events, setEvents }: { onNav: (p: Page) => voi
         <button onClick={() => { setShowForm(true); setEditId(null); setEditDraft(null); }} className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"><Icons.Plus />New event</button>
       } />
 
-      {/* New event modal */}
+      {/* ── Create event modal ── */}
       {showForm && (
         <FormModal title="Create New Event" onClose={() => setShowForm(false)}
           footer={<><button onClick={handleCreate} disabled={!draft.title || !draft.date} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40">Create event</button><button onClick={() => setShowForm(false)} className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50">Cancel</button></>}>
           <FieldInput label="Event title *" placeholder="e.g. Foundation Day Celebration" value={draft.title} onChange={setD("title")} />
-          <div className="grid grid-cols-2 gap-3"><FieldInput label="Date *" type="date" value={draft.date} onChange={setD("date")} /><FieldInput label="Time" placeholder="e.g. 8:00 AM – 5:00 PM" value={draft.time} onChange={setD("time")} /></div>
+          <div className="grid grid-cols-2 gap-3"><FieldInput label="Date *" type="date" value={draft.date} onChange={setD("date")} /><FieldSelect label="Program" value={draft.program} onChange={setD("program")}><option>All Programs</option><option>BSIT / BSCS</option><option>BSIT</option><option>BSCS</option><option>BSBA</option></FieldSelect></div>
           <FieldInput label="Location" placeholder="e.g. Main Gymnasium" value={draft.location} onChange={setD("location")} />
-          <div className="grid grid-cols-2 gap-3"><FieldSelect label="Program" value={draft.program} onChange={setD("program")}><option>All Programs</option><option>BSIT / BSCS</option><option>BSIT</option><option>BSCS</option><option>BSBA</option></FieldSelect><FieldInput label="Absence Fee (₱)" type="number" min="0" placeholder="0 = no fee" value={draft.fineAmount} onChange={setD("fineAmount")} /></div>
+
+          {/* Multi-session toggle */}
+          <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
+            <div className="flex items-center justify-between py-2.5">
+              <div>
+                <p className="text-xs font-semibold text-slate-800">Multi-Session</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Split into Morning &amp; Afternoon sessions</p>
+              </div>
+              <button onClick={toggleD("multiSession")} role="switch" aria-checked={draft.multiSession}
+                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${draft.multiSession ? "bg-green-600" : "bg-slate-200"}`}>
+                <span className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${draft.multiSession ? "translate-x-4" : "translate-x-0"}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Single-session time OR multi-session blocks */}
+          {!draft.multiSession ? (
+            <FieldInput label="Time" placeholder="e.g. 8:00 AM – 5:00 PM" value={draft.time} onChange={setD("time")} />
+          ) : (
+            <div className="space-y-2.5">
+              <SessionFields prefix="morning" label="Morning"
+                start={draft.morningStart} onStart={v => setDraft(d => ({ ...d, morningStart: v }))}
+                end={draft.morningEnd} onEnd={v => setDraft(d => ({ ...d, morningEnd: v }))}
+                cutoff={draft.morningLateCutoff} onCutoff={v => setDraft(d => ({ ...d, morningLateCutoff: v }))}
+                strict={draft.strictMorning} onStrict={toggleD("strictMorning")}
+              />
+              <SessionFields prefix="afternoon" label="Afternoon"
+                start={draft.afternoonStart} onStart={v => setDraft(d => ({ ...d, afternoonStart: v }))}
+                end={draft.afternoonEnd} onEnd={v => setDraft(d => ({ ...d, afternoonEnd: v }))}
+                cutoff={draft.afternoonLateCutoff} onCutoff={v => setDraft(d => ({ ...d, afternoonLateCutoff: v }))}
+                strict={draft.strictAfternoon} onStrict={toggleD("strictAfternoon")}
+              />
+            </div>
+          )}
+
+          <FineFields
+            multi={draft.multiSession}
+            values={draft}
+            onChange={(k, v) => setDraft(d => ({ ...d, [k]: v }))}
+          />
+
           <FieldTextarea label="Description" placeholder="What is this event about?" rows={3} value={draft.description} onChange={setD("description")} />
+
+          {/* Highlight photo */}
           <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">Highlight Photo</label>
             <input ref={highlightRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) setHighlightUrl(URL.createObjectURL(f)); }} />
@@ -1557,6 +1763,8 @@ function AdminEventsPage({ onNav, events, setEvents }: { onNav: (p: Page) => voi
               <button onClick={() => highlightRef.current?.click()} className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2 transition-colors"><Icons.Image />Upload highlight photo</button>
             )}
           </div>
+
+          {/* Media */}
           <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-2">Media</label>
             <input ref={photoRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { const files = Array.from(e.target.files ?? []); setDraft(d => ({ ...d, photos: [...d.photos, ...files] })); files.forEach(f => setPhotoUrls(u => [...u, URL.createObjectURL(f)])); }} />
@@ -1567,15 +1775,74 @@ function AdminEventsPage({ onNav, events, setEvents }: { onNav: (p: Page) => voi
         </FormModal>
       )}
 
-      {/* Edit event modal */}
+      {/* ── Edit event modal ── */}
       {editId && editDraft && (
-        <FormModal title="Edit Event" onClose={() => { setEditId(null); setEditDraft(null); }}
-          footer={<><button onClick={saveEdit} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm">Save changes</button><button onClick={() => { setEditId(null); setEditDraft(null); }} className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50">Cancel</button></>}>
+        <FormModal title="Edit Event" onClose={() => { setEditId(null); setEditDraft(null); setEditOriginal(null); setShowSensitiveWarning(false); }}
+          footer={
+            showSensitiveWarning ? (
+              <><button onClick={commitSave} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm">Confirm &amp; save</button><button onClick={() => setShowSensitiveWarning(false)} className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50">Go back</button></>
+            ) : (
+              <><button onClick={handleSaveEdit} className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm">Save changes</button><button onClick={() => { setEditId(null); setEditDraft(null); setEditOriginal(null); }} className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50">Cancel</button></>
+            )
+          }>
+          {showSensitiveWarning && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3 mb-1">
+              <span className="text-amber-500 shrink-0 mt-0.5"><Icons.AlertCircle /></span>
+              <p className="text-xs text-amber-800 leading-relaxed">You changed session times, late cutoffs, or fine amounts. These affect existing attendance records. Confirm to proceed.</p>
+            </div>
+          )}
           <FieldInput label="Title" value={editDraft.title} onChange={e => setEditDraft(d => d ? { ...d, title: e.target.value } : d)} />
-          <div className="grid grid-cols-2 gap-3"><FieldInput label="Date" type="date" value={editDraft.date} onChange={e => setEditDraft(d => d ? { ...d, date: e.target.value } : d)} /><FieldInput label="Time" value={editDraft.time} onChange={e => setEditDraft(d => d ? { ...d, time: e.target.value } : d)} /></div>
+          <div className="grid grid-cols-2 gap-3"><FieldInput label="Date" type="date" value={editDraft.date} onChange={e => setEditDraft(d => d ? { ...d, date: e.target.value } : d)} /><FieldSelect label="Program" value={editDraft.program} onChange={e => setEditDraft(d => d ? { ...d, program: e.target.value } : d)}><option>All Programs</option><option>BSIT / BSCS</option><option>BSIT</option><option>BSCS</option><option>BSBA</option></FieldSelect></div>
           <FieldInput label="Location" value={editDraft.location} onChange={e => setEditDraft(d => d ? { ...d, location: e.target.value } : d)} />
-          <div className="grid grid-cols-2 gap-3"><FieldSelect label="Program" value={editDraft.program} onChange={e => setEditDraft(d => d ? { ...d, program: e.target.value } : d)}><option>All Programs</option><option>BSIT / BSCS</option><option>BSIT</option><option>BSCS</option><option>BSBA</option></FieldSelect><FieldInput label="Absence Fee (₱)" type="number" min="0" value={editDraft.fineAmount.toString()} onChange={e => setEditDraft(d => d ? { ...d, fineAmount: parseInt(e.target.value) || 0 } : d)} /></div>
+
+          {/* Multi-session toggle */}
+          <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
+            <div className="flex items-center justify-between py-2.5">
+              <div>
+                <p className="text-xs font-semibold text-slate-800">Multi-Session</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Split into Morning &amp; Afternoon sessions</p>
+              </div>
+              <button onClick={() => setEditDraft(d => d ? { ...d, multiSession: !d.multiSession } : d)} role="switch" aria-checked={!!editDraft.multiSession}
+                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${editDraft.multiSession ? "bg-green-600" : "bg-slate-200"}`}>
+                <span className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${editDraft.multiSession ? "translate-x-4" : "translate-x-0"}`} />
+              </button>
+            </div>
+          </div>
+
+          {!editDraft.multiSession ? (
+            <FieldInput label="Time" value={editDraft.time} onChange={e => setEditDraft(d => d ? { ...d, time: e.target.value } : d)} />
+          ) : (
+            <div className="space-y-2.5">
+              <SessionFields prefix="em" label="Morning"
+                start={editDraft.morningStart ?? ""} onStart={v => setEditDraft(d => d ? { ...d, morningStart: v } : d)}
+                end={editDraft.morningEnd ?? ""} onEnd={v => setEditDraft(d => d ? { ...d, morningEnd: v } : d)}
+                cutoff={editDraft.morningLateCutoff ?? ""} onCutoff={v => setEditDraft(d => d ? { ...d, morningLateCutoff: v } : d)}
+                strict={!!editDraft.strictMorning} onStrict={() => setEditDraft(d => d ? { ...d, strictMorning: !d.strictMorning } : d)}
+              />
+              <SessionFields prefix="ea" label="Afternoon"
+                start={editDraft.afternoonStart ?? ""} onStart={v => setEditDraft(d => d ? { ...d, afternoonStart: v } : d)}
+                end={editDraft.afternoonEnd ?? ""} onEnd={v => setEditDraft(d => d ? { ...d, afternoonEnd: v } : d)}
+                cutoff={editDraft.afternoonLateCutoff ?? ""} onCutoff={v => setEditDraft(d => d ? { ...d, afternoonLateCutoff: v } : d)}
+                strict={!!editDraft.strictAfternoon} onStrict={() => setEditDraft(d => d ? { ...d, strictAfternoon: !d.strictAfternoon } : d)}
+              />
+            </div>
+          )}
+
+          <FineFields
+            multi={!!editDraft.multiSession}
+            values={{
+              absentFine: String(editDraft.absentFine ?? editDraft.fineAmount ?? 0),
+              lateFine: String(editDraft.lateFine ?? 0),
+              morningAbsentFine: String(editDraft.morningAbsentFine ?? 0),
+              morningLateFine: String(editDraft.morningLateFine ?? 0),
+              afternoonAbsentFine: String(editDraft.afternoonAbsentFine ?? 0),
+              afternoonLateFine: String(editDraft.afternoonLateFine ?? 0),
+            }}
+            onChange={(k, v) => setEditDraft(d => d ? { ...d, [k]: parseInt(v) || 0 } : d)}
+          />
+
           <FieldTextarea label="Description" rows={3} value={editDraft.description} onChange={e => setEditDraft(d => d ? { ...d, description: e.target.value } : d)} />
+
           <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">Highlight Photo</label>
             <input ref={editHighlightRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) setEditDraft(d => d ? { ...d, highlightUrl: URL.createObjectURL(f) } : d); }} />
@@ -1596,6 +1863,7 @@ function AdminEventsPage({ onNav, events, setEvents }: { onNav: (p: Page) => voi
           </div>
         </FormModal>
       )}
+
       <div className="space-y-3">
         {events.map(e => (
           <div key={e.id} className="bg-white border border-slate-100 rounded-xl overflow-hidden">
@@ -1605,6 +1873,7 @@ function AdminEventsPage({ onNav, events, setEvents }: { onNav: (p: Page) => voi
                 <Badge status={e.status} />
                 <div className="flex items-center gap-2">
                   {e.fineAmount > 0 && <span className="text-xs text-red-500 font-semibold">₱{e.fineAmount} fine</span>}
+                  {e.multiSession && <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded border border-violet-100">2 sessions</span>}
                   <span className="text-xs text-slate-400">{e.date}</span>
                   <DotMenu items={[
                     ...statusOptions(e.status).map(o => ({ label: o.label, icon: o.icon, onClick: () => setStatus(e.id, o.status) })),
@@ -1614,7 +1883,14 @@ function AdminEventsPage({ onNav, events, setEvents }: { onNav: (p: Page) => voi
                 </div>
               </div>
               <h3 className="font-semibold text-slate-900 mb-1.5">{e.title}</h3>
-              <div className="flex flex-wrap gap-4 text-xs text-slate-400 mb-4"><span className="flex items-center gap-1.5"><Icons.MapPin />{e.location || "TBA"}</span><span className="flex items-center gap-1.5"><Icons.Clock />{e.time || "TBA"}</span></div>
+              <div className="flex flex-wrap gap-4 text-xs text-slate-400 mb-4">
+                <span className="flex items-center gap-1.5"><Icons.MapPin />{e.location || "TBA"}</span>
+                {e.multiSession ? (
+                  <><span className="flex items-center gap-1.5"><Icons.Clock />{e.morningStart && e.morningEnd ? `${e.morningStart}–${e.morningEnd}` : "Morning TBA"}</span><span className="flex items-center gap-1.5"><Icons.Clock />{e.afternoonStart && e.afternoonEnd ? `${e.afternoonStart}–${e.afternoonEnd}` : "Afternoon TBA"}</span></>
+                ) : (
+                  <span className="flex items-center gap-1.5"><Icons.Clock />{e.time || "TBA"}</span>
+                )}
+              </div>
               <div className="flex gap-2 pt-4 border-t border-slate-50">
                 {e.status === "active" && <button onClick={() => onNav("admin-scanner")} className="flex-1 h-9 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700 flex items-center justify-center gap-1.5 shadow-sm"><Icons.Scan />Scanner</button>}
                 <button onClick={() => onNav("admin-attendees")} className="flex-1 h-9 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1.5"><Icons.Users />Attendees{e.attendees > 0 ? ` (${e.attendees})` : ""}</button>
