@@ -1,1 +1,0 @@
-(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,44164,e=>{e.q("/_next/static/media/Free_Simple_Modern_Design_Studio_Logo-1.09ku-o558m0aa.png")}]);

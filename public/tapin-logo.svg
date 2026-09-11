@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="TapIn logo">
+  <rect width="64" height="64" rx="12" fill="#16a34a"/>
+  <path d="M17 42 L26 16 H30 L23 42 H17 Z" fill="#ffffff"/>
+  <path d="M30 16 H34 L40 42 H34 L30 16 Z" fill="#dcfce7"/>
+  <path d="M37 20 L47 20 L43 30 L42 34 L48 34 L46 42 L36 42 L38 34 L34 34 L32 30 L37 20 Z" fill="#ffffff"/>
+</svg>

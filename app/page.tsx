@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
-import tapInLogoSrc from "@/imports/Free_Simple_Modern_Design_Studio_Logo-1.png";
+
+const tapInLogoSrc = "/tapin-logo.svg";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Page =
