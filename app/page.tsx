@@ -7173,7 +7173,7 @@ export default function App() {
 
         if (!profile) {
           if (isMounted) {
-            setPage("landing");
+            setPage("onboarding");
           }
           return;
         }
@@ -7187,7 +7187,7 @@ export default function App() {
           !profile.section
         ) {
           if (isMounted) {
-            setPage("landing");
+            setPage("onboarding");
           }
           return;
         }
@@ -7267,7 +7267,7 @@ export default function App() {
           }
 
           if (!profile) {
-            setPage("landing");
+            setPage("onboarding");
             return;
           }
 
@@ -7279,7 +7279,7 @@ export default function App() {
             !profile.year_level ||
             !profile.section
           ) {
-            setPage("landing");
+            setPage("onboarding");
             return;
           }
 
