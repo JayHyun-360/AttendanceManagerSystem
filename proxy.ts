@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
 
 const protectedRoutePrefixes = [
   "/dashboard",
@@ -29,16 +29,17 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  const accessToken = request.cookies.get("sb-access-token")?.value;
-  if (!accessToken) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
+  const response = NextResponse.next();
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options);
+        });
+      },
     },
   });
 
@@ -46,13 +47,13 @@ export async function proxy(request: NextRequest) {
     const {
       data: { user },
       error,
-    } = await supabase.auth.getUser(accessToken);
+    } = await supabase.auth.getUser();
 
     if (error || !user) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    return NextResponse.next();
+    return response;
   } catch {
     return NextResponse.redirect(new URL("/login", request.url));
   }
