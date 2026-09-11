@@ -1832,7 +1832,13 @@ function LandingPage({
             className={`flex items-center gap-3 ${hasHero ? "" : "justify-center"}`}
           >
             <button
-              onClick={() => onNav("login")}
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  window.location.assign("/login");
+                } else {
+                  onNav("login");
+                }
+              }}
               className="h-11 px-6 bg-green-500 hover:bg-green-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-px"
             >
               Get Started
