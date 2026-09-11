@@ -128,18 +128,18 @@ begin
     photo_url
   )
   values (
-    new.id,
-    new.email,
-    coalesce(new.raw_user_meta_data ->> 'first_name', ''),
-    coalesce(new.raw_user_meta_data ->> 'middle_initial', ''),
-    coalesce(new.raw_user_meta_data ->> 'surname', ''),
-    new.email,
+    NEW.id,
+    NEW.email,
+    coalesce(NEW.raw_user_meta_data ->> 'first_name', ''),
+    coalesce(NEW.raw_user_meta_data ->> 'middle_initial', ''),
+    coalesce(NEW.raw_user_meta_data ->> 'surname', ''),
+    NEW.email,
     'student',
-    coalesce(new.raw_user_meta_data ->> 'avatar_url', '')
+    coalesce(NEW.raw_user_meta_data ->> 'avatar_url', '')
   )
   on conflict (id) do nothing;
 
-  return new;
+  return NEW;
 end;
 $$;
 

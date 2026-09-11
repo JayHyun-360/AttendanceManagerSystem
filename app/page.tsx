@@ -1926,10 +1926,10 @@ function LoginPage({
 
   const proceed = (m: string) => {
     setLoading(m);
-    setTimeout(() => {
-      setLoading(null);
+    if (role) {
       onLogin(role);
-    }, 1100);
+    }
+    setLoading(null);
   };
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#f8faf9]">
@@ -7123,9 +7123,10 @@ export default function App() {
         }
 
         const uid = session.user.id;
+        const sessionUser = session.user;
         setAuthUserId(uid);
 
-        const { data: profile, error: profileError } = await supabase
+        let { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", uid)
@@ -7133,6 +7134,21 @@ export default function App() {
 
         if (profileError && profileError.code !== "PGRST116") {
           console.error(profileError);
+        }
+
+        if (!profile) {
+          await backfillProfileFromAuthUser(sessionUser);
+          const { data: reloadedProfile, error: reloadError } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", uid)
+            .maybeSingle();
+
+          if (reloadError && reloadError.code !== "PGRST116") {
+            console.error(reloadError);
+          }
+
+          profile = reloadedProfile;
         }
 
         if (!profile) {
@@ -7200,17 +7216,34 @@ export default function App() {
           return;
         }
 
-        setAuthUserId(session.user.id);
+        const uid = session.user.id;
+        const sessionUser = session.user;
+        setAuthUserId(uid);
         try {
-          const { data: profile, error } = await supabase
+          let { data: profile, error } = await supabase
             .from("profiles")
             .select("*")
-            .eq("id", session.user.id)
+            .eq("id", uid)
             .maybeSingle();
 
           if (error && error.code !== "PGRST116") {
             console.error(error);
             return;
+          }
+
+          if (!profile) {
+            await backfillProfileFromAuthUser(sessionUser);
+            const { data: reloadedProfile, error: reloadError } = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", uid)
+              .maybeSingle();
+
+            if (reloadError && reloadError.code !== "PGRST116") {
+              console.error(reloadError);
+            }
+
+            profile = reloadedProfile;
           }
 
           if (!profile) {
@@ -7405,27 +7438,72 @@ export default function App() {
     : { announcements: unreadAnnouncements, "my-fines": unpaidFines };
 
   const handleLogin = (role: Role) => {
-    setRequestedRole(role);
-    if (role === "admin") {
-      setPage("login");
+    if (!role) {
       return;
     }
 
-    setPage("login");
+    setRequestedRole(role);
+    setAdminAccessError(null);
   };
+
+  const backfillProfileFromAuthUser = async (sessionUser: {
+    id: string;
+    email?: string | null;
+    user_metadata?: Record<string, unknown>;
+  }) => {
+    const metadata = (sessionUser.user_metadata ?? {}) as Record<
+      string,
+      string
+    >;
+
+    const profilePayload = {
+      id: sessionUser.id,
+      email: sessionUser.email ?? "",
+      first_name: metadata.first_name ?? "",
+      middle_initial: metadata.middle_initial ?? "",
+      surname: metadata.surname ?? metadata.last_name ?? "",
+      student_id: metadata.student_id ?? "",
+      program: metadata.program ?? "",
+      year_level: metadata.year_level ?? "",
+      section: metadata.section ?? "",
+      phone: metadata.phone ?? "",
+      contact_email: sessionUser.email ?? "",
+      role: "student" as const,
+      photo_url: metadata.avatar_url ?? metadata.photo_url ?? "",
+    };
+
+    const { error } = await supabase
+      .from("profiles")
+      .upsert(profilePayload, { onConflict: "id" });
+
+    if (error) {
+      console.error(error);
+      show(error.message, "error");
+    }
+  };
+
   const handleOnboarding = async (d: OBForm) => {
     try {
+      const firstName = d.firstName.trim();
+      const surname = d.surname.trim();
+      const studentId = d.studentId.trim();
+
+      if (!firstName || !surname || !studentId) {
+        show("Required fields: first name, surname, and student ID.", "error");
+        return;
+      }
+
       const payload = {
-        id: authUserId ?? user?.studentId ?? undefined,
-        first_name: d.firstName || "Maria Luisa",
-        middle_initial: d.middleInitial || "A",
-        surname: d.surname || "Santos",
-        student_id: d.studentId || "2440014",
-        program: d.program || "BSIT",
-        year_level: d.yearLevel || "2nd Year",
-        section: d.section || "IT-2A",
-        phone: d.phone || "09XX XXX XXXX",
-        contact_email: d.contactEmail || "mls.santos@tapin.edu",
+        id: authUserId ?? undefined,
+        first_name: firstName,
+        middle_initial: d.middleInitial.trim(),
+        surname,
+        student_id: studentId,
+        program: d.program.trim(),
+        year_level: d.yearLevel.trim(),
+        section: d.section.trim(),
+        phone: d.phone.trim(),
+        contact_email: d.contactEmail.trim(),
         role: "student",
         photo_url: d.idPhotoUrl,
       };
@@ -7464,17 +7542,26 @@ export default function App() {
   };
   const handleProfileSave = async (updated: User) => {
     try {
+      const firstName = updated.firstName.trim();
+      const surname = updated.surname.trim();
+      const studentId = updated.studentId.trim();
+
+      if (!firstName || !surname || !studentId) {
+        show("Required fields: first name, surname, and student ID.", "error");
+        return;
+      }
+
       const profilePayload = {
         id: authUserId ?? undefined,
-        first_name: updated.firstName,
-        middle_initial: updated.middleInitial,
-        surname: updated.surname,
-        student_id: updated.studentId,
-        program: updated.program,
-        year_level: updated.yearLevel,
-        section: updated.section,
-        phone: updated.phone,
-        contact_email: updated.contactEmail,
+        first_name: firstName,
+        middle_initial: updated.middleInitial.trim(),
+        surname,
+        student_id: studentId,
+        program: updated.program.trim(),
+        year_level: updated.yearLevel.trim(),
+        section: updated.section.trim(),
+        phone: updated.phone.trim(),
+        contact_email: updated.contactEmail.trim(),
         role: updated.role ?? "student",
         photo_url: updated.photoUrl ?? updated.idPhotoUrl,
       };
