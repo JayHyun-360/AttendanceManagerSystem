@@ -7056,6 +7056,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
   const [user, setUser] = useState<User | null>(null);
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [toast, setToast] = useState<{
     msg: string;
     variant?: "success" | "error";
@@ -7077,6 +7078,258 @@ export default function App() {
   useEffect(() => {
     document.title = "Event Attendance System";
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function hydrateSessionAndProfile() {
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error(sessionError);
+        }
+
+        if (!session?.user) {
+          setUser(null);
+          setPage("landing");
+          return;
+        }
+
+        const uid = session.user.id;
+        setAuthUserId(uid);
+
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", uid)
+          .single();
+
+        if (profileError) {
+          console.error(profileError);
+        }
+
+        if (
+          !profile ||
+          !profile.student_id ||
+          !profile.first_name ||
+          !profile.surname
+        ) {
+          if (isMounted) {
+            setPage("onboarding");
+          }
+          return;
+        }
+
+        const hydratedUser: User = {
+          firstName: profile.first_name ?? "",
+          middleInitial: profile.middle_initial ?? "",
+          surname: profile.surname ?? "",
+          studentId: profile.student_id ?? "",
+          program: profile.program ?? "",
+          yearLevel: profile.year_level ?? "",
+          section: profile.section ?? "",
+          phone: profile.phone ?? "",
+          contactEmail: profile.contact_email ?? profile.email ?? "",
+          role: profile.role ?? "student",
+          photoUrl: profile.photo_url ?? undefined,
+          idPhotoUrl: profile.photo_url ?? undefined,
+        };
+
+        setUser(hydratedUser);
+
+        if (isMounted) {
+          setPage(profile.role === "admin" ? "admin-dashboard" : "dashboard");
+        }
+      } catch (caughtError) {
+        console.error(caughtError);
+      }
+    }
+
+    hydrateSessionAndProfile();
+
+    const { data: authSubscription } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (!session?.user) {
+          setUser(null);
+          setAuthUserId(null);
+          setPage("landing");
+          return;
+        }
+
+        setAuthUserId(session.user.id);
+        try {
+          const { data: profile, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .single();
+
+          if (error) {
+            console.error(error);
+            return;
+          }
+
+          if (
+            !profile ||
+            !profile.student_id ||
+            !profile.first_name ||
+            !profile.surname
+          ) {
+            setPage("onboarding");
+            return;
+          }
+
+          const nextUser: User = {
+            firstName: profile.first_name ?? "",
+            middleInitial: profile.middle_initial ?? "",
+            surname: profile.surname ?? "",
+            studentId: profile.student_id ?? "",
+            program: profile.program ?? "",
+            yearLevel: profile.year_level ?? "",
+            section: profile.section ?? "",
+            phone: profile.phone ?? "",
+            contactEmail: profile.contact_email ?? profile.email ?? "",
+            role: profile.role ?? "student",
+            photoUrl: profile.photo_url ?? undefined,
+            idPhotoUrl: profile.photo_url ?? undefined,
+          };
+
+          setUser(nextUser);
+          setPage(profile.role === "admin" ? "admin-dashboard" : "dashboard");
+        } catch (err) {
+          console.error(err);
+        }
+      },
+    );
+
+    return () => {
+      isMounted = false;
+      authSubscription?.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    async function fetchSupabaseData() {
+      try {
+        const { data: eventRows, error: eventError } = await supabase
+          .from("events")
+          .select("*")
+          .order("event_date", { ascending: true });
+
+        if (eventError) {
+          console.error(eventError);
+        } else if (eventRows) {
+          const mappedEvents: EventData[] = eventRows.map((row: any) => ({
+            id: row.id,
+            title: row.title,
+            date: row.event_date ? new Date(row.event_date).toDateString() : "",
+            time:
+              row.start_time && row.end_time
+                ? `${row.start_time} – ${row.end_time}`
+                : (row.start_time ?? ""),
+            location: row.location ?? "",
+            status: "upcoming" as EventStatus,
+            attendees: 0,
+            description: row.description ?? "",
+            program: "All Programs",
+            fineAmount: 0,
+            mediaUrls: row.image_url ? [row.image_url] : [],
+            highlightUrl: row.image_url ?? undefined,
+          }));
+          setEvents(mappedEvents);
+        }
+
+        const { data: announcementRows, error: announcementError } =
+          await supabase
+            .from("announcements")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+        if (announcementError) {
+          console.error(announcementError);
+        } else if (announcementRows) {
+          const mappedAnnouncements = announcementRows.map((row: any) => ({
+            id: row.id,
+            title: row.title,
+            body: row.content,
+            date: row.created_at
+              ? new Date(row.created_at).toLocaleDateString()
+              : "",
+            author: "TapIn Admin",
+            badge: row.target_role ?? "General",
+            photoUrl: row.media_url ?? "",
+          }));
+          setAnnouncements(mappedAnnouncements);
+        }
+
+        if (authUserId) {
+          const { data: fineRows, error: fineError } = await supabase
+            .from("fines")
+            .select("*")
+            .eq("student_id", authUserId)
+            .order("created_at", { ascending: false });
+
+          if (fineError) {
+            console.error(fineError);
+          } else if (fineRows) {
+            const mappedFines: FineRecord[] = fineRows.map((row: any) => ({
+              id: row.id,
+              eventId: row.event_id ?? "",
+              eventTitle: row.reason ?? "Fine",
+              eventDate: row.created_at
+                ? new Date(row.created_at).toDateString()
+                : "",
+              amount: Number(row.amount) ?? 0,
+              status: row.status ?? "unpaid",
+            }));
+            setFines(mappedFines);
+          }
+
+          const { data: excuseRows, error: excuseError } = await supabase
+            .from("excuse_requests")
+            .select("*")
+            .eq("student_id", authUserId)
+            .order("created_at", { ascending: false });
+
+          if (excuseError) {
+            console.error(excuseError);
+          } else if (excuseRows) {
+            const mappedExcuses: ExcuseRequest[] = excuseRows.map(
+              (row: any) => ({
+                id: row.id,
+                studentName:
+                  user?.firstName && user?.surname
+                    ? `${user.firstName} ${user.surname}`
+                    : "Student",
+                studentId: user?.studentId ?? "",
+                event: row.fine_id ?? "",
+                date: row.created_at
+                  ? new Date(row.created_at).toDateString()
+                  : "",
+                reason: row.reason ?? "",
+                proofName: row.document_url
+                  ? (row.document_url.split("/").pop() ?? null)
+                  : null,
+                status: row.status ?? "pending",
+                submittedDate: row.created_at
+                  ? new Date(row.created_at).toDateString()
+                  : "",
+              }),
+            );
+            setExcuseRequests(mappedExcuses);
+          }
+        }
+      } catch (caught) {
+        console.error(caught);
+      }
+    }
+
+    fetchSupabaseData();
+  }, [authUserId]);
 
   const show = (msg: string, variant: "success" | "error" = "success") => {
     setToast({ msg, variant });
@@ -7127,27 +7380,88 @@ export default function App() {
       setPage("admin-dashboard");
     }
   };
-  const handleOnboarding = (d: OBForm) => {
-    setUser({
-      firstName: d.firstName || "Maria Luisa",
-      middleInitial: d.middleInitial || "A",
-      surname: d.surname || "Santos",
-      studentId: d.studentId || "2440014",
-      program: d.program || "BSIT",
-      yearLevel: d.yearLevel || "2nd Year",
-      section: d.section || "IT-2A",
-      phone: d.phone || "09XX XXX XXXX",
-      contactEmail: d.contactEmail || "mls.santos@tapin.edu",
-      role: "student",
-      idPhotoUrl: d.idPhotoUrl,
-    });
-    show("Setup complete — your QR code is ready");
-    setPage("dashboard");
+  const handleOnboarding = async (d: OBForm) => {
+    try {
+      const payload = {
+        id: authUserId ?? user?.studentId ?? undefined,
+        first_name: d.firstName || "Maria Luisa",
+        middle_initial: d.middleInitial || "A",
+        surname: d.surname || "Santos",
+        student_id: d.studentId || "2440014",
+        program: d.program || "BSIT",
+        year_level: d.yearLevel || "2nd Year",
+        section: d.section || "IT-2A",
+        phone: d.phone || "09XX XXX XXXX",
+        contact_email: d.contactEmail || "mls.santos@tapin.edu",
+        role: "student",
+        photo_url: d.idPhotoUrl,
+      };
+
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(payload, { onConflict: "id" });
+
+      if (error) {
+        console.error(error);
+        show(error.message, "error");
+        return;
+      }
+
+      const nextUser: User = {
+        firstName: payload.first_name,
+        middleInitial: payload.middle_initial,
+        surname: payload.surname,
+        studentId: payload.student_id,
+        program: payload.program,
+        yearLevel: payload.year_level,
+        section: payload.section,
+        phone: payload.phone,
+        contactEmail: payload.contact_email,
+        role: "student",
+        idPhotoUrl: payload.photo_url,
+      };
+
+      setUser(nextUser);
+      setQrVersion((v) => v + 1);
+      show("Setup complete — your QR code is ready");
+      setPage("dashboard");
+    } catch (err) {
+      console.error(err);
+    }
   };
-  const handleProfileSave = (updated: User) => {
-    setUser(updated);
-    setQrVersion((v) => v + 1);
-    show("Profile saved — QR code renewed");
+  const handleProfileSave = async (updated: User) => {
+    try {
+      const profilePayload = {
+        id: authUserId ?? undefined,
+        first_name: updated.firstName,
+        middle_initial: updated.middleInitial,
+        surname: updated.surname,
+        student_id: updated.studentId,
+        program: updated.program,
+        year_level: updated.yearLevel,
+        section: updated.section,
+        phone: updated.phone,
+        contact_email: updated.contactEmail,
+        role: updated.role ?? "student",
+        photo_url: updated.photoUrl ?? updated.idPhotoUrl,
+      };
+
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(profilePayload, { onConflict: "id" });
+
+      if (error) {
+        console.error(error);
+        show(error.message, "error");
+        return;
+      }
+
+      setUser(updated);
+      setQrVersion((v) => v + 1);
+      show("Profile saved — QR code renewed");
+    } catch (err) {
+      console.error(err);
+    }
   };
   const handleExcuseAction = (id: string, action: "approved" | "denied") => {
     setExcuseRequests((r) =>
