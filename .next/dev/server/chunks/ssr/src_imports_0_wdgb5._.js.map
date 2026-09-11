@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 7, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/Charljay/OneDrive/Desktop/attendance-manager-system/src/imports/Free_Simple_Modern_Design_Studio_Logo-1.png.mjs%20(structured%20image%20object%20with%20data%20url)"],"sourcesContent":["import src from \"IMAGE\";\nexport default { src, width: 2000, height: 2000, blurWidth: 8, blurHeight: 8, blurDataURL: \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAwklEQVR42k2OPQsBcQDG/xMpmZRB2VAG38FkNHgvl7AguXSDsBiQY/ABHKWbvJYymRnkA9w5dyVO/e+l5HwB/0OXep7l+T31PMDEhJEsbNTBpe2nlJmJfBOA7OQyBBx31SUSdh8Er003nwdWNl6X6YTYR3XXOUc9tmvt4OELAEFUrEqTMhxW4GjzOpLqCrV10FJmPqE0fe4W2j5wabSVuQ6QazIdunW8fNEv4DikYmLPGM8Skj5OfsZtbPIH/u5ixt03WdZmp+fdQE8AAAAASUVORK5CYII=\"};\n"],"names":["src","width","height","blurWidth","blurHeight","blurDataURL"],"mappings":";;;;AAAA;;uCACe;IAAEA,KAAAA,iLAAG;IAAEC,OAAO;IAAMC,QAAQ;IAAMC,WAAW;IAAGC,YAAY;IAAGC,aAAa;AAAwW"}}]
-}
