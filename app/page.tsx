@@ -1899,7 +1899,7 @@ function LandingPage({
 }
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
-function LoginPage({
+export function LoginPage({
   onLogin,
   onBack,
   adminAccessError,
@@ -2110,7 +2110,7 @@ function LoginPage({
 }
 
 // ─── ONBOARDING ───────────────────────────────────────────────────────────────
-interface OBForm {
+export interface OBForm {
   firstName: string;
   middleInitial: string;
   surname: string;
@@ -2124,7 +2124,11 @@ interface OBForm {
   agreedToTerms?: boolean;
 }
 
-function OnboardingPage({ onComplete }: { onComplete: (d: OBForm) => void }) {
+export function OnboardingPage({
+  onComplete,
+}: {
+  onComplete: (d: OBForm) => void;
+}) {
   const [step, setStep] = useState(1);
   const [f, setF] = useState<OBForm>({
     firstName: "",
@@ -2863,7 +2867,7 @@ function UpcomingEventCard({
 }
 
 // ─── STUDENT: Dashboard ───────────────────────────────────────────────────────
-function DashboardPage({
+export function DashboardPage({
   user,
   onNav,
   fines,
@@ -3916,7 +3920,7 @@ function ProfilePage({
 }
 
 // ─── MODERATOR: Dashboard ─────────────────────────────────────────────────────
-function AdminDashboard({
+export function AdminDashboard({
   onNav,
   excuseRequests,
 }: {
@@ -7738,32 +7742,6 @@ export default function App() {
           {page === "landing" && (
             <LandingPage onNav={navigate} settings={settings} />
           )}
-          {page === "login" && (
-            <LoginPage
-              onLogin={handleLogin}
-              onBack={() => navigate("landing")}
-              adminAccessError={adminAccessError}
-              onRoleSelect={(role) => {
-                setRequestedRole(role);
-                setAdminAccessError(null);
-              }}
-              onGoogleLogin={(role) => {
-                setRequestedRole(role);
-                setAdminAccessError(null);
-              }}
-            />
-          )}
-          {page === "onboarding" && (
-            <OnboardingPage onComplete={handleOnboarding} />
-          )}
-          {page === "dashboard" && user && !isMod && (
-            <DashboardPage
-              user={user}
-              onNav={navigate}
-              fines={fines}
-              showFees={settings.showFees}
-            />
-          )}
           {page === "events" && (
             <EventsPage
               onNav={navigate}
@@ -7820,9 +7798,6 @@ export default function App() {
               onSave={handleProfileSave}
               onBack={goBack(isMod ? "admin-dashboard" : "dashboard")}
             />
-          )}
-          {page === "admin-dashboard" && isMod && (
-            <AdminDashboard onNav={navigate} excuseRequests={excuseRequests} />
           )}
           {page === "admin-events" && isMod && (
             <AdminEventsPage

@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 const protectedRoutePrefixes = [
   "/dashboard",
   "/admin-dashboard",
+  "/onboarding",
   "/events",
   "/announcements",
   "/profile",
@@ -61,6 +62,7 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/admin-dashboard/:path*",
+    "/onboarding/:path*",
     "/events/:path*",
     "/announcements/:path*",
     "/profile/:path*",
