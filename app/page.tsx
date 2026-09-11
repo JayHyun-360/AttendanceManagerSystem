@@ -1823,13 +1823,13 @@ function LandingPage({
               onClick={() => onNav("login")}
               className="h-11 px-6 bg-green-500 hover:bg-green-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-px"
             >
-              Get started
+              Get Started
             </button>
             <button
               onClick={() => onNav("events")}
               className={`h-11 px-6 text-sm font-semibold rounded-xl transition-all ${hasHero ? "bg-white/15 text-white border border-white/30 hover:bg-white/25 backdrop-blur-sm" : "border border-slate-200 text-slate-700 hover:bg-slate-50"}`}
             >
-              Browse events
+              Browse Events
             </button>
           </div>
         </div>
@@ -7098,7 +7098,6 @@ export default function App() {
   const [page, setPage] = useState<Page>("landing");
   const [user, setUser] = useState<User | null>(null);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
-  const [requestedRole, setRequestedRole] = useState<Role>(null);
   const [adminAccessError, setAdminAccessError] = useState<string | null>(null);
   const [toast, setToast] = useState<{
     msg: string;
@@ -7192,14 +7191,6 @@ export default function App() {
           return;
         }
 
-        if (requestedRole === "admin" && profile.role !== "admin") {
-          setAdminAccessError(
-            "Access Denied: You do not have administrator permissions. Admin access must be assigned directly by a database administrator.",
-          );
-          setPage("login");
-          return;
-        }
-
         const hydratedUser: User = {
           firstName: profile.first_name ?? "",
           middleInitial: profile.middle_initial ?? "",
@@ -7280,14 +7271,6 @@ export default function App() {
             !profile.section
           ) {
             setPage("onboarding");
-            return;
-          }
-
-          if (requestedRole === "admin" && profile.role !== "admin") {
-            setAdminAccessError(
-              "Access Denied: You do not have administrator permissions. Admin access must be assigned directly by a database administrator.",
-            );
-            setPage("login");
             return;
           }
 
@@ -7457,12 +7440,7 @@ export default function App() {
     ? { "admin-excuse-requests": pendingExcuses }
     : { announcements: unreadAnnouncements, "my-fines": unpaidFines };
 
-  const handleLogin = (role: Role) => {
-    if (!role) {
-      return;
-    }
-
-    setRequestedRole(role);
+  const handleLogin = (_role: Role) => {
     setAdminAccessError(null);
   };
 
@@ -7674,12 +7652,10 @@ export default function App() {
               onLogin={handleLogin}
               onBack={() => navigate("landing")}
               adminAccessError={adminAccessError}
-              onRoleSelect={(role) => {
-                setRequestedRole(role);
+              onRoleSelect={() => {
                 setAdminAccessError(null);
               }}
-              onGoogleLogin={(role) => {
-                setRequestedRole(role);
+              onGoogleLogin={() => {
                 setAdminAccessError(null);
               }}
             />
