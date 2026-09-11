@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
+// NOTE: The active workspace currently contains one client route machine in app/page.tsx,
+// not separate App Router files at /login, /onboarding, /dashboard, or /admin-dashboard.
+// To use the clean route paths below safely, the following route files must exist:
+//   app/login/page.tsx
+//   app/onboarding/page.tsx
+//   app/dashboard/page.tsx
+//   app/admin-dashboard/page.tsx
+// Without those files, redirecting to those URLs will produce a 404 instead of a page.
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const origin = requestUrl.searchParams.get("origin") ?? requestUrl.origin;
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/?page=landing`);
+    return NextResponse.redirect(`${origin}/login`);
   }
 
   const {
@@ -17,7 +25,7 @@ export async function GET(request: NextRequest) {
 
   if (exchangeError || !session?.user) {
     console.error(exchangeError);
-    return NextResponse.redirect(`${origin}/?page=landing`);
+    return NextResponse.redirect(`${origin}/login`);
   }
 
   const uid = session.user.id;
@@ -41,9 +49,9 @@ export async function GET(request: NextRequest) {
     !profile.section;
 
   if (incomplete) {
-    return NextResponse.redirect(`${origin}/?page=onboarding`);
+    return NextResponse.redirect(`${origin}/onboarding?freshLogin=1`);
   }
 
   const targetPage = profile.role === "admin" ? "admin-dashboard" : "dashboard";
-  return NextResponse.redirect(`${origin}/?page=${targetPage}`);
+  return NextResponse.redirect(`${origin}/${targetPage}?freshLogin=1`);
 }

@@ -7,6 +7,18 @@ import { supabase } from "@/lib/supabase";
 
 const tapInLogoSrc = "/tapin-logo.svg";
 
+function clearSupabaseAuthCookies() {
+  const cookieNames = [
+    "sb-access-token",
+    "sb-refresh-token",
+    "sb-provider-token",
+  ];
+
+  for (const name of cookieNames) {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+  }
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Page =
   | "landing"
@@ -7149,6 +7161,23 @@ export default function App() {
     ) {
       setPage(pageParam as Page);
     }
+
+    const routePath = window.location.pathname.replace(/\/+$/, "");
+    const pathToPage: Partial<Record<string, Page>> = {
+      "/login": "login",
+      "/onboarding": "onboarding",
+      "/dashboard": "dashboard",
+      "/admin-dashboard": "admin-dashboard",
+    };
+
+    if (routePath in pathToPage) {
+      const freshLogin =
+        new URLSearchParams(window.location.search).get("freshLogin") === "1";
+
+      if (freshLogin || routePath === "/login" || routePath === "/onboarding") {
+        setPage(pathToPage[routePath] as Page);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -7238,7 +7267,7 @@ export default function App() {
 
         setUser(hydratedUser);
 
-        if (isMounted) {
+        if (isMounted && window.location.search.includes("freshLogin=1")) {
           setPage(profile.role === "admin" ? "admin-dashboard" : "dashboard");
         }
       } catch (caughtError) {
@@ -7320,7 +7349,9 @@ export default function App() {
           };
 
           setUser(nextUser);
-          setPage(profile.role === "admin" ? "admin-dashboard" : "dashboard");
+          if (window.location.search.includes("freshLogin=1")) {
+            setPage(profile.role === "admin" ? "admin-dashboard" : "dashboard");
+          }
         } catch (err) {
           console.error(err);
         }
@@ -7647,10 +7678,21 @@ export default function App() {
       show("Excuse approved — fee waived");
     } else show("Request denied");
   };
-  const handleLogout = () => {
-    setUser(null);
-    setPage("landing");
-    setMenuOpen(false);
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
+
+      clearSupabaseAuthCookies();
+      setUser(null);
+      setAuthUserId(null);
+      setPage("landing");
+      setMenuOpen(false);
+    } catch (caughtError) {
+      console.error(caughtError);
+    }
   };
   const bare: Page[] = ["landing", "login", "onboarding"];
   const isBare = bare.includes(page);
