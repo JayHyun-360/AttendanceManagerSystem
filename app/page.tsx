@@ -7098,6 +7098,7 @@ export default function App() {
   const [page, setPage] = useState<Page>("landing");
   const [user, setUser] = useState<User | null>(null);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
+  const [requestedRole, setRequestedRole] = useState<Role>(null);
   const [adminAccessError, setAdminAccessError] = useState<string | null>(null);
   const [toast, setToast] = useState<{
     msg: string;
@@ -7440,7 +7441,12 @@ export default function App() {
     ? { "admin-excuse-requests": pendingExcuses }
     : { announcements: unreadAnnouncements, "my-fines": unpaidFines };
 
-  const handleLogin = (_role: Role) => {
+  const handleLogin = (role: Role) => {
+    if (!role) {
+      return;
+    }
+
+    setRequestedRole(role);
     setAdminAccessError(null);
   };
 
@@ -7491,8 +7497,21 @@ export default function App() {
         return;
       }
 
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const uid = session?.user?.id ?? authUserId;
+
+      if (!uid) {
+        show(
+          "Your Google session is not ready yet. Please sign in again.",
+          "error",
+        );
+        return;
+      }
+
       const payload = {
-        id: authUserId ?? undefined,
+        id: uid,
         first_name: firstName,
         middle_initial: d.middleInitial.trim(),
         surname,
@@ -7527,6 +7546,7 @@ export default function App() {
         phone: payload.phone,
         contactEmail: payload.contact_email,
         role: "student",
+        photoUrl: payload.photo_url,
         idPhotoUrl: payload.photo_url,
       };
 
@@ -7652,10 +7672,12 @@ export default function App() {
               onLogin={handleLogin}
               onBack={() => navigate("landing")}
               adminAccessError={adminAccessError}
-              onRoleSelect={() => {
+              onRoleSelect={(role) => {
+                setRequestedRole(role);
                 setAdminAccessError(null);
               }}
-              onGoogleLogin={() => {
+              onGoogleLogin={(role) => {
+                setRequestedRole(role);
                 setAdminAccessError(null);
               }}
             />
