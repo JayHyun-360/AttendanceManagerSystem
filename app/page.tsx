@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
+import { supabase } from "@/lib/supabase";
 
 const tapInLogoSrc = "/tapin-logo.svg";
 
@@ -1895,6 +1896,28 @@ function LoginPage({
 }) {
   const [role, setRole] = useState<Role>(null);
   const [loading, setLoading] = useState<string | null>(null);
+
+  const handleGoogleLogin = async () => {
+    setLoading("google");
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        console.error(error);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const proceed = (m: string) => {
     setLoading(m);
     setTimeout(() => {
@@ -1991,7 +2014,9 @@ function LoginPage({
             </div>
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
               <button
-                onClick={() => proceed("google")}
+                onClick={() => {
+                  void handleGoogleLogin();
+                }}
                 disabled={!!loading}
                 className="w-full h-12 flex items-center justify-center gap-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all disabled:opacity-50"
               >

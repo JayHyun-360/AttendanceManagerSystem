@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/Charljay/OneDrive/Desktop/attendance-manager-system/src/lib/supabase.ts"],"sourcesContent":["import { createClient } from \"@supabase/supabase-js\";\r\n\r\nconst supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;\r\nconst supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;\r\n\r\nexport const supabase = createClient(supabaseUrl, supabaseAnonKey);\r\n"],"names":["supabaseUrl","supabaseAnonKey","supabase"],"mappings":";;;;AAAA;;AAEA,MAAMA;AACN,MAAMC;AAEC,MAAMC,WAAW,IAAA,yQAAY,EAACF,aAAaC"}}]
+}
