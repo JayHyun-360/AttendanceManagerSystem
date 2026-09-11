@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
 import { supabase } from "@/lib/supabase";
@@ -8,33 +9,13 @@ import { supabase } from "@/lib/supabase";
 const tapInLogoSrc = "/tapin-logo.svg";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Page =
-  | "landing"
-  | "login"
-  | "onboarding"
-  | "dashboard"
-  | "my-qr"
-  | "events"
-  | "event-detail"
-  | "announcements"
-  | "attendance-history"
-  | "my-fines"
-  | "profile"
-  | "admin-dashboard"
-  | "admin-events"
-  | "admin-scanner"
-  | "admin-attendees"
-  | "admin-announcements"
-  | "admin-reports"
-  | "admin-excuse-requests"
-  | "admin-students"
-  | "admin-settings";
+export type Page = string;
 
-type Role = "student" | "admin" | null;
-type FineStatus = "unpaid" | "paid" | "excused";
-type EventStatus = "active" | "upcoming" | "closed";
+export type Role = "student" | "admin" | null;
+export type FineStatus = "unpaid" | "paid" | "excused";
+export type EventStatus = "active" | "upcoming" | "closed";
 
-interface User {
+export interface User {
   firstName: string;
   middleInitial: string;
   surname: string;
@@ -49,7 +30,7 @@ interface User {
   idPhotoUrl?: string;
 }
 
-interface EventData {
+export interface EventData {
   id: string;
   title: string;
   date: string;
@@ -93,7 +74,7 @@ interface ScanRecord {
   dbId: number;
 }
 
-interface ExcuseRequest {
+export interface ExcuseRequest {
   id: string;
   studentName: string;
   studentId: string;
@@ -105,7 +86,7 @@ interface ExcuseRequest {
   submittedDate: string;
 }
 
-interface FineRecord {
+export interface FineRecord {
   id: string;
   eventId: string;
   eventTitle: string;
@@ -114,7 +95,7 @@ interface FineRecord {
   status: FineStatus;
 }
 
-interface StudentProfile {
+export interface StudentProfile {
   name: string;
   id: string;
   program: string;
@@ -131,7 +112,7 @@ function fullName(u: Pick<User, "firstName" | "middleInitial" | "surname">) {
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
-const INITIAL_EVENTS: EventData[] = [
+export const INITIAL_EVENTS: EventData[] = [
   {
     id: "1",
     title: "TapIn Foundation Day Celebration",
@@ -422,7 +403,7 @@ const ALL_STUDENTS: StudentProfile[] = [
   },
 ];
 
-const INITIAL_ANNOUNCEMENTS = [
+export const INITIAL_ANNOUNCEMENTS = [
   {
     id: "1",
     title: "Enrollment for 2nd Semester Now Open",
@@ -461,7 +442,7 @@ const INITIAL_ANNOUNCEMENTS = [
   },
 ];
 
-const ATTENDANCE_RECORDS = [
+export const ATTENDANCE_RECORDS = [
   {
     id: "a1",
     eventId: "2",
@@ -1033,7 +1014,7 @@ function Avatar({
   );
 }
 
-function ProfileIcon({
+export function ProfileIcon({
   photoUrl,
   size = "sm",
 }: {
@@ -1063,7 +1044,7 @@ function ProfileIcon({
   );
 }
 
-function Toast({
+export function Toast({
   message,
   variant = "success",
 }: {
@@ -1083,7 +1064,7 @@ function Toast({
   );
 }
 
-function DotMenu({
+export function DotMenu({
   items,
 }: {
   items: {
@@ -1135,7 +1116,7 @@ function DotMenu({
   );
 }
 
-function BackButton({
+export function BackButton({
   label = "Back",
   onClick,
 }: {
@@ -1156,10 +1137,10 @@ function BackButton({
 }
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
-function PageShell({ children }: { children: React.ReactNode }) {
+export function PageShell({ children }: { children: React.ReactNode }) {
   return <div className="px-5 py-6 max-w-3xl mx-auto pb-8">{children}</div>;
 }
-function PageHeader({
+export function PageHeader({
   title,
   subtitle,
   action,
@@ -1193,7 +1174,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ─── TapIn Logomark ───────────────────────────────────────────────────────────
-function TapInMark({ className = "w-7 h-7" }: { className?: string }) {
+export function TapInMark({ className = "w-7 h-7" }: { className?: string }) {
   return (
     <img
       src={tapInLogoSrc}
@@ -1235,7 +1216,7 @@ function StudentQR({ studentId, size }: { studentId: string; size: number }) {
 }
 
 // ─── Top Bar ──────────────────────────────────────────────────────────────────
-function TopBar({
+export function TopBar({
   user,
   onNav,
   onMenuOpen,
@@ -1244,10 +1225,12 @@ function TopBar({
   onNav: (p: Page) => void;
   onMenuOpen: () => void;
 }) {
+  const router = useRouter();
   const dest =
-    user?.role === "admin" ? "admin-dashboard" : user ? "dashboard" : "landing";
+    user?.role === "admin" ? "/admin-dashboard" : user ? "/dashboard" : "/";
   const isMod = user?.role === "admin";
   const [dotOpen, setDotOpen] = useState(false);
+  const go = (target: string) => router.push(target);
   return (
     <header
       className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-slate-100 shrink-0"
@@ -1270,7 +1253,7 @@ function TopBar({
           )}
           <button
             className="flex items-center gap-2.5 min-w-0"
-            onClick={() => onNav(dest)}
+            onClick={() => go(dest)}
           >
             <TapInMark className="w-8 h-8 shrink-0" />
             <div className="flex flex-col leading-none min-w-0">
@@ -1289,7 +1272,7 @@ function TopBar({
           {user ? (
             <>
               <button
-                onClick={() => onNav("profile")}
+                onClick={() => go("/profile")}
                 className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100 transition-colors group"
                 aria-label="View profile"
               >
@@ -1382,7 +1365,7 @@ function TopBar({
             </>
           ) : (
             <button
-              onClick={() => onNav("login")}
+              onClick={() => go("/login")}
               className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
             >
               Sign in
@@ -1395,7 +1378,7 @@ function TopBar({
 }
 
 // ─── Sidebar (desktop + mobile drawer) ───────────────────────────────────────
-function Sidebar({
+export function Sidebar({
   page,
   user,
   open,
@@ -1412,6 +1395,7 @@ function Sidebar({
   onLogout: () => void;
   badges?: Partial<Record<Page, number>>;
 }) {
+  const router = useRouter();
   if (!user) return null;
   const isMod = user.role === "admin";
   const nav = isMod
@@ -1444,8 +1428,33 @@ function Sidebar({
         { p: "profile" as Page, l: "Profile", I: Icons.User },
       ];
 
+  const routeFromPage: Record<Page, string> = {
+    landing: "/",
+    login: "/login",
+    onboarding: "/onboarding",
+    dashboard: "/dashboard",
+    "my-qr": "/my-qr",
+    events: "/events",
+    "event-detail": "/events",
+    announcements: "/announcements",
+    "attendance-history": "/attendance-history",
+    "my-fines": "/my-fines",
+    profile: "/profile",
+    "admin-dashboard": "/admin-dashboard",
+    "admin-events": "/admin-events",
+    "admin-scanner": "/admin-scanner",
+    "admin-attendees": "/admin-attendees",
+    "admin-students": "/admin-students",
+    "admin-announcements": "/admin-announcements",
+    "admin-reports": "/admin-reports",
+    "admin-excuse-requests": "/admin-excuse-requests",
+    "admin-settings": "/admin-settings",
+  };
+
   const handleNav = (p: Page) => {
-    onNav(p);
+    const target = routeFromPage[p] ?? "/dashboard";
+    router.push(target);
+    onClose();
   };
 
   const inner = (
@@ -2981,7 +2990,7 @@ export function DashboardPage({
 }
 
 // ─── STUDENT: Events ──────────────────────────────────────────────────────────
-function EventsPage({
+export function EventsPage({
   onNav,
   onSelectEvent,
   user,
@@ -3233,7 +3242,7 @@ function EventDetailPage({
 }
 
 // ─── STUDENT: My QR ───────────────────────────────────────────────────────────
-function MyQRPage({
+export function MyQRPage({
   user,
   qrVersion,
   onBack,
@@ -3362,7 +3371,7 @@ function MyQRPage({
 }
 
 // ─── STUDENT: Announcements ───────────────────────────────────────────────────
-function AnnouncementsPage({
+export function AnnouncementsPage({
   onBack,
   announcements,
 }: {
@@ -3407,7 +3416,7 @@ function AnnouncementsPage({
 }
 
 // ─── STUDENT: Attendance ──────────────────────────────────────────────────────
-function AttendanceHistoryPage({
+export function AttendanceHistoryPage({
   excuseRequests,
   fines,
   showFees,
@@ -3521,7 +3530,7 @@ function AttendanceHistoryPage({
 }
 
 // ─── STUDENT: My Fines ────────────────────────────────────────────────────────
-function MyFinesPage({
+export function MyFinesPage({
   fines,
   showFees,
   onBack,
@@ -3633,7 +3642,7 @@ function MyFinesPage({
 }
 
 // ─── Profile (shared: student + moderator) ────────────────────────────────────
-function ProfilePage({
+export function ProfilePage({
   user,
   onSave,
   onBack,
@@ -4066,7 +4075,7 @@ interface NewEventDraft {
   afternoonLateFine: string;
 }
 
-function AdminEventsPage({
+export function AdminEventsPage({
   onNav,
   events,
   setEvents,
@@ -5474,7 +5483,7 @@ function CameraScanner({
   );
 }
 
-function AdminScannerPage() {
+export function AdminScannerPage() {
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanned, setScanned] = useState<ScanRecord[]>([]);
@@ -5641,7 +5650,7 @@ function AdminScannerPage() {
 }
 
 // ─── MODERATOR: Attendees ─────────────────────────────────────────────────────
-function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
+export function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
   const [selectedEventId, setSelectedEventId] = useState("2");
   const [scanState, setScanState] = useState<Record<string, ScanRecord[]>>(
     Object.fromEntries(
@@ -5864,7 +5873,7 @@ function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
 }
 
 // ─── MODERATOR: Students ──────────────────────────────────────────────────────
-function AdminStudentsPage() {
+export function AdminStudentsPage() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<StudentProfile | null>(null);
   const filtered = ALL_STUDENTS.filter((s) => {
@@ -5952,7 +5961,7 @@ function AdminStudentsPage() {
 }
 
 // ─── MODERATOR: Announcements ─────────────────────────────────────────────────
-function AdminAnnouncementsPage({
+export function AdminAnnouncementsPage({
   posts,
   setPosts,
 }: {
@@ -6261,7 +6270,7 @@ function AdminAnnouncementsPage({
 }
 
 // ─── MODERATOR: Excuse Requests ───────────────────────────────────────────────
-function AdminExcuseRequestsPage({
+export function AdminExcuseRequestsPage({
   requests,
   onAction,
   onBack,
@@ -6390,7 +6399,7 @@ function AdminExcuseRequestsPage({
 }
 
 // ─── MODERATOR: Reports ───────────────────────────────────────────────────────
-function AdminReportsPage() {
+export function AdminReportsPage() {
   const exportPDF = () => {
     const W = 794,
       pad = 48,
@@ -6701,12 +6710,12 @@ function AdminReportsPage() {
 }
 
 // ─── MODERATOR: Management & Settings ────────────────────────────────────────
-interface CarouselSlide {
+export interface CarouselSlide {
   imageUrl: string;
   caption: string;
   date: string;
 }
-interface SystemSettings {
+export interface SystemSettings {
   showFees: boolean;
   allowExcuseRequests: boolean;
   requirePhotoId: boolean;
@@ -6717,7 +6726,7 @@ interface SystemSettings {
   carouselSlides: CarouselSlide[];
 }
 
-function AdminSettingsPage({
+export function AdminSettingsPage({
   settings,
   onSave,
 }: {
@@ -7105,725 +7114,5 @@ const DEFAULT_SETTINGS: SystemSettings = {
 };
 
 export default function App() {
-  const [page, setPage] = useState<Page>("landing");
-  const [user, setUser] = useState<User | null>(null);
-  const [authUserId, setAuthUserId] = useState<string | null>(null);
-  const [requestedRole, setRequestedRole] = useState<Role>(null);
-  const [adminAccessError, setAdminAccessError] = useState<string | null>(null);
-  const [toast, setToast] = useState<{
-    msg: string;
-    variant?: "success" | "error";
-  } | null>(null);
-  const [selectedEventId, setSelectedEventId] = useState("1");
-  const [qrVersion, setQrVersion] = useState(1);
-  const [excuseRequests, setExcuseRequests] = useState<ExcuseRequest[]>([]);
-  const [fines, setFines] = useState<FineRecord[]>(STUDENT_FINES);
-  const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [seenAnnouncements, setSeenAnnouncements] = useState(0);
-  const [events, setEvents] = useState<EventData[]>(
-    INITIAL_EVENTS.map((e) => ({ ...e })),
-  );
-  const [announcements, setAnnouncements] = useState(
-    INITIAL_ANNOUNCEMENTS.map((a) => ({ ...a })),
-  );
-
-  useEffect(() => {
-    document.title = "Event Attendance System";
-
-    const pageParam = new URLSearchParams(window.location.search).get("page");
-    if (
-      pageParam &&
-      [
-        "landing",
-        "login",
-        "onboarding",
-        "dashboard",
-        "my-qr",
-        "events",
-        "event-detail",
-        "announcements",
-        "attendance-history",
-        "my-fines",
-        "profile",
-        "admin-dashboard",
-        "admin-events",
-        "admin-scanner",
-        "admin-attendees",
-        "admin-announcements",
-        "admin-reports",
-        "admin-excuse-requests",
-        "admin-students",
-        "admin-settings",
-      ].includes(pageParam)
-    ) {
-      setPage(pageParam as Page);
-    }
-
-    const routePath = window.location.pathname.replace(/\/+$/, "");
-    const pathToPage: Partial<Record<string, Page>> = {
-      "/login": "login",
-      "/onboarding": "onboarding",
-      "/dashboard": "dashboard",
-      "/admin-dashboard": "admin-dashboard",
-    };
-
-    if (routePath in pathToPage) {
-      const freshLogin =
-        new URLSearchParams(window.location.search).get("freshLogin") === "1";
-
-      if (freshLogin || routePath === "/login" || routePath === "/onboarding") {
-        setPage(pathToPage[routePath] as Page);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function hydrateSessionAndProfile() {
-      try {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          console.error(sessionError);
-        }
-
-        if (!session?.user) {
-          setUser(null);
-          setPage("landing");
-          return;
-        }
-
-        const uid = session.user.id;
-        const sessionUser = session.user;
-        setAuthUserId(uid);
-
-        let { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", uid)
-          .maybeSingle();
-
-        if (profileError && profileError.code !== "PGRST116") {
-          console.error(profileError);
-        }
-
-        if (!profile) {
-          await backfillProfileFromAuthUser(sessionUser);
-          const { data: reloadedProfile, error: reloadError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", uid)
-            .maybeSingle();
-
-          if (reloadError && reloadError.code !== "PGRST116") {
-            console.error(reloadError);
-          }
-
-          profile = reloadedProfile;
-        }
-
-        if (!profile) {
-          if (isMounted) {
-            setPage("onboarding");
-          }
-          return;
-        }
-
-        if (
-          !profile.first_name ||
-          !profile.student_id ||
-          !profile.surname ||
-          !profile.program ||
-          !profile.year_level ||
-          !profile.section
-        ) {
-          if (isMounted) {
-            setPage("onboarding");
-          }
-          return;
-        }
-
-        const hydratedUser: User = {
-          firstName: profile.first_name ?? "",
-          middleInitial: profile.middle_initial ?? "",
-          surname: profile.surname ?? "",
-          studentId: profile.student_id ?? "",
-          program: profile.program ?? "",
-          yearLevel: profile.year_level ?? "",
-          section: profile.section ?? "",
-          phone: profile.phone ?? "",
-          contactEmail: profile.contact_email ?? profile.email ?? "",
-          role: profile.role ?? "student",
-          photoUrl: profile.photo_url ?? undefined,
-          idPhotoUrl: profile.photo_url ?? undefined,
-        };
-
-        setUser(hydratedUser);
-
-        if (isMounted && window.location.search.includes("freshLogin=1")) {
-          setPage(profile.role === "admin" ? "admin-dashboard" : "dashboard");
-        }
-      } catch (caughtError) {
-        console.error(caughtError);
-      }
-    }
-
-    hydrateSessionAndProfile();
-
-    const { data: authSubscription } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (!session?.user) {
-          setUser(null);
-          setAuthUserId(null);
-          setPage("landing");
-          return;
-        }
-
-        const uid = session.user.id;
-        const sessionUser = session.user;
-        setAuthUserId(uid);
-        try {
-          let { data: profile, error } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", uid)
-            .maybeSingle();
-
-          if (error && error.code !== "PGRST116") {
-            console.error(error);
-            return;
-          }
-
-          if (!profile) {
-            await backfillProfileFromAuthUser(sessionUser);
-            const { data: reloadedProfile, error: reloadError } = await supabase
-              .from("profiles")
-              .select("*")
-              .eq("id", uid)
-              .maybeSingle();
-
-            if (reloadError && reloadError.code !== "PGRST116") {
-              console.error(reloadError);
-            }
-
-            profile = reloadedProfile;
-          }
-
-          if (!profile) {
-            setPage("onboarding");
-            return;
-          }
-
-          if (
-            !profile.first_name ||
-            !profile.student_id ||
-            !profile.surname ||
-            !profile.program ||
-            !profile.year_level ||
-            !profile.section
-          ) {
-            setPage("onboarding");
-            return;
-          }
-
-          const nextUser: User = {
-            firstName: profile.first_name ?? "",
-            middleInitial: profile.middle_initial ?? "",
-            surname: profile.surname ?? "",
-            studentId: profile.student_id ?? "",
-            program: profile.program ?? "",
-            yearLevel: profile.year_level ?? "",
-            section: profile.section ?? "",
-            phone: profile.phone ?? "",
-            contactEmail: profile.contact_email ?? profile.email ?? "",
-            role: profile.role ?? "student",
-            photoUrl: profile.photo_url ?? undefined,
-            idPhotoUrl: profile.photo_url ?? undefined,
-          };
-
-          setUser(nextUser);
-          if (window.location.search.includes("freshLogin=1")) {
-            setPage(profile.role === "admin" ? "admin-dashboard" : "dashboard");
-          }
-        } catch (err) {
-          console.error(err);
-        }
-      },
-    );
-
-    return () => {
-      isMounted = false;
-      authSubscription?.subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    async function fetchSupabaseData() {
-      try {
-        const { data: eventRows, error: eventError } = await supabase
-          .from("events")
-          .select("*")
-          .order("event_date", { ascending: true });
-
-        if (eventError) {
-          console.error(eventError);
-        } else if (eventRows) {
-          const mappedEvents: EventData[] = eventRows.map((row: any) => ({
-            id: row.id,
-            title: row.title,
-            date: row.event_date ? new Date(row.event_date).toDateString() : "",
-            time:
-              row.start_time && row.end_time
-                ? `${row.start_time} – ${row.end_time}`
-                : (row.start_time ?? ""),
-            location: row.location ?? "",
-            status: "upcoming" as EventStatus,
-            attendees: 0,
-            description: row.description ?? "",
-            program: "All Programs",
-            fineAmount: 0,
-            mediaUrls: row.image_url ? [row.image_url] : [],
-            highlightUrl: row.image_url ?? undefined,
-          }));
-          setEvents(mappedEvents);
-        }
-
-        const { data: announcementRows, error: announcementError } =
-          await supabase
-            .from("announcements")
-            .select("*")
-            .order("created_at", { ascending: false });
-
-        if (announcementError) {
-          console.error(announcementError);
-        } else if (announcementRows) {
-          const mappedAnnouncements = announcementRows.map((row: any) => ({
-            id: row.id,
-            title: row.title,
-            body: row.content,
-            date: row.created_at
-              ? new Date(row.created_at).toLocaleDateString()
-              : "",
-            author: "TapIn Admin",
-            badge: row.target_role ?? "General",
-            photoUrl: row.media_url ?? "",
-          }));
-          setAnnouncements(mappedAnnouncements);
-        }
-
-        if (authUserId) {
-          const { data: fineRows, error: fineError } = await supabase
-            .from("fines")
-            .select("*")
-            .eq("student_id", authUserId)
-            .order("created_at", { ascending: false });
-
-          if (fineError) {
-            console.error(fineError);
-          } else if (fineRows) {
-            const mappedFines: FineRecord[] = fineRows.map((row: any) => ({
-              id: row.id,
-              eventId: row.event_id ?? "",
-              eventTitle: row.reason ?? "Fine",
-              eventDate: row.created_at
-                ? new Date(row.created_at).toDateString()
-                : "",
-              amount: Number(row.amount) ?? 0,
-              status: row.status ?? "unpaid",
-            }));
-            setFines(mappedFines);
-          }
-
-          const { data: excuseRows, error: excuseError } = await supabase
-            .from("excuse_requests")
-            .select("*")
-            .eq("student_id", authUserId)
-            .order("created_at", { ascending: false });
-
-          if (excuseError) {
-            console.error(excuseError);
-          } else if (excuseRows) {
-            const mappedExcuses: ExcuseRequest[] = excuseRows.map(
-              (row: any) => ({
-                id: row.id,
-                studentName:
-                  user?.firstName && user?.surname
-                    ? `${user.firstName} ${user.surname}`
-                    : "Student",
-                studentId: user?.studentId ?? "",
-                event: row.fine_id ?? "",
-                date: row.created_at
-                  ? new Date(row.created_at).toDateString()
-                  : "",
-                reason: row.reason ?? "",
-                proofName: row.document_url
-                  ? (row.document_url.split("/").pop() ?? null)
-                  : null,
-                status: row.status ?? "pending",
-                submittedDate: row.created_at
-                  ? new Date(row.created_at).toDateString()
-                  : "",
-              }),
-            );
-            setExcuseRequests(mappedExcuses);
-          }
-        }
-      } catch (caught) {
-        console.error(caught);
-      }
-    }
-
-    fetchSupabaseData();
-  }, [authUserId]);
-
-  const show = (msg: string, variant: "success" | "error" = "success") => {
-    setToast({ msg, variant });
-    setTimeout(() => setToast(null), 3500);
-  };
-
-  const isMod = user?.role === "admin";
-  const pendingExcuses = excuseRequests.filter(
-    (r) => r.status === "pending",
-  ).length;
-  const unreadAnnouncements = Math.max(
-    0,
-    INITIAL_ANNOUNCEMENTS.length - seenAnnouncements,
-  );
-  const unpaidFines = fines.filter((f) => f.status === "unpaid").length;
-  const sideBadges: Partial<Record<Page, number>> = isMod
-    ? { "admin-excuse-requests": pendingExcuses }
-    : { announcements: unreadAnnouncements, "my-fines": unpaidFines };
-
-  const handleLogin = (role: Role) => {
-    if (!role) {
-      return;
-    }
-
-    setRequestedRole(role);
-    setAdminAccessError(null);
-  };
-
-  const backfillProfileFromAuthUser = async (sessionUser: {
-    id: string;
-    email?: string | null;
-    user_metadata?: Record<string, unknown>;
-  }) => {
-    const metadata = (sessionUser.user_metadata ?? {}) as Record<
-      string,
-      string
-    >;
-
-    const profilePayload = {
-      id: sessionUser.id,
-      email: sessionUser.email ?? "",
-      first_name: metadata.first_name ?? "",
-      middle_initial: metadata.middle_initial ?? "",
-      surname: metadata.surname ?? metadata.last_name ?? "",
-      student_id: metadata.student_id ?? "",
-      program: metadata.program ?? "",
-      year_level: metadata.year_level ?? "",
-      section: metadata.section ?? "",
-      phone: metadata.phone ?? "",
-      contact_email: sessionUser.email ?? "",
-      role: "student" as const,
-      photo_url: metadata.avatar_url ?? metadata.photo_url ?? "",
-    };
-
-    const { error } = await supabase
-      .from("profiles")
-      .upsert(profilePayload, { onConflict: "id" });
-
-    if (error) {
-      console.error(error);
-      show(error.message, "error");
-    }
-  };
-
-  const handleOnboarding = async (d: OBForm) => {
-    try {
-      const firstName = d.firstName.trim();
-      const surname = d.surname.trim();
-      const studentId = d.studentId.trim();
-
-      if (!firstName || !surname || !studentId) {
-        show("Required fields: first name, surname, and student ID.", "error");
-        return;
-      }
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const uid = session?.user?.id ?? authUserId;
-
-      if (!uid) {
-        show(
-          "Your Google session is not ready yet. Please sign in again.",
-          "error",
-        );
-        return;
-      }
-
-      const payload = {
-        id: uid,
-        first_name: firstName,
-        middle_initial: d.middleInitial.trim(),
-        surname,
-        student_id: studentId,
-        program: d.program.trim(),
-        year_level: d.yearLevel.trim(),
-        section: d.section.trim(),
-        phone: d.phone.trim(),
-        contact_email: d.contactEmail.trim(),
-        role: "student",
-        photo_url: d.idPhotoUrl,
-      };
-
-      const { error } = await supabase
-        .from("profiles")
-        .upsert(payload, { onConflict: "id" });
-
-      if (error) {
-        console.error(error);
-        show(error.message, "error");
-        return;
-      }
-
-      const nextUser: User = {
-        firstName: payload.first_name,
-        middleInitial: payload.middle_initial,
-        surname: payload.surname,
-        studentId: payload.student_id,
-        program: payload.program,
-        yearLevel: payload.year_level,
-        section: payload.section,
-        phone: payload.phone,
-        contactEmail: payload.contact_email,
-        role: "student",
-        photoUrl: payload.photo_url,
-        idPhotoUrl: payload.photo_url,
-      };
-
-      setUser(nextUser);
-      setQrVersion((v) => v + 1);
-      show("Setup complete — your QR code is ready");
-      setPage("dashboard");
-    } catch (err) {
-      console.error(err);
-    }
-  };
-  const handleProfileSave = async (updated: User) => {
-    try {
-      const firstName = updated.firstName.trim();
-      const surname = updated.surname.trim();
-      const studentId = updated.studentId.trim();
-
-      if (!firstName || !surname || !studentId) {
-        show("Required fields: first name, surname, and student ID.", "error");
-        return;
-      }
-
-      const profilePayload = {
-        id: authUserId ?? undefined,
-        first_name: firstName,
-        middle_initial: updated.middleInitial.trim(),
-        surname,
-        student_id: studentId,
-        program: updated.program.trim(),
-        year_level: updated.yearLevel.trim(),
-        section: updated.section.trim(),
-        phone: updated.phone.trim(),
-        contact_email: updated.contactEmail.trim(),
-        role: updated.role ?? "student",
-        photo_url: updated.photoUrl ?? updated.idPhotoUrl,
-      };
-
-      const { error } = await supabase
-        .from("profiles")
-        .upsert(profilePayload, { onConflict: "id" });
-
-      if (error) {
-        console.error(error);
-        show(error.message, "error");
-        return;
-      }
-
-      setUser(updated);
-      setQrVersion((v) => v + 1);
-      show("Profile saved — QR code renewed");
-    } catch (err) {
-      console.error(err);
-    }
-  };
-  const handleExcuseAction = (id: string, action: "approved" | "denied") => {
-    setExcuseRequests((r) =>
-      r.map((x) => (x.id === id ? { ...x, status: action } : x)),
-    );
-    if (action === "approved") {
-      const req = excuseRequests.find((r) => r.id === id);
-      if (req)
-        setFines((f) =>
-          f.map((fi) =>
-            fi.eventTitle === req.event
-              ? { ...fi, status: "excused" as FineStatus }
-              : fi,
-          ),
-        );
-      show("Excuse approved — fee waived");
-    } else show("Request denied");
-  };
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
-      }
-
-      setUser(null);
-      setAuthUserId(null);
-      setPage("landing");
-      setMenuOpen(false);
-    } catch (caughtError) {
-      console.error(caughtError);
-    }
-  };
-  const bare: Page[] = ["landing", "login", "onboarding"];
-  const isBare = bare.includes(page);
-  const goBack = (fallback: Page) => () => setPage(fallback);
-  const navigate = (p: Page) => {
-    setPage(p);
-    setMenuOpen(false);
-  };
-
-  return (
-    <div
-      className="h-full flex flex-col bg-[#f8faf9]"
-      style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
-    >
-      {!isBare && (
-        <TopBar
-          user={user}
-          onNav={navigate}
-          onMenuOpen={() => setMenuOpen(true)}
-        />
-      )}
-      <div
-        className={`flex-1 flex min-h-0 ${!isBare ? "overflow-hidden" : ""}`}
-      >
-        {!isBare && user && (
-          <Sidebar
-            page={page}
-            user={user}
-            open={menuOpen}
-            onNav={(p) => {
-              if (p === "announcements")
-                setSeenAnnouncements(INITIAL_ANNOUNCEMENTS.length);
-              navigate(p);
-            }}
-            onClose={() => setMenuOpen(false)}
-            onLogout={handleLogout}
-            badges={sideBadges}
-          />
-        )}
-        <main
-          className={`flex-1 bg-[#f8faf9] ${!isBare ? "overflow-y-auto" : ""}`}
-        >
-          {page === "landing" && (
-            <LandingPage onNav={navigate} settings={settings} />
-          )}
-          {page === "events" && (
-            <EventsPage
-              onNav={navigate}
-              onSelectEvent={setSelectedEventId}
-              user={user}
-              showFees={settings.showFees}
-              events={events}
-            />
-          )}
-          {page === "event-detail" && (
-            <EventDetailPage
-              eventId={selectedEventId}
-              user={user}
-              showFees={settings.showFees}
-              onBack={goBack("events")}
-              events={events}
-            />
-          )}
-          {page === "my-qr" && user && (
-            <MyQRPage
-              user={user}
-              qrVersion={qrVersion}
-              onBack={goBack("dashboard")}
-            />
-          )}
-          {page === "announcements" && (
-            <AnnouncementsPage
-              onBack={goBack(isMod ? "admin-dashboard" : "dashboard")}
-              announcements={announcements}
-            />
-          )}
-          {page === "attendance-history" && (
-            <AttendanceHistoryPage
-              excuseRequests={excuseRequests}
-              fines={fines}
-              showFees={settings.showFees}
-              onSubmitExcuse={(r) => {
-                setExcuseRequests((p) => [...p, r]);
-                show("Excuse request submitted");
-              }}
-              onBack={goBack("dashboard")}
-            />
-          )}
-          {page === "my-fines" && user && (
-            <MyFinesPage
-              fines={fines}
-              showFees={settings.showFees}
-              onBack={goBack("dashboard")}
-            />
-          )}
-          {page === "profile" && user && (
-            <ProfilePage
-              user={user}
-              onSave={handleProfileSave}
-              onBack={goBack(isMod ? "admin-dashboard" : "dashboard")}
-            />
-          )}
-          {page === "admin-events" && isMod && (
-            <AdminEventsPage
-              onNav={navigate}
-              events={events}
-              setEvents={setEvents}
-            />
-          )}
-          {page === "admin-scanner" && isMod && <AdminScannerPage />}
-          {page === "admin-attendees" && isMod && (
-            <AdminAttendeesPage onNav={navigate} />
-          )}
-          {page === "admin-students" && isMod && <AdminStudentsPage />}
-          {page === "admin-announcements" && isMod && (
-            <AdminAnnouncementsPage
-              posts={announcements}
-              setPosts={setAnnouncements}
-            />
-          )}
-          {page === "admin-excuse-requests" && isMod && (
-            <AdminExcuseRequestsPage
-              requests={excuseRequests}
-              onAction={handleExcuseAction}
-              onBack={goBack("admin-dashboard")}
-            />
-          )}
-          {page === "admin-reports" && isMod && <AdminReportsPage />}
-          {page === "admin-settings" && isMod && (
-            <AdminSettingsPage settings={settings} onSave={setSettings} />
-          )}
-        </main>
-      </div>
-      {toast && <Toast message={toast.msg} variant={toast.variant} />}
-    </div>
-  );
+  return <LandingPage onNav={() => undefined} settings={DEFAULT_SETTINGS} />;
 }
