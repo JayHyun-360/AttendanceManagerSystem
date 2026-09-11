@@ -95,6 +95,21 @@ alter table public.excuse_requests enable row level security;
 alter table public.announcements enable row level security;
 alter table public.system_settings enable row level security;
 
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and p.role = 'admin'
+  );
+$$;
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -152,14 +167,8 @@ create policy profiles_update_students
 create policy profiles_admin_full_access
   on public.profiles
   for all
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ))
-  with check (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin())
+  with check (public.is_admin());
 
 create policy events_select_public
   on public.events
@@ -169,26 +178,17 @@ create policy events_select_public
 create policy events_insert_admin
   on public.events
   for insert
-  with check (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  with check (public.is_admin());
 
 create policy events_update_admin
   on public.events
   for update
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin());
 
 create policy events_delete_admin
   on public.events
   for delete
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin());
 
 create policy attendance_select_auth
   on public.attendance_logs
@@ -198,50 +198,32 @@ create policy attendance_select_auth
 create policy attendance_insert_admin
   on public.attendance_logs
   for insert
-  with check (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  with check (public.is_admin());
 
 create policy attendance_update_admin
   on public.attendance_logs
   for update
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin());
 
 create policy fines_student_select
   on public.fines
   for select
-  using (auth.uid() = student_id or exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (auth.uid() = student_id or public.is_admin());
 
 create policy fines_insert_admin
   on public.fines
   for insert
-  with check (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  with check (public.is_admin());
 
 create policy fines_update_admin
   on public.fines
   for update
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin());
 
 create policy excuse_select_auth
   on public.excuse_requests
   for select
-  using (auth.uid() = student_id or exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (auth.uid() = student_id or public.is_admin());
 
 create policy excuse_insert_student
   on public.excuse_requests
@@ -251,10 +233,7 @@ create policy excuse_insert_student
 create policy excuse_update_admin
   on public.excuse_requests
   for update
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin());
 
 create policy announcements_select_public
   on public.announcements
@@ -264,26 +243,17 @@ create policy announcements_select_public
 create policy announcements_insert_admin
   on public.announcements
   for insert
-  with check (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  with check (public.is_admin());
 
 create policy announcements_update_admin
   on public.announcements
   for update
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin());
 
 create policy announcements_delete_admin
   on public.announcements
   for delete
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin());
 
 create policy settings_select_public
   on public.system_settings
@@ -293,10 +263,7 @@ create policy settings_select_public
 create policy settings_update_admin
   on public.system_settings
   for update
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin());
 
 insert into public.system_settings (id, system_name, qr_expiration_minutes)
 values (1, 'TapIn', 5)
@@ -316,14 +283,8 @@ create policy storage_public_read
 
 create policy storage_admin_all_access
   on storage.objects for all
-  using (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ))
-  with check (exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
-  ));
+  using (public.is_admin())
+  with check (public.is_admin());
 
 -- Bucket creation
 insert into storage.buckets (id, name, public)
