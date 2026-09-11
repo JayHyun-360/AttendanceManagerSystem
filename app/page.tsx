@@ -7120,6 +7120,35 @@ export default function App() {
 
   useEffect(() => {
     document.title = "Event Attendance System";
+
+    const pageParam = new URLSearchParams(window.location.search).get("page");
+    if (
+      pageParam &&
+      [
+        "landing",
+        "login",
+        "onboarding",
+        "dashboard",
+        "my-qr",
+        "events",
+        "event-detail",
+        "announcements",
+        "attendance-history",
+        "my-fines",
+        "profile",
+        "admin-dashboard",
+        "admin-events",
+        "admin-scanner",
+        "admin-attendees",
+        "admin-announcements",
+        "admin-reports",
+        "admin-excuse-requests",
+        "admin-students",
+        "admin-settings",
+      ].includes(pageParam)
+    ) {
+      setPage(pageParam as Page);
+    }
   }, []);
 
   useEffect(() => {

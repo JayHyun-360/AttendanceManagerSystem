@@ -10,7 +10,7 @@ const protectedRoutePrefixes = [
   "/profile",
 ];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   const requiresAuth = protectedRoutePrefixes.some(
