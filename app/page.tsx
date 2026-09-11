@@ -2,6 +2,15 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import {
+  Bar,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
 import { supabase } from "@/lib/supabase";
@@ -1484,8 +1493,11 @@ export function Sidebar({
           const badgeLabel =
             count > 9 ? "9+" : count > 0 ? String(count) : null;
           return (
-            <button
+            <motion.button
               key={p}
+              layout
+              whileHover={{ scale: 1.018, x: 2 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => handleNav(p)}
               className={`w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm transition-all ${active ? "bg-green-50 text-green-800 font-semibold" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium"}`}
             >
@@ -1500,7 +1512,7 @@ export function Sidebar({
                 )}
               </span>
               <span className="truncate">{l}</span>
-            </button>
+            </motion.button>
           );
         })}
       </nav>
@@ -2884,6 +2896,13 @@ export function DashboardPage({
   const nextEvent = INITIAL_EVENTS.find((e) => e.status !== "closed");
   const unpaidFines = fines.filter((f) => f.status === "unpaid");
   const total = unpaidFines.reduce((s, f) => s + f.amount, 0);
+
+  const attendanceData = [
+    { name: "Present", value: 72, fill: "#16a34a" },
+    { name: "Absent", value: 18, fill: "#94a3b8" },
+    { name: "Upcoming", value: 10, fill: "#a7f3d0" },
+  ];
+
   return (
     <PageShell>
       <div className="mb-7">
@@ -2894,23 +2913,79 @@ export function DashboardPage({
           Good morning, {user.firstName || "there"}.
         </h1>
       </div>
+
       <div className="grid grid-cols-3 gap-3 mb-5">
-        {[
-          { l: "Present", v: "2" },
-          { l: "Absent", v: "2" },
-          { l: "Upcoming", v: "2" },
-        ].map((s) => (
-          <div
-            key={s.l}
-            className="bg-white border border-slate-100 rounded-xl px-4 py-4"
-          >
-            <p className="text-2xl font-bold text-slate-900">{s.v}</p>
-            <p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">
-              {s.l}
-            </p>
-          </div>
-        ))}
+        <motion.div
+          className="bg-white border border-slate-100 rounded-xl px-4 py-4"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, delay: 0.02 }}
+        >
+          <p className="text-2xl font-bold text-slate-900">{2}</p>
+          <p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">
+            Present
+          </p>
+        </motion.div>
+
+        <motion.div
+          className="bg-white border border-slate-100 rounded-xl px-4 py-4"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, delay: 0.08 }}
+        >
+          <p className="text-2xl font-bold text-slate-900">{2}</p>
+          <p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">
+            Absent
+          </p>
+        </motion.div>
+
+        <motion.div
+          className="bg-white border border-slate-100 rounded-xl px-4 py-4"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, delay: 0.14 }}
+        >
+          <p className="text-2xl font-bold text-slate-900">{2}</p>
+          <p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">
+            Upcoming
+          </p>
+        </motion.div>
       </div>
+
+      <motion.div
+        className="bg-white border border-slate-100 rounded-xl px-4 py-3 mb-5"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.28, delay: 0.2 }}
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+            Attendance rate
+          </span>
+          <span className="text-[11px] font-semibold text-green-700">72%</span>
+        </div>
+        <div className="h-24">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={attendanceData}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={16}
+                outerRadius={34}
+                paddingAngle={2}
+                strokeWidth={0}
+              >
+                {attendanceData.map((entry) => (
+                  <Cell key={entry.name} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </motion.div>
+
       {showFees && unpaidFines.length > 0 && (
         <button
           onClick={() => onNav("my-fines")}
@@ -2936,11 +3011,23 @@ export function DashboardPage({
         </button>
       )}
       {nextEvent && (
-        <UpcomingEventCard event={nextEvent} onClick={() => onNav("events")} />
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.24 }}
+        >
+          <UpcomingEventCard
+            event={nextEvent}
+            onClick={() => onNav("events")}
+          />
+        </motion.div>
       )}
-      <button
+      <motion.button
+        type="button"
         onClick={() => onNav("my-qr")}
         className="w-full bg-white border border-slate-100 rounded-xl px-5 py-4 flex items-center justify-between hover:border-slate-200 hover:shadow-sm transition-all mb-5 group"
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.98 }}
       >
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 bg-green-50 border border-green-100 rounded-xl flex items-center justify-center text-green-600">
@@ -2956,7 +3043,7 @@ export function DashboardPage({
         <span className="text-slate-300 group-hover:text-slate-500">
           <Icons.ChevronRight />
         </span>
-      </button>
+      </motion.button>
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-semibold text-slate-900">
           Latest announcements
@@ -2971,9 +3058,12 @@ export function DashboardPage({
       </div>
       <div className="space-y-2">
         {INITIAL_ANNOUNCEMENTS.slice(0, 2).map((a) => (
-          <div
+          <motion.div
             key={a.id}
             className="bg-white border border-slate-100 rounded-xl px-4 py-3.5"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.02 * Number(a.id) }}
           >
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded uppercase tracking-wide">
@@ -2982,7 +3072,7 @@ export function DashboardPage({
               <span className="text-[11px] text-slate-400">{a.date}</span>
             </div>
             <p className="text-sm font-semibold text-slate-900">{a.title}</p>
-          </div>
+          </motion.div>
         ))}
       </div>
     </PageShell>

@@ -4,37 +4,19 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminDashboard } from "../../page";
 import { supabase } from "@/lib/supabase";
+import { useProtectedUser } from "../layout";
 
 export default function AdminDashboardRoute() {
   const router = useRouter();
+  const { user } = useProtectedUser();
   const [requests, setRequests] = useState<any[]>([]);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadAdminDashboard() {
+    async function loadAdminDashboardRequests() {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!session?.user) {
-          router.push("/login");
-          return;
-        }
-
-        const uid = session.user.id;
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", uid)
-          .maybeSingle();
-
-        if (profileError && profileError.code !== "PGRST116") {
-          console.error(profileError);
-        }
-
-        if (!profile || profile.role !== "admin") {
+        if (!user || user.role !== "admin") {
           router.push("/dashboard");
           return;
         }
@@ -54,11 +36,11 @@ export default function AdminDashboardRoute() {
       }
     }
 
-    void loadAdminDashboard();
+    void loadAdminDashboardRequests();
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, user]);
 
   const onNav = (page: string) => {
     const paths: Record<string, string> = {

@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   TopBar,
@@ -11,6 +19,26 @@ import {
   type User,
 } from "../page";
 import { supabase } from "@/lib/supabase";
+import { Toaster } from "@/components/ui/sonner";
+
+type ProtectedUserContextValue = {
+  user: User | null;
+  setUser: Dispatch<SetStateAction<User | null>>;
+  authUserId: string | null;
+  setAuthUserId: Dispatch<SetStateAction<string | null>>;
+};
+
+const ProtectedUserContext = createContext<ProtectedUserContextValue | null>(
+  null,
+);
+
+export function useProtectedUser() {
+  const value = useContext(ProtectedUserContext);
+  if (!value) {
+    throw new Error("useProtectedUser must be used inside ProtectedLayout");
+  }
+  return value;
+}
 
 const pathToPage: Partial<Record<string, Page>> = {
   "/dashboard": "dashboard",
@@ -36,6 +64,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [page, setPage] = useState<Page>("landing");
   const [open, setOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -60,6 +89,10 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
         }
 
         const uid = session.user.id;
+        if (!cancelled) {
+          setAuthUserId(uid);
+        }
+
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("*")
@@ -129,6 +162,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     }
 
     setUser(null);
+    setAuthUserId(null);
     setPage("landing");
     setOpen(false);
     router.push("/login");
@@ -164,22 +198,26 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8faf9]">
-      <TopBar user={user} onNav={onNav} onMenuOpen={() => setOpen(true)} />
-      <div className="flex min-h-[calc(100vh-56px)]">
-        <Sidebar
-          page={page}
-          user={user}
-          open={open}
-          onNav={onNav}
-          onClose={() => setOpen(false)}
-          onLogout={onLogout}
-        />
-        <main className="flex-1">
-          <PageShell>{children}</PageShell>
-        </main>
+    <ProtectedUserContext.Provider
+      value={{ user, setUser, authUserId, setAuthUserId }}
+    >
+      <div className="min-h-screen bg-[#f8faf9]">
+        <TopBar user={user} onNav={onNav} onMenuOpen={() => setOpen(true)} />
+        <div className="flex min-h-[calc(100vh-56px)]">
+          <Sidebar
+            page={page}
+            user={user}
+            open={open}
+            onNav={onNav}
+            onClose={() => setOpen(false)}
+            onLogout={onLogout}
+          />
+          <main className="flex-1">
+            <PageShell>{children}</PageShell>
+          </main>
+        </div>
+        {toastMessage && <Toast message={toastMessage} variant="success" />}
       </div>
-      {toastMessage && <Toast message={toastMessage} variant="success" />}
-    </div>
+    </ProtectedUserContext.Provider>
   );
 }
