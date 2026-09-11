@@ -7057,6 +7057,8 @@ export default function App() {
   const [page, setPage] = useState<Page>("landing");
   const [user, setUser] = useState<User | null>(null);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
+  const [requestedRole, setRequestedRole] = useState<Role>(null);
+  const [adminAccessError, setAdminAccessError] = useState<string | null>(null);
   const [toast, setToast] = useState<{
     msg: string;
     variant?: "success" | "error";
@@ -7112,15 +7114,32 @@ export default function App() {
           console.error(profileError);
         }
 
+        if (!profile) {
+          if (isMounted) {
+            setPage("onboarding");
+          }
+          return;
+        }
+
         if (
-          !profile ||
-          !profile.student_id ||
           !profile.first_name ||
-          !profile.surname
+          !profile.student_id ||
+          !profile.surname ||
+          !profile.program ||
+          !profile.year_level ||
+          !profile.section
         ) {
           if (isMounted) {
             setPage("onboarding");
           }
+          return;
+        }
+
+        if (requestedRole === "admin" && profile.role !== "admin") {
+          setAdminAccessError(
+            "Access Denied: You do not have administrator permissions. Admin access must be assigned directly by a database administrator.",
+          );
+          setPage("login");
           return;
         }
 
@@ -7173,13 +7192,28 @@ export default function App() {
             return;
           }
 
+          if (!profile) {
+            setPage("onboarding");
+            return;
+          }
+
           if (
-            !profile ||
-            !profile.student_id ||
             !profile.first_name ||
-            !profile.surname
+            !profile.student_id ||
+            !profile.surname ||
+            !profile.program ||
+            !profile.year_level ||
+            !profile.section
           ) {
             setPage("onboarding");
+            return;
+          }
+
+          if (requestedRole === "admin" && profile.role !== "admin") {
+            setAdminAccessError(
+              "Access Denied: You do not have administrator permissions. Admin access must be assigned directly by a database administrator.",
+            );
+            setPage("login");
             return;
           }
 
@@ -7350,35 +7384,13 @@ export default function App() {
     : { announcements: unreadAnnouncements, "my-fines": unpaidFines };
 
   const handleLogin = (role: Role) => {
-    if (role === "student") {
-      setUser({
-        firstName: "",
-        middleInitial: "",
-        surname: "",
-        studentId: "",
-        program: "",
-        yearLevel: "",
-        section: "",
-        phone: "",
-        contactEmail: "",
-        role: "student",
-      });
-      setPage("onboarding");
-    } else {
-      setUser({
-        firstName: "Rafael",
-        middleInitial: "M",
-        surname: "Rivera",
-        studentId: "ADMIN-001",
-        program: "Admin",
-        yearLevel: "",
-        section: "",
-        phone: "09171234567",
-        contactEmail: "moderator@tapin.edu",
-        role: "admin",
-      });
-      setPage("admin-dashboard");
+    setRequestedRole(role);
+    if (role === "admin") {
+      setPage("login");
+      return;
     }
+
+    setPage("login");
   };
   const handleOnboarding = async (d: OBForm) => {
     try {
@@ -7533,6 +7545,15 @@ export default function App() {
             <LoginPage
               onLogin={handleLogin}
               onBack={() => navigate("landing")}
+              adminAccessError={adminAccessError}
+              onRoleSelect={(role) => {
+                setRequestedRole(role);
+                setAdminAccessError(null);
+              }}
+              onGoogleLogin={(role) => {
+                setRequestedRole(role);
+                setAdminAccessError(null);
+              }}
             />
           )}
           {page === "onboarding" && (
