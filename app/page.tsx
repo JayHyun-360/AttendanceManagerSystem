@@ -1890,9 +1890,15 @@ function LandingPage({
 function LoginPage({
   onLogin,
   onBack,
+  adminAccessError,
+  onRoleSelect,
+  onGoogleLogin,
 }: {
   onLogin: (role: Role) => void;
   onBack: () => void;
+  adminAccessError?: string | null;
+  onRoleSelect?: (role: Role) => void;
+  onGoogleLogin?: (role: Role) => void;
 }) {
   const [role, setRole] = useState<Role>(null);
   const [loading, setLoading] = useState<string | null>(null);
@@ -1928,6 +1934,11 @@ function LoginPage({
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#f8faf9]">
       <div className="w-full max-w-sm">
+        {adminAccessError && (
+          <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">
+            {adminAccessError}
+          </div>
+        )}
         {!role && (
           <>
             <div className="text-center mb-8">
@@ -1943,7 +1954,10 @@ function LoginPage({
             </div>
             <div className="space-y-3">
               <button
-                onClick={() => setRole("student")}
+                onClick={() => {
+                  setRole("student");
+                  onRoleSelect?.("student");
+                }}
                 className="w-full bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 text-left hover:border-green-300 hover:shadow-sm transition-all group"
               >
                 <div className="w-12 h-12 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center text-green-600 shrink-0 group-hover:bg-green-100 transition-colors">
@@ -1962,7 +1976,10 @@ function LoginPage({
                 </span>
               </button>
               <button
-                onClick={() => setRole("admin")}
+                onClick={() => {
+                  setRole("admin");
+                  onRoleSelect?.("admin");
+                }}
                 className="w-full bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 text-left hover:border-slate-300 hover:shadow-sm transition-all group"
               >
                 <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 shrink-0 group-hover:bg-slate-200 transition-colors">
@@ -1983,7 +2000,10 @@ function LoginPage({
               <p className="text-xs text-slate-400 text-center pt-1">
                 New student?{" "}
                 <button
-                  onClick={() => setRole("student")}
+                  onClick={() => {
+                    setRole("student");
+                    onRoleSelect?.("student");
+                  }}
                   className="text-green-600 font-semibold hover:text-green-700"
                 >
                   Create an account
@@ -2015,6 +2035,7 @@ function LoginPage({
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
               <button
                 onClick={() => {
+                  onGoogleLogin?.(role);
                   void handleGoogleLogin();
                 }}
                 disabled={!!loading}
