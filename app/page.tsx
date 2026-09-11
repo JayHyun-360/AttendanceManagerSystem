@@ -7,18 +7,6 @@ import { supabase } from "@/lib/supabase";
 
 const tapInLogoSrc = "/tapin-logo.svg";
 
-function clearSupabaseAuthCookies() {
-  const cookieNames = [
-    "sb-access-token",
-    "sb-refresh-token",
-    "sb-provider-token",
-  ];
-
-  for (const name of cookieNames) {
-    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-  }
-}
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Page =
   | "landing"
@@ -7695,7 +7683,6 @@ export default function App() {
         throw error;
       }
 
-      clearSupabaseAuthCookies();
       setUser(null);
       setAuthUserId(null);
       setPage("landing");
