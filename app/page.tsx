@@ -2150,9 +2150,29 @@ function OnboardingPage({ onComplete }: { onComplete: (d: OBForm) => void }) {
     { t: "Terms & Privacy", d: "Please read and agree to continue." },
   ];
   const canContinue = () => {
-    if (step === 5) return !!f.idPhotoUrl;
-    if (step === 6) return agreed;
-    return true;
+    if (step === 1) {
+      return f.firstName.trim().length > 0 && f.surname.trim().length > 0;
+    }
+    if (step === 2) {
+      return f.phone.trim().length > 0 && f.contactEmail.trim().length > 0;
+    }
+    if (step === 3) {
+      return /^\d{7,}$/.test(f.studentId.trim());
+    }
+    if (step === 4) {
+      return (
+        f.program.trim().length > 0 &&
+        f.yearLevel.trim().length > 0 &&
+        f.section.trim().length > 0
+      );
+    }
+    if (step === 5) {
+      return !!f.idPhotoUrl;
+    }
+    if (step === 6) {
+      return agreed;
+    }
+    return false;
   };
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#f8faf9]">
@@ -7153,7 +7173,7 @@ export default function App() {
 
         if (!profile) {
           if (isMounted) {
-            setPage("onboarding");
+            setPage("landing");
           }
           return;
         }
@@ -7167,7 +7187,7 @@ export default function App() {
           !profile.section
         ) {
           if (isMounted) {
-            setPage("onboarding");
+            setPage("landing");
           }
           return;
         }
@@ -7247,7 +7267,7 @@ export default function App() {
           }
 
           if (!profile) {
-            setPage("onboarding");
+            setPage("landing");
             return;
           }
 
@@ -7259,7 +7279,7 @@ export default function App() {
             !profile.year_level ||
             !profile.section
           ) {
-            setPage("onboarding");
+            setPage("landing");
             return;
           }
 
