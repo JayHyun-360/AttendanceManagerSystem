@@ -1,33 +1,165 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   TopBar,
   Sidebar,
   Toast,
   PageShell,
-  ProfileIcon,
-  TapInMark,
-  DotMenu,
-  BackButton,
   type Page,
   type User,
 } from "../page";
+import { supabase } from "@/lib/supabase";
+
+const pathToPage: Partial<Record<string, Page>> = {
+  "/dashboard": "dashboard",
+  "/admin-dashboard": "admin-dashboard",
+  "/onboarding": "onboarding",
+  "/events": "events",
+  "/my-qr": "my-qr",
+  "/announcements": "announcements",
+  "/attendance-history": "attendance-history",
+  "/my-fines": "my-fines",
+  "/profile": "profile",
+  "/admin-events": "admin-events",
+  "/admin-scanner": "admin-scanner",
+  "/admin-attendees": "admin-attendees",
+  "/admin-students": "admin-students",
+  "/admin-announcements": "admin-announcements",
+  "/admin-excuse-requests": "admin-excuse-requests",
+  "/admin-reports": "admin-reports",
+  "/admin-settings": "admin-settings",
+};
 
 export default function ProtectedLayout({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [page, setPage] = useState<Page>("landing");
   const [open, setOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const onLogout = () => {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrateSession() {
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error(sessionError);
+        }
+
+        if (!session?.user) {
+          router.push("/login");
+          return;
+        }
+
+        const uid = session.user.id;
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", uid)
+          .maybeSingle();
+
+        if (profileError && profileError.code !== "PGRST116") {
+          console.error(profileError);
+        }
+
+        if (!profile) {
+          router.push("/onboarding");
+          return;
+        }
+
+        if (
+          !profile.first_name ||
+          !profile.student_id ||
+          !profile.surname ||
+          !profile.program ||
+          !profile.year_level ||
+          !profile.section
+        ) {
+          router.push("/onboarding");
+          return;
+        }
+
+        const hydratedUser: User = {
+          firstName: profile.first_name ?? "",
+          middleInitial: profile.middle_initial ?? "",
+          surname: profile.surname ?? "",
+          studentId: profile.student_id ?? "",
+          program: profile.program ?? "",
+          yearLevel: profile.year_level ?? "",
+          section: profile.section ?? "",
+          phone: profile.phone ?? "",
+          contactEmail: profile.contact_email ?? profile.email ?? "",
+          role: profile.role ?? "student",
+          photoUrl: profile.photo_url ?? undefined,
+          idPhotoUrl: profile.photo_url ?? undefined,
+        };
+
+        if (!cancelled) {
+          setUser(hydratedUser);
+        }
+      } catch (caught) {
+        console.error(caught);
+      }
+    }
+
+    void hydrateSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  useEffect(() => {
+    const routePage = pathToPage[pathname] ?? "dashboard";
+    setPage(routePage);
+  }, [pathname]);
+
+  const onLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (caughtError) {
+      console.error(caughtError);
+    }
+
     setUser(null);
     setPage("landing");
     setOpen(false);
+    router.push("/login");
   };
 
   const onNav = (p: Page) => {
-    setPage(p);
+    const routeFromPage: Record<Page, string> = {
+      landing: "/",
+      login: "/login",
+      onboarding: "/onboarding",
+      dashboard: "/dashboard",
+      "my-qr": "/my-qr",
+      events: "/events",
+      "event-detail": "/events",
+      announcements: "/announcements",
+      "attendance-history": "/attendance-history",
+      "my-fines": "/my-fines",
+      profile: "/profile",
+      "admin-dashboard": "/admin-dashboard",
+      "admin-events": "/admin-events",
+      "admin-scanner": "/admin-scanner",
+      "admin-attendees": "/admin-attendees",
+      "admin-students": "/admin-students",
+      "admin-announcements": "/admin-announcements",
+      "admin-reports": "/admin-reports",
+      "admin-excuse-requests": "/admin-excuse-requests",
+      "admin-settings": "/admin-settings",
+    };
+
+    const target = routeFromPage[p] ?? "/dashboard";
+    router.push(target);
     setOpen(false);
   };
 

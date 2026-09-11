@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardPage } from "../page";
+import { DashboardPage } from "../../page";
 import { supabase } from "@/lib/supabase";
 
 export default function DashboardRoute() {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { OnboardingPage, type OBForm } from "../page";
+import { OnboardingPage, type OBForm } from "../../page";
 import { supabase } from "@/lib/supabase";
 
 export default function OnboardingRoute() {
