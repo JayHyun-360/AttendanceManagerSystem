@@ -4,28 +4,28 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "format": "oxfmt"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
     "@types/qrcode": "^1.5.6",
     "jsqr": "^1.4.0",
+    "next": "^16.3.4",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.0.0",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^6.0.0",
     "oxfmt": "^0.2.0",
+    "postcss": "^8.5.28",
     "tailwindcss": "^4.0.0",
-    "typescript": "^5.7.0",
-    "vite": "^8.0.5"
+    "typescript": "^5.7.0"
   }
 }
