@@ -151,7 +151,7 @@ for each row execute procedure public.handle_new_user();
 create policy profiles_select_students
   on public.profiles
   for select
-  using (true);
+  using (auth.uid() = id or public.is_admin());
 
 create policy profiles_insert_students
   on public.profiles

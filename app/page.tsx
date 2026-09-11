@@ -7106,9 +7106,9 @@ export default function App() {
           .from("profiles")
           .select("*")
           .eq("id", uid)
-          .single();
+          .maybeSingle();
 
-        if (profileError) {
+        if (profileError && profileError.code !== "PGRST116") {
           console.error(profileError);
         }
 
@@ -7166,9 +7166,9 @@ export default function App() {
             .from("profiles")
             .select("*")
             .eq("id", session.user.id)
-            .single();
+            .maybeSingle();
 
-          if (error) {
+          if (error && error.code !== "PGRST116") {
             console.error(error);
             return;
           }
