@@ -4270,6 +4270,9 @@ export function AdminEventsPage({
     if (!draft.title || !draft.date) return;
 
     try {
+      const persistedHighlightUrl =
+        highlightUrl && !highlightUrl.startsWith("blob:") ? highlightUrl : null;
+
       // Map UI camelCase to database snake_case
       const payload = {
         title: draft.title,
@@ -4283,7 +4286,7 @@ export function AdminEventsPage({
         location: draft.location,
         description: draft.description,
         program: draft.program,
-        image_url: highlightUrl || null,
+        image_url: persistedHighlightUrl,
         status: "upcoming",
         multi_session: draft.multiSession,
         strict_morning: draft.strictMorning,
@@ -4342,8 +4345,8 @@ export function AdminEventsPage({
             ? (parseInt(draft.morningAbsentFine) || 0) +
               (parseInt(draft.afternoonAbsentFine) || 0)
             : parseInt(draft.absentFine) || 0,
-          mediaUrls: highlightUrl ? [highlightUrl] : [],
-          highlightUrl: highlightUrl || undefined,
+          mediaUrls: persistedHighlightUrl ? [persistedHighlightUrl] : [],
+          highlightUrl: persistedHighlightUrl || undefined,
           multiSession: draft.multiSession,
           strictMorning: draft.strictMorning,
           strictAfternoon: draft.strictAfternoon,
@@ -4411,6 +4414,11 @@ export function AdminEventsPage({
     if (!editDraft) return;
 
     try {
+      const persistedHighlightUrl =
+        editDraft.highlightUrl && !editDraft.highlightUrl.startsWith("blob:")
+          ? editDraft.highlightUrl
+          : null;
+
       // multi-admin conflict check: compare version in current state
       const current = events.find((e) => e.id === editDraft.id);
       if (
@@ -4441,7 +4449,7 @@ export function AdminEventsPage({
         location: editDraft.location,
         description: editDraft.description,
         program: editDraft.program,
-        image_url: editDraft.highlightUrl || null,
+        image_url: persistedHighlightUrl,
         status: editDraft.status,
         multi_session: editDraft.multiSession,
         strict_morning: editDraft.strictMorning,
@@ -4474,6 +4482,8 @@ export function AdminEventsPage({
 
       const saved: EventData = {
         ...editDraft,
+        highlightUrl: persistedHighlightUrl || undefined,
+        mediaUrls: persistedHighlightUrl ? [persistedHighlightUrl] : [],
         version: (editOriginal?.version ?? 1) + 1,
         fineAmount: editDraft.multiSession
           ? (editDraft.morningAbsentFine ?? 0) +

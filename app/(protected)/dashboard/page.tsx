@@ -12,6 +12,13 @@ export default function DashboardRoute() {
   const [fines, setFines] = useState<any[]>([]);
 
   useEffect(() => {
+    if (user?.role === "admin") {
+      router.replace("/admin-dashboard");
+      return;
+    }
+  }, [router, user]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function loadDashboardFines() {

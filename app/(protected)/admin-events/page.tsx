@@ -44,8 +44,14 @@ export default function AdminEventsRoutePage() {
             status: (row.status as any) || "upcoming",
             attendees: 0,
             version: row.version || 1,
-            mediaUrls: row.image_url ? [row.image_url] : [],
-            highlightUrl: row.image_url,
+            mediaUrls:
+              row.image_url && !row.image_url.startsWith("blob:")
+                ? [row.image_url]
+                : [],
+            highlightUrl:
+              row.image_url && !row.image_url.startsWith("blob:")
+                ? row.image_url
+                : undefined,
             multiSession: row.multi_session || false,
             strictMorning: row.strict_morning || false,
             strictAfternoon: row.strict_afternoon || false,
