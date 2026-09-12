@@ -43,7 +43,7 @@ export default function OnboardingRoute() {
         return;
       }
 
-      router.push("/dashboard?freshLogin=1");
+      window.location.assign("/dashboard?freshLogin=1");
     } catch (caughtError) {
       console.error(caughtError);
     }

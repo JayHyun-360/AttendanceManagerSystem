@@ -70,6 +70,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
   const [settingsReady, setSettingsReady] = useState(false);
   const [showFees, setShowFees] = useState(false);
 
@@ -88,8 +89,15 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
         }
 
         if (!session?.user) {
-          router.push("/login");
+          if (!cancelled) {
+            setHasSession(false);
+          }
+          router.replace("/login");
           return;
+        }
+
+        if (!cancelled) {
+          setHasSession(true);
         }
 
         const uid = session.user.id;
@@ -268,7 +276,11 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     setOpen(false);
   };
 
-  if (!sessionReady || !settingsReady) {
+  if (
+    !sessionReady ||
+    !settingsReady ||
+    (!user && (!hasSession || pathname !== "/onboarding"))
+  ) {
     return (
       <div className="min-h-screen bg-[#f8faf9] flex items-center justify-center">
         <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">

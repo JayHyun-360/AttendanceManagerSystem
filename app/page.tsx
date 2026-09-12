@@ -3290,6 +3290,24 @@ export function EventsPage({
               onNav("event-detail");
             }}
           >
+            {(() => {
+              const cover = e.highlightUrl ?? e.mediaUrls?.[0];
+              if (!cover) return null;
+              return /\.mp4($|\?)/i.test(cover) ? (
+                <video
+                  src={cover}
+                  muted
+                  playsInline
+                  className="w-full h-40 object-cover rounded-lg mb-4"
+                />
+              ) : (
+                <img
+                  src={cover}
+                  alt={e.title}
+                  className="w-full h-40 object-cover rounded-lg mb-4"
+                />
+              );
+            })()}
             <div className="flex items-start justify-between mb-3">
               <Badge status={e.status} />
               {e.attendees > 0 && (
@@ -3347,16 +3365,26 @@ function EventDetailPage({
   const ev = events.find((e) => e.id === eventId) ?? events[0];
   const canSeeFees = user?.role === "student" && showFees;
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const primaryMedia = ev.highlightUrl ?? ev.mediaUrls?.[0];
   return (
     <PageShell>
       <BackButton onClick={onBack} label="Back to Events" />
       <div className="relative rounded-xl overflow-hidden mb-4 shadow-sm">
-        {ev.highlightUrl ? (
-          <img
-            src={ev.highlightUrl}
-            alt={ev.title}
-            className="w-full h-64 object-cover"
-          />
+        {primaryMedia ? (
+          /\.mp4($|\?)/i.test(primaryMedia) ? (
+            <video
+              src={primaryMedia}
+              controls
+              playsInline
+              className="w-full h-64 object-cover"
+            />
+          ) : (
+            <img
+              src={primaryMedia}
+              alt={ev.title}
+              className="w-full h-64 object-cover"
+            />
+          )
         ) : (
           <div className="w-full h-64 bg-green-600" />
         )}
@@ -3421,38 +3449,52 @@ function EventDetailPage({
       {ev.mediaUrls && ev.mediaUrls.length > 0 && (
         <div className="bg-white border border-slate-100 rounded-xl p-5 mb-3">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
-            Photos
+            Media
           </p>
           <div className="grid grid-cols-2 gap-2">
-            {ev.mediaUrls.map((url, i) => (
-              <button
-                key={i}
-                onClick={() => setLightbox(url)}
-                className="relative w-full aspect-video rounded-lg overflow-hidden group focus:outline-none"
-              >
-                <img
-                  src={url}
-                  alt={`Event photo ${i + 1}`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                  <div className="w-8 h-8 rounded-full bg-white/0 group-hover:bg-white/80 flex items-center justify-center transition-all duration-200 scale-75 group-hover:scale-100">
-                    <svg
-                      viewBox="0 0 18 18"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="w-4 h-4 text-slate-800"
-                    >
-                      <circle cx="8" cy="8" r="5" />
-                      <path d="M15 15l-3.5-3.5M10 8H6M8 6v4" />
-                    </svg>
-                  </div>
+            {ev.mediaUrls.map((url, i) =>
+              /\.mp4($|\?)/i.test(url) ? (
+                <div
+                  key={i}
+                  className="relative w-full aspect-video rounded-lg overflow-hidden"
+                >
+                  <video
+                    src={url}
+                    controls
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-              </button>
-            ))}
+              ) : (
+                <button
+                  key={i}
+                  onClick={() => setLightbox(url)}
+                  className="relative w-full aspect-video rounded-lg overflow-hidden group focus:outline-none"
+                >
+                  <img
+                    src={url}
+                    alt={`Event photo ${i + 1}`}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-white/0 group-hover:bg-white/80 flex items-center justify-center transition-all duration-200 scale-75 group-hover:scale-100">
+                      <svg
+                        viewBox="0 0 18 18"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="w-4 h-4 text-slate-800"
+                      >
+                        <circle cx="8" cy="8" r="5" />
+                        <path d="M15 15l-3.5-3.5M10 8H6M8 6v4" />
+                      </svg>
+                    </div>
+                  </div>
+                </button>
+              ),
+            )}
           </div>
         </div>
       )}
