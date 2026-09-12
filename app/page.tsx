@@ -21,6 +21,7 @@ import QRCode from "qrcode";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { uploadImage } from "@/lib/uploadImage";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const tapInLogoSrc = "/tapin-logo.svg";
 const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
@@ -7271,39 +7272,98 @@ export function AdminSettingsPage({
     ...slide,
     imageUrl: isBlobUrl(slide.imageUrl) ? "" : slide.imageUrl,
   }));
+  type UploadSlot = {
+    file: File;
+    status: "uploading" | "error";
+    error?: string;
+  };
+  const [heroUploadSlots, setHeroUploadSlots] = useState<
+    Record<string, UploadSlot>
+  >({});
+  const [slideUploadSlots, setSlideUploadSlots] = useState<
+    Record<number, UploadSlot>
+  >({});
+  const isPublicImageUrl = (value?: string) =>
+    !!value && value.startsWith("https://") && !value.startsWith("blob:");
 
   const handleHeroImageUpload = async (files: File[]) => {
     if (!files.length) return;
 
+    const slots = files.map((file, index) => ({
+      id: `hero-${Date.now()}-${index}`,
+      file,
+    }));
+    setHeroUploadSlots((current) => ({
+      ...current,
+      ...Object.fromEntries(
+        slots.map(({ id, file }) => [id, { file, status: "uploading" }]),
+      ),
+    }));
+
     const uploaded = await Promise.all(
-      files.map(async (file) => {
+      slots.map(async ({ id, file }) => {
         const result = await uploadImage(file);
 
-        if ("error" in result) {
-          toast.error(result.error);
+        if ("error" in result || !isPublicImageUrl(result.url)) {
+          const error =
+            "error" in result
+              ? result.error
+              : "Upload did not return a valid public image URL.";
+          setHeroUploadSlots((current) => ({
+            ...current,
+            [id]: { file, status: "error", error },
+          }));
           return null;
         }
 
-        return result.url;
+        return { id, url: result.url };
       }),
     );
 
-    const validUrls = uploaded.filter((url): url is string => !!url);
+    const validUploads = uploaded.filter(
+      (upload): upload is { id: string; url: string } => !!upload,
+    );
 
-    if (validUrls.length) {
-      update({ heroImageUrls: [...settings.heroImageUrls, ...validUrls] });
+    if (validUploads.length) {
+      update({
+        heroImageUrls: [
+          ...settings.heroImageUrls,
+          ...validUploads.map((upload) => upload.url),
+        ],
+      });
+      setHeroUploadSlots((current) => {
+        const next = { ...current };
+        validUploads.forEach(({ id }) => delete next[id]);
+        return next;
+      });
     }
   };
 
   const handleSlideImageUpload = async (i: number, file: File) => {
+    setSlideUploadSlots((current) => ({
+      ...current,
+      [i]: { file, status: "uploading" },
+    }));
     const result = await uploadImage(file);
 
-    if ("error" in result) {
-      toast.error(result.error);
+    if ("error" in result || !isPublicImageUrl(result.url)) {
+      const error =
+        "error" in result
+          ? result.error
+          : "Upload did not return a valid public image URL.";
+      setSlideUploadSlots((current) => ({
+        ...current,
+        [i]: { file, status: "error", error },
+      }));
       return;
     }
 
     patchSlide(i, { imageUrl: result.url });
+    setSlideUploadSlots((current) => {
+      const next = { ...current };
+      delete next[i];
+      return next;
+    });
   };
 
   const update = (patch: Partial<SystemSettings>) =>
@@ -7494,8 +7554,70 @@ export function AdminSettingsPage({
                   </button>
                 </div>
               ))}
+              {Object.entries(heroUploadSlots).map(([slotId, slot]) =>
+                slot.status === "uploading" ? (
+                  <Skeleton key={slotId} className="aspect-video rounded-xl" />
+                ) : (
+                  <div
+                    key={slotId}
+                    className="aspect-video rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2 px-3 text-center"
+                  >
+                    <p className="text-[11px] font-semibold text-red-600">
+                      Upload failed
+                    </p>
+                    <button
+                      onClick={() => {
+                        setHeroUploadSlots((current) => {
+                          const next = { ...current };
+                          delete next[slotId];
+                          return next;
+                        });
+                        void handleHeroImageUpload([slot.file]);
+                      }}
+                      className="h-7 px-2.5 rounded-lg border border-red-200 bg-white text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ),
+              )}
             </div>
           )}
+          {heroImageUrls.length === 0 &&
+            Object.entries(heroUploadSlots).length > 0 && (
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                {Object.entries(heroUploadSlots).map(([slotId, slot]) =>
+                  slot.status === "uploading" ? (
+                    <Skeleton
+                      key={slotId}
+                      className="aspect-video rounded-xl"
+                    />
+                  ) : (
+                    <div
+                      key={slotId}
+                      className="aspect-video rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2 px-3 text-center"
+                    >
+                      <p className="text-[11px] font-semibold text-red-600">
+                        Upload failed
+                      </p>
+                      <button
+                        onClick={() => {
+                          setHeroUploadSlots((current) => {
+                            const next = { ...current };
+                            delete next[slotId];
+                            return next;
+                          });
+                          void handleHeroImageUpload([slot.file]);
+                        }}
+                        className="h-7 px-2.5 rounded-lg border border-red-200 bg-white text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ),
+                )}
+              </div>
+            )}
           {heroImageUrls.length < 6 && (
             <button
               onClick={addHero}
@@ -7558,7 +7680,26 @@ export function AdminSettingsPage({
                           }
                         }}
                       />
-                      {slide.imageUrl ? (
+                      {slideUploadSlots[i]?.status === "uploading" ? (
+                        <Skeleton className="w-20 h-14 rounded-lg" />
+                      ) : slideUploadSlots[i]?.status === "error" ? (
+                        <div className="w-20 h-14 rounded-lg border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-0.5 px-1 text-center">
+                          <span className="text-[9px] font-semibold text-red-600">
+                            Failed
+                          </span>
+                          <button
+                            onClick={() => {
+                              const slot = slideUploadSlots[i];
+                              if (slot) {
+                                void handleSlideImageUpload(i, slot.file);
+                              }
+                            }}
+                            className="text-[9px] font-bold text-red-700 underline"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      ) : slide.imageUrl && isPublicImageUrl(slide.imageUrl) ? (
                         <div
                           className="relative w-20 h-14 rounded-lg overflow-hidden border border-slate-200 cursor-pointer"
                           onClick={() => slideRefs.current[i]?.click()}
