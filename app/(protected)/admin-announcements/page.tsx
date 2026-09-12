@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AdminAnnouncementsPage } from "../../page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
@@ -10,33 +11,40 @@ import { useProtectedUser } from "../layout";
 export default function AdminAnnouncementsRoutePage() {
   const { authUserId } = useProtectedUser();
   const [posts, setPosts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   async function loadPosts() {
-    const { data, error } = await supabase
-      .from("announcements")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("announcements")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error(error);
-      return;
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      setPosts(
+        (data ?? []).map((row: any) => ({
+          id: String(row.id),
+          title: row.title,
+          body: row.content,
+          date: new Date(row.created_at).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+          author: row.posted_by ? "Admin" : "TapIn",
+          badge: row.target_role === "admin" ? "Admin" : "General",
+          photoUrl: row.media_url ?? "",
+        })),
+      );
+    } catch (caughtError) {
+      console.error(caughtError);
+    } finally {
+      setIsLoading(false);
     }
-
-    setPosts(
-      (data ?? []).map((row: any) => ({
-        id: String(row.id),
-        title: row.title,
-        body: row.content,
-        date: new Date(row.created_at).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-        author: row.posted_by ? "Admin" : "TapIn",
-        badge: row.target_role === "admin" ? "Admin" : "General",
-        photoUrl: row.media_url ?? "",
-      })),
-    );
   }
 
   useEffect(() => {
@@ -141,6 +149,17 @@ export default function AdminAnnouncementsRoutePage() {
 
     await loadPosts();
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3 pt-2">
+        <Skeleton className="h-8 w-40 rounded-lg" />
+        {[0, 1, 2].map((item) => (
+          <Skeleton key={item} className="h-28 w-full rounded-xl" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <AdminAnnouncementsPage

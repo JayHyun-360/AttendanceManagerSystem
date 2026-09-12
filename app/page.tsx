@@ -2,6 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { format } from "date-fns";
+import { ArrowLeft, ChevronDown, ChevronUp, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   Bar,
@@ -18,6 +23,7 @@ import { supabase } from "@/lib/supabase";
 import { uploadImage } from "@/lib/uploadImage";
 
 const tapInLogoSrc = "/tapin-logo.svg";
+const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type Page = string;
@@ -842,8 +848,12 @@ function Toggle({
 // ─── Shared primitives ────────────────────────────────────────────────────────
 function FieldInput({
   label,
+  error,
   ...p
-}: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+}: {
+  label: string;
+  error?: string;
+} & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
@@ -853,16 +863,19 @@ function FieldInput({
         className="h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
         {...p}
       />
+      {error && <p className="text-[10px] text-red-500">{error}</p>}
     </div>
   );
 }
 function FieldSelect({
   label,
   children,
+  error,
   ...p
 }: {
   label: string;
   children: React.ReactNode;
+  error?: string;
 } & React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -875,13 +888,18 @@ function FieldSelect({
       >
         {children}
       </select>
+      {error && <p className="text-[10px] text-red-500">{error}</p>}
     </div>
   );
 }
 function FieldTextarea({
   label,
+  error,
   ...p
-}: { label: string } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+}: {
+  label: string;
+  error?: string;
+} & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
@@ -891,6 +909,7 @@ function FieldTextarea({
         className="px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 resize-none transition-all"
         {...p}
       />
+      {error && <p className="text-[10px] text-red-500">{error}</p>}
     </div>
   );
 }
@@ -1468,6 +1487,11 @@ export function Sidebar({
     onClose();
   };
 
+  const prefetchRoute = (p: Page) => {
+    const target = routeFromPage[p] ?? "/dashboard";
+    void router.prefetch(target);
+  };
+
   const inner = (
     <div className="flex flex-col h-full bg-white">
       {/* Mobile header inside drawer */}
@@ -1500,6 +1524,8 @@ export function Sidebar({
               layout
               whileHover={{ scale: 1.018, x: 2 }}
               whileTap={{ scale: 0.98 }}
+              onMouseEnter={() => prefetchRoute(p)}
+              onFocus={() => prefetchRoute(p)}
               onClick={() => handleNav(p)}
               className={`w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm transition-all ${active ? "bg-green-50 text-green-800 font-semibold" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium"}`}
             >
@@ -1526,17 +1552,7 @@ export function Sidebar({
           className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm font-medium text-slate-500 hover:text-green-700 hover:bg-green-50 transition-all"
         >
           <span className="shrink-0 text-slate-400">
-            <svg
-              viewBox="0 0 18 18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-[18px] h-[18px]"
-            >
-              <path d="M3 9h12M9 3l6 6-6 6" />
-            </svg>
+            <ArrowLeft className="w-[18px] h-[18px]" />
           </span>
           Back to Home
         </button>
@@ -1545,7 +1561,7 @@ export function Sidebar({
           className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm font-medium text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
         >
           <span className="text-slate-300 shrink-0">
-            <Icons.LogOut />
+            <LogOut className="w-[18px] h-[18px]" />
           </span>
           Sign out
         </button>
@@ -1710,9 +1726,11 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
 function LandingPage({
   onNav,
   settings,
+  user,
 }: {
   onNav: (p: Page) => void;
   settings: SystemSettings;
+  user: User | null;
 }) {
   const heroUrls = settings.heroImageUrls.filter(
     (url) => !!url && !url.startsWith("blob:"),
@@ -1752,6 +1770,38 @@ function LandingPage({
 
   return (
     <div className="min-h-screen bg-white">
+      {user && (
+        <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/95 backdrop-blur-sm">
+          <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <TapInMark className="w-8 h-8 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-900 tracking-tight truncate">
+                  Welcome back, {user.firstName || "TapIn user"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() =>
+                  onNav(user.role === "admin" ? "admin-dashboard" : "dashboard")
+                }
+                className="h-9 rounded-lg bg-green-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-green-700"
+              >
+                Go to Dashboard
+              </button>
+              <button
+                onClick={() => onNav("profile")}
+                className="flex items-center justify-center rounded-full border border-slate-200 bg-white p-1.5 transition-colors hover:bg-slate-50"
+                aria-label="Open profile"
+              >
+                <ProfileIcon photoUrl={user.photoUrl} size="sm" />
+              </button>
+            </div>
+          </div>
+        </header>
+      )}
+
       {/* ── Hero ──────────────────────────────────────────────────── */}
       <div
         className={`relative overflow-hidden ${hasHero ? "min-h-[520px] lg:min-h-[580px]" : ""}`}
@@ -1849,6 +1899,13 @@ function LandingPage({
           >
             <button
               onClick={() => {
+                if (user) {
+                  onNav(
+                    user.role === "admin" ? "admin-dashboard" : "dashboard",
+                  );
+                  return;
+                }
+
                 if (typeof window !== "undefined") {
                   window.location.assign("/login");
                 } else {
@@ -1857,7 +1914,7 @@ function LandingPage({
               }}
               className="h-11 px-6 bg-green-500 hover:bg-green-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-px"
             >
-              Get Started
+              {user ? "Go to Dashboard" : "Get Started"}
             </button>
             <button
               onClick={() => onNav("events")}
@@ -2965,7 +3022,9 @@ export function DashboardPage({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, delay: 0.02 }}
         >
-          <p className="text-2xl font-bold text-slate-900">{2}</p>
+          <p className="text-2xl font-bold text-slate-900">
+            {statValues.present}
+          </p>
           <p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">
             Present
           </p>
@@ -2977,7 +3036,9 @@ export function DashboardPage({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, delay: 0.08 }}
         >
-          <p className="text-2xl font-bold text-slate-900">{2}</p>
+          <p className="text-2xl font-bold text-slate-900">
+            {statValues.absent}
+          </p>
           <p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">
             Absent
           </p>
@@ -2989,7 +3050,9 @@ export function DashboardPage({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, delay: 0.14 }}
         >
-          <p className="text-2xl font-bold text-slate-900">{2}</p>
+          <p className="text-2xl font-bold text-slate-900">
+            {statValues.upcoming}
+          </p>
           <p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">
             Upcoming
           </p>
@@ -4119,15 +4182,15 @@ export function AdminDashboard({
     scannedToday: 0,
     duplicates: 0,
     activeEvents: 0,
-    students: ALL_STUDENTS.length,
+    students: 0,
   };
-  const liveRecentScans = recentScans ?? (EVENT_SCANS["2"] ?? []).slice(0, 5);
+  const liveRecentScans = recentScans ?? [];
   return (
     <PageShell>
       <div className="flex items-start justify-between mb-6">
         <div>
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">
-            Aug 22, 2026 · Friday
+            {dashboardDateLabel}
           </p>
           <h1 className="text-xl font-bold text-slate-900">Admin Overview</h1>
           <p className="text-sm text-slate-400 mt-0.5">
@@ -5736,11 +5799,7 @@ function CameraScanner({
   );
 }
 
-export function AdminScannerPage({
-  events = INITIAL_EVENTS,
-}: {
-  events?: EventData[];
-}) {
+export function AdminScannerPage({ events = [] }: { events?: EventData[] }) {
   const [selectedEventId, setSelectedEventId] = useState<string>(
     events[0]?.id ?? "",
   );
@@ -5918,8 +5977,8 @@ export function AdminScannerPage({
 // ─── MODERATOR: Attendees ─────────────────────────────────────────────────────
 export function AdminAttendeesPage({
   onNav,
-  events = INITIAL_EVENTS,
-  students = ALL_STUDENTS,
+  events = [],
+  students = [],
   scanState: initialScanState,
 }: {
   onNav: (p: Page) => void;
@@ -5927,12 +5986,9 @@ export function AdminAttendeesPage({
   students?: StudentProfile[];
   scanState?: Record<string, ScanRecord[]>;
 }) {
-  const fallbackScanState = Object.fromEntries(
-    Object.entries(EVENT_SCANS).map(([k, v]) => [k, v.map((s) => ({ ...s }))]),
-  );
-  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "2");
+  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "");
   const [scanState, setScanState] = useState<Record<string, ScanRecord[]>>(
-    initialScanState ?? fallbackScanState,
+    initialScanState ?? {},
   );
   const [tab, setTab] = useState<"present" | "absent">("present");
 
@@ -6168,7 +6224,7 @@ export function AdminAttendeesPage({
 
 // ─── MODERATOR: Students ──────────────────────────────────────────────────────
 export function AdminStudentsPage({
-  students = ALL_STUDENTS,
+  students = [],
 }: {
   students?: StudentProfile[];
 }) {
@@ -6289,12 +6345,31 @@ export function AdminAnnouncementsPage({
   const [editDraft, setEditDraft] = useState<
     (typeof INITIAL_ANNOUNCEMENTS)[0] | null
   >(null);
-  const [newTitle, setNewTitle] = useState("");
-  const [newBody, setNewBody] = useState("");
-  const [newBadge, setNewBadge] = useState("General");
   const [newPhoto, setNewPhoto] = useState<string | null>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const editPhotoRef = useRef<HTMLInputElement>(null);
+
+  const announcementFormSchema = z.object({
+    title: z.string().trim().min(1, "Title is required"),
+    body: z.string().trim().min(10, "Body must be at least 10 characters"),
+    badge: z.string().trim().min(1, "Category is required"),
+  });
+
+  type AnnouncementFormValues = z.infer<typeof announcementFormSchema>;
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<AnnouncementFormValues>({
+    resolver: zodResolver(announcementFormSchema),
+    defaultValues: {
+      title: "",
+      body: "",
+      badge: "General",
+    },
+  });
 
   const uploadSelectedPhoto = async (file: File) => {
     try {
@@ -6311,13 +6386,11 @@ export function AdminAnnouncementsPage({
     }
   };
 
-  const handlePublish = async () => {
-    if (!newTitle.trim()) return;
-
+  const handlePublish = handleSubmit(async (values) => {
     const payload = {
-      title: newTitle.trim(),
-      body: newBody.trim(),
-      badge: newBadge,
+      title: values.title.trim(),
+      body: values.body.trim(),
+      badge: values.badge,
       photoUrl: newPhoto ?? null,
     };
 
@@ -6338,12 +6411,10 @@ export function AdminAnnouncementsPage({
       ]);
     }
 
-    setNewTitle("");
-    setNewBody("");
-    setNewBadge("General");
+    reset({ title: "", body: "", badge: "General" });
     setNewPhoto(null);
     setShowForm(false);
-  };
+  });
   const startEdit = (a: (typeof INITIAL_ANNOUNCEMENTS)[0]) => {
     setEditId(a.id);
     setEditDraft({ ...a });
@@ -6420,7 +6491,6 @@ export function AdminAnnouncementsPage({
             <>
               <button
                 onClick={handlePublish}
-                disabled={!newTitle.trim()}
                 className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40"
               >
                 Publish
@@ -6437,13 +6507,13 @@ export function AdminAnnouncementsPage({
           <FieldInput
             label="Title"
             placeholder="e.g. Enrollment Now Open"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
+            {...register("title")}
+            error={errors.title?.message}
           />
           <FieldSelect
             label="Category"
-            value={newBadge}
-            onChange={(e) => setNewBadge(e.target.value)}
+            {...register("badge")}
+            error={errors.badge?.message}
           >
             <option>General</option>
             <option>Academic</option>
@@ -6456,8 +6526,8 @@ export function AdminAnnouncementsPage({
             label="Body"
             placeholder="Write your announcement..."
             rows={4}
-            value={newBody}
-            onChange={(e) => setNewBody(e.target.value)}
+            {...register("body")}
+            error={errors.body?.message}
           />
           <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
@@ -6788,7 +6858,7 @@ export function AdminExcuseRequestsPage({
 
 // ─── MODERATOR: Reports ───────────────────────────────────────────────────────
 export function AdminReportsPage({
-  events = INITIAL_EVENTS,
+  events = [],
   reportData,
 }: {
   events?: EventData[];
@@ -6807,18 +6877,9 @@ export function AdminReportsPage({
     }>;
   };
 }) {
-  const liveEvents = reportData?.events ?? events ?? INITIAL_EVENTS;
-  const programRows = reportData?.programStats ?? [
-    { label: "BSIT", present: 234, total: 301, rate: 78 },
-    { label: "BSCS", present: 198, total: 304, rate: 65 },
-    { label: "BSBA", present: 156, total: 300, rate: 52 },
-    { label: "BSEd", present: 89, total: 197, rate: 45 },
-  ];
-  const fees = reportData?.feeSummary ?? [
-    { label: "Total fees issued", value: "₱42,500", color: "text-red-600" },
-    { label: "Collected", value: "₱18,200", color: "text-green-600" },
-    { label: "Pending", value: "₱24,300", color: "text-amber-600" },
-  ];
+  const liveEvents = reportData?.events ?? events ?? [];
+  const programRows = reportData?.programStats ?? [];
+  const fees = reportData?.feeSummary ?? [];
   const eventRows = liveEvents.filter((e) => e.status !== "upcoming");
 
   const exportPDF = () => {
@@ -7479,34 +7540,14 @@ export function AdminSettingsPage({
                         disabled={i === 0}
                         className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 disabled:opacity-30 transition-colors"
                       >
-                        <svg
-                          viewBox="0 0 24 24"
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="18 15 12 9 6 15" />
-                        </svg>
+                        <ChevronUp className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => moveSlide(i, 1)}
                         disabled={i === settings.carouselSlides.length - 1}
                         className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 disabled:opacity-30 transition-colors"
                       >
-                        <svg
-                          viewBox="0 0 24 24"
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
+                        <ChevronDown className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => removeSlide(i)}
@@ -7559,7 +7600,9 @@ const DEFAULT_SETTINGS: SystemSettings = {
 };
 
 export default function App() {
+  const router = useRouter();
   const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
+  const [user, setUser] = useState<User | null>(null);
 
   const sanitizeSettings = (
     value: Partial<SystemSettings> | null | undefined,
@@ -7615,5 +7658,118 @@ export default function App() {
     };
   }, []);
 
-  return <LandingPage onNav={() => undefined} settings={settings} />;
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAuthenticatedUser() {
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error("Failed to load landing session", sessionError);
+        }
+
+        if (!session?.user) {
+          if (!cancelled) {
+            setUser(null);
+          }
+          return;
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        if (profileError && profileError.code !== "PGRST116") {
+          console.error("Failed to load landing profile", profileError);
+        }
+
+        if (!profile) {
+          if (!cancelled) {
+            setUser(null);
+          }
+          return;
+        }
+
+        const profileIsComplete =
+          !!profile.first_name &&
+          !!profile.surname &&
+          !!profile.student_id &&
+          !!profile.program &&
+          !!profile.year_level &&
+          !!profile.section;
+
+        if (!profileIsComplete) {
+          if (!cancelled) {
+            setUser(null);
+          }
+          return;
+        }
+
+        if (!cancelled) {
+          setUser({
+            firstName: profile.first_name ?? "",
+            middleInitial: profile.middle_initial ?? "",
+            surname: profile.surname ?? "",
+            studentId: profile.student_id ?? "",
+            program: profile.program ?? "",
+            yearLevel: profile.year_level ?? "",
+            section: profile.section ?? "",
+            phone: profile.phone ?? "",
+            contactEmail: profile.contact_email ?? profile.email ?? "",
+            role: profile.role ?? "student",
+            photoUrl: profile.photo_url ?? undefined,
+            idPhotoUrl: profile.photo_url ?? undefined,
+          });
+        }
+      } catch (caughtError) {
+        console.error(caughtError);
+        if (!cancelled) {
+          setUser(null);
+        }
+      }
+    }
+
+    void loadAuthenticatedUser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleLandingNav = (page: Page) => {
+    const routeFromPage: Record<Page, string> = {
+      landing: "/",
+      login: "/login",
+      onboarding: "/onboarding",
+      dashboard: "/dashboard",
+      "my-qr": "/my-qr",
+      events: "/events",
+      "event-detail": "/events",
+      announcements: "/announcements",
+      "attendance-history": "/attendance-history",
+      "my-fines": "/my-fines",
+      profile: "/profile",
+      "admin-dashboard": "/admin-dashboard",
+      "admin-events": "/admin-events",
+      "admin-scanner": "/admin-scanner",
+      "admin-attendees": "/admin-attendees",
+      "admin-students": "/admin-students",
+      "admin-announcements": "/admin-announcements",
+      "admin-reports": "/admin-reports",
+      "admin-excuse-requests": "/admin-excuse-requests",
+      "admin-settings": "/admin-settings",
+    };
+
+    router.push(routeFromPage[page] ?? "/");
+  };
+
+  return (
+    <LandingPage onNav={handleLandingNav} settings={settings} user={user} />
+  );
 }

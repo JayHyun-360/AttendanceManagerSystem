@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AdminExcuseRequestsPage, type ExcuseRequest } from "../../page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
@@ -11,55 +12,64 @@ export default function AdminExcuseRequestsRoutePage() {
   const router = useRouter();
   const { user } = useProtectedUser();
   const [requests, setRequests] = useState<ExcuseRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadRequests() {
-      if (!user || user.role !== "admin") {
-        router.push("/dashboard");
-        return;
-      }
+      try {
+        if (!user || user.role !== "admin") {
+          router.push("/dashboard");
+          return;
+        }
 
-      const { data, error } = await supabase
-        .from("excuse_requests")
-        .select(
-          "*, student_profile:profiles!excuse_requests_student_id_fkey(first_name, surname, student_id)",
-        )
-        .order("created_at", { ascending: false });
+        const { data, error } = await supabase
+          .from("excuse_requests")
+          .select(
+            "*, student_profile:profiles!excuse_requests_student_id_fkey(first_name, surname, student_id)",
+          )
+          .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error(error);
-        return;
-      }
+        if (error) {
+          console.error(error);
+          return;
+        }
 
-      if (!cancelled) {
-        setRequests(
-          (data ?? []).map((row: any) => ({
-            id: String(row.id),
-            studentName:
-              `${row.student_profile?.first_name ?? ""} ${row.student_profile?.surname ?? ""}`.trim() ||
-              "Student",
-            studentId: row.student_profile?.student_id || "",
-            event: row.fine_id ? "Attendance exception" : "Excuse request",
-            date: new Date(row.created_at).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            }),
-            reason: row.reason,
-            proofName: row.document_url ? "Supporting document" : null,
-            status: row.status,
-            submittedDate: new Date(row.created_at).toLocaleDateString(
-              "en-US",
-              {
+        if (!cancelled) {
+          setRequests(
+            (data ?? []).map((row: any) => ({
+              id: String(row.id),
+              studentName:
+                `${row.student_profile?.first_name ?? ""} ${row.student_profile?.surname ?? ""}`.trim() ||
+                "Student",
+              studentId: row.student_profile?.student_id || "",
+              event: row.fine_id ? "Attendance exception" : "Excuse request",
+              date: new Date(row.created_at).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
-              },
-            ),
-          })),
-        );
+              }),
+              reason: row.reason,
+              proofName: row.document_url ? "Supporting document" : null,
+              status: row.status,
+              submittedDate: new Date(row.created_at).toLocaleDateString(
+                "en-US",
+                {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                },
+              ),
+            })),
+          );
+        }
+      } catch (caughtError) {
+        console.error(caughtError);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     }
 
@@ -94,6 +104,17 @@ export default function AdminExcuseRequestsRoutePage() {
       ),
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3 pt-2">
+        <Skeleton className="h-8 w-44 rounded-lg" />
+        {[0, 1, 2].map((item) => (
+          <Skeleton key={item} className="h-24 w-full rounded-xl" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <AdminExcuseRequestsPage

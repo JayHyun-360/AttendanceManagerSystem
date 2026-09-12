@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AdminEventsPage, type EventData, type Page } from "../../page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
@@ -11,6 +12,7 @@ export default function AdminEventsRoutePage() {
   const router = useRouter();
   const { user } = useProtectedUser();
   const [events, setEvents] = useState<EventData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,6 +75,10 @@ export default function AdminEventsRoutePage() {
         }
       } catch (caughtError) {
         console.error(caughtError);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     }
 
@@ -117,6 +123,22 @@ export default function AdminEventsRoutePage() {
     const target = paths[page] ?? "/admin-events";
     router.push(target);
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3 pt-2">
+        <Skeleton className="h-8 w-36 rounded-lg" />
+        <div className="flex gap-2">
+          {[0, 1, 2].map((item) => (
+            <Skeleton key={item} className="h-8 w-20 rounded-lg" />
+          ))}
+        </div>
+        {[0, 1, 2].map((item) => (
+          <Skeleton key={item} className="h-28 w-full rounded-xl" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <AdminEventsPage onNav={onNav} events={events} setEvents={setEvents} />

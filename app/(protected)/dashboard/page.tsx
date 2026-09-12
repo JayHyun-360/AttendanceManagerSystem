@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardPage, type EventData } from "../../page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
@@ -13,6 +14,8 @@ export default function DashboardRoute() {
   const [fines, setFines] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
+  const [announcementsReady, setAnnouncementsReady] = useState(false);
+  const [finesReady, setFinesReady] = useState(false);
   const [attendanceStats, setAttendanceStats] = useState({
     present: 0,
     absent: 0,
@@ -62,6 +65,10 @@ export default function DashboardRoute() {
         }
       } catch (caughtError) {
         console.error(caughtError);
+      } finally {
+        if (!cancelled) {
+          setAnnouncementsReady(true);
+        }
       }
     }
 
@@ -164,6 +171,10 @@ export default function DashboardRoute() {
         });
       } catch (caughtError) {
         console.error(caughtError);
+      } finally {
+        if (!cancelled) {
+          setFinesReady(true);
+        }
       }
     }
 
@@ -193,6 +204,33 @@ export default function DashboardRoute() {
     };
   }, [authUserId]);
 
+  const isLoading = !announcementsReady || !finesReady;
+
+  function DashboardPageSkeleton() {
+    return (
+      <div className="space-y-5">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-8 w-56" />
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          {[0, 1, 2].map((item) => (
+            <Skeleton key={item} className="h-20 rounded-xl" />
+          ))}
+        </div>
+
+        <Skeleton className="h-32 w-full rounded-xl" />
+
+        <div className="space-y-2">
+          {[0, 1].map((item) => (
+            <Skeleton key={item} className="h-16 w-full rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const onNav = (page: string) => {
     const paths: Record<string, string> = {
       events: "/events",
@@ -208,8 +246,8 @@ export default function DashboardRoute() {
     router.push(target);
   };
 
-  if (!user) {
-    return null;
+  if (!user || isLoading) {
+    return <DashboardPageSkeleton />;
   }
 
   const nextEvent: EventData | undefined = (() => {

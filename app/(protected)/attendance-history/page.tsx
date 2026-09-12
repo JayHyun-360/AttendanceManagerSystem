@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AttendanceHistoryPage,
   type ExcuseRequest,
@@ -17,91 +18,105 @@ export default function AttendanceHistoryRoutePage() {
   const [excuseRequests, setExcuseRequests] = useState<ExcuseRequest[]>([]);
   const [fines, setFines] = useState<FineRecord[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadData() {
-      if (!authUserId) {
-        return;
+      try {
+        if (!authUserId) {
+          return;
+        }
+
+        const [finesResult, excuseResult, attendanceResult] = await Promise.all(
+          [
+            supabase
+              .from("fines")
+              .select("*")
+              .eq("student_id", authUserId)
+              .order("created_at", { ascending: false }),
+            supabase
+              .from("excuse_requests")
+              .select("*")
+              .eq("student_id", authUserId)
+              .order("created_at", { ascending: false }),
+            supabase
+              .from("attendance_logs")
+              .select("*, events(title, event_date, start_time, end_time)")
+              .eq("student_id", authUserId)
+              .order("scanned_at", { ascending: false }),
+          ],
+        );
+
+        if (finesResult.error) {
+          console.error(finesResult.error);
+        }
+
+        if (excuseResult.error) {
+          console.error(excuseResult.error);
+        }
+
+        if (attendanceResult.error) {
+          console.error(attendanceResult.error);
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        setFines(
+          (finesResult.data ?? []).map((row: any) => ({
+            id: String(row.id),
+            eventId: row.event_id,
+            eventTitle: row.events?.title ?? "Event",
+            eventDate: row.events?.event_date ?? "",
+            amount: Number(row.amount || 0),
+            status: row.status || "unpaid",
+          })),
+        );
+
+        setExcuseRequests(
+          (excuseResult.data ?? []).map((row: any) => ({
+            id: String(row.id),
+            studentName: "You",
+            studentId: authUserId,
+            event: row.fine_id ? "Attendance event" : "Excuse request",
+            date: row.created_at,
+            reason: row.reason,
+            proofName: row.document_url ? "Supporting document" : null,
+            status: row.status,
+            submittedDate: new Date(row.created_at).toLocaleDateString(
+              "en-US",
+              {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              },
+            ),
+          })),
+        );
+
+        setAttendanceRecords(
+          (attendanceResult.data ?? []).map((row: any, index: number) => ({
+            id: String(row.id ?? index),
+            eventId: row.event_id,
+            event: row.events?.title ?? "Event",
+            date: row.events?.event_date ?? "",
+            time:
+              row.events?.start_time && row.events?.end_time
+                ? `${row.events.start_time}–${row.events.end_time}`
+                : "—",
+            status: row.status || "present",
+          })),
+        );
+      } catch (caughtError) {
+        console.error(caughtError);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
-
-      const [finesResult, excuseResult, attendanceResult] = await Promise.all([
-        supabase
-          .from("fines")
-          .select("*")
-          .eq("student_id", authUserId)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("excuse_requests")
-          .select("*")
-          .eq("student_id", authUserId)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("attendance_logs")
-          .select("*, events(title, event_date, start_time, end_time)")
-          .eq("student_id", authUserId)
-          .order("scanned_at", { ascending: false }),
-      ]);
-
-      if (finesResult.error) {
-        console.error(finesResult.error);
-      }
-
-      if (excuseResult.error) {
-        console.error(excuseResult.error);
-      }
-
-      if (attendanceResult.error) {
-        console.error(attendanceResult.error);
-      }
-
-      if (cancelled) {
-        return;
-      }
-
-      setFines(
-        (finesResult.data ?? []).map((row: any) => ({
-          id: String(row.id),
-          eventId: row.event_id,
-          eventTitle: row.events?.title ?? "Event",
-          eventDate: row.events?.event_date ?? "",
-          amount: Number(row.amount || 0),
-          status: row.status || "unpaid",
-        })),
-      );
-
-      setExcuseRequests(
-        (excuseResult.data ?? []).map((row: any) => ({
-          id: String(row.id),
-          studentName: "You",
-          studentId: authUserId,
-          event: row.fine_id ? "Attendance event" : "Excuse request",
-          date: row.created_at,
-          reason: row.reason,
-          proofName: row.document_url ? "Supporting document" : null,
-          status: row.status,
-          submittedDate: new Date(row.created_at).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          }),
-        })),
-      );
-
-      setAttendanceRecords(
-        (attendanceResult.data ?? []).map((row: any, index: number) => ({
-          id: String(row.id ?? index),
-          eventId: row.event_id,
-          event: row.events?.title ?? "Event",
-          date: row.events?.event_date ?? "",
-          time:
-            row.events?.start_time && row.events?.end_time
-              ? `${row.events.start_time}–${row.events.end_time}`
-              : "—",
-          status: row.status || "present",
-        })),
-      );
     }
 
     void loadData();
@@ -149,6 +164,18 @@ export default function AttendanceHistoryRoutePage() {
 
     router.refresh();
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3 pt-2">
+        <Skeleton className="h-8 w-40 rounded-lg" />
+        <Skeleton className="h-16 w-full rounded-xl" />
+        {[0, 1, 2].map((item) => (
+          <Skeleton key={item} className="h-20 w-full rounded-xl" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <AttendanceHistoryPage

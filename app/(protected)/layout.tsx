@@ -68,6 +68,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const [page, setPage] = useState<Page>("landing");
   const [open, setOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,6 +141,10 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
         }
       } catch (caught) {
         console.error(caught);
+      } finally {
+        if (!cancelled) {
+          setSessionReady(true);
+        }
       }
     }
 
@@ -213,6 +218,17 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     router.push(target);
     setOpen(false);
   };
+
+  if (!sessionReady) {
+    return (
+      <div className="min-h-screen bg-[#f8faf9] flex items-center justify-center">
+        <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
+          <span className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
+          Loading TapIn...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ProtectedUserContext.Provider

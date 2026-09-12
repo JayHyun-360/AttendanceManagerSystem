@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AdminDashboard } from "../../page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
@@ -20,6 +21,7 @@ export default function AdminDashboardRoute() {
   const [recentScans, setRecentScans] = useState<any[]>([]);
   const [featuredEventTitle, setFeaturedEventTitle] =
     useState<string>("TapIn overview");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,6 +123,10 @@ export default function AdminDashboardRoute() {
         );
       } catch (caughtError) {
         console.error(caughtError);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     }
 
@@ -156,6 +162,34 @@ export default function AdminDashboardRoute() {
     };
   }, [router, user]);
 
+  function AdminDashboardPageSkeleton() {
+    return (
+      <div className="space-y-5">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-8 w-48" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {[0, 1, 2, 3].map((item) => (
+            <Skeleton key={item} className="h-24 rounded-xl" />
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+        </div>
+
+        <div className="space-y-2">
+          {[0, 1, 2, 3, 4].map((item) => (
+            <Skeleton key={item} className="h-14 w-full rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const onNav = (page: string) => {
     const paths: Record<string, string> = {
       "admin-events": "/admin-events",
@@ -171,6 +205,10 @@ export default function AdminDashboardRoute() {
     const target = paths[page] ?? "/admin-dashboard";
     router.push(target);
   };
+
+  if (isLoading) {
+    return <AdminDashboardPageSkeleton />;
+  }
 
   return (
     <AdminDashboard
