@@ -15,6 +15,7 @@ import jsQR from "jsqr";
 import QRCode from "qrcode";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { uploadImage } from "@/lib/uploadImage";
 
 const tapInLogoSrc = "/tapin-logo.svg";
 
@@ -4907,15 +4908,18 @@ export function AdminEventsPage({
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(e) => {
+              onChange={async (e) => {
                 const f = e.target.files?.[0];
-                if (f) {
-                  // Revoke old blob URL before creating new one
-                  if (highlightUrl) {
-                    URL.revokeObjectURL(highlightUrl);
-                  }
-                  setHighlightUrl(URL.createObjectURL(f));
+                if (!f) return;
+
+                const result = await uploadImage(f);
+
+                if ("error" in result) {
+                  toast.error(result.error);
+                  return;
                 }
+
+                setHighlightUrl(result.url);
               }}
             />
             {highlightUrl ? (
@@ -5257,12 +5261,20 @@ export function AdminEventsPage({
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(e) => {
+              onChange={async (e) => {
                 const f = e.target.files?.[0];
-                if (f)
-                  setEditDraft((d) =>
-                    d ? { ...d, highlightUrl: URL.createObjectURL(f) } : d,
-                  );
+                if (!f) return;
+
+                const result = await uploadImage(f);
+
+                if ("error" in result) {
+                  toast.error(result.error);
+                  return;
+                }
+
+                setEditDraft((d) =>
+                  d ? { ...d, highlightUrl: result.url } : d,
+                );
               }}
             />
             {editDraft.highlightUrl ? (
@@ -7047,6 +7059,47 @@ export function AdminSettingsPage({
   settings: SystemSettings;
   onSave: (s: SystemSettings) => void;
 }) {
+  const isBlobUrl = (value?: string) => !!value && value.startsWith("blob:");
+  const heroImageUrls = settings.heroImageUrls.filter((url) => !isBlobUrl(url));
+  const carouselSlides = settings.carouselSlides.map((slide) => ({
+    ...slide,
+    imageUrl: isBlobUrl(slide.imageUrl) ? "" : slide.imageUrl,
+  }));
+
+  const handleHeroImageUpload = async (files: File[]) => {
+    if (!files.length) return;
+
+    const uploaded = await Promise.all(
+      files.map(async (file) => {
+        const result = await uploadImage(file);
+
+        if ("error" in result) {
+          toast.error(result.error);
+          return null;
+        }
+
+        return result.url;
+      }),
+    );
+
+    const validUrls = uploaded.filter((url): url is string => !!url);
+
+    if (validUrls.length) {
+      update({ heroImageUrls: [...settings.heroImageUrls, ...validUrls] });
+    }
+  };
+
+  const handleSlideImageUpload = async (i: number, file: File) => {
+    const result = await uploadImage(file);
+
+    if ("error" in result) {
+      toast.error(result.error);
+      return;
+    }
+
+    patchSlide(i, { imageUrl: result.url });
+  };
+
   const update = (patch: Partial<SystemSettings>) =>
     onSave({ ...settings, ...patch });
   const toggle = (k: "showFees" | "allowExcuseRequests" | "requirePhotoId") =>
@@ -7199,22 +7252,21 @@ export function AdminSettingsPage({
             accept="image/*"
             multiple
             className="hidden"
-            onChange={(e) => {
+            onChange={async (e) => {
               const files = Array.from(e.target.files ?? []);
               const remaining = 6 - settings.heroImageUrls.length;
-              const toAdd = files
-                .slice(0, remaining)
-                .map((f) => URL.createObjectURL(f));
-              if (toAdd.length)
-                update({
-                  heroImageUrls: [...settings.heroImageUrls, ...toAdd],
-                });
+              const toAdd = files.slice(0, remaining);
+
+              if (toAdd.length) {
+                await handleHeroImageUpload(toAdd);
+              }
+
               e.target.value = "";
             }}
           />
-          {settings.heroImageUrls.length > 0 && (
+          {heroImageUrls.length > 0 && (
             <div className="grid grid-cols-2 gap-2 mb-2">
-              {settings.heroImageUrls.map((url, i) => (
+              {heroImageUrls.map((url, i) => (
                 <div
                   key={i}
                   className="relative rounded-xl overflow-hidden border border-slate-200 aspect-video"
@@ -7238,13 +7290,13 @@ export function AdminSettingsPage({
               ))}
             </div>
           )}
-          {settings.heroImageUrls.length < 6 && (
+          {heroImageUrls.length < 6 && (
             <button
               onClick={addHero}
               className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2 transition-colors"
             >
               <Icons.Image />
-              Add hero photo{settings.heroImageUrls.length > 0 ? "s" : ""}
+              Add hero photo{heroImageUrls.length > 0 ? "s" : ""}
             </button>
           )}
         </div>
@@ -7279,7 +7331,7 @@ export function AdminSettingsPage({
           </div>
         ) : (
           <div className="divide-y divide-slate-50">
-            {settings.carouselSlides.map((slide, i) => {
+            {carouselSlides.map((slide, i) => {
               const ref = (el: HTMLInputElement | null) => {
                 slideRefs.current[i] = el;
               };
@@ -7293,10 +7345,11 @@ export function AdminSettingsPage({
                         type="file"
                         accept="image/*"
                         className="hidden"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const f = e.target.files?.[0];
-                          if (f)
-                            patchSlide(i, { imageUrl: URL.createObjectURL(f) });
+                          if (f) {
+                            await handleSlideImageUpload(i, f);
+                          }
                         }}
                       />
                       {slide.imageUrl ? (
