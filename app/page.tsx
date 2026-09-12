@@ -1714,7 +1714,12 @@ function LandingPage({
   onNav: (p: Page) => void;
   settings: SystemSettings;
 }) {
-  const heroUrls = settings.heroImageUrls;
+  const heroUrls = settings.heroImageUrls.filter(
+    (url) => !!url && !url.startsWith("blob:"),
+  );
+  const carouselSlides = settings.carouselSlides.filter(
+    (slide) => !!slide.imageUrl && !slide.imageUrl.startsWith("blob:"),
+  );
   const hasHero = heroUrls.length > 0;
   const hn = heroUrls.length;
   // clone-trick state for hero
@@ -1901,14 +1906,14 @@ function LandingPage({
       </div>
 
       {/* ── Event carousel ────────────────────────────────────────── */}
-      {settings.carouselSlides.length > 0 && (
+      {carouselSlides.length > 0 && (
         <div className="max-w-5xl mx-auto px-6 pb-20">
           <div className="flex items-center justify-between mb-4">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               Upcoming Highlights
             </p>
           </div>
-          <LandingCarousel slides={settings.carouselSlides} />
+          <LandingCarousel slides={carouselSlides} />
         </div>
       )}
     </div>
@@ -7483,6 +7488,29 @@ const DEFAULT_SETTINGS: SystemSettings = {
 export default function App() {
   const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
 
+  const sanitizeSettings = (
+    value: Partial<SystemSettings> | null | undefined,
+  ) => {
+    const next = value ?? DEFAULT_SETTINGS;
+
+    return {
+      ...DEFAULT_SETTINGS,
+      ...next,
+      heroImageUrls: (
+        next.heroImageUrls ?? DEFAULT_SETTINGS.heroImageUrls
+      ).filter((url) => !!url && !url.startsWith("blob:")),
+      carouselSlides: (
+        next.carouselSlides ?? DEFAULT_SETTINGS.carouselSlides
+      ).map((slide) => ({
+        ...slide,
+        imageUrl:
+          slide.imageUrl && !slide.imageUrl.startsWith("blob:")
+            ? slide.imageUrl
+            : "",
+      })),
+    } satisfies SystemSettings;
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -7503,14 +7531,7 @@ export default function App() {
           ((data?.settings ?? DEFAULT_SETTINGS) as Partial<SystemSettings>) ||
           {};
 
-        setSettings({
-          ...DEFAULT_SETTINGS,
-          ...savedSettings,
-          heroImageUrls:
-            savedSettings.heroImageUrls ?? DEFAULT_SETTINGS.heroImageUrls,
-          carouselSlides:
-            savedSettings.carouselSlides ?? DEFAULT_SETTINGS.carouselSlides,
-        });
+        setSettings(sanitizeSettings(savedSettings));
       }
     }
 

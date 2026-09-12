@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { AdminSettingsPage, type SystemSettings } from "../../page";
 import { supabase } from "@/lib/supabase";
 
@@ -15,6 +16,9 @@ const defaultSettings: SystemSettings = {
   carouselSlides: [],
 };
 
+const stripBlobUrls = (value?: string) =>
+  typeof value === "string" && value.startsWith("blob:") ? "" : (value ?? "");
+
 const normalizeSettings = (
   rawSettings?: Partial<SystemSettings> | null,
 ): SystemSettings => ({
@@ -25,12 +29,22 @@ const normalizeSettings = (
   academicYear: rawSettings?.academicYear ?? defaultSettings.academicYear,
   semester: rawSettings?.semester ?? defaultSettings.semester,
   institution: rawSettings?.institution ?? defaultSettings.institution,
-  heroImageUrls: rawSettings?.heroImageUrls ?? defaultSettings.heroImageUrls,
-  carouselSlides: rawSettings?.carouselSlides ?? defaultSettings.carouselSlides,
+  heroImageUrls: (
+    rawSettings?.heroImageUrls ?? defaultSettings.heroImageUrls
+  ).filter((url) => !!stripBlobUrls(url)),
+  carouselSlides: (
+    rawSettings?.carouselSlides ?? defaultSettings.carouselSlides
+  ).map((slide) => ({
+    ...slide,
+    imageUrl: stripBlobUrls(slide?.imageUrl),
+  })),
 });
 
 export default function AdminSettingsRoutePage() {
   const [settings, setSettings] = useState<SystemSettings>(defaultSettings);
+  const [saveState, setSaveState] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
 
   useEffect(() => {
     let cancelled = false;
@@ -62,20 +76,62 @@ export default function AdminSettingsRoutePage() {
   }, []);
 
   const handleSave = async (nextSettings: SystemSettings) => {
-    setSettings(nextSettings);
+    const sanitizedSettings: SystemSettings = {
+      ...nextSettings,
+      heroImageUrls: nextSettings.heroImageUrls.filter(
+        (url) => !!stripBlobUrls(url),
+      ),
+      carouselSlides: nextSettings.carouselSlides.map((slide) => ({
+        ...slide,
+        imageUrl: stripBlobUrls(slide.imageUrl),
+      })),
+    };
+
+    setSettings(sanitizedSettings);
+    setSaveState("saving");
 
     const { error } = await supabase
       .from("system_settings")
       .update({
-        settings: nextSettings,
+        settings: sanitizedSettings,
         updated_at: new Date().toISOString(),
       })
       .eq("id", 1);
 
     if (error) {
       console.error("Failed to save settings", error);
+      setSaveState("error");
+      toast.error("Settings save failed.");
+      return;
     }
+
+    setSaveState("saved");
+    toast.success("Settings saved.");
   };
 
-  return <AdminSettingsPage settings={settings} onSave={handleSave} />;
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <div
+          className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+            saveState === "saving"
+              ? "border-amber-200 bg-amber-50 text-amber-700"
+              : saveState === "error"
+                ? "border-red-200 bg-red-50 text-red-600"
+                : "border-green-200 bg-green-50 text-green-700"
+          }`}
+        >
+          {saveState === "saving"
+            ? "Saving..."
+            : saveState === "error"
+              ? "Save failed"
+              : saveState === "saved"
+                ? "Saved"
+                : "Ready"}
+        </div>
+      </div>
+
+      <AdminSettingsPage settings={settings} onSave={handleSave} />
+    </div>
+  );
 }
