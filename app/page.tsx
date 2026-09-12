@@ -1519,15 +1519,12 @@ export function Sidebar({
           const badgeLabel =
             count > 9 ? "9+" : count > 0 ? String(count) : null;
           return (
-            <motion.button
+            <button
               key={p}
-              layout
-              whileHover={{ scale: 1.018, x: 2 }}
-              whileTap={{ scale: 0.98 }}
               onMouseEnter={() => prefetchRoute(p)}
               onFocus={() => prefetchRoute(p)}
               onClick={() => handleNav(p)}
-              className={`w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm transition-all ${active ? "bg-green-50 text-green-800 font-semibold" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium"}`}
+              className={`w-full flex items-center gap-3 border-l-[3px] px-3 h-10 rounded-lg text-sm transition-colors duration-150 ease-in-out ${active ? "border-green-600 bg-green-50/70 text-green-800 font-medium" : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-normal"}`}
             >
               <span
                 className={`relative shrink-0 ${active ? "text-green-600" : "text-slate-400"}`}
@@ -1540,17 +1537,17 @@ export function Sidebar({
                 )}
               </span>
               <span className="truncate">{l}</span>
-            </motion.button>
+            </button>
           );
         })}
       </nav>
 
       {/* Sidebar footer */}
-      <div className="mt-auto border-t border-slate-100 px-2 py-3 shrink-0">
-        <div className="flex items-center justify-end gap-2">
+      <div className="mt-auto border-t border-slate-200/70 px-2 py-4 shrink-0">
+        <div className="space-y-2">
           <button
             onClick={() => onNav("landing")}
-            className="inline-flex items-center gap-2 px-3 h-10 rounded-xl text-sm font-medium text-slate-500 hover:text-green-700 hover:bg-green-50 transition-all"
+            className="w-full flex items-center gap-3 border-l-[3px] border-transparent px-3 h-10 rounded-lg text-sm font-normal text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors duration-150 ease-in-out"
           >
             <span className="shrink-0 text-slate-400">
               <ArrowLeft className="w-[18px] h-[18px]" />
@@ -1559,7 +1556,7 @@ export function Sidebar({
           </button>
           <button
             onClick={onLogout}
-            className="inline-flex items-center gap-2 px-3 h-10 rounded-xl text-sm font-medium text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
+            className="w-full flex items-center gap-3 border-l-[3px] border-transparent px-3 h-10 rounded-lg text-sm font-normal text-slate-500 hover:text-red-600 hover:bg-red-50/70 transition-colors duration-150 ease-in-out"
           >
             <span className="text-slate-300 shrink-0">
               <LogOut className="w-[18px] h-[18px]" />

@@ -192,6 +192,12 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     const routePage = pathToPage[pathname] ?? "dashboard";
     setPage(routePage);
 
+    window.scrollTo({ top: 0, behavior: "auto" });
+    document.getElementById("protected-main-content")?.scrollTo({
+      top: 0,
+      behavior: "auto",
+    });
+
     // Role-based redirect: prevent admins from accessing student pages and vice versa
     if (user) {
       const isAdminRoute =
@@ -268,9 +274,9 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     <ProtectedUserContext.Provider
       value={{ user, setUser, authUserId, setAuthUserId, showFees }}
     >
-      <div className="min-h-screen bg-[#f8faf9]">
+      <div className="h-screen overflow-hidden bg-[#f8faf9]">
         <TopBar user={user} onNav={onNav} onMenuOpen={() => setOpen(true)} />
-        <div className="flex min-h-[calc(100vh-56px)]">
+        <div className="flex h-[calc(100vh-56px)] min-h-0">
           <Sidebar
             page={page}
             user={user}
@@ -279,7 +285,10 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
             onClose={() => setOpen(false)}
             onLogout={onLogout}
           />
-          <main className="flex-1">
+          <main
+            id="protected-main-content"
+            className="min-w-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
+          >
             <PageShell>{children}</PageShell>
           </main>
         </div>
