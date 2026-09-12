@@ -129,6 +129,40 @@ function fullName(u: Pick<User, "firstName" | "middleInitial" | "surname">) {
   return `${u.firstName}${mid} ${u.surname}`.trim();
 }
 
+function normalizeEventTime(value: string): string | null {
+  const normalized = value.trim().replace(/;/g, ":").toUpperCase();
+  const twelveHour = normalized.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+  if (twelveHour) {
+    let hour = Number(twelveHour[1]);
+    const minute = Number(twelveHour[2]);
+    if (hour < 1 || hour > 12 || minute > 59) return null;
+    if (twelveHour[3] === "AM" && hour === 12) hour = 0;
+    if (twelveHour[3] === "PM" && hour !== 12) hour += 12;
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  }
+
+  const twentyFourHour = normalized.match(/^(\d{1,2}):(\d{2})$/);
+  if (twentyFourHour) {
+    const hour = Number(twentyFourHour[1]);
+    const minute = Number(twentyFourHour[2]);
+    if (hour > 23 || minute > 59) return null;
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  }
+
+  return null;
+}
+
+function parseEventTimeRange(value: string): {
+  start: string;
+  end: string | null;
+} | null {
+  const parts = value.trim().split(/\s*[-–—]\s*/);
+  const start = normalizeEventTime(parts[0] ?? "");
+  const end = parts[1] ? normalizeEventTime(parts[1]) : null;
+  if (!start || (parts[1] && !end)) return null;
+  return { start, end };
+}
+
 // ─── Data ─────────────────────────────────────────────────────────────────────
 export const INITIAL_EVENTS: EventData[] = [
   {
@@ -1797,6 +1831,9 @@ function LandingPage({
                   src={url}
                   alt=""
                   aria-hidden
+                  loading={i === 0 ? "eager" : "lazy"}
+                  fetchPriority={i === 0 ? "high" : "low"}
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -4403,6 +4440,14 @@ export function AdminEventsPage({
   const [editId, setEditId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<EventData | null>(null);
   const [editOriginal, setEditOriginal] = useState<EventData | null>(null);
+  const [editFineValues, setEditFineValues] = useState({
+    absentFine: "0",
+    lateFine: "0",
+    morningAbsentFine: "0",
+    morningLateFine: "0",
+    afternoonAbsentFine: "0",
+    afternoonLateFine: "0",
+  });
   const [showSensitiveWarning, setShowSensitiveWarning] = useState(false);
 
   const photoRef = useRef<HTMLInputElement>(null);
@@ -4471,6 +4516,14 @@ export function AdminEventsPage({
     if (!draft.title || !draft.date) return;
 
     try {
+      const timeRange = draft.multiSession
+        ? null
+        : parseEventTimeRange(draft.time);
+      if (!draft.multiSession && !timeRange) {
+        toast.error("Enter time like 3:35 AM - 5:20 AM.");
+        return;
+      }
+
       const persistedHighlightUrl =
         highlightUrl && !highlightUrl.startsWith("blob:") ? highlightUrl : null;
 
@@ -4478,12 +4531,8 @@ export function AdminEventsPage({
       const payload = {
         title: draft.title,
         event_date: draft.date,
-        start_time: draft.multiSession ? null : draft.time || null,
-        end_time: draft.multiSession
-          ? null
-          : draft.time
-            ? draft.time.split("–")[1]?.trim()
-            : null,
+        start_time: timeRange?.start ?? null,
+        end_time: timeRange?.end ?? null,
         location: draft.location,
         description: draft.description,
         program: draft.program,
@@ -4590,6 +4639,14 @@ export function AdminEventsPage({
     setEditId(e.id);
     setEditDraft({ ...e });
     setEditOriginal({ ...e });
+    setEditFineValues({
+      absentFine: String(e.absentFine ?? e.fineAmount ?? 0),
+      lateFine: String(e.lateFine ?? 0),
+      morningAbsentFine: String(e.morningAbsentFine ?? 0),
+      morningLateFine: String(e.morningLateFine ?? 0),
+      afternoonAbsentFine: String(e.afternoonAbsentFine ?? 0),
+      afternoonLateFine: String(e.afternoonLateFine ?? 0),
+    });
     setShowSensitiveWarning(false);
     setShowForm(false);
   };
@@ -4613,15 +4670,36 @@ export function AdminEventsPage({
 
   const hasSensitiveChanges = () => {
     if (!editDraft || !editOriginal) return false;
-    return SENSITIVE_KEYS.some(
+    const eventFieldChanged = SENSITIVE_KEYS.some(
       (k) => String(editDraft[k] ?? "") !== String(editOriginal[k] ?? ""),
     );
+    const fineChanged =
+      editFineValues.absentFine !==
+        String(editOriginal.absentFine ?? editOriginal.fineAmount ?? 0) ||
+      editFineValues.lateFine !== String(editOriginal.lateFine ?? 0) ||
+      editFineValues.morningAbsentFine !==
+        String(editOriginal.morningAbsentFine ?? 0) ||
+      editFineValues.morningLateFine !==
+        String(editOriginal.morningLateFine ?? 0) ||
+      editFineValues.afternoonAbsentFine !==
+        String(editOriginal.afternoonAbsentFine ?? 0) ||
+      editFineValues.afternoonLateFine !==
+        String(editOriginal.afternoonLateFine ?? 0);
+    return eventFieldChanged || fineChanged;
   };
 
   const commitSave = async () => {
     if (!editDraft) return;
 
     try {
+      const timeRange = editDraft.multiSession
+        ? null
+        : parseEventTimeRange(editDraft.time);
+      if (!editDraft.multiSession && !timeRange) {
+        toast.error("Enter time like 3:35 AM - 5:20 AM.");
+        return;
+      }
+
       const persistedHighlightUrl =
         editDraft.highlightUrl && !editDraft.highlightUrl.startsWith("blob:")
           ? editDraft.highlightUrl
@@ -4648,12 +4726,8 @@ export function AdminEventsPage({
       const payload = {
         title: editDraft.title,
         event_date: editDraft.date,
-        start_time: editDraft.multiSession ? null : editDraft.time || null,
-        end_time: editDraft.multiSession
-          ? null
-          : editDraft.time
-            ? editDraft.time.split("–")[1]?.trim()
-            : null,
+        start_time: timeRange?.start ?? null,
+        end_time: timeRange?.end ?? null,
         location: editDraft.location,
         description: editDraft.description,
         program: editDraft.program,
@@ -4668,12 +4742,12 @@ export function AdminEventsPage({
         afternoon_start: editDraft.afternoonStart || null,
         afternoon_end: editDraft.afternoonEnd || null,
         afternoon_late_cutoff: editDraft.afternoonLateCutoff || null,
-        absent_fine: editDraft.absentFine || 0,
-        late_fine: editDraft.lateFine || 0,
-        morning_absent_fine: editDraft.morningAbsentFine,
-        morning_late_fine: editDraft.morningLateFine,
-        afternoon_absent_fine: editDraft.afternoonAbsentFine,
-        afternoon_late_fine: editDraft.afternoonLateFine,
+        absent_fine: Number(editFineValues.absentFine) || 0,
+        late_fine: Number(editFineValues.lateFine) || 0,
+        morning_absent_fine: Number(editFineValues.morningAbsentFine) || 0,
+        morning_late_fine: Number(editFineValues.morningLateFine) || 0,
+        afternoon_absent_fine: Number(editFineValues.afternoonAbsentFine) || 0,
+        afternoon_late_fine: Number(editFineValues.afternoonLateFine) || 0,
         version: (editOriginal?.version ?? 1) + 1,
       };
 
@@ -4694,9 +4768,15 @@ export function AdminEventsPage({
         mediaUrls: persistedHighlightUrl ? [persistedHighlightUrl] : [],
         version: (editOriginal?.version ?? 1) + 1,
         fineAmount: editDraft.multiSession
-          ? (editDraft.morningAbsentFine ?? 0) +
-            (editDraft.afternoonAbsentFine ?? 0)
-          : (editDraft.absentFine ?? editDraft.fineAmount),
+          ? (Number(editFineValues.morningAbsentFine) || 0) +
+            (Number(editFineValues.afternoonAbsentFine) || 0)
+          : Number(editFineValues.absentFine) || 0,
+        absentFine: Number(editFineValues.absentFine) || 0,
+        lateFine: Number(editFineValues.lateFine) || 0,
+        morningAbsentFine: Number(editFineValues.morningAbsentFine) || 0,
+        morningLateFine: Number(editFineValues.morningLateFine) || 0,
+        afternoonAbsentFine: Number(editFineValues.afternoonAbsentFine) || 0,
+        afternoonLateFine: Number(editFineValues.afternoonLateFine) || 0,
       };
 
       setEvents((ev) => ev.map((e) => (e.id === saved.id ? saved : e)));
@@ -5446,18 +5526,12 @@ export function AdminEventsPage({
 
           <FineFields
             multi={!!editDraft.multiSession}
-            values={{
-              absentFine: String(
-                editDraft.absentFine ?? editDraft.fineAmount ?? 0,
-              ),
-              lateFine: String(editDraft.lateFine ?? 0),
-              morningAbsentFine: String(editDraft.morningAbsentFine ?? 0),
-              morningLateFine: String(editDraft.morningLateFine ?? 0),
-              afternoonAbsentFine: String(editDraft.afternoonAbsentFine ?? 0),
-              afternoonLateFine: String(editDraft.afternoonLateFine ?? 0),
-            }}
-            onChange={(k, v) =>
-              setEditDraft((d) => (d ? { ...d, [k]: parseInt(v) || 0 } : d))
+            values={editFineValues}
+            onChange={(key, value) =>
+              setEditFineValues((current) => ({
+                ...current,
+                [key]: value,
+              }))
             }
           />
 

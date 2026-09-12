@@ -191,6 +191,13 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    void router.prefetch("/");
+    void router.prefetch(
+      user?.role === "admin" ? "/admin-dashboard" : "/dashboard",
+    );
+  }, [router, user?.role]);
+
+  useEffect(() => {
     const routePage = pathToPage[pathname] ?? "dashboard";
     setPage(routePage);
 
