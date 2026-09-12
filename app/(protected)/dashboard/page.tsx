@@ -10,6 +10,7 @@ export default function DashboardRoute() {
   const router = useRouter();
   const { user, authUserId } = useProtectedUser();
   const [fines, setFines] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
 
   useEffect(() => {
     if (user?.role === "admin") {
@@ -17,6 +18,51 @@ export default function DashboardRoute() {
       return;
     }
   }, [router, user]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDashboardAnnouncements() {
+      try {
+        const { data, error } = await supabase
+          .from("announcements")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(2);
+
+        if (error) {
+          console.error(error);
+          return;
+        }
+
+        if (!cancelled) {
+          setAnnouncements(
+            (data ?? []).map((row: any) => ({
+              id: row.id,
+              title: row.title,
+              body: row.content,
+              date: new Date(row.created_at).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              }),
+              author: row.posted_by ? "Admin" : "TapIn",
+              badge: row.target_role === "admin" ? "Admin" : "General",
+              photoUrl: row.media_url ?? "",
+            })),
+          );
+        }
+      } catch (caughtError) {
+        console.error(caughtError);
+      }
+    }
+
+    void loadDashboardAnnouncements();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,6 +115,12 @@ export default function DashboardRoute() {
   }
 
   return (
-    <DashboardPage user={user} onNav={onNav} fines={fines} showFees={false} />
+    <DashboardPage
+      user={user}
+      onNav={onNav}
+      fines={fines}
+      showFees={false}
+      announcements={announcements}
+    />
   );
 }

@@ -1522,7 +1522,7 @@ export function Sidebar({
       {/* Sidebar footer */}
       <div className="px-2 py-3 border-t border-slate-100 space-y-0.5 shrink-0">
         <button
-          onClick={onLogout}
+          onClick={() => onNav("landing")}
           className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm font-medium text-slate-500 hover:text-green-700 hover:bg-green-50 transition-all"
         >
           <span className="shrink-0 text-slate-400">
@@ -2911,15 +2911,18 @@ export function DashboardPage({
   onNav,
   fines,
   showFees,
+  announcements,
 }: {
   user: User;
   onNav: (p: Page) => void;
   fines: FineRecord[];
   showFees: boolean;
+  announcements: typeof INITIAL_ANNOUNCEMENTS;
 }) {
   const nextEvent = INITIAL_EVENTS.find((e) => e.status !== "closed");
   const unpaidFines = fines.filter((f) => f.status === "unpaid");
   const total = unpaidFines.reduce((s, f) => s + f.amount, 0);
+  const latestAnnouncements = announcements.slice(0, 2);
 
   const attendanceData = [
     { name: "Present", value: 72, fill: "#16a34a" },
@@ -3081,7 +3084,7 @@ export function DashboardPage({
         </button>
       </div>
       <div className="space-y-2">
-        {INITIAL_ANNOUNCEMENTS.slice(0, 2).map((a) => (
+        {latestAnnouncements.map((a) => (
           <motion.div
             key={a.id}
             className="bg-white border border-slate-100 rounded-xl px-4 py-3.5"
@@ -3536,12 +3539,14 @@ export function AttendanceHistoryPage({
   showFees,
   onSubmitExcuse,
   onBack,
+  attendanceRecords = ATTENDANCE_RECORDS,
 }: {
   excuseRequests: ExcuseRequest[];
   fines: FineRecord[];
   showFees: boolean;
   onSubmitExcuse: (r: ExcuseRequest) => void;
   onBack: () => void;
+  attendanceRecords?: typeof ATTENDANCE_RECORDS;
 }) {
   const [modal, setModal] = useState<(typeof ATTENDANCE_RECORDS)[0] | null>(
     null,
@@ -3551,7 +3556,7 @@ export function AttendanceHistoryPage({
       <BackButton onClick={onBack} label="Back to Home" />
       <PageHeader title="My Attendance" subtitle="AY 2026-2027, 1st Semester" />
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
-        {ATTENDANCE_RECORDS.map((r, i) => {
+        {attendanceRecords.map((r, i) => {
           const req = excuseRequests.find((x) => x.event === r.event);
           const eff =
             req?.status === "approved" ? "excused" : req ? "pending" : r.status;
@@ -3760,10 +3765,12 @@ export function ProfilePage({
   user,
   onSave,
   onBack,
+  saving,
 }: {
   user: User;
   onSave: (u: User) => void;
   onBack: () => void;
+  saving?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ ...user });
@@ -3823,9 +3830,10 @@ export function ProfilePage({
                   onSave({ ...user, ...draft });
                   setEditing(false);
                 }}
-                className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm"
+                disabled={saving}
+                className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Save
+                {saving ? "Saving..." : "Save"}
               </button>
             </div>
           ) : (
@@ -5814,14 +5822,27 @@ function CameraScanner({
   );
 }
 
-export function AdminScannerPage() {
-  const [selectedEventId, setSelectedEventId] = useState<string>("");
+export function AdminScannerPage({
+  events = INITIAL_EVENTS,
+}: {
+  events?: EventData[];
+}) {
+  const [selectedEventId, setSelectedEventId] = useState<string>(
+    events[0]?.id ?? "",
+  );
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanned, setScanned] = useState<ScanRecord[]>([]);
-  const activeEvents = INITIAL_EVENTS.filter(
+
+  useEffect(() => {
+    if (!events.some((event) => event.id === selectedEventId) && events[0]) {
+      setSelectedEventId(events[0].id);
+    }
+  }, [events, selectedEventId]);
+
+  const activeEvents = events.filter(
     (e) => e.status === "active" || e.status === "upcoming",
   );
-  const selectedEvent = INITIAL_EVENTS.find((e) => e.id === selectedEventId);
+  const selectedEvent = events.find((e) => e.id === selectedEventId);
 
   const handleResult = (r: ScanRecord) => {
     setScanned((prev) => [
@@ -5981,24 +6002,45 @@ export function AdminScannerPage() {
 }
 
 // ─── MODERATOR: Attendees ─────────────────────────────────────────────────────
-export function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
-  const [selectedEventId, setSelectedEventId] = useState("2");
+export function AdminAttendeesPage({
+  onNav,
+  events = INITIAL_EVENTS,
+  students = ALL_STUDENTS,
+  scanState: initialScanState,
+}: {
+  onNav: (p: Page) => void;
+  events?: EventData[];
+  students?: StudentProfile[];
+  scanState?: Record<string, ScanRecord[]>;
+}) {
+  const fallbackScanState = Object.fromEntries(
+    Object.entries(EVENT_SCANS).map(([k, v]) => [k, v.map((s) => ({ ...s }))]),
+  );
+  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "2");
   const [scanState, setScanState] = useState<Record<string, ScanRecord[]>>(
-    Object.fromEntries(
-      Object.entries(EVENT_SCANS).map(([k, v]) => [
-        k,
-        v.map((s) => ({ ...s })),
-      ]),
-    ),
+    initialScanState ?? fallbackScanState,
   );
   const [tab, setTab] = useState<"present" | "absent">("present");
+
+  useEffect(() => {
+    if (initialScanState) {
+      setScanState(initialScanState);
+    }
+  }, [initialScanState]);
+
+  useEffect(() => {
+    if (!events.some((event) => event.id === selectedEventId) && events[0]) {
+      setSelectedEventId(events[0].id);
+    }
+  }, [events, selectedEventId]);
+
   const selectedEvent =
-    INITIAL_EVENTS.find((e) => e.id === selectedEventId) ?? INITIAL_EVENTS[0];
-  const scans = scanState[selectedEventId] ?? [];
+    events.find((e) => e.id === selectedEventId) ?? events[0] ?? null;
+  const scans = selectedEvent ? (scanState[selectedEvent.id] ?? []) : [];
   const confirmed = scans.filter((s) => s.status === "confirmed");
   const duplicates = scans.filter((s) => s.status === "duplicate");
   const attendedIds = new Set(confirmed.map((s) => s.id));
-  const absentees = ALL_STUDENTS.filter((s) => !attendedIds.has(s.id));
+  const absentees = students.filter((s) => !attendedIds.has(s.id));
   const deleteRecord = (dbId: number) =>
     setScanState((st) => ({
       ...st,
@@ -6033,7 +6075,7 @@ export function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
           }}
           className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium outline-none focus:border-green-500 appearance-none"
         >
-          {INITIAL_EVENTS.map((e) => (
+          {events.map((e) => (
             <option key={e.id} value={e.id}>
               {e.title} · {e.date}
             </option>
@@ -6041,7 +6083,9 @@ export function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
         </select>
       </div>
       <p className="text-xs text-slate-400 font-medium mb-4">
-        {selectedEvent.location} · {selectedEvent.time}
+        {selectedEvent
+          ? `${selectedEvent.location} · ${selectedEvent.time}`
+          : "No event selected"}
       </p>
       <div className="flex gap-1 mb-5 bg-slate-100 p-1 rounded-xl">
         <button
@@ -6055,14 +6099,20 @@ export function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
           className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${tab === "absent" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
         >
           Absent ({absentees.length})
-          {selectedEvent.fineAmount > 0 && (
+          {selectedEvent && selectedEvent.fineAmount > 0 && (
             <span className="text-red-500 ml-1">
               · P{selectedEvent.fineAmount}
             </span>
           )}
         </button>
       </div>
-      {tab === "present" && (
+      {!selectedEvent ? (
+        <div className="bg-white border border-slate-100 rounded-xl px-5 py-10 text-center">
+          <p className="text-slate-400 text-sm font-medium">
+            No events available yet.
+          </p>
+        </div>
+      ) : tab === "present" ? (
         <>
           {confirmed.length === 0 ? (
             <div className="bg-white border border-slate-100 rounded-xl px-5 py-10 text-center">
@@ -6136,8 +6186,7 @@ export function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
             </>
           )}
         </>
-      )}
-      {tab === "absent" && (
+      ) : (
         <>
           {selectedEvent.fineAmount > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
@@ -6204,10 +6253,14 @@ export function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
 }
 
 // ─── MODERATOR: Students ──────────────────────────────────────────────────────
-export function AdminStudentsPage() {
+export function AdminStudentsPage({
+  students = ALL_STUDENTS,
+}: {
+  students?: StudentProfile[];
+}) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<StudentProfile | null>(null);
-  const filtered = ALL_STUDENTS.filter((s) => {
+  const filtered = students.filter((s) => {
     const q = query.toLowerCase();
     return (
       s.name.toLowerCase().includes(q) ||
@@ -6220,7 +6273,7 @@ export function AdminStudentsPage() {
     <PageShell>
       <PageHeader
         title="Students"
-        subtitle={`${ALL_STUDENTS.length} students registered on TapIn`}
+        subtitle={`${students.length} students registered on TapIn`}
       />
       <div className="relative mb-5">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
@@ -6295,9 +6348,27 @@ export function AdminStudentsPage() {
 export function AdminAnnouncementsPage({
   posts,
   setPosts,
+  onCreate,
+  onUpdate,
+  onDelete,
 }: {
   posts: typeof INITIAL_ANNOUNCEMENTS;
   setPosts: React.Dispatch<React.SetStateAction<typeof INITIAL_ANNOUNCEMENTS>>;
+  onCreate?: (payload: {
+    title: string;
+    body: string;
+    badge: string;
+    photoUrl: string | null;
+  }) => Promise<void>;
+  onUpdate?: (payload: {
+    id: string;
+    title: string;
+    body: string;
+    badge: string;
+    photoUrl: string | null;
+    previousPhotoUrl?: string;
+  }) => Promise<void>;
+  onDelete?: (id: string, photoUrl?: string) => Promise<void>;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -6310,20 +6381,49 @@ export function AdminAnnouncementsPage({
   const [newPhoto, setNewPhoto] = useState<string | null>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const editPhotoRef = useRef<HTMLInputElement>(null);
-  const handlePublish = () => {
+
+  const uploadSelectedPhoto = async (file: File) => {
+    try {
+      const result = await uploadImage(file, "public-images");
+      if ("error" in result) {
+        toast.error(result.error);
+        return null;
+      }
+
+      return result.url;
+    } catch {
+      toast.error("Image upload failed.");
+      return null;
+    }
+  };
+
+  const handlePublish = async () => {
     if (!newTitle.trim()) return;
-    setPosts((p) => [
-      {
-        id: Date.now().toString(),
-        title: newTitle,
-        body: newBody,
-        date: "Aug 22, 2026",
-        author: "Admin",
-        badge: newBadge,
-        photoUrl: newPhoto ?? "",
-      },
-      ...p,
-    ]);
+
+    const payload = {
+      title: newTitle.trim(),
+      body: newBody.trim(),
+      badge: newBadge,
+      photoUrl: newPhoto ?? null,
+    };
+
+    if (onCreate) {
+      await onCreate(payload);
+    } else {
+      setPosts((p) => [
+        {
+          id: Date.now().toString(),
+          title: payload.title,
+          body: payload.body,
+          date: "Aug 22, 2026",
+          author: "Admin",
+          badge: payload.badge,
+          photoUrl: payload.photoUrl ?? "",
+        },
+        ...p,
+      ]);
+    }
+
     setNewTitle("");
     setNewBody("");
     setNewBadge("General");
@@ -6335,14 +6435,50 @@ export function AdminAnnouncementsPage({
     setEditDraft({ ...a });
     setShowForm(false);
   };
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editDraft) return;
-    setPosts((p) => p.map((a) => (a.id === editDraft.id ? editDraft : a)));
+
+    const currentPost = posts.find((post) => post.id === editDraft.id);
+    const payload = {
+      id: editDraft.id,
+      title: editDraft.title.trim(),
+      body: editDraft.body.trim(),
+      badge: editDraft.badge,
+      photoUrl: editDraft.photoUrl || null,
+      previousPhotoUrl: currentPost?.photoUrl || undefined,
+    };
+
+    if (onUpdate) {
+      await onUpdate(payload);
+    } else {
+      setPosts((p) =>
+        p.map((a) =>
+          a.id === editDraft.id
+            ? {
+                ...a,
+                title: payload.title,
+                body: payload.body,
+                badge: payload.badge,
+                photoUrl: payload.photoUrl ?? "",
+              }
+            : a,
+        ),
+      );
+    }
+
     setEditId(null);
     setEditDraft(null);
   };
-  const deletePost = (id: string) =>
+  const deletePost = async (id: string) => {
+    const currentPost = posts.find((post) => post.id === id);
+
+    if (onDelete) {
+      await onDelete(id, currentPost?.photoUrl || undefined);
+      return;
+    }
+
     setPosts((p) => p.filter((a) => a.id !== id));
+  };
   return (
     <PageShell>
       <PageHeader
@@ -6418,9 +6554,14 @@ export function AdminAnnouncementsPage({
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(e) => {
+              onChange={async (e) => {
                 const f = e.target.files?.[0];
-                if (f) setNewPhoto(URL.createObjectURL(f));
+                if (!f) return;
+
+                const uploaded = await uploadSelectedPhoto(f);
+                if (uploaded) {
+                  setNewPhoto(uploaded);
+                }
               }}
             />
             {newPhoto ? (
@@ -6515,12 +6656,14 @@ export function AdminAnnouncementsPage({
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(e) => {
+              onChange={async (e) => {
                 const f = e.target.files?.[0];
-                if (f)
-                  setEditDraft((d) =>
-                    d ? { ...d, photoUrl: URL.createObjectURL(f) } : d,
-                  );
+                if (!f) return;
+
+                const uploaded = await uploadSelectedPhoto(f);
+                if (uploaded) {
+                  setEditDraft((d) => (d ? { ...d, photoUrl: uploaded } : d));
+                }
               }}
             />
             {editDraft.photoUrl ? (
@@ -6730,7 +6873,11 @@ export function AdminExcuseRequestsPage({
 }
 
 // ─── MODERATOR: Reports ───────────────────────────────────────────────────────
-export function AdminReportsPage() {
+export function AdminReportsPage({
+  events = INITIAL_EVENTS,
+}: {
+  events?: EventData[];
+}) {
   const exportPDF = () => {
     const W = 794,
       pad = 48,
@@ -6741,7 +6888,7 @@ export function AdminReportsPage() {
       { l: "BSBA", n: 156, total: 300, pct: 52 },
       { l: "BSEd", n: 89, total: 197, pct: 45 },
     ];
-    const eventRows = INITIAL_EVENTS.filter((e) => e.status !== "upcoming");
+    const eventRows = events.filter((e) => e.status !== "upcoming");
     const fees = [
       { l: "Total fees issued", v: "₱42,500" },
       { l: "Collected", v: "₱18,200" },
