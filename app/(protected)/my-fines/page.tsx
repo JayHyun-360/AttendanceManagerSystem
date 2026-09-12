@@ -10,7 +10,7 @@ import { useProtectedUser } from "../layout";
 
 export default function MyFinesRoutePage() {
   const router = useRouter();
-  const { authUserId } = useProtectedUser();
+  const { authUserId, showFees } = useProtectedUser();
   const [fines, setFines] = useState<FineRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -83,7 +83,7 @@ export default function MyFinesRoutePage() {
   return (
     <MyFinesPage
       fines={fines}
-      showFees={true}
+      showFees={showFees}
       onBack={() => router.push("/dashboard")}
     />
   );

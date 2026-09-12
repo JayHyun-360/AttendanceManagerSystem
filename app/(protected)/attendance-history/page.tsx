@@ -14,7 +14,7 @@ import { useProtectedUser } from "../layout";
 
 export default function AttendanceHistoryRoutePage() {
   const router = useRouter();
-  const { authUserId } = useProtectedUser();
+  const { authUserId, showFees } = useProtectedUser();
   const [excuseRequests, setExcuseRequests] = useState<ExcuseRequest[]>([]);
   const [fines, setFines] = useState<FineRecord[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
@@ -181,7 +181,7 @@ export default function AttendanceHistoryRoutePage() {
     <AttendanceHistoryPage
       excuseRequests={excuseRequests}
       fines={fines}
-      showFees={true}
+      showFees={showFees}
       onSubmitExcuse={handleSubmitExcuse}
       onBack={() => router.push("/dashboard")}
       attendanceRecords={attendanceRecords}

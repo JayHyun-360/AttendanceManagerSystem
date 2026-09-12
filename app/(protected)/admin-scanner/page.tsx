@@ -10,7 +10,7 @@ import { useProtectedUser } from "../layout";
 
 export default function AdminScannerRoutePage() {
   const router = useRouter();
-  const { user } = useProtectedUser();
+  const { user, authUserId } = useProtectedUser();
   const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -91,5 +91,5 @@ export default function AdminScannerRoutePage() {
     );
   }
 
-  return <AdminScannerPage events={events} />;
+  return <AdminScannerPage events={events} scannerId={authUserId} />;
 }

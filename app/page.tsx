@@ -88,7 +88,7 @@ interface ScanRecord {
   section: string;
   time: string;
   status: "confirmed" | "duplicate";
-  dbId: number;
+  dbId: string | number;
 }
 
 export interface ExcuseRequest {
@@ -1546,25 +1546,27 @@ export function Sidebar({
       </nav>
 
       {/* Sidebar footer */}
-      <div className="px-2 py-3 border-t border-slate-100 space-y-0.5 shrink-0">
-        <button
-          onClick={() => onNav("landing")}
-          className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm font-medium text-slate-500 hover:text-green-700 hover:bg-green-50 transition-all"
-        >
-          <span className="shrink-0 text-slate-400">
-            <ArrowLeft className="w-[18px] h-[18px]" />
-          </span>
-          Back to Home
-        </button>
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm font-medium text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
-        >
-          <span className="text-slate-300 shrink-0">
-            <LogOut className="w-[18px] h-[18px]" />
-          </span>
-          Sign out
-        </button>
+      <div className="mt-auto border-t border-slate-100 px-2 py-3 shrink-0">
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={() => onNav("landing")}
+            className="inline-flex items-center gap-2 px-3 h-10 rounded-xl text-sm font-medium text-slate-500 hover:text-green-700 hover:bg-green-50 transition-all"
+          >
+            <span className="shrink-0 text-slate-400">
+              <ArrowLeft className="w-[18px] h-[18px]" />
+            </span>
+            Back to Home
+          </button>
+          <button
+            onClick={onLogout}
+            className="inline-flex items-center gap-2 px-3 h-10 rounded-xl text-sm font-medium text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
+          >
+            <span className="text-slate-300 shrink-0">
+              <LogOut className="w-[18px] h-[18px]" />
+            </span>
+            Sign out
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1572,7 +1574,7 @@ export function Sidebar({
   return (
     <>
       {/* ── Desktop: persistent sidebar ── */}
-      <aside className="hidden lg:flex flex-col w-60 shrink-0 border-r border-slate-100 h-full">
+      <aside className="hidden lg:flex flex-col w-60 shrink-0 border-r border-slate-100 sticky top-[56px] h-[calc(100vh-56px)] self-start overflow-hidden bg-white">
         {inner}
       </aside>
 
@@ -1782,14 +1784,6 @@ function LandingPage({
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() =>
-                  onNav(user.role === "admin" ? "admin-dashboard" : "dashboard")
-                }
-                className="h-9 rounded-lg bg-green-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-green-700"
-              >
-                Go to Dashboard
-              </button>
               <button
                 onClick={() => onNav("profile")}
                 className="flex items-center justify-center rounded-full border border-slate-200 bg-white p-1.5 transition-colors hover:bg-slate-50"
@@ -5473,10 +5467,12 @@ export function AdminEventsPage({
 // ─── MODERATOR: QR Scanner ────────────────────────────────────────────────────
 function CameraScanner({
   event,
+  scannerId,
   onResult,
   onClose,
 }: {
   event: EventData;
+  scannerId: string | null;
   onResult: (r: ScanRecord) => void;
   onClose: () => void;
 }) {
@@ -5486,35 +5482,105 @@ function CameraScanner({
   const animRef = useRef<number>(0);
   const scannedRef = useRef<boolean>(false);
   const [camError, setCamError] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [result, setResult] = useState<ScanRecord | null>(null);
   const [torch, setTorch] = useState(false);
-  const eventScans = EVENT_SCANS[event.id] ?? [];
 
-  const resolveQr = (raw: string) => {
+  const resolveQr = async (raw: string) => {
     if (scannedRef.current) return;
     scannedRef.current = true;
-    const id = raw.startsWith("TAPIN:") ? raw.slice(6) : raw;
-    const existing = eventScans.find((s) => s.id === id);
-    const time = new Date().toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const rec: ScanRecord = existing
-      ? { ...existing, status: "duplicate" as const }
-      : {
-          name: `Student ${id}`,
-          id,
-          program: "BSIT",
-          section: "IT-1A",
-          time,
-          status: "confirmed" as const,
-          dbId: Date.now(),
-        };
-    setSweeping(true);
-    setTimeout(() => {
-      setResult(rec);
-      onResult(rec);
-    }, 700);
+    setScanError(null);
+
+    try {
+      const studentId = raw.startsWith("TAPIN:") ? raw.slice(6).trim() : "";
+      if (!studentId || !scannerId) {
+        throw new Error("This QR code is not a valid TapIn student code.");
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, student_id, first_name, surname, program, section")
+        .eq("student_id", studentId)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+      if (!profile) {
+        throw new Error(
+          "Student profile not found. Ask the student to renew their QR code.",
+        );
+      }
+
+      const { data: existing, error: existingError } = await supabase
+        .from("attendance_logs")
+        .select("id, scanned_at")
+        .eq("event_id", event.id)
+        .eq("student_id", profile.id)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+
+      let recordId = existing?.id;
+      let scannedAt = existing?.scanned_at;
+      const duplicate = !!existing;
+
+      if (!duplicate) {
+        const { data: inserted, error: insertError } = await supabase
+          .from("attendance_logs")
+          .insert({
+            event_id: event.id,
+            student_id: profile.id,
+            scanned_by: scannerId,
+            status: "present",
+          })
+          .select("id, scanned_at")
+          .single();
+
+        if (insertError) {
+          const { data: raced } = await supabase
+            .from("attendance_logs")
+            .select("id, scanned_at")
+            .eq("event_id", event.id)
+            .eq("student_id", profile.id)
+            .maybeSingle();
+
+          if (!raced) throw insertError;
+          recordId = raced.id;
+          scannedAt = raced.scanned_at;
+        } else {
+          recordId = inserted.id;
+          scannedAt = inserted.scanned_at;
+        }
+      }
+
+      const rec: ScanRecord = {
+        name:
+          `${profile.first_name ?? ""} ${profile.surname ?? ""}`.trim() ||
+          "Student",
+        id: profile.student_id,
+        program: profile.program ?? "",
+        section: profile.section ?? "",
+        time: new Date(scannedAt ?? Date.now()).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        status: duplicate ? "duplicate" : "confirmed",
+        dbId: recordId,
+      };
+
+      setSweeping(true);
+      setTimeout(() => {
+        setResult(rec);
+        onResult(rec);
+      }, 700);
+    } catch (caughtError) {
+      console.error("Failed to record QR attendance", caughtError);
+      setScanError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Unable to record attendance. Please try again.",
+      );
+      scannedRef.current = false;
+    }
   };
 
   useEffect(() => {
@@ -5599,6 +5665,7 @@ function CameraScanner({
     scannedRef.current = false;
     setSweeping(false);
     setResult(null);
+    setScanError(null);
     animRef.current = requestAnimationFrame(tickRef.current);
   };
 
@@ -5701,15 +5768,25 @@ function CameraScanner({
         )}
 
         {/* Camera error state */}
-        {camError && !result && (
+        {(camError || scanError) && !result && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950/90 text-center px-8">
             <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center text-white/50">
               <Icons.AlertCircle />
             </div>
-            <p className="text-white font-semibold">{camError}</p>
+            <p className="text-white font-semibold">{camError ?? scanError}</p>
             <p className="text-white/50 text-sm">
-              Ensure camera permissions are allowed in your browser settings.
+              {camError
+                ? "Ensure camera permissions are allowed in your browser settings."
+                : "Check the student QR code and try again."}
             </p>
+            {scanError && !camError && (
+              <button
+                onClick={scanAgain}
+                className="h-10 px-4 bg-white text-slate-900 text-sm font-semibold rounded-xl"
+              >
+                Scan again
+              </button>
+            )}
           </div>
         )}
 
@@ -5799,7 +5876,13 @@ function CameraScanner({
   );
 }
 
-export function AdminScannerPage({ events = [] }: { events?: EventData[] }) {
+export function AdminScannerPage({
+  events = [],
+  scannerId,
+}: {
+  events?: EventData[];
+  scannerId: string | null;
+}) {
   const [selectedEventId, setSelectedEventId] = useState<string>(
     events[0]?.id ?? "",
   );
@@ -5834,6 +5917,7 @@ export function AdminScannerPage({ events = [] }: { events?: EventData[] }) {
     return (
       <CameraScanner
         event={selectedEvent}
+        scannerId={scannerId}
         onResult={handleResult}
         onClose={() => setScannerOpen(false)}
       />
@@ -6011,7 +6095,7 @@ export function AdminAttendeesPage({
   const duplicates = scans.filter((s) => s.status === "duplicate");
   const attendedIds = new Set(confirmed.map((s) => s.id));
   const absentees = students.filter((s) => !attendedIds.has(s.id));
-  const deleteRecord = (dbId: number) =>
+  const deleteRecord = (dbId: string | number) =>
     setScanState((st) => ({
       ...st,
       [selectedEventId]: (st[selectedEventId] ?? []).filter(

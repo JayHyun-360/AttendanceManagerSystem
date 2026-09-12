@@ -10,7 +10,7 @@ import { useProtectedUser } from "../layout";
 
 export default function EventsRoutePage() {
   const router = useRouter();
-  const { user } = useProtectedUser();
+  const { user, showFees } = useProtectedUser();
   const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -113,7 +113,7 @@ export default function EventsRoutePage() {
       onNav={onNav}
       onSelectEvent={onSelectEvent}
       user={user}
-      showFees={true}
+      showFees={showFees}
       events={events}
     />
   );

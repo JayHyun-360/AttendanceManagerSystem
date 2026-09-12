@@ -121,7 +121,7 @@ export default function AdminAttendeesRoutePage() {
                 minute: "2-digit",
               }),
               status: row.status === "late" ? "duplicate" : "confirmed",
-              dbId: Number(row.id),
+              dbId: String(row.id),
             });
           }
 

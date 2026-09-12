@@ -10,7 +10,7 @@ import { useProtectedUser } from "../layout";
 
 export default function DashboardRoute() {
   const router = useRouter();
-  const { user, authUserId } = useProtectedUser();
+  const { user, authUserId, showFees } = useProtectedUser();
   const [fines, setFines] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
@@ -320,7 +320,7 @@ export default function DashboardRoute() {
       user={user}
       onNav={onNav}
       fines={fines}
-      showFees={false}
+      showFees={showFees}
       announcements={announcements}
       nextEvent={nextEvent}
       attendanceStats={attendanceStats}

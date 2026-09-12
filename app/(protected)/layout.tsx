@@ -26,6 +26,7 @@ type ProtectedUserContextValue = {
   setUser: Dispatch<SetStateAction<User | null>>;
   authUserId: string | null;
   setAuthUserId: Dispatch<SetStateAction<string | null>>;
+  showFees: boolean;
 };
 
 const ProtectedUserContext = createContext<ProtectedUserContextValue | null>(
@@ -69,6 +70,8 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
+  const [settingsReady, setSettingsReady] = useState(false);
+  const [showFees, setShowFees] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -155,6 +158,37 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   }, [router]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function hydrateSettings() {
+      const { data, error } = await supabase
+        .from("system_settings")
+        .select("settings")
+        .eq("id", 1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Failed to load protected settings", error);
+      }
+
+      if (!cancelled) {
+        const savedSettings = data?.settings as
+          | { showFees?: boolean }
+          | null
+          | undefined;
+        setShowFees(savedSettings?.showFees ?? false);
+        setSettingsReady(true);
+      }
+    }
+
+    void hydrateSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const routePage = pathToPage[pathname] ?? "dashboard";
     setPage(routePage);
 
@@ -219,7 +253,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     setOpen(false);
   };
 
-  if (!sessionReady) {
+  if (!sessionReady || !settingsReady) {
     return (
       <div className="min-h-screen bg-[#f8faf9] flex items-center justify-center">
         <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
@@ -232,7 +266,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
   return (
     <ProtectedUserContext.Provider
-      value={{ user, setUser, authUserId, setAuthUserId }}
+      value={{ user, setUser, authUserId, setAuthUserId, showFees }}
     >
       <div className="min-h-screen bg-[#f8faf9]">
         <TopBar user={user} onNav={onNav} onMenuOpen={() => setOpen(true)} />

@@ -43,6 +43,7 @@ const normalizeSettings = (
 
 export default function AdminSettingsRoutePage() {
   const [settings, setSettings] = useState<SystemSettings>(defaultSettings);
+  const [settingsReady, setSettingsReady] = useState(false);
   const [saveState, setSaveState] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
@@ -59,6 +60,9 @@ export default function AdminSettingsRoutePage() {
 
       if (error) {
         console.error("Failed to load settings", error);
+        if (!cancelled) {
+          setSettingsReady(true);
+        }
         return;
       }
 
@@ -81,6 +85,8 @@ export default function AdminSettingsRoutePage() {
             })
             .eq("id", 1);
         }
+
+        setSettingsReady(true);
       }
     }
 
@@ -153,6 +159,28 @@ export default function AdminSettingsRoutePage() {
     setSaveState("saved");
     toast.success("Settings saved.");
   };
+
+  if (!settingsReady) {
+    return (
+      <div className="space-y-5 animate-pulse">
+        <div className="flex justify-end">
+          <div className="h-6 w-16 rounded-full bg-slate-200" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-3 w-24 rounded bg-slate-200" />
+          <div className="h-24 rounded-xl bg-slate-200" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-3 w-40 rounded bg-slate-200" />
+          <div className="h-32 rounded-xl bg-slate-200" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-3 w-36 rounded bg-slate-200" />
+          <div className="h-40 rounded-xl bg-slate-200" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
