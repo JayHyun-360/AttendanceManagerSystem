@@ -1669,7 +1669,7 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
 
   useEffect(() => {
     if (paused || n <= 1) return;
-    const t = setInterval(advance, 4000);
+    const t = setInterval(advance, 5000);
     return () => clearInterval(t);
   }, [paused, n]);
 
