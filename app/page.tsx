@@ -1700,11 +1700,24 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
             className="relative h-full flex-shrink-0"
             style={{ width: `${100 / total}%` }}
           >
-            <img
-              src={s.imageUrl}
-              alt={s.caption}
-              className="w-full h-full object-cover"
-            />
+            {/\.mp4($|\?)/i.test(s.imageUrl) ? (
+              <video
+                src={s.imageUrl}
+                aria-label={s.caption}
+                className="w-full h-full object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                controls
+              />
+            ) : (
+              <img
+                src={s.imageUrl}
+                alt={s.caption}
+                className="w-full h-full object-cover"
+              />
+            )}
             <div
               className="absolute inset-0"
               style={{
@@ -7658,7 +7671,7 @@ export function AdminSettingsPage({
   const [slideUploadSlots, setSlideUploadSlots] = useState<
     Record<number, UploadSlot>
   >({});
-  const isPublicImageUrl = (value?: string) =>
+  const isPublicMediaUrl = (value?: string) =>
     !!value && value.startsWith("https://") && !value.startsWith("blob:");
 
   const handleHeroImageUpload = async (files: File[]) => {
@@ -7679,7 +7692,7 @@ export function AdminSettingsPage({
       slots.map(async ({ id, file }) => {
         const result = await uploadImage(file);
 
-        if ("error" in result || !isPublicImageUrl(result.url)) {
+        if ("error" in result || !isPublicMediaUrl(result.url)) {
           const error =
             "error" in result
               ? result.error
@@ -7721,7 +7734,7 @@ export function AdminSettingsPage({
     }));
     const result = await uploadImage(file);
 
-    if ("error" in result || !isPublicImageUrl(result.url)) {
+    if ("error" in result || !isPublicMediaUrl(result.url)) {
       const error =
         "error" in result
           ? result.error
@@ -8046,7 +8059,7 @@ export function AdminSettingsPage({
                       <input
                         ref={ref}
                         type="file"
-                        accept="image/*"
+                        accept="image/*,video/mp4"
                         className="hidden"
                         onChange={async (e) => {
                           const f = e.target.files?.[0];
@@ -8074,16 +8087,25 @@ export function AdminSettingsPage({
                             Retry
                           </button>
                         </div>
-                      ) : slide.imageUrl && isPublicImageUrl(slide.imageUrl) ? (
+                      ) : slide.imageUrl && isPublicMediaUrl(slide.imageUrl) ? (
                         <div
                           className="relative w-20 h-14 rounded-lg overflow-hidden border border-slate-200 cursor-pointer"
                           onClick={() => slideRefs.current[i]?.click()}
                         >
-                          <img
-                            src={slide.imageUrl}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
+                          {/\.mp4($|\?)/i.test(slide.imageUrl) ? (
+                            <video
+                              src={slide.imageUrl}
+                              muted
+                              playsInline
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <img
+                              src={slide.imageUrl}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          )}
                           <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                             <Icons.Camera />
                           </div>
