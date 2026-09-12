@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
 const tapInLogoSrc = "/tapin-logo.svg";
@@ -4229,47 +4230,113 @@ export function AdminEventsPage({
   const toggleD = (k: keyof NewEventDraft) => () =>
     setDraft((d) => ({ ...d, [k]: !d[k] }));
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!draft.title || !draft.date) return;
-    const newEvent: EventData = {
-      id: Date.now().toString(),
-      title: draft.title,
-      date: draft.date,
-      time: draft.multiSession ? "" : draft.time,
-      location: draft.location,
-      description: draft.description,
-      program: draft.program,
-      status: "upcoming",
-      attendees: 0,
-      version: 1,
-      fineAmount: draft.multiSession
-        ? (parseInt(draft.morningAbsentFine) || 0) +
-          (parseInt(draft.afternoonAbsentFine) || 0)
-        : parseInt(draft.absentFine) || 0,
-      mediaUrls: photoUrls,
-      highlightUrl: highlightUrl ?? undefined,
-      multiSession: draft.multiSession,
-      strictMorning: draft.strictMorning,
-      strictAfternoon: draft.strictAfternoon,
-      morningStart: draft.morningStart,
-      morningEnd: draft.morningEnd,
-      morningLateCutoff: draft.morningLateCutoff,
-      afternoonStart: draft.afternoonStart,
-      afternoonEnd: draft.afternoonEnd,
-      afternoonLateCutoff: draft.afternoonLateCutoff,
-      absentFine: parseInt(draft.absentFine) || 0,
-      lateFine: parseInt(draft.lateFine) || 0,
-      morningAbsentFine: parseInt(draft.morningAbsentFine) || 0,
-      morningLateFine: parseInt(draft.morningLateFine) || 0,
-      afternoonAbsentFine: parseInt(draft.afternoonAbsentFine) || 0,
-      afternoonLateFine: parseInt(draft.afternoonLateFine) || 0,
-    };
-    setEvents((ev) => [newEvent, ...ev]);
-    setDraft(EMPTY_DRAFT);
-    setPhotoUrls([]);
-    setVideoNames([]);
-    setHighlightUrl(null);
-    setShowForm(false);
+
+    try {
+      // Map UI camelCase to database snake_case
+      const payload = {
+        title: draft.title,
+        event_date: draft.date,
+        start_time: draft.multiSession ? null : draft.time || null,
+        end_time: draft.multiSession
+          ? null
+          : draft.time
+            ? draft.time.split("–")[1]?.trim()
+            : null,
+        location: draft.location,
+        description: draft.description,
+        program: draft.program,
+        image_url: highlightUrl || null,
+        status: "upcoming",
+        multi_session: draft.multiSession,
+        strict_morning: draft.strictMorning,
+        strict_afternoon: draft.strictAfternoon,
+        morning_start: draft.morningStart || null,
+        morning_end: draft.morningEnd || null,
+        morning_late_cutoff: draft.morningLateCutoff || null,
+        afternoon_start: draft.afternoonStart || null,
+        afternoon_end: draft.afternoonEnd || null,
+        afternoon_late_cutoff: draft.afternoonLateCutoff || null,
+        absent_fine: parseInt(draft.absentFine) || 0,
+        late_fine: parseInt(draft.lateFine) || 0,
+        morning_absent_fine: draft.multiSession
+          ? parseInt(draft.morningAbsentFine) || 0
+          : null,
+        morning_late_fine: draft.multiSession
+          ? parseInt(draft.morningLateFine) || 0
+          : null,
+        afternoon_absent_fine: draft.multiSession
+          ? parseInt(draft.afternoonAbsentFine) || 0
+          : null,
+        afternoon_late_fine: draft.multiSession
+          ? parseInt(draft.afternoonLateFine) || 0
+          : null,
+      };
+
+      const { data, error } = await supabase
+        .from("events")
+        .insert([payload])
+        .select();
+
+      if (error) {
+        toast.error(`Failed to create event: ${error.message}`);
+        console.error(error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Map returned database row back to EventData shape
+        const row = data[0];
+        const newEvent: EventData = {
+          id: row.id,
+          title: row.title,
+          date: row.event_date,
+          time:
+            row.start_time && row.end_time
+              ? `${row.start_time}–${row.end_time}`
+              : "",
+          location: row.location,
+          description: row.description,
+          program: row.program || "All Programs",
+          status: (row.status as any) || "upcoming",
+          attendees: 0,
+          version: 1,
+          fineAmount: draft.multiSession
+            ? (parseInt(draft.morningAbsentFine) || 0) +
+              (parseInt(draft.afternoonAbsentFine) || 0)
+            : parseInt(draft.absentFine) || 0,
+          mediaUrls: highlightUrl ? [highlightUrl] : [],
+          highlightUrl: highlightUrl || undefined,
+          multiSession: draft.multiSession,
+          strictMorning: draft.strictMorning,
+          strictAfternoon: draft.strictAfternoon,
+          morningStart: draft.morningStart,
+          morningEnd: draft.morningEnd,
+          morningLateCutoff: draft.morningLateCutoff,
+          afternoonStart: draft.afternoonStart,
+          afternoonEnd: draft.afternoonEnd,
+          afternoonLateCutoff: draft.afternoonLateCutoff,
+          absentFine: parseInt(draft.absentFine) || 0,
+          lateFine: parseInt(draft.lateFine) || 0,
+          morningAbsentFine: parseInt(draft.morningAbsentFine) || 0,
+          morningLateFine: parseInt(draft.morningLateFine) || 0,
+          afternoonAbsentFine: parseInt(draft.afternoonAbsentFine) || 0,
+          afternoonLateFine: parseInt(draft.afternoonLateFine) || 0,
+        };
+
+        setEvents((ev) => [newEvent, ...ev]);
+        setDraft(EMPTY_DRAFT);
+        setPhotoUrls([]);
+        setVideoNames([]);
+        setHighlightUrl(null);
+        setShowForm(false);
+        toast.success("Event created successfully");
+      }
+    } catch (caughtError) {
+      console.error(caughtError);
+      toast.error("An error occurred while creating the event");
+    }
   };
 
   const startEdit = (e: EventData) => {
@@ -4304,35 +4371,90 @@ export function AdminEventsPage({
     );
   };
 
-  const commitSave = () => {
+  const commitSave = async () => {
     if (!editDraft) return;
-    // multi-admin conflict check: compare version in current state
-    const current = events.find((e) => e.id === editDraft.id);
-    if (
-      current &&
-      editOriginal &&
-      (current.version ?? 1) !== (editOriginal.version ?? 1)
-    ) {
-      alert("Another admin modified this event — please review and try again.");
+
+    try {
+      // multi-admin conflict check: compare version in current state
+      const current = events.find((e) => e.id === editDraft.id);
+      if (
+        current &&
+        editOriginal &&
+        (current.version ?? 1) !== (editOriginal.version ?? 1)
+      ) {
+        toast.error(
+          "Another admin modified this event — please review and try again.",
+        );
+        setEditId(null);
+        setEditDraft(null);
+        setEditOriginal(null);
+        setShowSensitiveWarning(false);
+        return;
+      }
+
+      // Map to database snake_case
+      const payload = {
+        title: editDraft.title,
+        event_date: editDraft.date,
+        start_time: editDraft.multiSession ? null : editDraft.time || null,
+        end_time: editDraft.multiSession
+          ? null
+          : editDraft.time
+            ? editDraft.time.split("–")[1]?.trim()
+            : null,
+        location: editDraft.location,
+        description: editDraft.description,
+        program: editDraft.program,
+        image_url: editDraft.highlightUrl || null,
+        status: editDraft.status,
+        multi_session: editDraft.multiSession,
+        strict_morning: editDraft.strictMorning,
+        strict_afternoon: editDraft.strictAfternoon,
+        morning_start: editDraft.morningStart || null,
+        morning_end: editDraft.morningEnd || null,
+        morning_late_cutoff: editDraft.morningLateCutoff || null,
+        afternoon_start: editDraft.afternoonStart || null,
+        afternoon_end: editDraft.afternoonEnd || null,
+        afternoon_late_cutoff: editDraft.afternoonLateCutoff || null,
+        absent_fine: editDraft.absentFine || 0,
+        late_fine: editDraft.lateFine || 0,
+        morning_absent_fine: editDraft.morningAbsentFine,
+        morning_late_fine: editDraft.morningLateFine,
+        afternoon_absent_fine: editDraft.afternoonAbsentFine,
+        afternoon_late_fine: editDraft.afternoonLateFine,
+        version: (editOriginal?.version ?? 1) + 1,
+      };
+
+      const { error } = await supabase
+        .from("events")
+        .update(payload)
+        .eq("id", editDraft.id);
+
+      if (error) {
+        toast.error(`Failed to update event: ${error.message}`);
+        console.error(error);
+        return;
+      }
+
+      const saved: EventData = {
+        ...editDraft,
+        version: (editOriginal?.version ?? 1) + 1,
+        fineAmount: editDraft.multiSession
+          ? (editDraft.morningAbsentFine ?? 0) +
+            (editDraft.afternoonAbsentFine ?? 0)
+          : (editDraft.absentFine ?? editDraft.fineAmount),
+      };
+
+      setEvents((ev) => ev.map((e) => (e.id === saved.id ? saved : e)));
       setEditId(null);
       setEditDraft(null);
       setEditOriginal(null);
       setShowSensitiveWarning(false);
-      return;
+      toast.success("Event updated successfully");
+    } catch (caughtError) {
+      console.error(caughtError);
+      toast.error("An error occurred while updating the event");
     }
-    const saved: EventData = {
-      ...editDraft,
-      version: (editOriginal?.version ?? 1) + 1,
-      fineAmount: editDraft.multiSession
-        ? (editDraft.morningAbsentFine ?? 0) +
-          (editDraft.afternoonAbsentFine ?? 0)
-        : (editDraft.absentFine ?? editDraft.fineAmount),
-    };
-    setEvents((ev) => ev.map((e) => (e.id === saved.id ? saved : e)));
-    setEditId(null);
-    setEditDraft(null);
-    setEditOriginal(null);
-    setShowSensitiveWarning(false);
   };
 
   const handleSaveEdit = () => {
@@ -4343,14 +4465,59 @@ export function AdminEventsPage({
     commitSave();
   };
 
-  const deleteEvent = (id: string) =>
-    setEvents((ev) => ev.filter((e) => e.id !== id));
-  const setStatus = (id: string, status: EventStatus) =>
-    setEvents((ev) =>
-      ev.map((e) =>
-        e.id === id ? { ...e, status, version: (e.version ?? 1) + 1 } : e,
-      ),
-    );
+  const deleteEvent = async (id: string) => {
+    try {
+      const { error } = await supabase.from("events").delete().eq("id", id);
+
+      if (error) {
+        toast.error(`Failed to delete event: ${error.message}`);
+        console.error(error);
+        return;
+      }
+
+      setEvents((ev) => ev.filter((e) => e.id !== id));
+      toast.success("Event deleted successfully");
+    } catch (caughtError) {
+      console.error(caughtError);
+      toast.error("An error occurred while deleting the event");
+    }
+  };
+
+  const setStatus = async (id: string, status: EventStatus) => {
+    try {
+      const current = events.find((e) => e.id === id);
+      if (!current) {
+        toast.error("Event not found");
+        return;
+      }
+
+      const payload = {
+        status,
+        version: (current.version ?? 1) + 1,
+      };
+
+      const { error } = await supabase
+        .from("events")
+        .update(payload)
+        .eq("id", id);
+
+      if (error) {
+        toast.error(`Failed to update event status: ${error.message}`);
+        console.error(error);
+        return;
+      }
+
+      setEvents((ev) =>
+        ev.map((e) =>
+          e.id === id ? { ...e, status, version: (e.version ?? 1) + 1 } : e,
+        ),
+      );
+      toast.success(`Event marked as ${status}`);
+    } catch (caughtError) {
+      console.error(caughtError);
+      toast.error("An error occurred while updating event status");
+    }
+  };
 
   const statusOptions = (
     current: EventStatus,
