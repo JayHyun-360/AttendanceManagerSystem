@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AdminSettingsPage, type SystemSettings } from "../../page";
 import { supabase } from "@/lib/supabase";
+import { deleteImage } from "@/lib/uploadImage";
 
 const defaultSettings: SystemSettings = {
   showFees: true,
@@ -62,9 +63,24 @@ export default function AdminSettingsRoutePage() {
       }
 
       if (!cancelled) {
-        setSettings(
-          normalizeSettings(data?.settings as Partial<SystemSettings>),
+        const cleanedSettings = normalizeSettings(
+          data?.settings as Partial<SystemSettings>,
         );
+
+        setSettings(cleanedSettings);
+
+        if (
+          data?.settings &&
+          JSON.stringify(data.settings) !== JSON.stringify(cleanedSettings)
+        ) {
+          await supabase
+            .from("system_settings")
+            .update({
+              settings: cleanedSettings,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", 1);
+        }
       }
     }
 
@@ -87,6 +103,21 @@ export default function AdminSettingsRoutePage() {
       })),
     };
 
+    const removedHeroUrls = settings.heroImageUrls.filter(
+      (url) => !sanitizedSettings.heroImageUrls.includes(url),
+    );
+
+    const removedCarouselUrls = settings.carouselSlides
+      .map((slide) => slide.imageUrl)
+      .filter(
+        (url) =>
+          !!url &&
+          !url.startsWith("blob:") &&
+          !sanitizedSettings.carouselSlides.some(
+            (slide) => slide.imageUrl === url,
+          ),
+      );
+
     setSettings(sanitizedSettings);
     setSaveState("saving");
 
@@ -103,6 +134,20 @@ export default function AdminSettingsRoutePage() {
       setSaveState("error");
       toast.error("Settings save failed.");
       return;
+    }
+
+    const cleanupUrls = [...removedHeroUrls, ...removedCarouselUrls];
+
+    if (cleanupUrls.length > 0) {
+      await Promise.all(
+        cleanupUrls.map(async (url) => {
+          const { error: deleteError } = await deleteImage(url);
+
+          if (deleteError) {
+            console.error("Failed to delete image", deleteError, url);
+          }
+        }),
+      );
     }
 
     setSaveState("saved");

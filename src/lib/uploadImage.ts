@@ -4,6 +4,49 @@ export type UploadImageResult =
   | { url: string; path: string }
   | { error: string };
 
+export async function deleteImage(
+  value: string,
+  bucketName = "public-images",
+): Promise<{ success: boolean; error?: string }> {
+  if (!value || value.startsWith("blob:")) {
+    return { success: true };
+  }
+
+  try {
+    let objectPath = value;
+
+    if (value.startsWith("http://") || value.startsWith("https://")) {
+      const pathname = new URL(value).pathname;
+      const segments = pathname.split("/").filter(Boolean);
+      const bucketIndex = segments.findIndex(
+        (segment) => segment === bucketName,
+      );
+
+      if (bucketIndex >= 0 && bucketIndex < segments.length - 1) {
+        objectPath = segments.slice(bucketIndex + 1).join("/");
+      } else {
+        objectPath = segments.at(-1) ?? "";
+      }
+    }
+
+    if (!objectPath) {
+      return { success: true };
+    }
+
+    const { error } = await supabase.storage
+      .from(bucketName)
+      .remove([objectPath]);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch {
+    return { success: true };
+  }
+}
+
 export async function uploadImage(
   file: File,
   bucketName = "public-images",
