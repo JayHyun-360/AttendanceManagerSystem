@@ -34,6 +34,7 @@ export default function AdminAttendeesRoutePage() {
           supabase
             .from("profiles")
             .select("*")
+            .eq("role", "student")
             .order("surname", { ascending: true }),
         ]);
 
@@ -94,7 +95,7 @@ export default function AdminAttendeesRoutePage() {
         const attendanceResult = await supabase
           .from("attendance_logs")
           .select(
-            "*, student_profile:profiles!attendance_logs_student_id_fkey(student_id, first_name, surname)",
+            "*, student_profile:profiles!attendance_logs_student_id_fkey(student_id, first_name, surname, program, section)",
           )
           .order("scanned_at", { ascending: false });
 
@@ -120,7 +121,7 @@ export default function AdminAttendeesRoutePage() {
                 hour: "2-digit",
                 minute: "2-digit",
               }),
-              status: row.status === "late" ? "duplicate" : "confirmed",
+              status: "confirmed",
               dbId: String(row.id),
             });
           }
@@ -189,6 +190,20 @@ export default function AdminAttendeesRoutePage() {
     router.push(paths[page] ?? "/admin-dashboard");
   };
 
+  const deleteAttendance = async (dbId: string | number) => {
+    const { error } = await supabase
+      .from("attendance_logs")
+      .delete()
+      .eq("id", String(dbId));
+
+    if (error) {
+      console.error("Failed to delete attendance record", error);
+      return false;
+    }
+
+    return true;
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-3 pt-2">
@@ -211,6 +226,7 @@ export default function AdminAttendeesRoutePage() {
       events={events}
       students={students}
       scanState={scanState}
+      onDeleteAttendance={deleteAttendance}
     />
   );
 }

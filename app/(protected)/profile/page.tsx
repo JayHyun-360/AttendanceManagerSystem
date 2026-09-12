@@ -38,7 +38,10 @@ export default function ProfileRoutePage() {
         section: nextUser.section,
         phone: nextUser.phone,
         contact_email: nextUser.contactEmail,
-        photo_url: nextUser.photoUrl ?? null,
+        photo_url:
+          nextUser.photoUrl && !nextUser.photoUrl.startsWith("blob:")
+            ? nextUser.photoUrl
+            : null,
       })
       .eq("id", authUserId);
 

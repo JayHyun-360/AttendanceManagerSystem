@@ -27,6 +27,7 @@ export default function AdminStudentsRoutePage() {
         const { data, error } = await supabase
           .from("profiles")
           .select("*")
+          .eq("role", "student")
           .order("surname", { ascending: true });
 
         if (error) {

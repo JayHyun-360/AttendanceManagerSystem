@@ -4149,6 +4149,7 @@ export function AdminDashboard({
   recentScans?: Array<{
     name: string;
     id: string;
+    program: string;
     section: string;
     time: string;
     status: "confirmed" | "duplicate";
@@ -4275,7 +4276,9 @@ export function AdminDashboard({
                 {s.name}
               </p>
               <p className="text-[11px] text-slate-400">
-                {s.id} · {s.section}
+                {s.id} · {s.program}
+                {s.program && s.section ? " · " : ""}
+                {s.section}
               </p>
             </div>
             <span className="text-[11px] text-slate-400 shrink-0">
@@ -6048,11 +6051,13 @@ export function AdminAttendeesPage({
   events = [],
   students = [],
   scanState: initialScanState,
+  onDeleteAttendance,
 }: {
   onNav: (p: Page) => void;
   events?: EventData[];
   students?: StudentProfile[];
   scanState?: Record<string, ScanRecord[]>;
+  onDeleteAttendance?: (dbId: string | number) => Promise<boolean>;
 }) {
   const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "");
   const [scanState, setScanState] = useState<Record<string, ScanRecord[]>>(
@@ -6079,13 +6084,43 @@ export function AdminAttendeesPage({
   const duplicates = scans.filter((s) => s.status === "duplicate");
   const attendedIds = new Set(confirmed.map((s) => s.id));
   const absentees = students.filter((s) => !attendedIds.has(s.id));
-  const deleteRecord = (dbId: string | number) =>
+  const deleteRecord = async (dbId: string | number) => {
+    if (onDeleteAttendance && !(await onDeleteAttendance(dbId))) {
+      return;
+    }
+
     setScanState((st) => ({
       ...st,
       [selectedEventId]: (st[selectedEventId] ?? []).filter(
         (r) => r.dbId !== dbId,
       ),
     }));
+  };
+
+  const exportAttendance = () => {
+    if (!selectedEvent) return;
+
+    const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const rows = scans.map((scan) =>
+      [scan.name, scan.id, scan.program, scan.section, scan.time, scan.status]
+        .map((value) => escapeCsv(String(value ?? "")))
+        .join(","),
+    );
+    const csv = [
+      ["Student", "Student ID", "Program", "Section", "Time", "Status"]
+        .map(escapeCsv)
+        .join(","),
+      ...rows,
+    ].join("\n");
+    const url = URL.createObjectURL(
+      new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${selectedEvent.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-attendees.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
   return (
     <PageShell>
       <BackButton
@@ -6095,7 +6130,11 @@ export function AdminAttendeesPage({
       <PageHeader
         title="Attendees"
         action={
-          <button className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 flex items-center gap-1.5">
+          <button
+            onClick={exportAttendance}
+            disabled={!selectedEvent || scans.length === 0}
+            className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+          >
             <Icons.Download />
             Export
           </button>
@@ -6213,7 +6252,7 @@ export function AdminAttendeesPage({
                     </div>
                     <Badge status={s.status} />
                     <button
-                      onClick={() => deleteRecord(s.dbId)}
+                      onClick={() => void deleteRecord(s.dbId)}
                       className="w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                     >
                       <Icons.Trash />

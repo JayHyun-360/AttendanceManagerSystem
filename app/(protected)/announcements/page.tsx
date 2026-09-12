@@ -20,6 +20,7 @@ export default function AnnouncementsRoutePage() {
         const { data, error } = await supabase
           .from("announcements")
           .select("*")
+          .eq("target_role", "student")
           .order("created_at", { ascending: false });
 
         if (error) {

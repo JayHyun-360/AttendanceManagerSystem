@@ -47,7 +47,7 @@ export default function AdminDashboardRoute() {
             supabase
               .from("attendance_logs")
               .select(
-                "*, student_profile:profiles!attendance_logs_student_id_fkey(first_name, surname, student_id, section), events(title)",
+                "*, student_profile:profiles!attendance_logs_student_id_fkey(first_name, surname, student_id, program, section), events(title)",
               )
               .order("scanned_at", { ascending: false })
               .limit(5),
@@ -77,9 +77,7 @@ export default function AdminDashboardRoute() {
         today.setHours(0, 0, 0, 0);
 
         const activeEvents = (eventsResult.data ?? []).filter((row: any) => {
-          const eventDate = new Date(row.event_date);
-          eventDate.setHours(0, 0, 0, 0);
-          return eventDate >= today;
+          return row.status === "active";
         }).length;
 
         const scannedToday = (scansResult.data ?? []).filter((row: any) => {
@@ -91,15 +89,14 @@ export default function AdminDashboardRoute() {
           return scannedAt >= today;
         }).length;
 
-        const duplicates = (scansResult.data ?? []).filter(
-          (row: any) => row.status === "late",
-        ).length;
+        const duplicates = 0;
 
         const recent = (scansResult.data ?? []).map((row: any) => ({
           name:
             `${row.student_profile?.first_name ?? ""} ${row.student_profile?.surname ?? ""}`.trim() ||
             "Student",
           id: row.student_profile?.student_id || row.student_id,
+          program: row.student_profile?.program || "",
           section: row.student_profile?.section || "",
           time: row.scanned_at
             ? new Date(row.scanned_at).toLocaleTimeString("en-US", {
@@ -107,7 +104,7 @@ export default function AdminDashboardRoute() {
                 minute: "2-digit",
               })
             : "",
-          status: row.status === "late" ? "duplicate" : "confirmed",
+          status: "confirmed",
         }));
 
         setRequests(excuseResult.data ?? []);
