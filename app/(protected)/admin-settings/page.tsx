@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { AdminSettingsPage, type SystemSettings } from "../../page";
 
 const emptySettings: SystemSettings = {
@@ -14,10 +15,7 @@ const emptySettings: SystemSettings = {
 };
 
 export default function AdminSettingsRoutePage() {
-  return (
-    <AdminSettingsPage
-      settings={emptySettings}
-      onSave={(settings: SystemSettings) => undefined}
-    />
-  );
+  const [settings, setSettings] = useState<SystemSettings>(emptySettings);
+
+  return <AdminSettingsPage settings={settings} onSave={setSettings} />;
 }
