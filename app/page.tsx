@@ -7481,5 +7481,45 @@ const DEFAULT_SETTINGS: SystemSettings = {
 };
 
 export default function App() {
-  return <LandingPage onNav={() => undefined} settings={DEFAULT_SETTINGS} />;
+  const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSettings() {
+      const { data, error } = await supabase
+        .from("system_settings")
+        .select("settings")
+        .eq("id", 1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Failed to load landing settings", error);
+        return;
+      }
+
+      if (!cancelled) {
+        const savedSettings =
+          ((data?.settings ?? DEFAULT_SETTINGS) as Partial<SystemSettings>) ||
+          {};
+
+        setSettings({
+          ...DEFAULT_SETTINGS,
+          ...savedSettings,
+          heroImageUrls:
+            savedSettings.heroImageUrls ?? DEFAULT_SETTINGS.heroImageUrls,
+          carouselSlides:
+            savedSettings.carouselSlides ?? DEFAULT_SETTINGS.carouselSlides,
+        });
+      }
+    }
+
+    void loadSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return <LandingPage onNav={() => undefined} settings={settings} />;
 }
