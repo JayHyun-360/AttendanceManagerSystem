@@ -2159,6 +2159,15 @@ export function OnboardingPage({
   });
   const [agreed, setAgreed] = useState(false);
   const idPhotoRef = useRef<HTMLInputElement>(null);
+
+  // Cleanup: revoke blob URL when component unmounts
+  useEffect(() => {
+    return () => {
+      if (f.idPhotoUrl) {
+        URL.revokeObjectURL(f.idPhotoUrl);
+      }
+    };
+  }, []);
   const set =
     (k: keyof OBForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -2326,11 +2335,16 @@ export function OnboardingPage({
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file)
+                    if (file) {
+                      // Revoke old blob URL before creating new one
+                      if (f.idPhotoUrl) {
+                        URL.revokeObjectURL(f.idPhotoUrl);
+                      }
                       setF((p) => ({
                         ...p,
                         idPhotoUrl: URL.createObjectURL(file),
                       }));
+                    }
                   }}
                 />
                 {f.idPhotoUrl ? (
@@ -2344,9 +2358,12 @@ export function OnboardingPage({
                       className="w-full h-full object-cover"
                     />
                     <button
-                      onClick={() =>
-                        setF((p) => ({ ...p, idPhotoUrl: undefined }))
-                      }
+                      onClick={() => {
+                        if (f.idPhotoUrl) {
+                          URL.revokeObjectURL(f.idPhotoUrl);
+                        }
+                        setF((p) => ({ ...p, idPhotoUrl: undefined }));
+                      }}
                       className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
                     >
                       <Icons.X />
@@ -3753,8 +3770,23 @@ export function ProfilePage({
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setDraft((d) => ({ ...d, photoUrl: URL.createObjectURL(file) }));
+    if (file) {
+      // Revoke old blob URL before creating new one
+      if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(draft.photoUrl);
+      }
+      setDraft((d) => ({ ...d, photoUrl: URL.createObjectURL(file) }));
+    }
   };
+
+  // Cleanup: revoke blob URLs when component unmounts or editing is cancelled
+  useEffect(() => {
+    return () => {
+      if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(draft.photoUrl);
+      }
+    };
+  }, []);
 
   return (
     <PageShell>
@@ -3769,6 +3801,10 @@ export function ProfilePage({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
+                  // Revoke blob URL if present before resetting
+                  if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
+                    URL.revokeObjectURL(draft.photoUrl);
+                  }
                   setDraft({ ...user });
                   setEditing(false);
                 }}
@@ -4863,7 +4899,13 @@ export function AdminEventsPage({
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) setHighlightUrl(URL.createObjectURL(f));
+                if (f) {
+                  // Revoke old blob URL before creating new one
+                  if (highlightUrl) {
+                    URL.revokeObjectURL(highlightUrl);
+                  }
+                  setHighlightUrl(URL.createObjectURL(f));
+                }
               }}
             />
             {highlightUrl ? (
@@ -4874,7 +4916,12 @@ export function AdminEventsPage({
                   className="w-full h-36 object-cover"
                 />
                 <button
-                  onClick={() => setHighlightUrl(null)}
+                  onClick={() => {
+                    if (highlightUrl) {
+                      URL.revokeObjectURL(highlightUrl);
+                    }
+                    setHighlightUrl(null);
+                  }}
                   className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
                 >
                   <Icons.X />

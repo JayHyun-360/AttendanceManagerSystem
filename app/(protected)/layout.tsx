@@ -152,7 +152,24 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     const routePage = pathToPage[pathname] ?? "dashboard";
     setPage(routePage);
-  }, [pathname]);
+
+    // Role-based redirect: prevent admins from accessing student pages and vice versa
+    if (user) {
+      const isAdminRoute =
+        pathname.startsWith("/admin-") || pathname === "/admin-dashboard";
+      const isStudentRoute =
+        pathname === "/dashboard" ||
+        pathname === "/my-qr" ||
+        pathname === "/my-fines" ||
+        pathname === "/attendance-history";
+
+      if (isAdminRoute && user.role !== "admin") {
+        router.push("/dashboard");
+      } else if (isStudentRoute && user.role === "admin") {
+        router.push("/admin-dashboard");
+      }
+    }
+  }, [pathname, user, router]);
 
   const onLogout = async () => {
     try {
