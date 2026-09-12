@@ -49,10 +49,12 @@ export default function EventsRoutePage() {
                 row.image_url && !row.image_url.startsWith("blob:")
                   ? row.image_url
                   : undefined,
-              mediaUrls:
-                row.image_url && !row.image_url.startsWith("blob:")
+              mediaUrls: [
+                ...(Array.isArray(row.media_urls) ? row.media_urls : []),
+                ...(row.image_url && !row.image_url.startsWith("blob:")
                   ? [row.image_url]
-                  : [],
+                  : []),
+              ],
             })),
           );
         }

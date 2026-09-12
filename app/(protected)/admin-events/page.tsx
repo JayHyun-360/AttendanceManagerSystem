@@ -47,10 +47,12 @@ export default function AdminEventsRoutePage() {
             status: (row.status as any) || "upcoming",
             attendees: 0,
             version: row.version || 1,
-            mediaUrls:
-              row.image_url && !row.image_url.startsWith("blob:")
+            mediaUrls: [
+              ...(Array.isArray(row.media_urls) ? row.media_urls : []),
+              ...(row.image_url && !row.image_url.startsWith("blob:")
                 ? [row.image_url]
-                : [],
+                : []),
+            ],
             highlightUrl:
               row.image_url && !row.image_url.startsWith("blob:")
                 ? row.image_url

@@ -2187,6 +2187,9 @@ export function OnboardingPage({
   onComplete: (d: OBForm) => void;
 }) {
   const [step, setStep] = useState(1);
+  const [idPhotoUploadState, setIdPhotoUploadState] = useState<
+    "idle" | "uploading" | "error"
+  >("idle");
   const [f, setF] = useState<OBForm>({
     firstName: "",
     middleInitial: "",
@@ -2378,20 +2381,44 @@ export function OnboardingPage({
                     const file = e.target.files?.[0];
                     if (!file) return;
 
+                    setIdPhotoUploadState("uploading");
+
                     const result = await uploadImage(file);
 
                     if ("error" in result) {
+                      setIdPhotoUploadState("error");
                       toast.error(result.error);
                       return;
                     }
 
+                    setIdPhotoUploadState("idle");
                     setF((p) => ({
                       ...p,
                       idPhotoUrl: result.url,
                     }));
                   }}
                 />
-                {f.idPhotoUrl ? (
+                {idPhotoUploadState === "uploading" ? (
+                  <Skeleton
+                    className="w-full rounded-xl"
+                    style={{ aspectRatio: "16/10" }}
+                  />
+                ) : idPhotoUploadState === "error" ? (
+                  <div
+                    className="w-full rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2 py-10 text-center"
+                    style={{ aspectRatio: "16/10" }}
+                  >
+                    <p className="text-sm font-semibold text-red-600">
+                      Upload failed
+                    </p>
+                    <button
+                      onClick={() => idPhotoRef.current?.click()}
+                      className="text-xs font-semibold text-red-700 underline"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                ) : f.idPhotoUrl ? (
                   <div
                     className="relative w-full rounded-xl overflow-hidden border-2 border-green-400"
                     style={{ aspectRatio: "16/10" }}
@@ -3833,6 +3860,9 @@ export function ProfilePage({
   saving?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
+  const [photoUploadState, setPhotoUploadState] = useState<
+    "idle" | "uploading" | "error"
+  >("idle");
   const [draft, setDraft] = useState({ ...user });
   const photoRef = useRef<HTMLInputElement>(null);
   const setF =
@@ -3849,13 +3879,17 @@ export function ProfilePage({
       URL.revokeObjectURL(draft.photoUrl);
     }
 
+    setPhotoUploadState("uploading");
+
     const result = await uploadImage(file);
 
     if ("error" in result) {
+      setPhotoUploadState("error");
       toast.error(result.error);
       return;
     }
 
+    setPhotoUploadState("idle");
     setDraft((d) => ({ ...d, photoUrl: result.url }));
   };
 
@@ -3917,10 +3951,19 @@ export function ProfilePage({
       <div className="max-w-sm">
         <div className="bg-white border border-slate-100 rounded-xl p-5 flex items-center gap-4 mb-4">
           <div className="relative">
-            <ProfileIcon
-              photoUrl={(editing ? draft : user).photoUrl}
-              size="lg"
-            />
+            {editing && photoUploadState === "uploading" ? (
+              <Skeleton className="w-20 h-20 rounded-full" />
+            ) : (
+              <ProfileIcon
+                photoUrl={(editing ? draft : user).photoUrl}
+                size="lg"
+              />
+            )}
+            {editing && photoUploadState === "error" && (
+              <p className="absolute -bottom-8 left-0 text-[10px] font-semibold text-red-600 whitespace-nowrap">
+                Upload failed, try again
+              </p>
+            )}
             {editing && (
               <>
                 <input
@@ -4372,6 +4415,16 @@ export function AdminEventsPage({
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [videoNames, setVideoNames] = useState<string[]>([]);
   const [highlightUrl, setHighlightUrl] = useState<string | null>(null);
+  const [highlightUploadState, setHighlightUploadState] = useState<
+    "idle" | "uploading" | "error"
+  >("idle");
+  const [mediaUploadState, setMediaUploadState] = useState<
+    "idle" | "uploading" | "error"
+  >("idle");
+  const [mediaUploadError, setMediaUploadError] = useState<string | null>(null);
+  const [editHighlightUploadState, setEditHighlightUploadState] = useState<
+    "idle" | "uploading" | "error"
+  >("idle");
 
   const setD =
     (k: keyof NewEventDraft) =>
@@ -4383,6 +4436,36 @@ export function AdminEventsPage({
       setDraft((d) => ({ ...d, [k]: e.target.value }));
   const toggleD = (k: keyof NewEventDraft) => () =>
     setDraft((d) => ({ ...d, [k]: !d[k] }));
+
+  const uploadEventMedia = async (files: File[]) => {
+    if (!files.length) return;
+    setMediaUploadState("uploading");
+    setMediaUploadError(null);
+
+    const results = await Promise.all(files.map((file) => uploadImage(file)));
+    const failed = results.find((result) => "error" in result);
+    if (failed && "error" in failed) {
+      setMediaUploadState("error");
+      setMediaUploadError(failed.error);
+      toast.error(failed.error);
+      return;
+    }
+
+    const urls = results
+      .filter(
+        (result): result is { url: string; path: string } => "url" in result,
+      )
+      .map((result) => result.url);
+    setMediaUploadState("idle");
+    setPhotoUrls((current) => [
+      ...current,
+      ...urls.filter((url) => !/\.mp4($|\?)/i.test(url)),
+    ]);
+    setVideoNames((current) => [
+      ...current,
+      ...urls.filter((url) => /\.mp4($|\?)/i.test(url)),
+    ]);
+  };
 
   const handleCreate = async () => {
     if (!draft.title || !draft.date) return;
@@ -4405,6 +4488,7 @@ export function AdminEventsPage({
         description: draft.description,
         program: draft.program,
         image_url: persistedHighlightUrl,
+        media_urls: [...photoUrls, ...videoNames],
         status: "upcoming",
         multi_session: draft.multiSession,
         strict_morning: draft.strictMorning,
@@ -4463,7 +4547,11 @@ export function AdminEventsPage({
             ? (parseInt(draft.morningAbsentFine) || 0) +
               (parseInt(draft.afternoonAbsentFine) || 0)
             : parseInt(draft.absentFine) || 0,
-          mediaUrls: persistedHighlightUrl ? [persistedHighlightUrl] : [],
+          mediaUrls: [
+            ...(persistedHighlightUrl ? [persistedHighlightUrl] : []),
+            ...photoUrls,
+            ...videoNames,
+          ],
           highlightUrl: persistedHighlightUrl || undefined,
           multiSession: draft.multiSession,
           strictMorning: draft.strictMorning,
@@ -4487,6 +4575,8 @@ export function AdminEventsPage({
         setPhotoUrls([]);
         setVideoNames([]);
         setHighlightUrl(null);
+        setMediaUploadState("idle");
+        setMediaUploadError(null);
         setShowForm(false);
         toast.success("Event created successfully");
       }
@@ -5029,17 +5119,35 @@ export function AdminEventsPage({
                 const f = e.target.files?.[0];
                 if (!f) return;
 
+                setHighlightUploadState("uploading");
+
                 const result = await uploadImage(f);
 
                 if ("error" in result) {
+                  setHighlightUploadState("error");
                   toast.error(result.error);
                   return;
                 }
 
+                setHighlightUploadState("idle");
                 setHighlightUrl(result.url);
               }}
             />
-            {highlightUrl ? (
+            {highlightUploadState === "uploading" ? (
+              <Skeleton className="w-full h-36 rounded-xl" />
+            ) : highlightUploadState === "error" ? (
+              <div className="w-full h-36 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
+                <p className="text-sm font-semibold text-red-600">
+                  Upload failed
+                </p>
+                <button
+                  onClick={() => highlightRef.current?.click()}
+                  className="text-xs font-semibold text-red-700 underline"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : highlightUrl ? (
               <div className="relative rounded-xl overflow-hidden border border-slate-200">
                 <img
                   src={highlightUrl}
@@ -5066,6 +5174,87 @@ export function AdminEventsPage({
                 <Icons.Image />
                 Upload highlight photo
               </button>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block">
+              Event media
+            </label>
+            <input
+              ref={photoRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={async (e) => {
+                await uploadEventMedia(Array.from(e.target.files ?? []));
+                e.target.value = "";
+              }}
+            />
+            <input
+              ref={videoRef}
+              type="file"
+              accept="video/mp4,video/*"
+              multiple
+              className="hidden"
+              onChange={async (e) => {
+                await uploadEventMedia(Array.from(e.target.files ?? []));
+                e.target.value = "";
+              }}
+            />
+            {mediaUploadState === "uploading" ? (
+              <Skeleton className="h-20 w-full rounded-xl" />
+            ) : mediaUploadState === "error" ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold text-red-600 truncate">
+                  {mediaUploadError || "Media upload failed."}
+                </p>
+                <button
+                  onClick={() => photoRef.current?.click()}
+                  className="text-xs font-semibold text-red-700 underline shrink-0"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => photoRef.current?.click()}
+                  className="flex-1 h-10 border-2 border-dashed border-slate-200 rounded-xl text-xs font-semibold text-slate-400 hover:border-green-400 hover:text-green-600"
+                >
+                  Add images
+                </button>
+                <button
+                  onClick={() => videoRef.current?.click()}
+                  className="flex-1 h-10 border-2 border-dashed border-slate-200 rounded-xl text-xs font-semibold text-slate-400 hover:border-green-400 hover:text-green-600"
+                >
+                  Add MP4 video
+                </button>
+              </div>
+            )}
+            {(photoUrls.length > 0 || videoNames.length > 0) && (
+              <div className="space-y-1 text-xs text-slate-500">
+                {photoUrls.map((url) => (
+                  <div key={url} className="flex items-center gap-2">
+                    <img
+                      src={url}
+                      alt=""
+                      className="h-10 w-14 rounded object-cover"
+                    />
+                    <span className="truncate">Uploaded image</span>
+                  </div>
+                ))}
+                {videoNames.map((url) => (
+                  <div key={url} className="flex items-center gap-2">
+                    <video
+                      src={url}
+                      controls
+                      className="h-10 w-14 rounded object-cover"
+                    />
+                    <span className="truncate">Uploaded MP4 video</span>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </FormModal>
@@ -5296,19 +5485,37 @@ export function AdminEventsPage({
                 const f = e.target.files?.[0];
                 if (!f) return;
 
+                setEditHighlightUploadState("uploading");
+
                 const result = await uploadImage(f);
 
                 if ("error" in result) {
+                  setEditHighlightUploadState("error");
                   toast.error(result.error);
                   return;
                 }
 
+                setEditHighlightUploadState("idle");
                 setEditDraft((d) =>
                   d ? { ...d, highlightUrl: result.url } : d,
                 );
               }}
             />
-            {editDraft.highlightUrl ? (
+            {editHighlightUploadState === "uploading" ? (
+              <Skeleton className="w-full h-36 rounded-xl" />
+            ) : editHighlightUploadState === "error" ? (
+              <div className="w-full h-36 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
+                <p className="text-sm font-semibold text-red-600">
+                  Upload failed
+                </p>
+                <button
+                  onClick={() => editHighlightRef.current?.click()}
+                  className="text-xs font-semibold text-red-700 underline"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : editDraft.highlightUrl ? (
               <div className="relative rounded-xl overflow-hidden border border-slate-200">
                 <img
                   src={editDraft.highlightUrl}
@@ -5347,17 +5554,29 @@ export function AdminEventsPage({
           >
             {e.mediaUrls && e.mediaUrls.length > 0 && (
               <div className="flex overflow-x-auto">
-                {e.mediaUrls.map((url, i) => (
-                  <img
-                    key={i}
-                    src={url}
-                    alt=""
-                    className="h-32 shrink-0 object-cover"
-                    style={{
-                      width: e.mediaUrls!.length === 1 ? "100%" : "50%",
-                    }}
-                  />
-                ))}
+                {e.mediaUrls.map((url, i) =>
+                  /\.mp4($|\?)/i.test(url) ? (
+                    <video
+                      key={i}
+                      src={url}
+                      controls
+                      className="h-32 shrink-0 object-cover"
+                      style={{
+                        width: e.mediaUrls!.length === 1 ? "100%" : "50%",
+                      }}
+                    />
+                  ) : (
+                    <img
+                      key={i}
+                      src={url}
+                      alt=""
+                      className="h-32 shrink-0 object-cover"
+                      style={{
+                        width: e.mediaUrls!.length === 1 ? "100%" : "50%",
+                      }}
+                    />
+                  ),
+                )}
               </div>
             )}
             <div className="p-5">
@@ -6453,6 +6672,12 @@ export function AdminAnnouncementsPage({
     (typeof INITIAL_ANNOUNCEMENTS)[0] | null
   >(null);
   const [newPhoto, setNewPhoto] = useState<string | null>(null);
+  const [newPhotoUploadState, setNewPhotoUploadState] = useState<
+    "idle" | "uploading" | "error"
+  >("idle");
+  const [editPhotoUploadState, setEditPhotoUploadState] = useState<
+    "idle" | "uploading" | "error"
+  >("idle");
   const photoRef = useRef<HTMLInputElement>(null);
   const editPhotoRef = useRef<HTMLInputElement>(null);
 
@@ -6493,6 +6718,20 @@ export function AdminAnnouncementsPage({
     }
   };
 
+  const uploadNewPhoto = async (file: File) => {
+    setNewPhotoUploadState("uploading");
+    const uploaded = await uploadSelectedPhoto(file);
+    setNewPhotoUploadState(uploaded ? "idle" : "error");
+    if (uploaded) setNewPhoto(uploaded);
+  };
+
+  const uploadEditPhoto = async (file: File) => {
+    setEditPhotoUploadState("uploading");
+    const uploaded = await uploadSelectedPhoto(file);
+    setEditPhotoUploadState(uploaded ? "idle" : "error");
+    if (uploaded) setEditDraft((d) => (d ? { ...d, photoUrl: uploaded } : d));
+  };
+
   const handlePublish = handleSubmit(async (values) => {
     const payload = {
       title: values.title.trim(),
@@ -6520,6 +6759,7 @@ export function AdminAnnouncementsPage({
 
     reset({ title: "", body: "", badge: "General" });
     setNewPhoto(null);
+    setNewPhotoUploadState("idle");
     setShowForm(false);
   });
   const startEdit = (a: (typeof INITIAL_ANNOUNCEMENTS)[0]) => {
@@ -6649,13 +6889,24 @@ export function AdminAnnouncementsPage({
                 const f = e.target.files?.[0];
                 if (!f) return;
 
-                const uploaded = await uploadSelectedPhoto(f);
-                if (uploaded) {
-                  setNewPhoto(uploaded);
-                }
+                await uploadNewPhoto(f);
               }}
             />
-            {newPhoto ? (
+            {newPhotoUploadState === "uploading" ? (
+              <Skeleton className="w-full h-40 rounded-xl" />
+            ) : newPhotoUploadState === "error" ? (
+              <div className="w-full h-40 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
+                <p className="text-sm font-semibold text-red-600">
+                  Upload failed
+                </p>
+                <button
+                  onClick={() => photoRef.current?.click()}
+                  className="text-xs font-semibold text-red-700 underline"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : newPhoto ? (
               <div className="relative rounded-xl overflow-hidden border border-slate-200">
                 <img
                   src={newPhoto}
@@ -6751,13 +7002,24 @@ export function AdminAnnouncementsPage({
                 const f = e.target.files?.[0];
                 if (!f) return;
 
-                const uploaded = await uploadSelectedPhoto(f);
-                if (uploaded) {
-                  setEditDraft((d) => (d ? { ...d, photoUrl: uploaded } : d));
-                }
+                await uploadEditPhoto(f);
               }}
             />
-            {editDraft.photoUrl ? (
+            {editPhotoUploadState === "uploading" ? (
+              <Skeleton className="w-full h-40 rounded-xl" />
+            ) : editPhotoUploadState === "error" ? (
+              <div className="w-full h-40 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
+                <p className="text-sm font-semibold text-red-600">
+                  Upload failed
+                </p>
+                <button
+                  onClick={() => editPhotoRef.current?.click()}
+                  className="text-xs font-semibold text-red-700 underline"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : editDraft.photoUrl ? (
               <div className="relative rounded-xl overflow-hidden border border-slate-200">
                 <img
                   src={editDraft.photoUrl}

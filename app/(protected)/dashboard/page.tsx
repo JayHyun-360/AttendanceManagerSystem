@@ -284,7 +284,9 @@ export default function DashboardRoute() {
         ? row.mediaUrls
         : Array.isArray(row.media_urls)
           ? row.media_urls
-          : undefined,
+          : row.image_url && !row.image_url.startsWith("blob:")
+            ? [row.image_url]
+            : undefined,
       highlightUrl: row.highlightUrl ?? row.highlight_url ?? undefined,
       multiSession: Boolean(row.multiSession ?? row.multi_session),
       strictMorning: Boolean(row.strictMorning ?? row.strict_morning),
