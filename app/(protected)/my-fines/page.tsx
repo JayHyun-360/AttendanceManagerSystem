@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MyFinesPage, type FineRecord } from "../../page";
 import { supabase } from "@/lib/supabase";
+import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 
 export default function MyFinesRoutePage() {
@@ -46,8 +47,15 @@ export default function MyFinesRoutePage() {
 
     void loadFines();
 
+    const finesChannel = subscribeToTableChanges("fines", () => {
+      if (!cancelled) {
+        void loadFines();
+      }
+    });
+
     return () => {
       cancelled = true;
+      void finesChannel.unsubscribe();
     };
   }, [authUserId]);
 

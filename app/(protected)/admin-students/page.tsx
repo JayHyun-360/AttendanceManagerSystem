@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminStudentsPage } from "../../page";
 import { supabase } from "@/lib/supabase";
+import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 
 export default function AdminStudentsRoutePage() {
@@ -55,8 +56,15 @@ export default function AdminStudentsRoutePage() {
 
     void loadStudents();
 
+    const profilesChannel = subscribeToTableChanges("profiles", () => {
+      if (!cancelled) {
+        void loadStudents();
+      }
+    });
+
     return () => {
       cancelled = true;
+      void profilesChannel.unsubscribe();
     };
   }, [router, user]);
 

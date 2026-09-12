@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminEventsPage, type EventData, type Page } from "../../page";
 import { supabase } from "@/lib/supabase";
+import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 
 export default function AdminEventsRoutePage() {
@@ -76,8 +77,16 @@ export default function AdminEventsRoutePage() {
     }
 
     void loadAdminEvents();
+
+    const eventsChannel = subscribeToTableChanges("events", () => {
+      if (!cancelled) {
+        void loadAdminEvents();
+      }
+    });
+
     return () => {
       cancelled = true;
+      void eventsChannel.unsubscribe();
     };
   }, [router, user]);
 

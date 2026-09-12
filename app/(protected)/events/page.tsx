@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EventsPage, type EventData, type Page } from "../../page";
 import { supabase } from "@/lib/supabase";
+import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 
 export default function EventsRoutePage() {
@@ -56,8 +57,15 @@ export default function EventsRoutePage() {
 
     void loadEvents();
 
+    const eventsChannel = subscribeToTableChanges("events", () => {
+      if (!cancelled) {
+        void loadEvents();
+      }
+    });
+
     return () => {
       cancelled = true;
+      void eventsChannel.unsubscribe();
     };
   }, []);
 

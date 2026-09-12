@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminAttendeesPage, type EventData, type Page } from "../../page";
 import { supabase } from "@/lib/supabase";
+import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 
 export default function AdminAttendeesRoutePage() {
@@ -125,8 +126,27 @@ export default function AdminAttendeesRoutePage() {
 
     void loadData();
 
+    const eventsChannel = subscribeToTableChanges("events", () => {
+      if (!cancelled) {
+        void loadData();
+      }
+    });
+    const profilesChannel = subscribeToTableChanges("profiles", () => {
+      if (!cancelled) {
+        void loadData();
+      }
+    });
+    const attendanceChannel = subscribeToTableChanges("attendance_logs", () => {
+      if (!cancelled) {
+        void loadData();
+      }
+    });
+
     return () => {
       cancelled = true;
+      void eventsChannel.unsubscribe();
+      void profilesChannel.unsubscribe();
+      void attendanceChannel.unsubscribe();
     };
   }, [router, user]);
 

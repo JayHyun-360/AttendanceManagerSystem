@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ProfilePage, type User } from "../../page";
 import { supabase } from "@/lib/supabase";
 import { useProtectedUser } from "../layout";
 
 export default function ProfileRoutePage() {
+  const router = useRouter();
   const { user, authUserId, setUser } = useProtectedUser();
   const [saving, setSaving] = useState(false);
 
@@ -58,7 +60,9 @@ export default function ProfileRoutePage() {
     <ProfilePage
       user={user}
       onSave={handleSave}
-      onBack={() => undefined}
+      onBack={() =>
+        router.push(user.role === "admin" ? "/admin-dashboard" : "/dashboard")
+      }
       saving={saving}
     />
   );

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AdminAnnouncementsPage } from "../../page";
 import { supabase } from "@/lib/supabase";
+import { subscribeToTableChanges } from "@/lib/realtime";
 import { deleteImage } from "@/lib/uploadImage";
 import { useProtectedUser } from "../layout";
 
@@ -39,7 +40,29 @@ export default function AdminAnnouncementsRoutePage() {
   }
 
   useEffect(() => {
-    void loadPosts();
+    let cancelled = false;
+
+    const refreshPosts = async () => {
+      if (!cancelled) {
+        await loadPosts();
+      }
+    };
+
+    void refreshPosts();
+
+    const announcementsChannel = subscribeToTableChanges(
+      "announcements",
+      () => {
+        if (!cancelled) {
+          void refreshPosts();
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+      void announcementsChannel.unsubscribe();
+    };
   }, []);
 
   const handleCreate = async (payload: {

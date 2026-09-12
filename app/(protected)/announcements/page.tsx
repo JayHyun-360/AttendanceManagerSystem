@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnnouncementsPage } from "../../page";
 import { supabase } from "@/lib/supabase";
+import { subscribeToTableChanges } from "@/lib/realtime";
 
 export default function AnnouncementsRoutePage() {
   const router = useRouter();
@@ -44,8 +45,18 @@ export default function AnnouncementsRoutePage() {
 
     void loadAnnouncements();
 
+    const announcementsChannel = subscribeToTableChanges(
+      "announcements",
+      () => {
+        if (!cancelled) {
+          void loadAnnouncements();
+        }
+      },
+    );
+
     return () => {
       cancelled = true;
+      void announcementsChannel.unsubscribe();
     };
   }, []);
 

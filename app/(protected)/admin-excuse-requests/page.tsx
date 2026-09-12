@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminExcuseRequestsPage, type ExcuseRequest } from "../../page";
 import { supabase } from "@/lib/supabase";
+import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 
 export default function AdminExcuseRequestsRoutePage() {
@@ -62,8 +63,15 @@ export default function AdminExcuseRequestsRoutePage() {
 
     void loadRequests();
 
+    const requestsChannel = subscribeToTableChanges("excuse_requests", () => {
+      if (!cancelled) {
+        void loadRequests();
+      }
+    });
+
     return () => {
       cancelled = true;
+      void requestsChannel.unsubscribe();
     };
   }, [router, user]);
 

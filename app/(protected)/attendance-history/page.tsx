@@ -8,6 +8,7 @@ import {
   type FineRecord,
 } from "../../page";
 import { supabase } from "@/lib/supabase";
+import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 
 export default function AttendanceHistoryRoutePage() {
@@ -105,8 +106,27 @@ export default function AttendanceHistoryRoutePage() {
 
     void loadData();
 
+    const finesChannel = subscribeToTableChanges("fines", () => {
+      if (!cancelled) {
+        void loadData();
+      }
+    });
+    const excusesChannel = subscribeToTableChanges("excuse_requests", () => {
+      if (!cancelled) {
+        void loadData();
+      }
+    });
+    const attendanceChannel = subscribeToTableChanges("attendance_logs", () => {
+      if (!cancelled) {
+        void loadData();
+      }
+    });
+
     return () => {
       cancelled = true;
+      void finesChannel.unsubscribe();
+      void excusesChannel.unsubscribe();
+      void attendanceChannel.unsubscribe();
     };
   }, [authUserId]);
 

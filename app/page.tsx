@@ -2339,18 +2339,21 @@ export function OnboardingPage({
                   accept="image/*"
                   capture="environment"
                   className="hidden"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
-                    if (file) {
-                      // Revoke old blob URL before creating new one
-                      if (f.idPhotoUrl) {
-                        URL.revokeObjectURL(f.idPhotoUrl);
-                      }
-                      setF((p) => ({
-                        ...p,
-                        idPhotoUrl: URL.createObjectURL(file),
-                      }));
+                    if (!file) return;
+
+                    const result = await uploadImage(file);
+
+                    if ("error" in result) {
+                      toast.error(result.error);
+                      return;
                     }
+
+                    setF((p) => ({
+                      ...p,
+                      idPhotoUrl: result.url,
+                    }));
                   }}
                 />
                 {f.idPhotoUrl ? (
@@ -2912,22 +2915,36 @@ export function DashboardPage({
   fines,
   showFees,
   announcements,
+  nextEvent,
+  attendanceStats,
 }: {
   user: User;
   onNav: (p: Page) => void;
   fines: FineRecord[];
   showFees: boolean;
   announcements: typeof INITIAL_ANNOUNCEMENTS;
+  nextEvent?: EventData;
+  attendanceStats?: {
+    present: number;
+    absent: number;
+    upcoming: number;
+    rate: number;
+  };
 }) {
-  const nextEvent = INITIAL_EVENTS.find((e) => e.status !== "closed");
   const unpaidFines = fines.filter((f) => f.status === "unpaid");
   const total = unpaidFines.reduce((s, f) => s + f.amount, 0);
   const latestAnnouncements = announcements.slice(0, 2);
+  const statValues = attendanceStats ?? {
+    present: 0,
+    absent: 0,
+    upcoming: 0,
+    rate: 0,
+  };
 
   const attendanceData = [
-    { name: "Present", value: 72, fill: "#16a34a" },
-    { name: "Absent", value: 18, fill: "#94a3b8" },
-    { name: "Upcoming", value: 10, fill: "#a7f3d0" },
+    { name: "Present", value: statValues.present, fill: "#16a34a" },
+    { name: "Absent", value: statValues.absent, fill: "#94a3b8" },
+    { name: "Upcoming", value: statValues.upcoming, fill: "#a7f3d0" },
   ];
 
   return (
@@ -2989,7 +3006,9 @@ export function DashboardPage({
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
             Attendance rate
           </span>
-          <span className="text-[11px] font-semibold text-green-700">72%</span>
+          <span className="text-[11px] font-semibold text-green-700">
+            {statValues.rate}%
+          </span>
         </div>
         <div className="h-24">
           <ResponsiveContainer width="100%" height="100%">
@@ -3781,15 +3800,22 @@ export function ProfilePage({
       setDraft((d) => ({ ...d, [k]: e.target.value }));
   const isMod = user.role === "admin";
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Revoke old blob URL before creating new one
-      if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
-        URL.revokeObjectURL(draft.photoUrl);
-      }
-      setDraft((d) => ({ ...d, photoUrl: URL.createObjectURL(file) }));
+    if (!file) return;
+
+    if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(draft.photoUrl);
     }
+
+    const result = await uploadImage(file);
+
+    if ("error" in result) {
+      toast.error(result.error);
+      return;
+    }
+
+    setDraft((d) => ({ ...d, photoUrl: result.url }));
   };
 
   // Cleanup: revoke blob URLs when component unmounts or editing is cancelled
@@ -4067,11 +4093,35 @@ export function ProfilePage({
 export function AdminDashboard({
   onNav,
   excuseRequests,
+  stats,
+  recentScans,
+  featuredEventTitle,
 }: {
   onNav: (p: Page) => void;
   excuseRequests: ExcuseRequest[];
+  stats?: {
+    scannedToday: number;
+    duplicates: number;
+    activeEvents: number;
+    students: number;
+  };
+  recentScans?: Array<{
+    name: string;
+    id: string;
+    section: string;
+    time: string;
+    status: "confirmed" | "duplicate";
+  }>;
+  featuredEventTitle?: string;
 }) {
   const pending = excuseRequests.filter((r) => r.status === "pending").length;
+  const liveStats = stats ?? {
+    scannedToday: 0,
+    duplicates: 0,
+    activeEvents: 0,
+    students: ALL_STUDENTS.length,
+  };
+  const liveRecentScans = recentScans ?? (EVENT_SCANS["2"] ?? []).slice(0, 5);
   return (
     <PageShell>
       <div className="flex items-start justify-between mb-6">
@@ -4081,7 +4131,7 @@ export function AdminDashboard({
           </p>
           <h1 className="text-xl font-bold text-slate-900">Admin Overview</h1>
           <p className="text-sm text-slate-400 mt-0.5">
-            SSG General Assembly is live now
+            {featuredEventTitle || "TapIn overview"} is live now
           </p>
         </div>
         <span className="flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full shrink-0">
@@ -4096,15 +4146,25 @@ export function AdminDashboard({
         {[
           {
             l: "Scanned today",
-            v: "6",
-            sub: "SSG Assembly",
+            v: String(liveStats.scannedToday),
+            sub: "Scanned today",
             c: "text-green-600",
           },
-          { l: "Duplicates", v: "1", sub: "Rejected", c: "text-red-500" },
-          { l: "Active events", v: "1", sub: "Live now", c: "text-sky-600" },
+          {
+            l: "Duplicates",
+            v: String(liveStats.duplicates),
+            sub: "Rejected",
+            c: "text-red-500",
+          },
+          {
+            l: "Active events",
+            v: String(liveStats.activeEvents),
+            sub: "Live now",
+            c: "text-sky-600",
+          },
           {
             l: "Students on TapIn",
-            v: String(ALL_STUDENTS.length),
+            v: String(liveStats.students),
             sub: "Registered",
             c: "text-slate-700",
           },
@@ -4152,7 +4212,7 @@ export function AdminDashboard({
       </div>
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-semibold text-slate-900">
-          Recent scans — SSG General Assembly
+          Recent scans — {featuredEventTitle || "TapIn overview"}
         </p>
         <button
           onClick={() => onNav("admin-attendees")}
@@ -4163,7 +4223,7 @@ export function AdminDashboard({
         </button>
       </div>
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
-        {(EVENT_SCANS["2"] ?? []).slice(0, 5).map((s, i) => (
+        {liveRecentScans.map((s, i) => (
           <div
             key={i}
             className={`flex items-center gap-3 px-5 py-3.5 ${i < 4 ? "border-b border-slate-50" : ""}`}
@@ -4964,92 +5024,6 @@ export function AdminEventsPage({
               </button>
             )}
           </div>
-
-          {/* Media */}
-          <div>
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-2">
-              Media
-            </label>
-            <input
-              ref={photoRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                const files = Array.from(e.target.files ?? []);
-                setDraft((d) => ({ ...d, photos: [...d.photos, ...files] }));
-                files.forEach((f) =>
-                  setPhotoUrls((u) => [...u, URL.createObjectURL(f)]),
-                );
-              }}
-            />
-            <input
-              ref={videoRef}
-              type="file"
-              accept="video/*"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                const files = Array.from(e.target.files ?? []);
-                setDraft((d) => ({ ...d, videos: [...d.videos, ...files] }));
-                files.forEach((f) => setVideoNames((n) => [...n, f.name]));
-              }}
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => photoRef.current?.click()}
-                className="flex-1 h-9 border border-slate-200 rounded-lg text-xs font-semibold text-slate-500 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"
-              >
-                <Icons.Image />
-                Photos
-              </button>
-              <button
-                onClick={() => videoRef.current?.click()}
-                className="flex-1 h-9 border border-slate-200 rounded-lg text-xs font-semibold text-slate-500 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"
-              >
-                <Icons.Video />
-                Videos
-              </button>
-            </div>
-            {(photoUrls.length > 0 || videoNames.length > 0) && (
-              <div className="mt-2.5 flex flex-wrap gap-2">
-                {photoUrls.map((url, i) => (
-                  <div
-                    key={i}
-                    className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200"
-                  >
-                    <img
-                      src={url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      onClick={() => {
-                        setPhotoUrls((u) => u.filter((_, j) => j !== i));
-                        setDraft((d) => ({
-                          ...d,
-                          photos: d.photos.filter((_, j) => j !== i),
-                        }));
-                      }}
-                      className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px]"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                {videoNames.map((n, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-slate-600"
-                  >
-                    <Icons.Video />
-                    <span className="max-w-[80px] truncate">{n}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </FormModal>
       )}
 
@@ -5317,66 +5291,6 @@ export function AdminEventsPage({
                 Upload highlight photo
               </button>
             )}
-          </div>
-          <div>
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-2">
-              Photos
-            </label>
-            <input
-              ref={editPhotoRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                Array.from(e.target.files ?? []).forEach((f) => {
-                  const url = URL.createObjectURL(f);
-                  setEditDraft((d) =>
-                    d ? { ...d, mediaUrls: [...(d.mediaUrls ?? []), url] } : d,
-                  );
-                });
-              }}
-            />
-            {editDraft.mediaUrls && editDraft.mediaUrls.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
-                {editDraft.mediaUrls.map((url, i) => (
-                  <div
-                    key={i}
-                    className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200"
-                  >
-                    <img
-                      src={url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      onClick={() =>
-                        setEditDraft((d) =>
-                          d
-                            ? {
-                                ...d,
-                                mediaUrls: d.mediaUrls?.filter(
-                                  (_, j) => j !== i,
-                                ),
-                              }
-                            : d,
-                        )
-                      }
-                      className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px]"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <button
-              onClick={() => editPhotoRef.current?.click()}
-              className="w-full h-9 border border-dashed border-slate-200 rounded-lg text-xs font-semibold text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"
-            >
-              <Icons.Image />
-              Add photos
-            </button>
           </div>
         </FormModal>
       )}
@@ -6875,25 +6789,42 @@ export function AdminExcuseRequestsPage({
 // ─── MODERATOR: Reports ───────────────────────────────────────────────────────
 export function AdminReportsPage({
   events = INITIAL_EVENTS,
+  reportData,
 }: {
   events?: EventData[];
+  reportData?: {
+    events?: EventData[];
+    programStats?: Array<{
+      label: string;
+      present: number;
+      total: number;
+      rate: number;
+    }>;
+    feeSummary?: Array<{
+      label: string;
+      value: string;
+      color: string;
+    }>;
+  };
 }) {
+  const liveEvents = reportData?.events ?? events ?? INITIAL_EVENTS;
+  const programRows = reportData?.programStats ?? [
+    { label: "BSIT", present: 234, total: 301, rate: 78 },
+    { label: "BSCS", present: 198, total: 304, rate: 65 },
+    { label: "BSBA", present: 156, total: 300, rate: 52 },
+    { label: "BSEd", present: 89, total: 197, rate: 45 },
+  ];
+  const fees = reportData?.feeSummary ?? [
+    { label: "Total fees issued", value: "₱42,500", color: "text-red-600" },
+    { label: "Collected", value: "₱18,200", color: "text-green-600" },
+    { label: "Pending", value: "₱24,300", color: "text-amber-600" },
+  ];
+  const eventRows = liveEvents.filter((e) => e.status !== "upcoming");
+
   const exportPDF = () => {
     const W = 794,
       pad = 48,
       dpr = 2;
-    const programRows = [
-      { l: "BSIT", n: 234, total: 301, pct: 78 },
-      { l: "BSCS", n: 198, total: 304, pct: 65 },
-      { l: "BSBA", n: 156, total: 300, pct: 52 },
-      { l: "BSEd", n: 89, total: 197, pct: 45 },
-    ];
-    const eventRows = events.filter((e) => e.status !== "upcoming");
-    const fees = [
-      { l: "Total fees issued", v: "₱42,500" },
-      { l: "Collected", v: "₱18,200" },
-      { l: "Pending", v: "₱24,300" },
-    ];
 
     // estimate height
     const H =
@@ -6996,15 +6927,15 @@ export function AdminReportsPage({
     programRows.forEach((r, i) =>
       tableRow(
         [
-          { t: r.l, x: pad + 8 },
-          { t: r.n.toString(), x: W - pad - 200, align: "right" },
+          { t: r.label, x: pad + 8 },
+          { t: r.present.toString(), x: W - pad - 200, align: "right" },
           { t: r.total.toString(), x: W - pad - 120, align: "right" },
           {
-            t: `${r.pct}%`,
+            t: `${r.rate}%`,
             x: W - pad - 8,
             align: "right",
             color:
-              r.pct >= 70 ? "#16a34a" : r.pct >= 50 ? "#d97706" : "#dc2626",
+              r.rate >= 70 ? "#16a34a" : r.rate >= 50 ? "#d97706" : "#dc2626",
           },
         ],
         i % 2 === 1,
@@ -7026,12 +6957,12 @@ export function AdminReportsPage({
     fees.forEach((f, i) =>
       tableRow(
         [
-          { t: f.l, x: pad + 8 },
+          { t: f.label, x: pad + 8 },
           {
-            t: f.v,
+            t: f.value,
             x: W - pad - 8,
             align: "right",
-            color: feeColors[f.l] ?? "#1e293b",
+            color: feeColors[f.label] ?? "#1e293b",
           },
         ],
         i % 2 === 1,
@@ -7109,79 +7040,74 @@ export function AdminReportsPage({
       />
       <SectionLabel>Attendance by program</SectionLabel>
       <div className="grid md:grid-cols-2 gap-3 mb-6">
-        {[
-          { l: "BSIT", n: 234, total: 301, pct: 78, c: "bg-green-500" },
-          { l: "BSCS", n: 198, total: 304, pct: 65, c: "bg-sky-500" },
-          { l: "BSBA", n: 156, total: 300, pct: 52, c: "bg-violet-400" },
-          { l: "BSEd", n: 89, total: 197, pct: 45, c: "bg-amber-400" },
-        ].map((r) => (
-          <div
-            key={r.l}
-            className="bg-white border border-slate-100 rounded-xl px-5 py-4"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-bold text-slate-900 text-sm">{r.l}</span>
-              <span className="text-xs text-slate-400 font-semibold">
-                {r.n} / {r.total}
-              </span>
+        {programRows.map((r, index) => {
+          const colors = [
+            "bg-green-500",
+            "bg-sky-500",
+            "bg-violet-400",
+            "bg-amber-400",
+          ];
+          return (
+            <div
+              key={r.label}
+              className="bg-white border border-slate-100 rounded-xl px-5 py-4"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-bold text-slate-900 text-sm">
+                  {r.label}
+                </span>
+                <span className="text-xs text-slate-400 font-semibold">
+                  {r.present} / {r.total}
+                </span>
+              </div>
+              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
+                <div
+                  className={`h-full ${colors[index % colors.length]} rounded-full`}
+                  style={{ width: `${r.rate}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-slate-400 font-semibold">
+                {r.rate}% attendance rate
+              </p>
             </div>
-            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
-              <div
-                className={`h-full ${r.c} rounded-full`}
-                style={{ width: `${r.pct}%` }}
-              />
-            </div>
-            <p className="text-[11px] text-slate-400 font-semibold">
-              {r.pct}% attendance rate
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <SectionLabel>Fees summary</SectionLabel>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-        {[
-          { l: "Total fees issued", v: "₱42,500", c: "text-red-600" },
-          { l: "Collected", v: "₱18,200", c: "text-green-600" },
-          { l: "Pending", v: "₱24,300", c: "text-amber-600" },
-        ].map((s, i) => (
+        {fees.map((s, i) => (
           <div
-            key={s.l}
+            key={s.label}
             className={`bg-white border border-slate-100 rounded-xl px-4 py-4 ${i === 0 ? "col-span-2 sm:col-span-1" : ""}`}
           >
-            <p className={`text-xl font-bold ${s.c}`}>{s.v}</p>
+            <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
             <p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">
-              {s.l}
+              {s.label}
             </p>
           </div>
         ))}
       </div>
       <SectionLabel>By event</SectionLabel>
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
-        {INITIAL_EVENTS.filter((e) => e.status !== "upcoming").map(
-          (e, i, arr) => (
-            <div
-              key={e.id}
-              className={`flex items-center justify-between px-5 py-4 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}
-            >
-              <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  {e.title}
-                </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  {e.date} · ₱{e.fineAmount} fee
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-green-600 text-lg">
-                  {e.attendees}
-                </p>
-                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
-                  attended
-                </p>
-              </div>
+        {eventRows.map((e, i, arr) => (
+          <div
+            key={e.id}
+            className={`flex items-center justify-between px-5 py-4 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}
+          >
+            <div>
+              <p className="text-sm font-semibold text-slate-900">{e.title}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {e.date} · ₱{e.fineAmount} fee
+              </p>
             </div>
-          ),
-        )}
+            <div className="text-right">
+              <p className="font-bold text-green-600 text-lg">{e.attendees}</p>
+              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
+                attended
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
     </PageShell>
   );
