@@ -90,7 +90,9 @@ export default function AdminAttendeesRoutePage() {
 
       const attendanceResult = await supabase
         .from("attendance_logs")
-        .select("*, profiles(student_id, first_name, surname)")
+        .select(
+          "*, student_profile:profiles!attendance_logs_student_id_fkey(student_id, first_name, surname)",
+        )
         .order("scanned_at", { ascending: false });
 
       if (!attendanceResult.error && attendanceResult.data) {
@@ -99,8 +101,8 @@ export default function AdminAttendeesRoutePage() {
         for (const row of attendanceResult.data) {
           const eventId = String(row.event_id);
           const studentName =
-            `${row.profiles?.first_name ?? ""} ${row.profiles?.surname ?? ""}`.trim();
-          const studentId = row.profiles?.student_id || row.student_id;
+            `${row.student_profile?.first_name ?? ""} ${row.student_profile?.surname ?? ""}`.trim();
+          const studentId = row.student_profile?.student_id || row.student_id;
 
           if (!byEvent[eventId]) {
             byEvent[eventId] = [];
@@ -109,8 +111,8 @@ export default function AdminAttendeesRoutePage() {
           byEvent[eventId].push({
             name: studentName || "Student",
             id: studentId || row.student_id,
-            program: row.profiles?.program || "",
-            section: row.profiles?.section || "",
+            program: row.student_profile?.program || "",
+            section: row.student_profile?.section || "",
             time: new Date(row.scanned_at).toLocaleTimeString("en-US", {
               hour: "2-digit",
               minute: "2-digit",

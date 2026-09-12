@@ -45,7 +45,7 @@ export default function AdminDashboardRoute() {
             supabase
               .from("attendance_logs")
               .select(
-                "*, profiles(first_name, surname, student_id, section), events(title)",
+                "*, student_profile:profiles!attendance_logs_student_id_fkey(first_name, surname, student_id, section), events(title)",
               )
               .order("scanned_at", { ascending: false })
               .limit(5),
@@ -95,10 +95,10 @@ export default function AdminDashboardRoute() {
 
         const recent = (scansResult.data ?? []).map((row: any) => ({
           name:
-            `${row.profiles?.first_name ?? ""} ${row.profiles?.surname ?? ""}`.trim() ||
+            `${row.student_profile?.first_name ?? ""} ${row.student_profile?.surname ?? ""}`.trim() ||
             "Student",
-          id: row.profiles?.student_id || row.student_id,
-          section: row.profiles?.section || "",
+          id: row.student_profile?.student_id || row.student_id,
+          section: row.student_profile?.section || "",
           time: row.scanned_at
             ? new Date(row.scanned_at).toLocaleTimeString("en-US", {
                 hour: "2-digit",

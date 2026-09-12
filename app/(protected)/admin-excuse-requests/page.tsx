@@ -23,7 +23,9 @@ export default function AdminExcuseRequestsRoutePage() {
 
       const { data, error } = await supabase
         .from("excuse_requests")
-        .select("*, profiles(first_name, surname, student_id)")
+        .select(
+          "*, student_profile:profiles!excuse_requests_student_id_fkey(first_name, surname, student_id)",
+        )
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -36,9 +38,9 @@ export default function AdminExcuseRequestsRoutePage() {
           (data ?? []).map((row: any) => ({
             id: String(row.id),
             studentName:
-              `${row.profiles?.first_name ?? ""} ${row.profiles?.surname ?? ""}`.trim() ||
+              `${row.student_profile?.first_name ?? ""} ${row.student_profile?.surname ?? ""}`.trim() ||
               "Student",
-            studentId: row.profiles?.student_id || "",
+            studentId: row.student_profile?.student_id || "",
             event: row.fine_id ? "Attendance exception" : "Excuse request",
             date: new Date(row.created_at).toLocaleDateString("en-US", {
               month: "short",
