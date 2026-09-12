@@ -1769,30 +1769,6 @@ function LandingPage({
 
   return (
     <div className="min-h-screen bg-white">
-      {user && (
-        <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/95 backdrop-blur-sm">
-          <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <TapInMark className="w-8 h-8 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-slate-900 tracking-tight truncate">
-                  Welcome back, {user.firstName || "TapIn user"}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => onNav("profile")}
-                className="flex items-center justify-center rounded-full border border-slate-200 bg-white p-1.5 transition-colors hover:bg-slate-50"
-                aria-label="Open profile"
-              >
-                <ProfileIcon photoUrl={user.photoUrl} size="sm" />
-              </button>
-            </div>
-          </div>
-        </header>
-      )}
-
       {/* ── Hero ──────────────────────────────────────────────────── */}
       <div
         className={`relative overflow-hidden ${hasHero ? "min-h-[520px] lg:min-h-[580px]" : ""}`}
@@ -1849,6 +1825,16 @@ function LandingPage({
         {/* Fallback radial glow when no image */}
         {!hasHero && (
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gradient-to-b from-green-50 to-transparent rounded-full blur-3xl opacity-60 pointer-events-none" />
+        )}
+
+        {user && (
+          <button
+            onClick={() => onNav("profile")}
+            className={`absolute top-5 right-6 z-20 flex items-center justify-center rounded-full p-1.5 transition-colors duration-150 ${hasHero ? "bg-black/20 text-white shadow-sm backdrop-blur-sm hover:bg-black/30" : "bg-slate-900/5 text-slate-700 hover:bg-slate-900/10"}`}
+            aria-label="Open profile"
+          >
+            <ProfileIcon photoUrl={user.photoUrl} size="sm" />
+          </button>
         )}
 
         {/* Hero content */}

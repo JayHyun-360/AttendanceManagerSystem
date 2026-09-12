@@ -60,11 +60,12 @@ export async function GET(request: NextRequest) {
   const incomplete =
     !profile ||
     !profile.first_name ||
-    !profile.student_id ||
     !profile.surname ||
-    !profile.program ||
-    !profile.year_level ||
-    !profile.section;
+    (profile.role !== "admin" &&
+      (!profile.student_id ||
+        !profile.program ||
+        !profile.year_level ||
+        !profile.section));
 
   if (incomplete) {
     redirectResponse.headers.set(
