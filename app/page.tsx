@@ -1637,6 +1637,7 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
   const [trackIdx, setTrackIdx] = useState(0);
   const [animated, setAnimated] = useState(true);
   const [paused, setPaused] = useState(false);
+  const [visibilityStamp, setVisibilityStamp] = useState(0);
   const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const realIdx = trackIdx % n;
   // items: real slides + clone of first
@@ -1673,6 +1674,21 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
     return () => clearInterval(t);
   }, [paused, n]);
 
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        setTrackIdx(0);
+        setAnimated(false);
+        setPaused(false);
+        setVisibilityStamp((v) => v + 1);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
   if (n === 0) return null;
 
   return (
@@ -1696,12 +1712,13 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
       >
         {items.map((s, i) => (
           <div
-            key={i}
+            key={`${visibilityStamp}-${i}-${s.imageUrl}`}
             className="relative h-full flex-shrink-0"
             style={{ width: `${100 / total}%` }}
           >
             {/\.mp4($|\?)/i.test(s.imageUrl) ? (
               <video
+                key={`${visibilityStamp}-video-${i}-${s.imageUrl}`}
                 src={s.imageUrl}
                 aria-label={s.caption}
                 className="w-full h-full object-cover"
@@ -1713,6 +1730,7 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
               />
             ) : (
               <img
+                key={`${visibilityStamp}-img-${i}-${s.imageUrl}`}
                 src={s.imageUrl}
                 alt={s.caption}
                 loading="eager"
@@ -1793,6 +1811,7 @@ function LandingPage({
   // clone-trick state for hero
   const [heroTrack, setHeroTrack] = useState(0);
   const [heroAnim, setHeroAnim] = useState(true);
+  const [heroVisibilityStamp, setHeroVisibilityStamp] = useState(0);
   const heroRealIdx = heroTrack % (hn || 1);
   const heroItems = hn > 1 ? [...heroUrls, heroUrls[0]] : heroUrls;
   const heroTotal = heroItems.length;
@@ -1813,6 +1832,21 @@ function LandingPage({
     const t = setInterval(heroAdvance, 5000);
     return () => clearInterval(t);
   }, [hn]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        setHeroTrack(0);
+        setHeroAnim(false);
+        setHeroVisibilityStamp((v) => v + 1);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
+  }, [hn]);
+
   useEffect(() => {
     setHeroTrack(0);
     setHeroAnim(false);
@@ -1839,11 +1873,12 @@ function LandingPage({
           >
             {heroItems.map((url, i) => (
               <div
-                key={i}
+                key={`${heroVisibilityStamp}-${i}-${url}`}
                 className="relative h-full flex-shrink-0"
                 style={{ width: `${100 / heroTotal}%` }}
               >
                 <img
+                  key={`${heroVisibilityStamp}-hero-${i}-${url}`}
                   src={url}
                   alt=""
                   aria-hidden
