@@ -26,6 +26,79 @@ import { Skeleton } from "@/components/ui/skeleton";
 const tapInLogoSrc = "/tapin-logo.svg";
 const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
 
+function toMinutes(value?: string | null) {
+  if (!value) return null;
+  const cleaned = value.trim();
+  const spanMatch = cleaned.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!spanMatch) return null;
+
+  let hour = Number(spanMatch[1]);
+  const minute = Number(spanMatch[2]);
+  const meridiem = spanMatch[3]?.toUpperCase();
+
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+  if (!meridiem) {
+    return hour * 60 + minute;
+  }
+
+  if (meridiem === "AM" && hour === 12) hour = 0;
+  if (meridiem === "PM" && hour !== 12) hour += 12;
+  return hour * 60 + minute;
+}
+
+function getEventSessionMeta(event: EventData | null | undefined) {
+  if (!event) {
+    return {
+      sessionLabel: null as "morning" | "afternoon" | null,
+      strict: false,
+      hasActiveSession: false,
+    };
+  }
+
+  if (!event.multiSession) {
+    return {
+      sessionLabel: "morning" as const,
+      strict: !!event.strictMorning,
+      hasActiveSession: true,
+    };
+  }
+
+  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const morningStart = toMinutes(event.morningStart);
+  const morningEnd = toMinutes(event.morningEnd);
+  const afternoonStart = toMinutes(event.afternoonStart);
+  const afternoonEnd = toMinutes(event.afternoonEnd);
+
+  if (
+    morningStart !== null &&
+    morningEnd !== null &&
+    nowMinutes >= morningStart &&
+    nowMinutes <= morningEnd
+  ) {
+    return {
+      sessionLabel: "morning" as const,
+      strict: !!event.strictMorning,
+      hasActiveSession: true,
+    };
+  }
+
+  if (
+    afternoonStart !== null &&
+    afternoonEnd !== null &&
+    nowMinutes >= afternoonStart &&
+    nowMinutes <= afternoonEnd
+  ) {
+    return {
+      sessionLabel: "afternoon" as const,
+      strict: !!event.strictAfternoon,
+      hasActiveSession: true,
+    };
+  }
+
+  return { sessionLabel: null, strict: false, hasActiveSession: false };
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type Page = string;
 
@@ -88,7 +161,7 @@ interface ScanRecord {
   program: string;
   section: string;
   time: string;
-  status: "confirmed" | "duplicate";
+  status: "confirmed" | "late" | "duplicate";
   action?: "time_in" | "time_out" | "duplicate";
   dbId: string | number;
 }
@@ -6005,59 +6078,7 @@ function CameraScanner({
   const [result, setResult] = useState<ScanRecord | null>(null);
   const [torch, setTorch] = useState(false);
 
-  const toMinutes = (value?: string | null) => {
-    if (!value) return null;
-    const cleaned = value.trim();
-    const spanMatch = cleaned.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
-    if (!spanMatch) return null;
-
-    let hour = Number(spanMatch[1]);
-    const minute = Number(spanMatch[2]);
-    const meridiem = spanMatch[3]?.toUpperCase();
-
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-
-    if (!meridiem) {
-      return hour * 60 + minute;
-    }
-
-    if (meridiem === "AM" && hour === 12) hour = 0;
-    if (meridiem === "PM" && hour !== 12) hour += 12;
-    return hour * 60 + minute;
-  };
-
-  const determineSessionLabel = () => {
-    if (!event.multiSession) {
-      return "morning";
-    }
-
-    const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
-
-    const morningStart = toMinutes(event.morningStart);
-    const morningEnd = toMinutes(event.morningEnd);
-    const afternoonStart = toMinutes(event.afternoonStart);
-    const afternoonEnd = toMinutes(event.afternoonEnd);
-
-    if (
-      morningStart !== null &&
-      morningEnd !== null &&
-      nowMinutes >= morningStart &&
-      nowMinutes <= morningEnd
-    ) {
-      return "morning";
-    }
-
-    if (
-      afternoonStart !== null &&
-      afternoonEnd !== null &&
-      nowMinutes >= afternoonStart &&
-      nowMinutes <= afternoonEnd
-    ) {
-      return "afternoon";
-    }
-
-    return null;
-  };
+  const determineSessionLabel = () => getEventSessionMeta(event).sessionLabel;
 
   const resolveQr = async (raw: string) => {
     if (scannedRef.current) return;
@@ -6070,7 +6091,8 @@ function CameraScanner({
         throw new Error("This QR code is not a valid TapIn student code.");
       }
 
-      const sessionLabel = determineSessionLabel();
+      const sessionMeta = getEventSessionMeta(event);
+      const sessionLabel = sessionMeta.sessionLabel;
       if (!sessionLabel) {
         throw new Error("No active session right now for this event.");
       }
@@ -6099,15 +6121,19 @@ function CameraScanner({
       if (existingError) throw existingError;
 
       const now = new Date();
-      const strictSession =
+      const strictSession = sessionMeta.strict;
+      const cutoffValue =
         sessionLabel === "morning"
-          ? !!event.strictMorning
-          : !!event.strictAfternoon;
+          ? event.morningLateCutoff
+          : event.afternoonLateCutoff;
+      const cutoffMinutes = cutoffValue ? toMinutes(cutoffValue) : null;
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const isLateScan = cutoffMinutes !== null && nowMinutes > cutoffMinutes;
 
       let action: "time_in" | "time_out" | "duplicate" = "time_in";
       let recordId: string | number | undefined = undefined;
       let scannedAt: Date | string | undefined;
-      let status: "confirmed" | "duplicate" = "confirmed";
+      let status: "confirmed" | "late" | "duplicate" = "confirmed";
 
       if (!existing) {
         const { data: inserted, error: insertError } = await supabase
@@ -6118,7 +6144,7 @@ function CameraScanner({
             session_label: sessionLabel,
             scan_in_at: now.toISOString(),
             scan_out_at: null,
-            status: "present",
+            status: isLateScan ? "late" : "present",
             scanned_by: scannerId,
           })
           .select("id, scan_in_at")
@@ -6129,6 +6155,9 @@ function CameraScanner({
         recordId = inserted.id;
         scannedAt = inserted.scan_in_at ?? now;
         action = "time_in";
+        if (isLateScan) {
+          status = "late";
+        }
       } else if (existing.scan_in_at && !existing.scan_out_at) {
         if (!strictSession) {
           action = "duplicate";
@@ -6156,7 +6185,7 @@ function CameraScanner({
           .from("attendance_scans")
           .update({
             scan_in_at: now.toISOString(),
-            status: "present",
+            status: isLateScan ? "late" : "present",
             scanned_by: scannerId,
           })
           .eq("id", existing.id);
@@ -6166,6 +6195,9 @@ function CameraScanner({
         recordId = existing.id;
         scannedAt = now;
         action = "time_in";
+        if (isLateScan) {
+          status = "late";
+        }
       } else {
         action = "duplicate";
         status = "duplicate";
@@ -6416,9 +6448,17 @@ function CameraScanner({
         {result && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 px-8 gap-4">
             <div
-              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-2xl ${result.status === "confirmed" ? "bg-green-500" : "bg-red-500"}`}
+              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-2xl ${
+                result.action === "time_out"
+                  ? "bg-blue-500"
+                  : result.status === "duplicate"
+                    ? "bg-slate-500"
+                    : result.status === "late"
+                      ? "bg-amber-500"
+                      : "bg-green-500"
+              }`}
             >
-              {result.status === "confirmed" ? (
+              {result.action === "time_out" ? (
                 <svg
                   viewBox="0 0 24 24"
                   className="w-9 h-9"
@@ -6428,9 +6468,10 @@ function CameraScanner({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <polyline points="20 6 9 17 4 12" />
+                  <path d="M6 12h12" />
+                  <circle cx="12" cy="12" r="9" />
                 </svg>
-              ) : (
+              ) : result.status === "duplicate" ? (
                 <svg
                   viewBox="0 0 24 24"
                   className="w-9 h-9"
@@ -6443,21 +6484,52 @@ function CameraScanner({
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
+              ) : result.status === "late" ? (
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-9 h-9"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 8v4l3 2" />
+                  <circle cx="12" cy="12" r="8" />
+                </svg>
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-9 h-9"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
               )}
             </div>
             <div className="text-center">
               <p
-                className={`text-lg font-bold ${result.status === "confirmed" ? "text-green-400" : "text-red-400"}`}
+                className={`text-lg font-bold ${
+                  result.action === "time_out"
+                    ? "text-blue-400"
+                    : result.status === "duplicate"
+                      ? "text-slate-300"
+                      : result.status === "late"
+                        ? "text-amber-400"
+                        : "text-green-400"
+                }`}
               >
-                {result.action === "time_in"
-                  ? "Time-in recorded"
-                  : result.action === "time_out"
-                    ? "Time-out recorded"
-                    : result.action === "duplicate"
-                      ? "Already scanned for this session"
-                      : result.status === "confirmed"
-                        ? "Attendance Confirmed"
-                        : "Duplicate — Rejected"}
+                {result.action === "time_in" && result.status === "late"
+                  ? "Time-in Recorded — Late"
+                  : result.action === "time_in"
+                    ? "Time-in Recorded"
+                    : result.action === "time_out"
+                      ? "Time-out Recorded"
+                      : "Already Scanned for This Session"}
               </p>
               <p className="text-white text-base font-semibold mt-1">
                 {result.name}
@@ -6527,6 +6599,7 @@ export function AdminScannerPage({
     (e) => e.status === "active" || e.status === "upcoming",
   );
   const selectedEvent = events.find((e) => e.id === selectedEventId);
+  const selectedSessionMeta = getEventSessionMeta(selectedEvent);
 
   const handleResult = (r: ScanRecord) => {
     setScanned((prev) => [
@@ -6632,6 +6705,30 @@ export function AdminScannerPage({
                 </span>
               )}
             </div>
+
+            <div className="flex flex-wrap gap-2">
+              {selectedSessionMeta.sessionLabel ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  {selectedSessionMeta.sessionLabel === "morning"
+                    ? "Morning Session Active"
+                    : "Afternoon Session Active"}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  No active session right now for this event
+                </span>
+              )}
+
+              {selectedSessionMeta.sessionLabel &&
+                selectedSessionMeta.strict && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 ring-1 ring-violet-200">
+                    Strict Mode: Time-in + Time-out required
+                  </span>
+                )}
+            </div>
+
             <button
               onClick={() => setScannerOpen(true)}
               className="w-full h-14 bg-green-600 hover:bg-green-700 active:scale-[.99] text-white text-base font-bold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-md shadow-green-900/20"
