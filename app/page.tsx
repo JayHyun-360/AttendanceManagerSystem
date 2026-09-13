@@ -89,6 +89,7 @@ interface ScanRecord {
   section: string;
   time: string;
   status: "confirmed" | "duplicate";
+  action?: "time_in" | "time_out" | "duplicate";
   dbId: string | number;
 }
 
@@ -983,6 +984,14 @@ function Badge({ status }: { status: string }) {
     confirmed: {
       cls: "bg-green-50 text-green-700 ring-1 ring-green-200",
       label: "Confirmed",
+    },
+    time_in: {
+      cls: "bg-green-50 text-green-700 ring-1 ring-green-200",
+      label: "Time-in",
+    },
+    time_out: {
+      cls: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
+      label: "Time-out",
     },
     duplicate: {
       cls: "bg-red-50 text-red-600 ring-1 ring-red-200",
@@ -5996,6 +6005,60 @@ function CameraScanner({
   const [result, setResult] = useState<ScanRecord | null>(null);
   const [torch, setTorch] = useState(false);
 
+  const toMinutes = (value?: string | null) => {
+    if (!value) return null;
+    const cleaned = value.trim();
+    const spanMatch = cleaned.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+    if (!spanMatch) return null;
+
+    let hour = Number(spanMatch[1]);
+    const minute = Number(spanMatch[2]);
+    const meridiem = spanMatch[3]?.toUpperCase();
+
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+    if (!meridiem) {
+      return hour * 60 + minute;
+    }
+
+    if (meridiem === "AM" && hour === 12) hour = 0;
+    if (meridiem === "PM" && hour !== 12) hour += 12;
+    return hour * 60 + minute;
+  };
+
+  const determineSessionLabel = () => {
+    if (!event.multiSession) {
+      return "morning";
+    }
+
+    const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+
+    const morningStart = toMinutes(event.morningStart);
+    const morningEnd = toMinutes(event.morningEnd);
+    const afternoonStart = toMinutes(event.afternoonStart);
+    const afternoonEnd = toMinutes(event.afternoonEnd);
+
+    if (
+      morningStart !== null &&
+      morningEnd !== null &&
+      nowMinutes >= morningStart &&
+      nowMinutes <= morningEnd
+    ) {
+      return "morning";
+    }
+
+    if (
+      afternoonStart !== null &&
+      afternoonEnd !== null &&
+      nowMinutes >= afternoonStart &&
+      nowMinutes <= afternoonEnd
+    ) {
+      return "afternoon";
+    }
+
+    return null;
+  };
+
   const resolveQr = async (raw: string) => {
     if (scannedRef.current) return;
     scannedRef.current = true;
@@ -6005,6 +6068,11 @@ function CameraScanner({
       const studentId = raw.startsWith("TAPIN:") ? raw.slice(6).trim() : "";
       if (!studentId || !scannerId) {
         throw new Error("This QR code is not a valid TapIn student code.");
+      }
+
+      const sessionLabel = determineSessionLabel();
+      if (!sessionLabel) {
+        throw new Error("No active session right now for this event.");
       }
 
       const { data: profile, error: profileError } = await supabase
@@ -6021,45 +6089,88 @@ function CameraScanner({
       }
 
       const { data: existing, error: existingError } = await supabase
-        .from("attendance_logs")
-        .select("id, scanned_at")
+        .from("attendance_scans")
+        .select("id, session_label, scan_in_at, scan_out_at, status")
         .eq("event_id", event.id)
         .eq("student_id", profile.id)
+        .eq("session_label", sessionLabel)
         .maybeSingle();
 
       if (existingError) throw existingError;
 
-      let recordId = existing?.id;
-      let scannedAt = existing?.scanned_at;
-      const duplicate = !!existing;
+      const now = new Date();
+      const strictSession =
+        sessionLabel === "morning"
+          ? !!event.strictMorning
+          : !!event.strictAfternoon;
 
-      if (!duplicate) {
+      let action: "time_in" | "time_out" | "duplicate" = "time_in";
+      let recordId: string | number | undefined = undefined;
+      let scannedAt: Date | string | undefined;
+      let status: "confirmed" | "duplicate" = "confirmed";
+
+      if (!existing) {
         const { data: inserted, error: insertError } = await supabase
-          .from("attendance_logs")
+          .from("attendance_scans")
           .insert({
             event_id: event.id,
             student_id: profile.id,
-            scanned_by: scannerId,
+            session_label: sessionLabel,
+            scan_in_at: now.toISOString(),
+            scan_out_at: null,
             status: "present",
+            scanned_by: scannerId,
           })
-          .select("id, scanned_at")
+          .select("id, scan_in_at")
           .single();
 
-        if (insertError) {
-          const { data: raced } = await supabase
-            .from("attendance_logs")
-            .select("id, scanned_at")
-            .eq("event_id", event.id)
-            .eq("student_id", profile.id)
-            .maybeSingle();
+        if (insertError) throw insertError;
 
-          if (!raced) throw insertError;
-          recordId = raced.id;
-          scannedAt = raced.scanned_at;
+        recordId = inserted.id;
+        scannedAt = inserted.scan_in_at ?? now;
+        action = "time_in";
+      } else if (existing.scan_in_at && !existing.scan_out_at) {
+        if (!strictSession) {
+          action = "duplicate";
+          status = "duplicate";
+          recordId = existing.id;
+          scannedAt = existing.scan_in_at ?? now;
         } else {
-          recordId = inserted.id;
-          scannedAt = inserted.scanned_at;
+          const { error: updateError } = await supabase
+            .from("attendance_scans")
+            .update({
+              scan_out_at: now.toISOString(),
+              status: "present",
+              scanned_by: scannerId,
+            })
+            .eq("id", existing.id);
+
+          if (updateError) throw updateError;
+
+          recordId = existing.id;
+          scannedAt = now;
+          action = "time_out";
         }
+      } else if (!existing.scan_in_at && !existing.scan_out_at) {
+        const { error: updateError } = await supabase
+          .from("attendance_scans")
+          .update({
+            scan_in_at: now.toISOString(),
+            status: "present",
+            scanned_by: scannerId,
+          })
+          .eq("id", existing.id);
+
+        if (updateError) throw updateError;
+
+        recordId = existing.id;
+        scannedAt = now;
+        action = "time_in";
+      } else {
+        action = "duplicate";
+        status = "duplicate";
+        recordId = existing.id;
+        scannedAt = existing.scan_in_at ?? now;
       }
 
       const rec: ScanRecord = {
@@ -6073,8 +6184,9 @@ function CameraScanner({
           hour: "2-digit",
           minute: "2-digit",
         }),
-        status: duplicate ? "duplicate" : "confirmed",
-        dbId: recordId,
+        status,
+        action,
+        dbId: recordId ?? "",
       };
 
       setSweeping(true);
@@ -6337,9 +6449,15 @@ function CameraScanner({
               <p
                 className={`text-lg font-bold ${result.status === "confirmed" ? "text-green-400" : "text-red-400"}`}
               >
-                {result.status === "confirmed"
-                  ? "Attendance Confirmed"
-                  : "Duplicate — Rejected"}
+                {result.action === "time_in"
+                  ? "Time-in recorded"
+                  : result.action === "time_out"
+                    ? "Time-out recorded"
+                    : result.action === "duplicate"
+                      ? "Already scanned for this session"
+                      : result.status === "confirmed"
+                        ? "Attendance Confirmed"
+                        : "Duplicate — Rejected"}
               </p>
               <p className="text-white text-base font-semibold mt-1">
                 {result.name}
