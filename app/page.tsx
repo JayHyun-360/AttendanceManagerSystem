@@ -5037,6 +5037,7 @@ export function AdminEventsPage({
 
   const commitSave = async () => {
     if (!editDraft) return;
+    setShowSensitiveWarning(false);
 
     try {
       const timeRange = editDraft.multiSession
@@ -5701,7 +5702,10 @@ export function AdminEventsPage({
             showSensitiveWarning ? (
               <>
                 <button
-                  onClick={commitSave}
+                  onClick={() => {
+                    setShowSensitiveWarning(false);
+                    void commitSave();
+                  }}
                   className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm"
                 >
                   Confirm &amp; save

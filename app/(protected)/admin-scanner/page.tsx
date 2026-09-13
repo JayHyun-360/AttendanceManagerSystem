@@ -54,6 +54,36 @@ export default function AdminScannerRoutePage() {
                 row.image_url && !row.image_url.startsWith("blob:")
                   ? row.image_url
                   : undefined,
+              multiSession: Boolean(row.multi_session ?? row.multiSession),
+              strictMorning: Boolean(row.strict_morning ?? row.strictMorning),
+              strictAfternoon: Boolean(
+                row.strict_afternoon ?? row.strictAfternoon,
+              ),
+              morningStart: row.morning_start ?? row.morningStart ?? undefined,
+              morningEnd: row.morning_end ?? row.morningEnd ?? undefined,
+              morningLateCutoff:
+                row.morning_late_cutoff ?? row.morningLateCutoff ?? undefined,
+              afternoonStart:
+                row.afternoon_start ?? row.afternoonStart ?? undefined,
+              afternoonEnd: row.afternoon_end ?? row.afternoonEnd ?? undefined,
+              afternoonLateCutoff:
+                row.afternoon_late_cutoff ??
+                row.afternoonLateCutoff ??
+                undefined,
+              absentFine: Number(row.absent_fine ?? row.absentFine ?? 0),
+              lateFine: Number(row.late_fine ?? row.lateFine ?? 0),
+              morningAbsentFine: Number(
+                row.morning_absent_fine ?? row.morningAbsentFine ?? 0,
+              ),
+              morningLateFine: Number(
+                row.morning_late_fine ?? row.morningLateFine ?? 0,
+              ),
+              afternoonAbsentFine: Number(
+                row.afternoon_absent_fine ?? row.afternoonAbsentFine ?? 0,
+              ),
+              afternoonLateFine: Number(
+                row.afternoon_late_fine ?? row.afternoonLateFine ?? 0,
+              ),
             })),
           );
         }
