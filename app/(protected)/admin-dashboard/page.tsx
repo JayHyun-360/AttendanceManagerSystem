@@ -167,13 +167,13 @@ export default function AdminDashboardRoute() {
           <Skeleton className="h-8 w-48" />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
           {[0, 1, 2, 3].map((item) => (
             <Skeleton key={item} className="h-24 rounded-xl" />
           ))}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Skeleton className="h-28 rounded-xl" />
           <Skeleton className="h-28 rounded-xl" />
         </div>

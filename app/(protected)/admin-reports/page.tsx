@@ -245,7 +245,7 @@ export default function AdminReportsRoutePage() {
           <Skeleton className="h-8 w-32 rounded-lg" />
           <Skeleton className="h-4 w-48 rounded-lg" />
         </div>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
           {[0, 1, 2, 3].map((item) => (
             <Skeleton key={item} className="h-24 rounded-xl" />
           ))}

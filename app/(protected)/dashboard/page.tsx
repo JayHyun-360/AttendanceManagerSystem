@@ -214,7 +214,7 @@ export default function DashboardRoute() {
           <Skeleton className="h-8 w-56" />
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {[0, 1, 2].map((item) => (
             <Skeleton key={item} className="h-20 rounded-xl" />
           ))}

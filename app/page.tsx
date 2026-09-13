@@ -3355,7 +3355,7 @@ export function DashboardPage({
         </h1>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-1 gap-3 mb-5 sm:grid-cols-3">
         <motion.div
           className="bg-white border border-slate-100 rounded-xl px-4 py-4"
           initial={{ opacity: 0, y: 8 }}
@@ -4604,7 +4604,7 @@ export function AdminDashboard({
           Live
         </span>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-1 gap-3 mb-5 sm:grid-cols-2 md:grid-cols-4">
         {[
           {
             l: "Scanned today",
@@ -4641,7 +4641,7 @@ export function AdminDashboard({
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="grid grid-cols-1 gap-3 mb-5 sm:grid-cols-2">
         <button
           onClick={() => onNav("admin-scanner")}
           className="bg-green-600 hover:bg-green-700 text-white rounded-xl p-5 text-left transition-all shadow-sm hover:shadow-md"
@@ -8151,11 +8151,11 @@ export function AdminReportsPage({
         })}
       </div>
       <SectionLabel>Fees summary</SectionLabel>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-1 gap-3 mb-6 sm:grid-cols-2 lg:grid-cols-3">
         {fees.map((s, i) => (
           <div
             key={s.label}
-            className={`bg-white border border-slate-100 rounded-xl px-4 py-4 ${i === 0 ? "col-span-2 sm:col-span-1" : ""}`}
+            className={`bg-white border border-slate-100 rounded-xl px-4 py-4 ${i === 0 ? "sm:col-span-1" : ""}`}
           >
             <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
             <p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">
@@ -8422,7 +8422,7 @@ export function AdminSettingsPage({
             value={settings.institution}
             onChange={(e) => update({ institution: e.target.value })}
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FieldInput
               label="Academic year"
               placeholder="e.g. 2026-2027"
