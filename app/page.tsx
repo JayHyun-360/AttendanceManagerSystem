@@ -99,6 +99,34 @@ function getEventSessionMeta(event: EventData | null | undefined) {
   return { sessionLabel: null, strict: false, hasActiveSession: false };
 }
 
+function getSelectedSessionMeta(
+  event: EventData | null | undefined,
+  manualSessionLabel: "morning" | "afternoon" | null,
+) {
+  if (!event) {
+    return {
+      sessionLabel: null as "morning" | "afternoon" | null,
+      strict: false,
+    };
+  }
+
+  if (!event.multiSession) {
+    return { sessionLabel: "morning" as const, strict: !!event.strictMorning };
+  }
+
+  if (manualSessionLabel === "morning" || manualSessionLabel === "afternoon") {
+    return {
+      sessionLabel: manualSessionLabel,
+      strict:
+        manualSessionLabel === "morning"
+          ? !!event.strictMorning
+          : !!event.strictAfternoon,
+    };
+  }
+
+  return getEventSessionMeta(event);
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type Page = string;
 
@@ -4761,6 +4789,7 @@ export function AdminEventsPage({
     afternoonLateFine: "0",
   });
   const [showSensitiveWarning, setShowSensitiveWarning] = useState(false);
+  const [eventHasScans, setEventHasScans] = useState(false);
 
   const photoRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
@@ -4947,7 +4976,13 @@ export function AdminEventsPage({
     }
   };
 
-  const startEdit = (e: EventData) => {
+  const startEdit = async (e: EventData) => {
+    const { count, error } = await supabase
+      .from("attendance_scans")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", e.id);
+
+    setEventHasScans(!error && (count ?? 0) > 0);
     setEditId(e.id);
     setEditDraft({ ...e });
     setEditOriginal({ ...e });
@@ -5761,20 +5796,28 @@ export function AdminEventsPage({
                 </p>
               </div>
               <button
-                onClick={() =>
+                onClick={() => {
+                  if (eventHasScans) return;
                   setEditDraft((d) =>
                     d ? { ...d, multiSession: !d.multiSession } : d,
-                  )
-                }
+                  );
+                }}
                 role="switch"
                 aria-checked={!!editDraft.multiSession}
-                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${editDraft.multiSession ? "bg-green-600" : "bg-slate-200"}`}
+                disabled={eventHasScans}
+                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${eventHasScans ? "cursor-not-allowed opacity-50" : ""} ${editDraft.multiSession ? "bg-green-600" : "bg-slate-200"}`}
               >
                 <span
                   className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${editDraft.multiSession ? "translate-x-4" : "translate-x-0"}`}
                 />
               </button>
             </div>
+            {eventHasScans && (
+              <p className="px-1 pb-2 text-[10px] text-amber-700">
+                Can't change session mode — this event already has recorded
+                attendance.
+              </p>
+            )}
           </div>
 
           {!editDraft.multiSession ? (
@@ -6062,11 +6105,13 @@ function CameraScanner({
   scannerId,
   onResult,
   onClose,
+  manualSessionLabel,
 }: {
   event: EventData;
   scannerId: string | null;
   onResult: (r: ScanRecord) => void;
   onClose: () => void;
+  manualSessionLabel: "morning" | "afternoon" | null;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -6078,7 +6123,8 @@ function CameraScanner({
   const [result, setResult] = useState<ScanRecord | null>(null);
   const [torch, setTorch] = useState(false);
 
-  const determineSessionLabel = () => getEventSessionMeta(event).sessionLabel;
+  const determineSessionLabel = () =>
+    event.multiSession ? manualSessionLabel : "morning";
 
   const resolveQr = async (raw: string) => {
     if (scannedRef.current) return;
@@ -6091,10 +6137,20 @@ function CameraScanner({
         throw new Error("This QR code is not a valid TapIn student code.");
       }
 
-      const sessionMeta = getEventSessionMeta(event);
+      const sessionMeta = event.multiSession
+        ? {
+            sessionLabel: manualSessionLabel,
+            strict:
+              manualSessionLabel === "morning"
+                ? !!event.strictMorning
+                : manualSessionLabel === "afternoon"
+                  ? !!event.strictAfternoon
+                  : false,
+          }
+        : getEventSessionMeta(event);
       const sessionLabel = sessionMeta.sessionLabel;
       if (!sessionLabel) {
-        throw new Error("No active session right now for this event.");
+        throw new Error("Please select a session before scanning.");
       }
 
       const { data: profile, error: profileError } = await supabase
@@ -6588,6 +6644,9 @@ export function AdminScannerPage({
   );
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanned, setScanned] = useState<ScanRecord[]>([]);
+  const [manualSessionLabel, setManualSessionLabel] = useState<
+    "morning" | "afternoon" | null
+  >(null);
 
   useEffect(() => {
     if (!events.some((event) => event.id === selectedEventId) && events[0]) {
@@ -6595,11 +6654,31 @@ export function AdminScannerPage({
     }
   }, [events, selectedEventId]);
 
+  useEffect(() => {
+    const nextEvent = events.find((event) => event.id === selectedEventId);
+    if (!nextEvent) {
+      setManualSessionLabel(null);
+      return;
+    }
+
+    if (!nextEvent.multiSession) {
+      setManualSessionLabel(null);
+      return;
+    }
+
+    const defaultSession =
+      getEventSessionMeta(nextEvent).sessionLabel ?? "morning";
+    setManualSessionLabel(defaultSession);
+  }, [selectedEventId, events]);
+
   const activeEvents = events.filter(
     (e) => e.status === "active" || e.status === "upcoming",
   );
   const selectedEvent = events.find((e) => e.id === selectedEventId);
-  const selectedSessionMeta = getEventSessionMeta(selectedEvent);
+  const selectedSessionMeta = getSelectedSessionMeta(
+    selectedEvent,
+    manualSessionLabel,
+  );
 
   const handleResult = (r: ScanRecord) => {
     setScanned((prev) => [
@@ -6621,6 +6700,7 @@ export function AdminScannerPage({
         scannerId={scannerId}
         onResult={handleResult}
         onClose={() => setScannerOpen(false)}
+        manualSessionLabel={manualSessionLabel}
       />
     );
   }
@@ -6706,13 +6786,43 @@ export function AdminScannerPage({
               )}
             </div>
 
+            {selectedEvent.multiSession && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  Session
+                </p>
+                <div className="mt-2 flex gap-2">
+                  {(["morning", "afternoon"] as const).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setManualSessionLabel(option)}
+                      className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-all ${
+                        manualSessionLabel === option
+                          ? "bg-green-600 text-white shadow-sm"
+                          : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      {option === "morning" ? "Morning" : "Afternoon"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2">
-              {selectedSessionMeta.sessionLabel ? (
+              {selectedEvent.multiSession &&
+              selectedSessionMeta.sessionLabel ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   {selectedSessionMeta.sessionLabel === "morning"
-                    ? "Morning Session Active"
-                    : "Afternoon Session Active"}
+                    ? "Morning Session Selected"
+                    : "Afternoon Session Selected"}
+                </span>
+              ) : !selectedEvent.multiSession ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  Morning Session Active
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200">
