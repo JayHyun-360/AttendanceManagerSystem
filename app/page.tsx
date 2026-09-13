@@ -1715,6 +1715,9 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
               <img
                 src={s.imageUrl}
                 alt={s.caption}
+                loading="eager"
+                decoding="sync"
+                fetchPriority="high"
                 className="w-full h-full object-cover"
               />
             )}
@@ -1844,9 +1847,9 @@ function LandingPage({
                   src={url}
                   alt=""
                   aria-hidden
-                  loading={i === 0 ? "eager" : "lazy"}
-                  fetchPriority={i === 0 ? "high" : "low"}
-                  decoding="async"
+                  loading="eager"
+                  decoding="sync"
+                  fetchPriority="high"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -2008,6 +2011,7 @@ function LandingPage({
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
 export function LoginPage({ onBack }: { onBack: () => void }) {
   const router = useRouter();
+  const [showEmailFlow, setShowEmailFlow] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -2184,31 +2188,6 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-          <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1 mb-5">
-            <button
-              type="button"
-              onClick={() => setMode("signin")}
-              className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-all ${
-                mode === "signin"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500"
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("signup")}
-              className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-all ${
-                mode === "signup"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500"
-              }`}
-            >
-              Sign Up
-            </button>
-          </div>
-
           <div className="space-y-3">
             <button
               type="button"
@@ -2224,96 +2203,152 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
               Continue with Google
             </button>
 
-            <div className="flex items-center gap-3 py-1">
-              <div className="flex-1 h-px bg-slate-100" />
-              <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-widest">
-                or
-              </span>
-              <div className="flex-1 h-px bg-slate-100" />
-            </div>
-
-            <div className="space-y-3">
-              <label className="block">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
-                  Email
-                </span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
-                />
-              </label>
-
-              <label className="block">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
-                  Password
-                </span>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Your password"
-                  className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
-                />
-              </label>
-
-              {mode === "signup" && (
-                <label className="block">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
-                    Confirm Password
-                  </span>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm your password"
-                    className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
-                  />
-                </label>
-              )}
-
-              <button
-                type="button"
-                onClick={() => void handleEmailSubmit()}
-                disabled={!!loading}
-                className="w-full h-12 flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 rounded-xl text-sm font-semibold text-white transition-all shadow-sm disabled:opacity-50"
-              >
-                {loading === "submit" ? (
-                  <div className="w-4 h-4 border-2 border-slate-600 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <Icons.Mail />
-                )}
-                {mode === "signin" ? "Sign In" : "Create account"}
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-400 text-center pt-1">
-              {mode === "signin"
-                ? "Don't have an account?"
-                : "Already have an account?"}{" "}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode(mode === "signin" ? "signup" : "signin");
-                  setPassword("");
-                  setConfirmPassword("");
-                }}
-                className="text-green-600 font-semibold hover:text-green-700"
-              >
-                {mode === "signin" ? "Sign up" : "Sign in"}
-              </button>
-            </p>
-
             <button
               type="button"
-              onClick={onBack}
-              className="w-full text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-1 pt-1"
+              onClick={() => {
+                setShowEmailFlow(true);
+              }}
+              disabled={!!loading}
+              className="w-full h-12 flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 rounded-xl text-sm font-semibold text-white transition-all shadow-sm disabled:opacity-50"
             >
-              <Icons.ChevronLeft />
-              Back to home
+              <Icons.Mail />
+              Continue with Email
             </button>
+
+            <motion.div
+              initial={false}
+              animate={{
+                height: showEmailFlow ? "auto" : 0,
+                opacity: showEmailFlow ? 1 : 0,
+              }}
+              transition={{ duration: 0.22, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <div className="pt-3">
+                <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1 mb-5">
+                  <button
+                    type="button"
+                    onClick={() => setMode("signin")}
+                    className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-all ${
+                      mode === "signin"
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode("signup")}
+                    className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-all ${
+                      mode === "signup"
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    Sign Up
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
+                      Email
+                    </span>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
+                      Password
+                    </span>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Your password"
+                      className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
+                    />
+                  </label>
+
+                  {mode === "signup" && (
+                    <label className="block">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
+                        Confirm Password
+                      </span>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm your password"
+                        className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
+                      />
+                    </label>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => void handleEmailSubmit()}
+                    disabled={!!loading}
+                    className="w-full h-12 flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 rounded-xl text-sm font-semibold text-white transition-all shadow-sm disabled:opacity-50"
+                  >
+                    {loading === "submit" ? (
+                      <div className="w-4 h-4 border-2 border-slate-600 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <Icons.Mail />
+                    )}
+                    {mode === "signin" ? "Sign In" : "Create account"}
+                  </button>
+                </div>
+
+                <p className="text-xs text-slate-400 text-center pt-3">
+                  {mode === "signin"
+                    ? "Don't have an account?"
+                    : "Already have an account?"}{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode(mode === "signin" ? "signup" : "signin");
+                      setPassword("");
+                      setConfirmPassword("");
+                    }}
+                    className="text-green-600 font-semibold hover:text-green-700"
+                  >
+                    {mode === "signin" ? "Sign up" : "Sign in"}
+                  </button>
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEmailFlow(false);
+                    setPassword("");
+                    setConfirmPassword("");
+                  }}
+                  className="w-full text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-1 pt-3"
+                >
+                  <Icons.ChevronLeft />
+                  Back
+                </button>
+              </div>
+            </motion.div>
+
+            {!showEmailFlow && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="w-full text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-1 pt-1"
+              >
+                <Icons.ChevronLeft />
+                Back to home
+              </button>
+            )}
           </div>
         </div>
       </div>
