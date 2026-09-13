@@ -6679,6 +6679,7 @@ export function AdminScannerPage({
     (e) => e.status === "active" || e.status === "upcoming",
   );
   const selectedEvent = events.find((e) => e.id === selectedEventId);
+  const canScanSelectedEvent = selectedEvent?.status === "active";
   const selectedSessionMeta = getSelectedSessionMeta(
     selectedEvent,
     manualSessionLabel,
@@ -6843,9 +6844,22 @@ export function AdminScannerPage({
                 )}
             </div>
 
+            {!canScanSelectedEvent && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-left">
+                <p className="text-[11px] font-semibold text-amber-800">
+                  Scanning is only available while this event is live.
+                </p>
+              </div>
+            )}
+
             <button
-              onClick={() => setScannerOpen(true)}
-              className="w-full h-14 bg-green-600 hover:bg-green-700 active:scale-[.99] text-white text-base font-bold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-md shadow-green-900/20"
+              onClick={() => canScanSelectedEvent && setScannerOpen(true)}
+              disabled={!canScanSelectedEvent}
+              className={`w-full h-14 text-white text-base font-bold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-md ${
+                canScanSelectedEvent
+                  ? "bg-green-600 hover:bg-green-700 active:scale-[.99] shadow-green-900/20"
+                  : "bg-slate-300 cursor-not-allowed shadow-slate-300/20"
+              }`}
             >
               <Icons.Scan />
               Open QR Scanner
