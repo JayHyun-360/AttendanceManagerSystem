@@ -19,6 +19,12 @@ export default function OnboardingRoute() {
         return;
       }
 
+      const googleAvatarUrl =
+        (session?.user?.user_metadata?.avatar_url as string | undefined) ??
+        (session?.user?.user_metadata?.picture as string | undefined) ??
+        (session?.user?.user_metadata?.image_url as string | undefined) ??
+        null;
+
       const payload = {
         id: uid,
         first_name: d.firstName.trim(),
@@ -31,7 +37,8 @@ export default function OnboardingRoute() {
         phone: d.phone.trim(),
         contact_email: d.contactEmail.trim(),
         role: "student",
-        photo_url: d.idPhotoUrl,
+        photo_url: googleAvatarUrl || null,
+        id_photo_url: d.idPhotoUrl ?? null,
       };
 
       const { error } = await supabase

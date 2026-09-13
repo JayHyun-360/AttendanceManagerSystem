@@ -115,9 +115,29 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           console.error(profileError);
         }
 
+        const googleAvatarUrl =
+          (session.user.user_metadata?.avatar_url as string | undefined) ??
+          (session.user.user_metadata?.picture as string | undefined) ??
+          (session.user.user_metadata?.image_url as string | undefined) ??
+          null;
+
         if (!profile) {
           router.push("/onboarding");
           return;
+        }
+
+        if (!profile.photo_url && googleAvatarUrl) {
+          const { error: avatarUpdateError } = await supabase
+            .from("profiles")
+            .update({ photo_url: googleAvatarUrl })
+            .eq("id", uid);
+
+          if (avatarUpdateError) {
+            console.error(
+              "Failed to set Google avatar as default photo",
+              avatarUpdateError,
+            );
+          }
         }
 
         const profileIsIncomplete =
@@ -145,8 +165,8 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           phone: profile.phone ?? "",
           contactEmail: profile.contact_email ?? profile.email ?? "",
           role: profile.role ?? "student",
-          photoUrl: profile.photo_url ?? undefined,
-          idPhotoUrl: profile.photo_url ?? undefined,
+          photoUrl: profile.photo_url ?? googleAvatarUrl ?? undefined,
+          idPhotoUrl: profile.id_photo_url ?? undefined,
         };
 
         if (!cancelled) {

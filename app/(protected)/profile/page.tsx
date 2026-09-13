@@ -42,6 +42,10 @@ export default function ProfileRoutePage() {
           nextUser.photoUrl && !nextUser.photoUrl.startsWith("blob:")
             ? nextUser.photoUrl
             : null,
+        id_photo_url:
+          nextUser.idPhotoUrl && !nextUser.idPhotoUrl.startsWith("blob:")
+            ? nextUser.idPhotoUrl
+            : null,
       })
       .eq("id", authUserId);
 

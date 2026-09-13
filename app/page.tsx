@@ -2006,21 +2006,56 @@ function LandingPage({
 }
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
-export function LoginPage({
-  onLogin,
-  onBack,
-  adminAccessError,
-  onRoleSelect,
-  onGoogleLogin,
-}: {
-  onLogin: (role: Role) => void;
-  onBack: () => void;
-  adminAccessError?: string | null;
-  onRoleSelect?: (role: Role) => void;
-  onGoogleLogin?: (role: Role) => void;
-}) {
-  const [role, setRole] = useState<Role>(null);
-  const [loading, setLoading] = useState<string | null>(null);
+export function LoginPage({ onBack }: { onBack: () => void }) {
+  const router = useRouter();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState<"google" | "submit" | null>(null);
+
+  const routeAfterAuth = async () => {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      router.push("/login");
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError && profileError.code !== "PGRST116") {
+      console.error(profileError);
+    }
+
+    const incomplete =
+      !profile ||
+      !profile.first_name ||
+      !profile.surname ||
+      (profile.role !== "admin" &&
+        (!profile.student_id ||
+          !profile.program ||
+          !profile.year_level ||
+          !profile.section));
+
+    if (incomplete) {
+      router.push("/onboarding?freshLogin=1");
+      return;
+    }
+
+    router.push(
+      profile.role === "admin"
+        ? "/admin-dashboard?freshLogin=1"
+        : "/dashboard?freshLogin=1",
+    );
+  };
 
   const handleGoogleLogin = async () => {
     setLoading("google");
@@ -2035,182 +2070,252 @@ export function LoginPage({
 
       if (error) {
         console.error(error);
+        toast.error(error.message || "Google sign-in failed.");
       }
     } catch (error) {
       console.error(error);
+      toast.error("Google sign-in failed.");
     } finally {
       setLoading(null);
     }
   };
 
-  const proceed = (m: string) => {
-    setLoading(m);
-    if (role) {
-      onLogin(role);
+  const handleEmailSubmit = async () => {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail || !password) {
+      toast.error("Please enter both your email and password.");
+      return;
     }
-    setLoading(null);
+
+    if (mode === "signup") {
+      if (!confirmPassword) {
+        toast.error("Please confirm your password.");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        toast.error("Passwords do not match.");
+        return;
+      }
+    }
+
+    setLoading("submit");
+
+    try {
+      let result;
+
+      if (mode === "signin") {
+        result = await supabase.auth.signInWithPassword({
+          email: trimmedEmail,
+          password,
+        });
+      } else {
+        result = await supabase.auth.signUp({
+          email: trimmedEmail,
+          password,
+        });
+      }
+
+      if (result.error) {
+        const message = result.error.message.toLowerCase();
+
+        if (
+          message.includes("invalid login") ||
+          message.includes("wrong password") ||
+          message.includes("invalid credentials")
+        ) {
+          toast.error("Invalid email or password.");
+        } else if (
+          message.includes("already registered") ||
+          message.includes("user already registered") ||
+          message.includes("email already")
+        ) {
+          toast.error(
+            "This email is already registered. Please sign in instead.",
+          );
+        } else if (message.includes("password") && message.includes("match")) {
+          toast.error("Passwords do not match.");
+        } else if (message.includes("password") && message.includes("least")) {
+          toast.error("Password must be at least 6 characters long.");
+        } else {
+          toast.error(result.error.message || "Authentication failed.");
+        }
+
+        return;
+      }
+
+      if (mode === "signup") {
+        if (result.data.session) {
+          await routeAfterAuth();
+        } else {
+          toast.success(
+            "Account created. Check your email to confirm, then sign in.",
+          );
+          setMode("signin");
+          setPassword("");
+          setConfirmPassword("");
+        }
+        return;
+      }
+
+      await routeAfterAuth();
+    } catch (error) {
+      console.error(error);
+      toast.error("Authentication failed. Please try again.");
+    } finally {
+      setLoading(null);
+    }
   };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#f8faf9]">
       <div className="w-full max-w-sm">
-        {adminAccessError && (
-          <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">
-            {adminAccessError}
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <TapInMark className="w-12 h-12" />
           </div>
-        )}
-        {!role && (
-          <>
-            <div className="text-center mb-8">
-              <div className="flex justify-center mb-4">
-                <TapInMark className="w-12 h-12" />
-              </div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-1">
-                Welcome to TapIn
-              </h1>
-              <p className="text-xs text-slate-400 font-medium">
-                Student Event Attendance &amp; Fee Tracking System
-              </p>
-            </div>
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  setRole("student");
-                  onRoleSelect?.("student");
-                }}
-                className="w-full bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 text-left hover:border-green-300 hover:shadow-sm transition-all group"
-              >
-                <div className="w-12 h-12 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center text-green-600 shrink-0 group-hover:bg-green-100 transition-colors">
-                  <Icons.User />
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-slate-900 text-sm">
-                    Login as Student
-                  </p>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">
-                    View events, show QR code, track attendance
-                  </p>
-                </div>
-                <span className="text-slate-300 group-hover:text-green-500 transition-colors">
-                  <Icons.ChevronRight />
-                </span>
-              </button>
-              <button
-                onClick={() => {
-                  setRole("admin");
-                  onRoleSelect?.("admin");
-                }}
-                className="w-full bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 text-left hover:border-slate-300 hover:shadow-sm transition-all group"
-              >
-                <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 shrink-0 group-hover:bg-slate-200 transition-colors">
-                  <Icons.Shield />
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-slate-900 text-sm">
-                    Login as Admin
-                  </p>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">
-                    Manage events, scan QR codes, view reports
-                  </p>
-                </div>
-                <span className="text-slate-300 group-hover:text-slate-500 transition-colors">
-                  <Icons.ChevronRight />
-                </span>
-              </button>
-              <p className="text-xs text-slate-400 text-center pt-1">
-                New student?{" "}
-                <button
-                  onClick={() => {
-                    setRole("student");
-                    onRoleSelect?.("student");
-                  }}
-                  className="text-green-600 font-semibold hover:text-green-700"
-                >
-                  Create an account
-                </button>
-              </p>
-              <button
-                onClick={onBack}
-                className="w-full text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-1 pt-1"
-              >
-                <Icons.ChevronLeft />
-                Back to home
-              </button>
-            </div>
-          </>
-        )}
-        {role && (
-          <>
-            <div className="text-center mb-8">
-              <div className="flex justify-center mb-4">
-                <TapInMark className="w-12 h-12" />
-              </div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-1">
-                {role === "student" ? "Student login" : "Admin login"}
-              </h1>
-              <p className="text-sm text-slate-400">
-                Choose how you would like to sign in
-              </p>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
-              <button
-                onClick={() => {
-                  onGoogleLogin?.(role);
-                  void handleGoogleLogin();
-                }}
-                disabled={!!loading}
-                className="w-full h-12 flex items-center justify-center gap-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all disabled:opacity-50"
-              >
-                {loading === "google" ? (
-                  <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-                ) : (
-                  <Icons.Google />
-                )}
-                Continue with Google
-              </button>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-slate-100" />
-                <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-widest">
-                  or
-                </span>
-                <div className="flex-1 h-px bg-slate-100" />
-              </div>
-              {role === "student" ? (
-                <button
-                  onClick={() => proceed("id")}
-                  disabled={!!loading}
-                  className="w-full h-12 flex items-center justify-center gap-2.5 bg-green-600 hover:bg-green-700 rounded-xl text-sm font-semibold text-white transition-all shadow-sm disabled:opacity-50"
-                >
-                  {loading === "id" ? (
-                    <div className="w-4 h-4 border-2 border-green-300 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <Icons.QrCode />
-                  )}
-                  Continue with Student ID
-                </button>
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">
+            Welcome to TapIn
+          </h1>
+          <p className="text-xs text-slate-400 font-medium">
+            Student Event Attendance &amp; Fee Tracking System
+          </p>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1 mb-5">
+            <button
+              type="button"
+              onClick={() => setMode("signin")}
+              className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-all ${
+                mode === "signin"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500"
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("signup")}
+              className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-all ${
+                mode === "signup"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500"
+              }`}
+            >
+              Sign Up
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => void handleGoogleLogin()}
+              disabled={!!loading}
+              className="w-full h-12 flex items-center justify-center gap-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all disabled:opacity-50"
+            >
+              {loading === "google" ? (
+                <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
               ) : (
-                <button
-                  onClick={() => proceed("email")}
-                  disabled={!!loading}
-                  className="w-full h-12 flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 rounded-xl text-sm font-semibold text-white transition-all shadow-sm disabled:opacity-50"
-                >
-                  {loading === "email" ? (
-                    <div className="w-4 h-4 border-2 border-slate-600 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <Icons.Mail />
-                  )}
-                  Continue with Email &amp; Password
-                </button>
+                <Icons.Google />
               )}
+              Continue with Google
+            </button>
+
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex-1 h-px bg-slate-100" />
+              <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-widest">
+                or
+              </span>
+              <div className="flex-1 h-px bg-slate-100" />
+            </div>
+
+            <div className="space-y-3">
+              <label className="block">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
+                  Email
+                </span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
+                  Password
+                </span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Your password"
+                  className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
+                />
+              </label>
+
+              {mode === "signup" && (
+                <label className="block">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Confirm Password
+                  </span>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
+                  />
+                </label>
+              )}
+
               <button
-                onClick={() => setRole(null)}
-                className="w-full text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors pt-1 flex items-center justify-center gap-1"
+                type="button"
+                onClick={() => void handleEmailSubmit()}
+                disabled={!!loading}
+                className="w-full h-12 flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 rounded-xl text-sm font-semibold text-white transition-all shadow-sm disabled:opacity-50"
               >
-                <Icons.ChevronLeft />
-                Back
+                {loading === "submit" ? (
+                  <div className="w-4 h-4 border-2 border-slate-600 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Icons.Mail />
+                )}
+                {mode === "signin" ? "Sign In" : "Create account"}
               </button>
             </div>
-          </>
-        )}
+
+            <p className="text-xs text-slate-400 text-center pt-1">
+              {mode === "signin"
+                ? "Don't have an account?"
+                : "Already have an account?"}{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(mode === "signin" ? "signup" : "signin");
+                  setPassword("");
+                  setConfirmPassword("");
+                }}
+                className="text-green-600 font-semibold hover:text-green-700"
+              >
+                {mode === "signin" ? "Sign up" : "Sign in"}
+              </button>
+            </p>
+
+            <button
+              type="button"
+              onClick={onBack}
+              className="w-full text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-1 pt-1"
+            >
+              <Icons.ChevronLeft />
+              Back to home
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -8371,7 +8476,7 @@ export default function App() {
             contactEmail: profile.contact_email ?? profile.email ?? "",
             role: profile.role ?? "student",
             photoUrl: profile.photo_url ?? undefined,
-            idPhotoUrl: profile.photo_url ?? undefined,
+            idPhotoUrl: profile.id_photo_url ?? undefined,
           });
         }
       } catch (caughtError) {
