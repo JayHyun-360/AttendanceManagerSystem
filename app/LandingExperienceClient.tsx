@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -1566,6 +1566,8 @@ export function TopBar({
   onMenuOpen: () => void;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const hideAuthButton = pathname === "/login" || pathname.startsWith("/login");
   const dest =
     user?.role === "admin" ? "/admin-dashboard" : user ? "/dashboard" : "/";
   const isMod = user?.role === "admin";
@@ -1703,7 +1705,7 @@ export function TopBar({
                 )}
               </div>
             </>
-          ) : (
+          ) : hideAuthButton ? null : (
             <button
               onClick={() => go("/login")}
               className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
@@ -2326,6 +2328,8 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState<"google" | "submit" | null>(null);
 
   const routeAfterAuth = async () => {
@@ -2464,11 +2468,13 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
           await routeAfterAuth();
         } else {
           toast.success(
-            "Account created. Check your email to confirm, then sign in.",
+            "Account created. Please check your inbox and confirm your email before signing in.",
           );
           setMode("signin");
           setPassword("");
           setConfirmPassword("");
+          setShowPassword(false);
+          setShowConfirmPassword(false);
         }
         return;
       }
@@ -2578,13 +2584,22 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
                       Password
                     </span>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Your password"
-                      className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Your password"
+                        className="w-full h-11 border border-slate-200 rounded-xl px-3 pr-10 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((value) => !value)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 hover:text-slate-600"
+                      >
+                        {showPassword ? "Hide" : "Show"}
+                      </button>
+                    </div>
                   </label>
 
                   {mode === "signup" && (
@@ -2592,13 +2607,24 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                       <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
                         Confirm Password
                       </span>
-                      <input
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Confirm your password"
-                        className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
-                      />
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Confirm your password"
+                          className="w-full h-11 border border-slate-200 rounded-xl px-3 pr-10 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowConfirmPassword((value) => !value)
+                          }
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 hover:text-slate-600"
+                        >
+                          {showConfirmPassword ? "Hide" : "Show"}
+                        </button>
+                      </div>
                     </label>
                   )}
 
