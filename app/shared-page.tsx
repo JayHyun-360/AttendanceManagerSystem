@@ -1314,7 +1314,11 @@ export function BackButton({
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
 export function PageShell({ children }: { children: React.ReactNode }) {
-  return <div className="px-5 py-6 max-w-3xl mx-auto pb-8">{children}</div>;
+  return (
+    <div className="w-full px-4 py-4 pb-8 md:px-6 md:py-6 md:max-w-5xl lg:max-w-7xl md:mx-auto">
+      {children}
+    </div>
+  );
 }
 export function PageHeader({
   title,
@@ -4608,7 +4612,7 @@ export function AdminDashboard({
           Live
         </span>
       </div>
-      <div className="grid grid-cols-1 gap-3 mb-5 sm:grid-cols-2 md:grid-cols-4">
+      <div className="grid w-full grid-cols-1 gap-4 mb-5 md:grid-cols-2 lg:grid-cols-4">
         {[
           {
             l: "Scanned today",
