@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AdminAnnouncementsPage } from "../../page";
+import { AdminAnnouncementsPage } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { deleteImage } from "@/lib/uploadImage";

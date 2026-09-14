@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ProfilePage, type User } from "../../page";
+import { ProfilePage, type User } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { useProtectedUser } from "../layout";
 

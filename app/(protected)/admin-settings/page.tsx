@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AdminSettingsPage, type SystemSettings } from "../../page";
+import { AdminSettingsPage, type SystemSettings } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { deleteImage } from "@/lib/uploadImage";
 

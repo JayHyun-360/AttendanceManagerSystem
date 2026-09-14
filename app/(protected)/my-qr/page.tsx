@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { MyQRPage } from "../../page";
+import { MyQRPage } from "../../shared-page";
 import { useProtectedUser } from "../layout";
 
 export default function MyQRRoutePage() {

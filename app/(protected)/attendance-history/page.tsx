@@ -7,7 +7,7 @@ import {
   AttendanceHistoryPage,
   type ExcuseRequest,
   type FineRecord,
-} from "../../page";
+} from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";

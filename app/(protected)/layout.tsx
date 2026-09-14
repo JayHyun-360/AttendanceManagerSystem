@@ -17,7 +17,7 @@ import {
   PageShell,
   type Page,
   type User,
-} from "../page";
+} from "../shared-page";
 import { supabase } from "@/lib/supabase";
 import { Toaster } from "@/components/ui/sonner";
 
