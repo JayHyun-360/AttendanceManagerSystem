@@ -1,14 +1,162 @@
 "use client";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+// attendance settings
+
+// fine settings
+
+// optimistic concurrency version for multi-admin conflict detection
+
+// ─── Data ─────────────────────────────────────────────────────────────────────
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
+
+// ─── Toggle ───────────────────────────────────────────────────────────────────
+
+// ─── Shared primitives ────────────────────────────────────────────────────────
+
+// ─── Avatar / ProfileIcon ─────────────────────────────────────────────────────
+
+// ─── Layout ───────────────────────────────────────────────────────────────────
+
+// ─── TapIn Logomark ───────────────────────────────────────────────────────────
+
+// ─── QR Code ──────────────────────────────────────────────────────────────────
+
+// ─── Top Bar ──────────────────────────────────────────────────────────────────
+/* Left — hamburger + brand */ /* Right — user actions */ /* Three-dot menu */
+
+// ─── Sidebar (desktop + mobile drawer) ───────────────────────────────────────
+/* Mobile header inside drawer */ /* Nav items */ /* Sidebar footer */ /* ── Desktop: persistent sidebar ── */ /* ── Mobile: fade overlay ── */
+
+// ─── LANDING CAROUSEL ─────────────────────────────────────────────────────────
+
+// trackIdx can go 0…n (n = clone of slide 0)
+
+// items: real slides + clone of first
+
+// advance one step forward
+
+// manual jump (dots/arrows) — always jumps to real slide
+
+// after sliding onto the clone (trackIdx === n), silently snap to real slide 0
+/* Slide strip */ /* Arrow controls */ /* Dot indicators — keyed to realIdx */
+
+// ─── LANDING ──────────────────────────────────────────────────────────────────
+
+// clone-trick state for hero
+/* ── Hero ──────────────────────────────────────────────────── */ /* Background images — sliding clone-loop track */ /* Dot indicators */ /* Fallback radial glow when no image */ /* Hero content */ /* ── Feature cards ─────────────────────────────────────────── */ /* ── Event carousel ────────────────────────────────────────── */
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+
+// ─── ONBOARDING ───────────────────────────────────────────────────────────────
+
+// Cleanup: revoke blob URL when component unmounts
+
+// ─── EXCUSE MODAL ─────────────────────────────────────────────────────────────
+
+// ─── Shared Form Modal ────────────────────────────────────────────────────────
+
+// ─── Student Profile Modal (Moderator view, with QR) ─────────────────────────
+
+// ─── Upcoming Event Card (adaptive: photo or green fallback) ──────────────────
+
+/* Shared text content */ /* ── Mobile ── */
+
+/* Photo full-bleed */
+
+/* Green fallback */ /* ── Desktop ── */
+
+/* Split card: green left + concave photo right */ /* SVG clip definition — concave left boundary for photo pane */ /* left edge bows leftward at midpoint creating a crescent notch */ /* Green background full-bleed */ /* Green content pane — left 62% */ /* Photo pane — right 45%, clipped with concave left arc */ /* Subtle left-edge blend into green */
+
+/* Green fallback */
+
+// ─── STUDENT: Dashboard ───────────────────────────────────────────────────────
+
+// ─── STUDENT: Events ──────────────────────────────────────────────────────────
+
+// ─── STUDENT: Event Detail ────────────────────────────────────────────────────
+/* Gradient overlay */ /* Badge — top-left */ /* Bottom content — pinned with explicit bottom padding */ /* Lightbox */
+
+// ─── STUDENT: My QR ───────────────────────────────────────────────────────────
+
+// ─── STUDENT: Announcements ───────────────────────────────────────────────────
+
+// ─── STUDENT: Attendance ──────────────────────────────────────────────────────
+
+// ─── STUDENT: My Fines ────────────────────────────────────────────────────────
+
+// ─── Profile (shared: student + moderator) ────────────────────────────────────
+
+// Cleanup: revoke blob URLs when component unmounts or editing is cancelled
+
+// Revoke blob URL if present before resetting
+
+// ─── MODERATOR: Dashboard ─────────────────────────────────────────────────────
+
+// ─── MODERATOR: Events ────────────────────────────────────────────────────────
+
+// Map UI camelCase to database snake_case
+
+// Map returned database row back to EventData shape
+
+// multi-admin conflict check: compare version in current state
+
+// Map to database snake_case
+/* ── Create event modal ── */ /* Multi-session toggle */ /* Single-session time OR multi-session blocks */ /* Highlight photo */ /* ── Edit event modal ── */ /* Multi-session toggle */
+
+// ─── MODERATOR: QR Scanner ────────────────────────────────────────────────────
+
+/* not supported */ /* Scanner header */ /* Camera viewport */ /* Live video */ /* Hidden canvas for jsQR frame decoding */ /* Dark vignette overlay */ /* Scan frame */ /* Scanline — static when idle, single sweep on QR detect */ /* Corner marks */ /* Camera error state */ /* Result overlay */ /* Bottom hint */ /* Event selection */ /* Open scanner CTA */ /* Recent scans this session */
+
+// ─── MODERATOR: Attendees ─────────────────────────────────────────────────────
+
+// ─── MODERATOR: Students ──────────────────────────────────────────────────────
+
+// ─── MODERATOR: Announcements ─────────────────────────────────────────────────
+
+// ─── MODERATOR: Excuse Requests ───────────────────────────────────────────────
+
+// ─── MODERATOR: Reports ───────────────────────────────────────────────────────
+
+// estimate height
+
+// ── Header bar
+
+// generated date
+
+// ── Attendance by program
+
+// ── Fees summary
+
+// ── By event
+
+// ── Footer
+
+// Open as PDF-like image
+
+// ─── MODERATOR: Management & Settings ────────────────────────────────────────
+/* Fee Visibility */ /* Attendance & Requests */ /* Academic Information */ /* Landing Page */ /* Hero images */ /* Carousel slides */ /* Thumbnail */ /* Fields */ /* Controls */ /* System Info */
+
 import { useState, useRef, useEffect, Fragment } from "react";
+
 import Link from "next/link";
+
 import { usePathname, useRouter } from "next/navigation";
+
 import { useForm } from "react-hook-form";
+
 import { zodResolver } from "@hookform/resolvers/zod";
+
 import { z } from "zod";
+
 import { format } from "date-fns";
+
 import { ArrowLeft, ChevronDown, ChevronUp, LogOut } from "lucide-react";
+
 import { AnimatePresence, motion } from "framer-motion";
+
 import {
   Bar,
   Cell,
@@ -17,24 +165,36 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+
 import jsQR from "jsqr";
+
 import QRCode from "qrcode";
+
 import { toast } from "sonner";
+
 import { supabase } from "@/lib/supabase";
-import { uploadImage } from "@/lib/uploadImage";
+
+import { deleteImages, uploadImage } from "@/lib/uploadImage";
+
 import { Skeleton } from "@/components/ui/skeleton";
 
 const tapInLogoSrc = "/tapin-logo.svg";
+
 const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
 
 function toMinutes(value?: string | null) {
   if (!value) return null;
+
   const cleaned = value.trim();
+
   const spanMatch = cleaned.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+
   if (!spanMatch) return null;
 
   let hour = Number(spanMatch[1]);
+
   const minute = Number(spanMatch[2]);
+
   const meridiem = spanMatch[3]?.toUpperCase();
 
   if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
@@ -44,7 +204,9 @@ function toMinutes(value?: string | null) {
   }
 
   if (meridiem === "AM" && hour === 12) hour = 0;
+
   if (meridiem === "PM" && hour !== 12) hour += 12;
+
   return hour * 60 + minute;
 }
 
@@ -52,7 +214,9 @@ function getEventSessionMeta(event: EventData | null | undefined) {
   if (!event) {
     return {
       sessionLabel: null as "morning" | "afternoon" | null,
+
       strict: false,
+
       hasActiveSession: false,
     };
   }
@@ -60,15 +224,21 @@ function getEventSessionMeta(event: EventData | null | undefined) {
   if (!event.multiSession) {
     return {
       sessionLabel: "morning" as const,
+
       strict: !!event.strictMorning,
+
       hasActiveSession: true,
     };
   }
 
   const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+
   const morningStart = toMinutes(event.morningStart);
+
   const morningEnd = toMinutes(event.morningEnd);
+
   const afternoonStart = toMinutes(event.afternoonStart);
+
   const afternoonEnd = toMinutes(event.afternoonEnd);
 
   if (
@@ -79,7 +249,9 @@ function getEventSessionMeta(event: EventData | null | undefined) {
   ) {
     return {
       sessionLabel: "morning" as const,
+
       strict: !!event.strictMorning,
+
       hasActiveSession: true,
     };
   }
@@ -92,7 +264,9 @@ function getEventSessionMeta(event: EventData | null | undefined) {
   ) {
     return {
       sessionLabel: "afternoon" as const,
+
       strict: !!event.strictAfternoon,
+
       hasActiveSession: true,
     };
   }
@@ -102,11 +276,13 @@ function getEventSessionMeta(event: EventData | null | undefined) {
 
 function getSelectedSessionMeta(
   event: EventData | null | undefined,
+
   manualSessionLabel: "morning" | "afternoon" | null,
 ) {
   if (!event) {
     return {
       sessionLabel: null as "morning" | "afternoon" | null,
+
       strict: false,
     };
   }
@@ -118,6 +294,7 @@ function getSelectedSessionMeta(
   if (manualSessionLabel === "morning" || manualSessionLabel === "afternoon") {
     return {
       sessionLabel: manualSessionLabel,
+
       strict:
         manualSessionLabel === "morning"
           ? !!event.strictMorning
@@ -128,132 +305,212 @@ function getSelectedSessionMeta(
   return getEventSessionMeta(event);
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 export type Page = string;
 
 export type Role = "student" | "admin" | null;
+
 export type FineStatus = "unpaid" | "paid" | "excused";
+
 export type EventStatus = "active" | "upcoming" | "closed";
 
 export interface User {
   firstName: string;
+
   middleInitial: string;
+
   surname: string;
+
   studentId: string;
+
   program: string;
+
   yearLevel: string;
+
   section: string;
+
   phone: string;
+
   contactEmail: string;
+
   role: Role;
+
   photoUrl?: string;
+
   idPhotoUrl?: string;
 }
 
 export interface EventData {
   id: string;
+
   title: string;
+
   date: string;
+
   time: string;
+
   location: string;
+
   status: EventStatus;
+
   attendees: number;
+
   description: string;
+
   program: string;
+
   fineAmount: number;
+
   mediaUrls?: string[];
+
   highlightUrl?: string;
-  // attendance settings
+
   multiSession?: boolean;
+
   strictMorning?: boolean;
+
   strictAfternoon?: boolean;
+
   morningStart?: string;
+
   morningEnd?: string;
+
   morningLateCutoff?: string;
+
   afternoonStart?: string;
+
   afternoonEnd?: string;
+
   afternoonLateCutoff?: string;
-  // fine settings
+
   absentFine?: number;
+
   lateFine?: number;
+
   morningAbsentFine?: number;
+
   morningLateFine?: number;
+
   afternoonAbsentFine?: number;
+
   afternoonLateFine?: number;
-  // optimistic concurrency version for multi-admin conflict detection
+
   version?: number;
 }
 
 interface ScanRecord {
   name: string;
+
   id: string;
+
   program: string;
+
   section: string;
+
   photoUrl?: string;
+
   time: string;
+
   status: "confirmed" | "late" | "duplicate";
+
   action?: "time_in" | "time_out" | "duplicate";
+
   dbId: string | number;
 }
 
 export interface ExcuseRequest {
   id: string;
+
   studentName: string;
+
   studentId: string;
+
   photoUrl?: string;
+
   event: string;
+
   date: string;
+
   reason: string;
+
   proofName: string | null;
+
   status: "pending" | "approved" | "denied";
+
   submittedDate: string;
 }
 
 export interface FineRecord {
   id: string;
+
   eventId: string;
+
   eventTitle: string;
+
   eventDate: string;
+
   amount: number;
+
   status: FineStatus;
 }
 
 export interface StudentProfile {
   profileId?: string;
+
   name: string;
+
   id: string;
+
   program: string;
+
   yearLevel: string;
+
   section: string;
+
   phone: string;
+
   email: string;
+
   photoUrl?: string;
+
   idPhotoUrl?: string;
+
   joinedDate: string;
 }
 
 function fullName(u: Pick<User, "firstName" | "middleInitial" | "surname">) {
   const mid = u.middleInitial ? ` ${u.middleInitial}.` : "";
+
   return `${u.firstName}${mid} ${u.surname}`.trim();
 }
 
 function normalizeEventTime(value: string): string | null {
   const normalized = value.trim().replace(/;/g, ":").toUpperCase();
+
   const twelveHour = normalized.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+
   if (twelveHour) {
     let hour = Number(twelveHour[1]);
+
     const minute = Number(twelveHour[2]);
+
     if (hour < 1 || hour > 12 || minute > 59) return null;
+
     if (twelveHour[3] === "AM" && hour === 12) hour = 0;
+
     if (twelveHour[3] === "PM" && hour !== 12) hour += 12;
+
     return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
   }
 
   const twentyFourHour = normalized.match(/^(\d{1,2}):(\d{2})$/);
+
   if (twentyFourHour) {
     const hour = Number(twentyFourHour[1]);
+
     const minute = Number(twentyFourHour[2]);
+
     if (hour > 23 || minute > 59) return null;
+
     return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
   }
 
@@ -262,66 +519,109 @@ function normalizeEventTime(value: string): string | null {
 
 function parseEventTimeRange(value: string): {
   start: string;
+
   end: string | null;
 } | null {
   const parts = value.trim().split(/\s*[-–—]\s*/);
+
   const start = normalizeEventTime(parts[0] ?? "");
+
   const end = parts[1] ? normalizeEventTime(parts[1]) : null;
+
   if (!start || (parts[1] && !end)) return null;
+
   return { start, end };
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
 export const INITIAL_EVENTS: EventData[] = [
   {
     id: "1",
+
     title: "TapIn Foundation Day Celebration",
+
     date: "Aug 29, 2026",
+
     time: "8:00 AM – 5:00 PM",
+
     location: "Main Gymnasium",
+
     status: "upcoming",
+
     attendees: 0,
+
     program: "All Programs",
+
     fineAmount: 150,
+
     description:
       "Annual Foundation Day celebration featuring cultural shows, sports competitions, and academic exhibits. Attendance is required for all enrolled students.",
   },
+
   {
     id: "2",
+
     title: "SSG General Assembly — 1st Semester",
+
     date: "Aug 22, 2026",
+
     time: "1:00 PM – 4:00 PM",
+
     location: "Audio-Visual Room 2",
+
     status: "active",
+
     attendees: 6,
+
     program: "All Programs",
+
     fineAmount: 100,
+
     description:
       "Supreme Student Government general assembly for the first semester. Agenda includes budget presentation, committee reports, and open forum.",
   },
+
   {
     id: "3",
+
     title: "Tech Talk: AI in Education",
+
     date: "Aug 15, 2026",
+
     time: "2:00 PM – 5:00 PM",
+
     location: "ICT Laboratory",
+
     status: "closed",
+
     attendees: 8,
+
     program: "BSIT / BSCS",
+
     fineAmount: 50,
+
     description:
       "Integration of artificial intelligence tools in modern education. Guest speaker from the Department of Information Technology.",
   },
+
   {
     id: "4",
+
     title: "Intramural Opening Ceremony",
+
     date: "Sep 5, 2026",
+
     time: "7:30 AM – 12:00 PM",
+
     location: "Covered Court",
+
     status: "upcoming",
+
     attendees: 0,
+
     program: "All Programs",
+
     fineAmount: 200,
+
     description:
       "Opening ceremony for the annual intramural sports festival. Parade of athletes, oath-taking, and opening of games.",
   },
@@ -331,130 +631,227 @@ const EVENT_SCANS: Record<string, ScanRecord[]> = {
   "2": [
     {
       name: "Maria Luisa Santos",
+
       id: "2440014",
+
       program: "BSIT",
+
       section: "IT-2A",
+
       time: "1:14 PM",
+
       status: "confirmed",
+
       dbId: 0,
     },
+
     {
       name: "Juan Carlos Dela Cruz",
+
       id: "2440042",
+
       program: "BSCS",
+
       section: "CS-1B",
+
       time: "1:15 PM",
+
       status: "confirmed",
+
       dbId: 1,
     },
+
     {
       name: "Alyssa Mae Reyes",
+
       id: "2430087",
+
       program: "BSIT",
+
       section: "IT-3A",
+
       time: "1:16 PM",
+
       status: "confirmed",
+
       dbId: 2,
     },
+
     {
       name: "Carlo Miguel Mendoza",
+
       id: "2440103",
+
       program: "BSCS",
+
       section: "CS-2A",
+
       time: "1:17 PM",
+
       status: "duplicate",
+
       dbId: 3,
     },
+
     {
       name: "Jessa Rose Flores",
+
       id: "2430211",
+
       program: "BSIT",
+
       section: "IT-2B",
+
       time: "1:18 PM",
+
       status: "confirmed",
+
       dbId: 4,
     },
+
     {
       name: "Rafael Antonio Lim",
+
       id: "2440178",
+
       program: "BSBA",
+
       section: "BA-1A",
+
       time: "1:19 PM",
+
       status: "confirmed",
+
       dbId: 5,
     },
   ],
+
   "3": [
     {
       name: "Maria Luisa Santos",
+
       id: "2440014",
+
       program: "BSIT",
+
       section: "IT-2A",
+
       time: "2:03 PM",
+
       status: "confirmed",
+
       dbId: 0,
     },
+
     {
       name: "Patricia Nicole Torres",
+
       id: "2430055",
+
       program: "BSIT",
+
       section: "IT-3B",
+
       time: "2:05 PM",
+
       status: "confirmed",
+
       dbId: 1,
     },
+
     {
       name: "Emmanuel Jay Bautista",
+
       id: "2440290",
+
       program: "BSCS",
+
       section: "CS-1A",
+
       time: "2:07 PM",
+
       status: "confirmed",
+
       dbId: 2,
     },
+
     {
       name: "Juan Carlos Dela Cruz",
+
       id: "2440042",
+
       program: "BSCS",
+
       section: "CS-1B",
+
       time: "2:09 PM",
+
       status: "confirmed",
+
       dbId: 3,
     },
+
     {
       name: "Alyssa Mae Reyes",
+
       id: "2430087",
+
       program: "BSIT",
+
       section: "IT-3A",
+
       time: "2:10 PM",
+
       status: "confirmed",
+
       dbId: 4,
     },
+
     {
       name: "Kevin Roy Castillo",
+
       id: "2440067",
+
       program: "BSIT",
+
       section: "IT-1B",
+
       time: "2:12 PM",
+
       status: "confirmed",
+
       dbId: 5,
     },
+
     {
       name: "Francesca Dizon",
+
       id: "2430144",
+
       program: "BSBA",
+
       section: "BA-2A",
+
       time: "2:14 PM",
+
       status: "confirmed",
+
       dbId: 6,
     },
+
     {
       name: "Jessa Rose Flores",
+
       id: "2430211",
+
       program: "BSIT",
+
       section: "IT-2B",
+
       time: "2:16 PM",
+
       status: "confirmed",
+
       dbId: 7,
     },
   ],
@@ -463,102 +860,181 @@ const EVENT_SCANS: Record<string, ScanRecord[]> = {
 const ALL_STUDENTS: StudentProfile[] = [
   {
     name: "Maria Luisa Santos",
+
     id: "2440014",
+
     program: "BSIT",
+
     yearLevel: "2nd Year",
+
     section: "IT-2A",
+
     phone: "09171234567",
+
     email: "mls.santos@tapin.edu",
+
     joinedDate: "Aug 12, 2026",
   },
+
   {
     name: "Juan Carlos Dela Cruz",
+
     id: "2440042",
+
     program: "BSCS",
+
     yearLevel: "1st Year",
+
     section: "CS-1B",
+
     phone: "09281234568",
+
     email: "jc.delacruz@tapin.edu",
+
     joinedDate: "Aug 13, 2026",
   },
+
   {
     name: "Alyssa Mae Reyes",
+
     id: "2430087",
+
     program: "BSIT",
+
     yearLevel: "3rd Year",
+
     section: "IT-3A",
+
     phone: "09391234569",
+
     email: "am.reyes@tapin.edu",
+
     joinedDate: "Aug 10, 2026",
   },
+
   {
     name: "Carlo Miguel Mendoza",
+
     id: "2440103",
+
     program: "BSCS",
+
     yearLevel: "2nd Year",
+
     section: "CS-2A",
+
     phone: "09501234570",
+
     email: "cm.mendoza@tapin.edu",
+
     joinedDate: "Aug 14, 2026",
   },
+
   {
     name: "Jessa Rose Flores",
+
     id: "2430211",
+
     program: "BSIT",
+
     yearLevel: "2nd Year",
+
     section: "IT-2B",
+
     phone: "09611234571",
+
     email: "jr.flores@tapin.edu",
+
     joinedDate: "Aug 11, 2026",
   },
+
   {
     name: "Rafael Antonio Lim",
+
     id: "2440178",
+
     program: "BSBA",
+
     yearLevel: "1st Year",
+
     section: "BA-1A",
+
     phone: "09721234572",
+
     email: "ra.lim@tapin.edu",
+
     joinedDate: "Aug 15, 2026",
   },
+
   {
     name: "Patricia Nicole Torres",
+
     id: "2430055",
+
     program: "BSIT",
+
     yearLevel: "3rd Year",
+
     section: "IT-3B",
+
     phone: "09831234573",
+
     email: "pn.torres@tapin.edu",
+
     joinedDate: "Aug 10, 2026",
   },
+
   {
     name: "Emmanuel Jay Bautista",
+
     id: "2440290",
+
     program: "BSCS",
+
     yearLevel: "1st Year",
+
     section: "CS-1A",
+
     phone: "09941234574",
+
     email: "ej.bautista@tapin.edu",
+
     joinedDate: "Aug 16, 2026",
   },
+
   {
     name: "Francesca Dizon",
+
     id: "2430144",
+
     program: "BSBA",
+
     yearLevel: "2nd Year",
+
     section: "BA-2A",
+
     phone: "09051234575",
+
     email: "f.dizon@tapin.edu",
+
     joinedDate: "Aug 12, 2026",
   },
+
   {
     name: "Kevin Roy Castillo",
+
     id: "2440067",
+
     program: "BSIT",
+
     yearLevel: "1st Year",
+
     section: "IT-1B",
+
     phone: "09161234576",
+
     email: "kr.castillo@tapin.edu",
+
     joinedDate: "Aug 17, 2026",
   },
 ];
@@ -566,38 +1042,65 @@ const ALL_STUDENTS: StudentProfile[] = [
 export const INITIAL_ANNOUNCEMENTS = [
   {
     id: "1",
+
     title: "Enrollment for 2nd Semester Now Open",
+
     body: "Online enrollment for the second semester of AY 2026-2027 is now open. Complete enrollment on or before September 15, 2026. Late enrollees are subject to a P200 surcharge.",
+
     date: "Aug 20, 2026",
+
     author: "Registrar's Office",
+
     badge: "Academic",
+
     photoUrl: "",
   },
+
   {
     id: "2",
+
     title: "Afternoon Classes Suspended — Aug 22",
+
     body: "Due to the SSG General Assembly on August 22, all afternoon classes from 1:00 PM onward are suspended. Morning classes proceed as scheduled.",
+
     date: "Aug 19, 2026",
+
     author: "Office of the Principal",
+
     badge: "Schedule",
+
     photoUrl: "",
   },
+
   {
     id: "3",
+
     title: "Library Hours Extended During Finals Week",
+
     body: "The library will be open 7:00 AM to 7:00 PM starting August 25 until September 6. Laptops allowed; food and drinks are not permitted.",
+
     date: "Aug 18, 2026",
+
     author: "Library Services",
+
     badge: "Facilities",
+
     photoUrl: "",
   },
+
   {
     id: "4",
+
     title: "Scholarship Application Deadline — Aug 28",
+
     body: "All scholarship applicants must submit complete documentary requirements to the Scholarship Office by August 28, 2026.",
+
     date: "Aug 17, 2026",
+
     author: "Scholarship Office",
+
     badge: "Financial",
+
     photoUrl: "",
   },
 ];
@@ -605,34 +1108,57 @@ export const INITIAL_ANNOUNCEMENTS = [
 export const ATTENDANCE_RECORDS = [
   {
     id: "a1",
+
     eventId: "2",
+
     event: "SSG General Assembly — 1st Semester",
+
     date: "Aug 22, 2026",
+
     time: "1:14 PM",
+
     status: "present",
   },
+
   {
     id: "a2",
+
     eventId: "3",
+
     event: "Tech Talk: AI in Education",
+
     date: "Aug 15, 2026",
+
     time: "2:03 PM",
+
     status: "present",
   },
+
   {
     id: "a3",
+
     eventId: "5",
+
     event: "College Orientation 2026",
+
     date: "Aug 5, 2026",
+
     time: "—",
+
     status: "absent",
   },
+
   {
     id: "a4",
+
     eventId: "6",
+
     event: "Leadership & Values Seminar",
+
     date: "Jul 28, 2026",
+
     time: "—",
+
     status: "absent",
   },
 ];
@@ -640,31 +1166,47 @@ export const ATTENDANCE_RECORDS = [
 const STUDENT_FINES: FineRecord[] = [
   {
     id: "f1",
+
     eventId: "5",
+
     eventTitle: "College Orientation 2026",
+
     eventDate: "Aug 5, 2026",
+
     amount: 150,
+
     status: "unpaid",
   },
+
   {
     id: "f2",
+
     eventId: "6",
+
     eventTitle: "Leadership & Values Seminar",
+
     eventDate: "Jul 28, 2026",
+
     amount: 100,
+
     status: "unpaid",
   },
 ];
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
 const sv = {
   fill: "none",
+
   stroke: "currentColor",
+
   strokeWidth: 2,
+
   strokeLinecap: "round" as const,
+
   strokeLinejoin: "round" as const,
 };
+
 const ic = "w-[18px] h-[18px] shrink-0";
+
 const Icons = {
   Home: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
@@ -672,6 +1214,7 @@ const Icons = {
       <polyline points="9 22 9 12 15 12 15 22" />
     </svg>
   ),
+
   Calendar: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -680,12 +1223,14 @@ const Icons = {
       <line x1="3" y1="10" x2="21" y2="10" />
     </svg>
   ),
+
   Bell: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
       <path d="M13.73 21a2 2 0 01-3.46 0" />
     </svg>
   ),
+
   QrCode: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -695,28 +1240,33 @@ const Icons = {
       <path d="M17 17h4v4h-4z" />
     </svg>
   ),
+
   User: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
       <circle cx="12" cy="7" r="4" />
     </svg>
   ),
+
   Shield: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     </svg>
   ),
+
   CheckCircle: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
       <polyline points="22 4 12 14.01 9 11.01" />
     </svg>
   ),
+
   Check: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <polyline points="20 6 9 17 4 12" />
     </svg>
   ),
+
   XCircle: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <circle cx="12" cy="12" r="10" />
@@ -724,28 +1274,33 @@ const Icons = {
       <line x1="9" y1="9" x2="15" y2="15" />
     </svg>
   ),
+
   Clock: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <circle cx="12" cy="12" r="10" />
       <polyline points="12 6 12 12 16 14" />
     </svg>
   ),
+
   MapPin: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
       <circle cx="12" cy="10" r="3" />
     </svg>
   ),
+
   ChevronRight: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <polyline points="9 18 15 12 9 6" />
     </svg>
   ),
+
   ChevronLeft: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <polyline points="15 18 9 12 15 6" />
     </svg>
   ),
+
   Scan: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M3 7V5a2 2 0 012-2h2" />
@@ -755,6 +1310,7 @@ const Icons = {
       <rect x="7" y="7" width="10" height="10" rx="1" />
     </svg>
   ),
+
   Users: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
@@ -763,6 +1319,7 @@ const Icons = {
       <path d="M16 3.13a4 4 0 010 7.75" />
     </svg>
   ),
+
   BarChart: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <line x1="18" y1="20" x2="18" y2="10" />
@@ -771,6 +1328,7 @@ const Icons = {
       <line x1="2" y1="20" x2="22" y2="20" />
     </svg>
   ),
+
   FileText: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
@@ -779,6 +1337,7 @@ const Icons = {
       <line x1="16" y1="17" x2="8" y2="17" />
     </svg>
   ),
+
   LogOut: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
@@ -786,6 +1345,7 @@ const Icons = {
       <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   ),
+
   Download: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
@@ -793,12 +1353,14 @@ const Icons = {
       <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
   ),
+
   Plus: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   ),
+
   AlertCircle: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <circle cx="12" cy="12" r="10" />
@@ -806,12 +1368,14 @@ const Icons = {
       <line x1="12" y1="16" x2="12.01" y2="16" />
     </svg>
   ),
+
   Edit: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
       <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
     </svg>
   ),
+
   MoreHorizontal: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <circle cx="5" cy="12" r="1" fill="currentColor" />
@@ -819,6 +1383,7 @@ const Icons = {
       <circle cx="19" cy="12" r="1" fill="currentColor" />
     </svg>
   ),
+
   Trash: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <polyline points="3 6 5 6 21 6" />
@@ -828,34 +1393,40 @@ const Icons = {
       <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
     </svg>
   ),
+
   Paperclip: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
     </svg>
   ),
+
   Mail: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
       <polyline points="22,6 12,13 2,6" />
     </svg>
   ),
+
   Activity: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
     </svg>
   ),
+
   Send: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <line x1="22" y1="2" x2="11" y2="13" />
       <polygon points="22 2 15 22 11 13 2 9 22 2" />
     </svg>
   ),
+
   X: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   ),
+
   Image: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -863,24 +1434,28 @@ const Icons = {
       <polyline points="21 15 16 10 5 21" />
     </svg>
   ),
+
   Video: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <polygon points="23 7 16 12 23 17 23 7" />
       <rect x="1" y="5" width="15" height="14" rx="2" />
     </svg>
   ),
+
   Search: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <circle cx="11" cy="11" r="8" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   ),
+
   Radio: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <circle cx="12" cy="12" r="2" />
       <path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14" />
     </svg>
   ),
+
   Settings: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <line x1="4" y1="6" x2="20" y2="6" />
@@ -912,12 +1487,14 @@ const Icons = {
       />
     </svg>
   ),
+
   Camera: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
       <circle cx="12" cy="13" r="4" />
     </svg>
   ),
+
   Peso: () => (
     <svg viewBox="0 0 24 24" className={ic} fill="currentColor">
       <text x="3" y="19" fontSize="17" fontWeight="700" fontFamily="sans-serif">
@@ -925,6 +1502,7 @@ const Icons = {
       </text>
     </svg>
   ),
+
   Google: () => (
     <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0">
       <path
@@ -945,6 +1523,7 @@ const Icons = {
       />
     </svg>
   ),
+
   Menu: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <line x1="3" y1="6" x2="21" y2="6" />
@@ -954,16 +1533,21 @@ const Icons = {
   ),
 };
 
-// ─── Toggle ───────────────────────────────────────────────────────────────────
 function Toggle({
   on,
+
   onToggle,
+
   label,
+
   desc,
 }: {
   on: boolean;
+
   onToggle: () => void;
+
   label: string;
+
   desc?: string;
 }) {
   return (
@@ -978,23 +1562,31 @@ function Toggle({
         onClick={onToggle}
         role="switch"
         aria-checked={on}
-        className={`relative w-11 h-6 rounded-full transition-all duration-200 shrink-0 focus:outline-none focus:ring-2 focus:ring-offset-2 ${on ? "bg-green-600 focus:ring-green-500" : "bg-slate-200 focus:ring-slate-400"}`}
+        className={`relative w-11 h-6 rounded-full transition-all duration-200 shrink-0 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+          on
+            ? "bg-green-600 focus:ring-green-500"
+            : "bg-slate-200 focus:ring-slate-400"
+        }`}
       >
         <span
-          className={`absolute top-[3px] left-[3px] w-[18px] h-[18px] bg-white rounded-full shadow-md transition-transform duration-200 ${on ? "translate-x-5" : "translate-x-0"}`}
+          className={`absolute top-[3px] left-[3px] w-[18px] h-[18px] bg-white rounded-full shadow-md transition-transform duration-200 ${
+            on ? "translate-x-5" : "translate-x-0"
+          }`}
         />
       </button>
     </div>
   );
 }
 
-// ─── Shared primitives ────────────────────────────────────────────────────────
 function FieldInput({
   label,
+
   error,
+
   ...p
 }: {
   label: string;
+
   error?: string;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
@@ -1010,14 +1602,20 @@ function FieldInput({
     </div>
   );
 }
+
 function FieldSelect({
   label,
+
   children,
+
   error,
+
   ...p
 }: {
   label: string;
+
   children: React.ReactNode;
+
   error?: string;
 } & React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
@@ -1035,12 +1633,16 @@ function FieldSelect({
     </div>
   );
 }
+
 function FieldTextarea({
   label,
+
   error,
+
   ...p
 }: {
   label: string;
+
   error?: string;
 } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
@@ -1061,70 +1663,103 @@ function Badge({ status }: { status: string }) {
   const cfg: Record<string, { cls: string; label: string; dot?: boolean }> = {
     active: {
       cls: "bg-green-50 text-green-700 ring-1 ring-green-200",
+
       label: "Live",
+
       dot: true,
     },
+
     upcoming: {
       cls: "bg-sky-50 text-sky-700 ring-1 ring-sky-200",
+
       label: "Upcoming",
     },
+
     closed: {
       cls: "bg-slate-100 text-slate-500 ring-1 ring-slate-200",
+
       label: "Closed",
     },
+
     present: {
       cls: "bg-green-50 text-green-700 ring-1 ring-green-200",
+
       label: "Present",
     },
+
     absent: {
       cls: "bg-red-50 text-red-600 ring-1 ring-red-200",
+
       label: "Absent",
     },
+
     excused: {
       cls: "bg-violet-50 text-violet-600 ring-1 ring-violet-200",
+
       label: "Excused",
     },
+
     pending: {
       cls: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
+
       label: "Pending Review",
     },
+
     confirmed: {
       cls: "bg-green-50 text-green-700 ring-1 ring-green-200",
+
       label: "Confirmed",
     },
+
     time_in: {
       cls: "bg-green-50 text-green-700 ring-1 ring-green-200",
+
       label: "Time-in",
     },
+
     time_out: {
       cls: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
+
       label: "Time-out",
     },
+
     duplicate: {
       cls: "bg-red-50 text-red-600 ring-1 ring-red-200",
+
       label: "Duplicate",
     },
+
     approved: {
       cls: "bg-green-50 text-green-700 ring-1 ring-green-200",
+
       label: "Approved",
     },
+
     denied: {
       cls: "bg-red-50 text-red-600 ring-1 ring-red-200",
+
       label: "Denied",
     },
+
     unpaid: {
       cls: "bg-red-50 text-red-600 ring-1 ring-red-200",
+
       label: "Unpaid",
     },
+
     paid: {
       cls: "bg-green-50 text-green-700 ring-1 ring-green-200",
+
       label: "Paid",
     },
   };
+
   const c = cfg[status] ?? {
     cls: "bg-slate-100 text-slate-500",
+
     label: status,
   };
+
   return (
     <span
       className={`inline-flex w-fit items-center gap-1.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${c.cls}`}
@@ -1142,11 +1777,15 @@ function Badge({ status }: { status: string }) {
 
 function InlineToggle({
   on,
+
   onToggle,
+
   label,
 }: {
   on: boolean;
+
   onToggle: () => void;
+
   label: string;
 }) {
   return (
@@ -1156,10 +1795,14 @@ function InlineToggle({
         onClick={onToggle}
         role="switch"
         aria-checked={on}
-        className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 focus:outline-none ${on ? "bg-green-600" : "bg-slate-200"}`}
+        className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 focus:outline-none ${
+          on ? "bg-green-600" : "bg-slate-200"
+        }`}
       >
         <span
-          className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${on ? "translate-x-4" : "translate-x-0"}`}
+          className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${
+            on ? "translate-x-4" : "translate-x-0"
+          }`}
         />
       </button>
     </div>
@@ -1168,25 +1811,43 @@ function InlineToggle({
 
 function SessionFields({
   prefix,
+
   label,
+
   start,
+
   onStart,
+
   end,
+
   onEnd,
+
   cutoff,
+
   onCutoff,
+
   strict,
+
   onStrict,
 }: {
   prefix: string;
+
   label: string;
+
   start: string;
+
   onStart: (v: string) => void;
+
   end: string;
+
   onEnd: (v: string) => void;
+
   cutoff: string;
+
   onCutoff: (v: string) => void;
+
   strict: boolean;
+
   onStrict: () => void;
 }) {
   return (
@@ -1225,18 +1886,27 @@ function SessionFields({
 
 function FineFields({
   multi,
+
   values,
+
   onChange,
 }: {
   multi: boolean;
+
   values: {
     absentFine: string;
+
     lateFine: string;
+
     morningAbsentFine: string;
+
     morningLateFine: string;
+
     afternoonAbsentFine: string;
+
     afternoonLateFine: string;
   };
+
   onChange: (k: string, v: string) => void;
 }) {
   return (
@@ -1301,19 +1971,23 @@ function FineFields({
   );
 }
 
-// ─── Avatar / ProfileIcon ─────────────────────────────────────────────────────
 function Avatar({
   name,
+
   photoUrl,
+
   size = "md",
 }: {
   name: string;
+
   photoUrl?: string;
+
   size?: "xs" | "sm" | "md" | "lg";
 }) {
   const sz = { xs: "w-6 h-6", sm: "w-7 h-7", md: "w-9 h-9", lg: "w-14 h-14" }[
     size
   ];
+
   if (photoUrl)
     return (
       <img
@@ -1322,20 +1996,32 @@ function Avatar({
         className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200`}
       />
     );
+
   const letters = name
+
     .split(" ")
+
     .filter(Boolean)
+
     .map((w) => w[0])
+
     .slice(0, 2)
+
     .join("")
+
     .toUpperCase();
+
   if (letters) {
     const textSz = {
       xs: "text-[9px]",
+
       sm: "text-xs",
+
       md: "text-sm",
+
       lg: "text-lg",
     }[size];
+
     return (
       <div
         className={`${sz} rounded-full bg-gradient-to-br from-green-400 to-green-700 text-white font-bold ${textSz} flex items-center justify-center shrink-0 select-none`}
@@ -1344,6 +2030,7 @@ function Avatar({
       </div>
     );
   }
+
   return (
     <div
       className={`${sz} rounded-full bg-[#b0b3b8] flex items-end justify-center overflow-hidden shrink-0`}
@@ -1358,14 +2045,17 @@ function Avatar({
 
 export function ProfileIcon({
   photoUrl,
+
   size = "sm",
 }: {
   photoUrl?: string;
+
   size?: "xs" | "sm" | "md" | "lg";
 }) {
   const sz = { xs: "w-6 h-6", sm: "w-7 h-7", md: "w-9 h-9", lg: "w-14 h-14" }[
     size
   ];
+
   if (photoUrl)
     return (
       <img
@@ -1374,6 +2064,7 @@ export function ProfileIcon({
         className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200`}
       />
     );
+
   return (
     <div
       className={`${sz} rounded-full bg-[#b0b3b8] flex items-end justify-center overflow-hidden shrink-0`}
@@ -1388,14 +2079,18 @@ export function ProfileIcon({
 
 export function Toast({
   message,
+
   variant = "success",
 }: {
   message: string;
+
   variant?: "success" | "error";
 }) {
   return (
     <div
-      className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-50 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 ${variant === "error" ? "bg-red-600" : "bg-slate-900"}`}
+      className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-50 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 ${
+        variant === "error" ? "bg-red-600" : "bg-slate-900"
+      }`}
       style={{ animation: "slideUp .25s ease" }}
     >
       <span className={variant === "error" ? "text-red-300" : "text-green-400"}>
@@ -1411,17 +2106,22 @@ export function DotMenu({
 }: {
   items: {
     label: string;
+
     icon?: React.ReactNode;
+
     danger?: boolean;
+
     onClick: () => void;
   }[];
 }) {
   const [open, setOpen] = useState(false);
+
   return (
     <div className="relative">
       <button
         onClick={(e) => {
           e.stopPropagation();
+
           setOpen((o) => !o);
         }}
         className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
@@ -1437,9 +2137,12 @@ export function DotMenu({
                 key={it.label}
                 onClick={() => {
                   it.onClick();
+
                   setOpen(false);
                 }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium hover:bg-slate-50 transition-colors text-left ${it.danger ? "text-red-500" : "text-slate-700"}`}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium hover:bg-slate-50 transition-colors text-left ${
+                  it.danger ? "text-red-500" : "text-slate-700"
+                }`}
               >
                 {it.icon && (
                   <span
@@ -1460,9 +2163,11 @@ export function DotMenu({
 
 export function BackButton({
   label = "Back",
+
   onClick,
 }: {
   label?: string;
+
   onClick: () => void;
 }) {
   return (
@@ -1478,7 +2183,6 @@ export function BackButton({
   );
 }
 
-// ─── Layout ───────────────────────────────────────────────────────────────────
 export function PageShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="w-full px-2.5 pt-2 pb-12 md:max-w-6xl md:mx-auto md:px-6 md:pt-4 md:pb-16 lg:max-w-7xl">
@@ -1486,13 +2190,18 @@ export function PageShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
 export function PageHeader({
   title,
+
   subtitle,
+
   action,
 }: {
   title: string;
+
   subtitle?: string;
+
   action?: React.ReactNode;
 }) {
   return (
@@ -1511,6 +2220,7 @@ export function PageHeader({
     </div>
   );
 }
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">
@@ -1519,7 +2229,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── TapIn Logomark ───────────────────────────────────────────────────────────
 export function TapInMark({ className = "w-7 h-7" }: { className?: string }) {
   return (
     <img
@@ -1530,25 +2239,33 @@ export function TapInMark({ className = "w-7 h-7" }: { className?: string }) {
   );
 }
 
-// ─── QR Code ──────────────────────────────────────────────────────────────────
 export function StudentQR({
   studentId,
+
   size,
 }: {
   studentId: string;
+
   size: number;
 }) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
+
   useEffect(() => {
     QRCode.toDataURL(`TAPIN:${studentId}`, {
       width: size * 2,
+
       margin: 1,
+
       color: { dark: "#111827", light: "#ffffff" },
+
       errorCorrectionLevel: "H",
     })
+
       .then(setDataUrl)
+
       .catch(() => setDataUrl(null));
   }, [studentId, size]);
+
   if (!dataUrl)
     return (
       <div
@@ -1556,6 +2273,7 @@ export function StudentQR({
         className="bg-slate-100 rounded animate-pulse"
       />
     );
+
   return (
     <img
       src={dataUrl}
@@ -1567,28 +2285,38 @@ export function StudentQR({
   );
 }
 
-// ─── Top Bar ──────────────────────────────────────────────────────────────────
 export function TopBar({
   user,
+
   onNav,
+
   onMenuOpen,
 }: {
   user: User | null;
+
   onNav: (p: Page) => void;
+
   onMenuOpen: () => void;
 }) {
   const router = useRouter();
+
   const pathname = usePathname();
+
   const hideAuthButton =
     pathname === "/login" ||
     pathname.startsWith("/login") ||
     pathname === "/onboarding" ||
     pathname.startsWith("/onboarding");
+
   const dest =
     user?.role === "admin" ? "/admin-dashboard" : user ? "/dashboard" : "/";
+
   const isMod = user?.role === "admin";
+
   const [dotOpen, setDotOpen] = useState(false);
+
   const go = (target: string) => router.push(target);
+
   return (
     <header
       className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-slate-100 shrink-0"
@@ -1598,7 +2326,7 @@ export function TopBar({
         className="flex items-center justify-between px-4 lg:px-5 gap-3"
         style={{ height: "56px" }}
       >
-        {/* Left — hamburger + brand */}
+        {}
         <div className="flex items-center gap-2 min-w-0">
           {user && (
             <button
@@ -1625,7 +2353,7 @@ export function TopBar({
           </button>
         </div>
 
-        {/* Right — user actions */}
+        {}
         <div className="flex items-center gap-1 shrink-0">
           {user ? (
             <>
@@ -1639,7 +2367,7 @@ export function TopBar({
                   {user.firstName || (isMod ? "Admin" : "My Profile")}
                 </span>
               </button>
-              {/* Three-dot menu */}
+              {}
               <div className="relative">
                 <button
                   onClick={() => setDotOpen((o) => !o)}
@@ -1735,94 +2463,148 @@ export function TopBar({
   );
 }
 
-// ─── Sidebar (desktop + mobile drawer) ───────────────────────────────────────
 export function Sidebar({
   page,
+
   user,
+
   open,
+
   onNav,
+
   onClose,
+
   onLogout,
+
   badges,
 }: {
   page: Page;
+
   user: User | null;
+
   open: boolean;
+
   onNav: (p: Page) => void;
+
   onClose: () => void;
+
   onLogout: () => void;
+
   badges?: Partial<Record<Page, number>>;
 }) {
   const router = useRouter();
+
   if (!user) return null;
+
   const isMod = user.role === "admin";
+
   const nav = isMod
     ? [
         { p: "admin-dashboard" as Page, l: "Overview", I: Icons.Home },
+
         { p: "admin-events" as Page, l: "Events", I: Icons.Calendar },
+
         { p: "admin-scanner" as Page, l: "QR Scanner", I: Icons.Scan },
+
         { p: "admin-attendees" as Page, l: "Attendees", I: Icons.Users },
+
         { p: "admin-students" as Page, l: "Students", I: Icons.User },
+
         { p: "admin-announcements" as Page, l: "Announcements", I: Icons.Bell },
+
         {
           p: "admin-excuse-requests" as Page,
+
           l: "Excuse Requests",
+
           I: Icons.FileText,
         },
+
         { p: "admin-reports" as Page, l: "Reports", I: Icons.BarChart },
+
         { p: "admin-settings" as Page, l: "Settings", I: Icons.Settings },
       ]
     : [
         { p: "dashboard" as Page, l: "Home", I: Icons.Home },
+
         { p: "events" as Page, l: "Events", I: Icons.Calendar },
+
         { p: "my-qr" as Page, l: "My QR Code", I: Icons.QrCode },
+
         { p: "announcements" as Page, l: "Announcements", I: Icons.Bell },
+
         {
           p: "attendance-history" as Page,
+
           l: "Attendance",
+
           I: Icons.CheckCircle,
         },
+
         { p: "my-fines" as Page, l: "My Fines", I: Icons.Peso },
+
         { p: "profile" as Page, l: "Profile", I: Icons.User },
       ];
 
   const routeFromPage: Record<Page, string> = {
     landing: "/",
+
     login: "/login",
+
     onboarding: "/onboarding",
+
     dashboard: "/dashboard",
+
     "my-qr": "/my-qr",
+
     events: "/events",
+
     "event-detail": "/events",
+
     announcements: "/announcements",
+
     "attendance-history": "/attendance-history",
+
     "my-fines": "/my-fines",
+
     profile: "/profile",
+
     "admin-dashboard": "/admin-dashboard",
+
     "admin-events": "/admin-events",
+
     "admin-scanner": "/admin-scanner",
+
     "admin-attendees": "/admin-attendees",
+
     "admin-students": "/admin-students",
+
     "admin-announcements": "/admin-announcements",
+
     "admin-reports": "/admin-reports",
+
     "admin-excuse-requests": "/admin-excuse-requests",
+
     "admin-settings": "/admin-settings",
   };
 
   const handleNav = (p: Page) => {
     const target = routeFromPage[p] ?? "/dashboard";
+
     router.push(target);
+
     onClose();
   };
 
   const prefetchRoute = (p: Page) => {
     const target = routeFromPage[p] ?? "/dashboard";
+
     void router.prefetch(target);
   };
 
   const inner = (
     <div className="flex flex-col h-full bg-white">
-      {/* Mobile header inside drawer */}
+      {}
       <div className="flex items-center justify-between px-4 h-[52px] border-b border-slate-100 lg:hidden shrink-0">
         <div className="flex items-center gap-2.5">
           <TapInMark />
@@ -1839,14 +2621,18 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* Nav items */}
+      {}
       <nav className="flex-1 px-2 pt-3 pb-2 space-y-0.5 overflow-y-auto">
         {nav.map(({ p, l, I }) => {
           const active = page === p;
+
           const count = badges?.[p] ?? 0;
+
           const badgeLabel =
             count > 9 ? "9+" : count > 0 ? String(count) : null;
+
           const target = routeFromPage[p] ?? "/dashboard";
+
           return (
             <Link
               key={p}
@@ -1855,10 +2641,16 @@ export function Sidebar({
               onMouseEnter={() => prefetchRoute(p)}
               onFocus={() => prefetchRoute(p)}
               onClick={onClose}
-              className={`w-full flex items-center gap-3 border-l-[3px] px-3 h-10 rounded-lg text-sm transition-colors duration-150 ease-in-out ${active ? "border-green-600 bg-green-50/70 text-green-800 font-medium" : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-normal"}`}
+              className={`w-full flex items-center gap-3 border-l-[3px] px-3 h-10 rounded-lg text-sm transition-colors duration-150 ease-in-out ${
+                active
+                  ? "border-green-600 bg-green-50/70 text-green-800 font-medium"
+                  : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-normal"
+              }`}
             >
               <span
-                className={`relative shrink-0 ${active ? "text-green-600" : "text-slate-400"}`}
+                className={`relative shrink-0 ${
+                  active ? "text-green-600" : "text-slate-400"
+                }`}
               >
                 <I />
                 {badgeLabel && (
@@ -1873,7 +2665,7 @@ export function Sidebar({
         })}
       </nav>
 
-      {/* Sidebar footer */}
+      {}
       <div className="mt-auto border-t border-slate-200/70 px-2 py-4 shrink-0">
         <div className="space-y-2">
           <button
@@ -1901,12 +2693,12 @@ export function Sidebar({
 
   return (
     <>
-      {/* ── Desktop: persistent sidebar ── */}
+      {}
       <aside className="hidden lg:flex flex-col w-60 shrink-0 border-r border-slate-100 sticky top-[56px] h-[calc(100vh-56px)] self-start overflow-hidden bg-white">
         {inner}
       </aside>
 
-      {/* ── Mobile: fade overlay ── */}
+      {}
       {open && (
         <div className="lg:hidden">
           <div
@@ -1926,47 +2718,58 @@ export function Sidebar({
   );
 }
 
-// ─── LANDING CAROUSEL ─────────────────────────────────────────────────────────
 function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
   const n = slides.length;
-  // trackIdx can go 0…n (n = clone of slide 0)
+
   const [trackIdx, setTrackIdx] = useState(0);
+
   const [animated, setAnimated] = useState(true);
+
   const [paused, setPaused] = useState(false);
+
   const [visibilityStamp, setVisibilityStamp] = useState(0);
+
   const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const realIdx = trackIdx % n;
-  // items: real slides + clone of first
+
   const items = n > 1 ? [...slides, slides[0]] : slides;
+
   const total = items.length;
 
-  // advance one step forward
   const advance = () => {
     setAnimated(true);
+
     setTrackIdx((i) => i + 1);
   };
 
-  // manual jump (dots/arrows) — always jumps to real slide
   const go = (next: number) => {
     const target = ((next % n) + n) % n;
+
     setAnimated(true);
+
     setTrackIdx(target);
+
     setPaused(true);
+
     if (pauseTimer.current) clearTimeout(pauseTimer.current);
+
     pauseTimer.current = setTimeout(() => setPaused(false), 8000);
   };
 
-  // after sliding onto the clone (trackIdx === n), silently snap to real slide 0
   const handleTransitionEnd = () => {
     if (trackIdx === n) {
       setAnimated(false);
+
       setTrackIdx(0);
     }
   };
 
   useEffect(() => {
     if (paused || n <= 1) return;
+
     const t = setInterval(advance, 5000);
+
     return () => clearInterval(t);
   }, [paused, n]);
 
@@ -1974,13 +2777,17 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         setTrackIdx(0);
+
         setAnimated(false);
+
         setPaused(false);
+
         setVisibilityStamp((v) => v + 1);
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibility);
+
     return () =>
       document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
@@ -1994,12 +2801,14 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Slide strip */}
+      {}
       <div
         className="flex h-full"
         style={{
           width: `${total * 100}%`,
+
           transform: `translateX(-${(trackIdx / total) * 100}%)`,
+
           transition: animated
             ? "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)"
             : "none",
@@ -2010,7 +2819,9 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
           <div
             key={`${visibilityStamp}-${i}-${s.imageUrl}`}
             className="relative h-full flex-shrink-0"
-            style={{ width: `${100 / total}%` }}
+            style={{
+              width: `${100 / total}%`,
+            }}
           >
             {/\.mp4($|\?)/i.test(s.imageUrl) ? (
               <video
@@ -2052,7 +2863,7 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
         ))}
       </div>
 
-      {/* Arrow controls */}
+      {}
       {n > 1 && (
         <>
           <button
@@ -2070,14 +2881,18 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
         </>
       )}
 
-      {/* Dot indicators — keyed to realIdx */}
+      {}
       {n > 1 && (
         <div className="absolute bottom-3 right-5 z-10 flex gap-1.5">
           {slides.map((_, i) => (
             <button
               key={i}
               onClick={() => go(i)}
-              className={`rounded-full transition-all ${i === realIdx ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/45 hover:bg-white/70"}`}
+              className={`rounded-full transition-all ${
+                i === realIdx
+                  ? "w-5 h-2 bg-white"
+                  : "w-2 h-2 bg-white/45 hover:bg-white/70"
+              }`}
             />
           ))}
         </div>
@@ -2086,46 +2901,62 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
   );
 }
 
-// ─── LANDING ──────────────────────────────────────────────────────────────────
 function LandingPage({
   onNav,
+
   settings,
+
   user,
 }: {
   onNav: (p: Page) => void;
+
   settings: SystemSettings;
+
   user: User | null;
 }) {
   const heroUrls = settings.heroImageUrls.filter(
     (url) => !!url && !url.startsWith("blob:"),
   );
+
   const carouselSlides = settings.carouselSlides.filter(
     (slide) => !!slide.imageUrl && !slide.imageUrl.startsWith("blob:"),
   );
+
   const hasHero = heroUrls.length > 0;
+
   const hn = heroUrls.length;
-  // clone-trick state for hero
+
   const [heroTrack, setHeroTrack] = useState(0);
+
   const [heroAnim, setHeroAnim] = useState(true);
+
   const [heroVisibilityStamp, setHeroVisibilityStamp] = useState(0);
+
   const heroRealIdx = heroTrack % (hn || 1);
+
   const heroItems = hn > 1 ? [...heroUrls, heroUrls[0]] : heroUrls;
+
   const heroTotal = heroItems.length;
 
   const heroAdvance = () => {
     setHeroAnim(true);
+
     setHeroTrack((i) => i + 1);
   };
+
   const heroTransitionEnd = () => {
     if (heroTrack === hn) {
       setHeroAnim(false);
+
       setHeroTrack(0);
     }
   };
 
   useEffect(() => {
     if (hn <= 1) return;
+
     const t = setInterval(heroAdvance, 5000);
+
     return () => clearInterval(t);
   }, [hn]);
 
@@ -2133,34 +2964,42 @@ function LandingPage({
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         setHeroTrack(0);
+
         setHeroAnim(false);
+
         setHeroVisibilityStamp((v) => v + 1);
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibility);
+
     return () =>
       document.removeEventListener("visibilitychange", handleVisibility);
   }, [hn]);
 
   useEffect(() => {
     setHeroTrack(0);
+
     setHeroAnim(false);
   }, [hn]);
 
   return (
     <div className="min-h-screen bg-white">
-      {/* ── Hero ──────────────────────────────────────────────────── */}
+      {}
       <div
-        className={`relative overflow-hidden ${hasHero ? "min-h-[520px] lg:min-h-[580px]" : ""}`}
+        className={`relative overflow-hidden ${
+          hasHero ? "min-h-[520px] lg:min-h-[580px]" : ""
+        }`}
       >
-        {/* Background images — sliding clone-loop track */}
+        {}
         {hasHero && (
           <div
             className="absolute inset-y-0 left-0 flex"
             style={{
               width: `${heroTotal * 100}%`,
+
               transform: `translateX(-${(heroTrack / heroTotal) * 100}%)`,
+
               transition: heroAnim
                 ? "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)"
                 : "none",
@@ -2171,7 +3010,9 @@ function LandingPage({
               <div
                 key={`${heroVisibilityStamp}-${i}-${url}`}
                 className="relative h-full flex-shrink-0"
-                style={{ width: `${100 / heroTotal}%` }}
+                style={{
+                  width: `${100 / heroTotal}%`,
+                }}
               >
                 <img
                   key={`${heroVisibilityStamp}-hero-${i}-${url}`}
@@ -2196,18 +3037,20 @@ function LandingPage({
             }}
           />
         )}
-        {/* Dot indicators */}
+        {}
         {hn > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
             {heroUrls.map((_, i) => (
               <span
                 key={i}
-                className={`rounded-full transition-all duration-300 ${i === heroRealIdx ? "w-4 h-2 bg-white" : "w-2 h-2 bg-white/40"}`}
+                className={`rounded-full transition-all duration-300 ${
+                  i === heroRealIdx ? "w-4 h-2 bg-white" : "w-2 h-2 bg-white/40"
+                }`}
               />
             ))}
           </div>
         )}
-        {/* Fallback radial glow when no image */}
+        {}
         {!hasHero && (
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gradient-to-b from-green-50 to-transparent rounded-full blur-3xl opacity-60 pointer-events-none" />
         )}
@@ -2215,19 +3058,31 @@ function LandingPage({
         {user && (
           <button
             onClick={() => onNav("profile")}
-            className={`absolute top-5 right-6 z-20 flex items-center justify-center rounded-full p-1.5 transition-colors duration-150 ${hasHero ? "bg-black/20 text-white shadow-sm backdrop-blur-sm hover:bg-black/30" : "bg-slate-900/5 text-slate-700 hover:bg-slate-900/10"}`}
+            className={`absolute top-5 right-6 z-20 flex items-center justify-center rounded-full p-1.5 transition-colors duration-150 ${
+              hasHero
+                ? "bg-black/20 text-white shadow-sm backdrop-blur-sm hover:bg-black/30"
+                : "bg-slate-900/5 text-slate-700 hover:bg-slate-900/10"
+            }`}
             aria-label="Open profile"
           >
             <ProfileIcon photoUrl={user.photoUrl} size="sm" />
           </button>
         )}
 
-        {/* Hero content */}
+        {}
         <div
-          className={`relative w-full mx-auto px-3.5 flex flex-col md:max-w-6xl md:px-6 ${hasHero ? "items-start text-left pt-6 pb-6 md:pt-10 md:pb-12" : "items-center text-center pt-6 pb-6 md:pt-10 md:pb-12"}`}
+          className={`relative w-full mx-auto px-3.5 flex flex-col md:max-w-6xl md:px-6 ${
+            hasHero
+              ? "items-start text-left pt-6 pb-6 md:pt-10 md:pb-12"
+              : "items-center text-center pt-6 pb-6 md:pt-10 md:pb-12"
+          }`}
         >
           <div
-            className={`inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full mb-8 ${hasHero ? "text-emerald-200 bg-white/10 border border-white/25 backdrop-blur-sm" : "text-emerald-700 bg-emerald-50 border border-emerald-200"}`}
+            className={`inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full mb-8 ${
+              hasHero
+                ? "text-emerald-200 bg-white/10 border border-white/25 backdrop-blur-sm"
+                : "text-emerald-700 bg-emerald-50 border border-emerald-200"
+            }`}
           >
             <span
               className="w-1.5 h-1.5 bg-emerald-400 rounded-full"
@@ -2236,28 +3091,38 @@ function LandingPage({
             AY 2026-2027 · 1st Semester
           </div>
           <div
-            className={`flex items-center gap-3 mb-4 ${hasHero ? "" : "justify-center"}`}
+            className={`flex items-center gap-3 mb-4 ${
+              hasHero ? "" : "justify-center"
+            }`}
           >
             <TapInMark className="w-14 h-14" />
           </div>
           <h1
-            className={`text-5xl font-extrabold tracking-tight leading-tight mb-2 ${hasHero ? "text-white" : "text-slate-900"}`}
+            className={`text-5xl font-extrabold tracking-tight leading-tight mb-2 ${
+              hasHero ? "text-white" : "text-slate-900"
+            }`}
           >
             TapIn
           </h1>
           <p
-            className={`text-base font-semibold mb-6 ${hasHero ? "text-white/70" : "text-slate-400"}`}
+            className={`text-base font-semibold mb-6 ${
+              hasHero ? "text-white/70" : "text-slate-400"
+            }`}
           >
             Student Event Attendance &amp; Fee Tracking System
           </p>
           <p
-            className={`text-lg mb-10 leading-relaxed ${hasHero ? "text-white/80 max-w-md" : "text-slate-500 max-w-lg"}`}
+            className={`text-lg mb-10 leading-relaxed ${
+              hasHero ? "text-white/80 max-w-md" : "text-slate-500 max-w-lg"
+            }`}
           >
             One QR code per student. Real-time attendance logging. Automatic fee
             tracking.
           </p>
           <div
-            className={`flex items-center gap-3 ${hasHero ? "" : "justify-center"}`}
+            className={`flex items-center gap-3 ${
+              hasHero ? "" : "justify-center"
+            }`}
           >
             <button
               onClick={() => {
@@ -2265,6 +3130,7 @@ function LandingPage({
                   onNav(
                     user.role === "admin" ? "admin-dashboard" : "dashboard",
                   );
+
                   return;
                 }
 
@@ -2280,7 +3146,11 @@ function LandingPage({
             </button>
             <button
               onClick={() => onNav("events")}
-              className={`h-11 px-6 text-sm font-semibold rounded-xl transition-all ${hasHero ? "bg-white/15 text-white border border-white/30 hover:bg-white/25 backdrop-blur-sm" : "border border-slate-200 text-slate-700 hover:bg-slate-50"}`}
+              className={`h-11 px-6 text-sm font-semibold rounded-xl transition-all ${
+                hasHero
+                  ? "bg-white/15 text-white border border-white/30 hover:bg-white/25 backdrop-blur-sm"
+                  : "border border-slate-200 text-slate-700 hover:bg-slate-50"
+              }`}
             >
               Browse Events
             </button>
@@ -2288,23 +3158,31 @@ function LandingPage({
         </div>
       </div>
 
-      {/* ── Feature cards ─────────────────────────────────────────── */}
+      {}
       <div className="w-full mx-auto px-3.5 py-6 md:max-w-6xl md:px-6 md:py-10">
         <div className="grid md:grid-cols-3 gap-4">
           {[
             {
               I: Icons.QrCode,
+
               t: "Personal QR Code",
+
               d: "Each student gets a unique QR code tied to their profile. Present it at any event entrance for instant logging.",
             },
+
             {
               I: Icons.Scan,
+
               t: "Instant scan & confirm",
+
               d: "Moderators scan student QR codes in real time with automatic duplicate detection and confirmation.",
             },
+
             {
               I: Icons.Peso,
+
               t: "Automatic fee tracking",
+
               d: "Absent students are fined per event policy. Students can view, track, and clear fees from their personal dashboard.",
             },
           ].map((f) => (
@@ -2324,7 +3202,7 @@ function LandingPage({
         </div>
       </div>
 
-      {/* ── Event carousel ────────────────────────────────────────── */}
+      {}
       {carouselSlides.length > 0 && (
         <div className="max-w-5xl mx-auto px-6 pb-20">
           <div className="flex items-center justify-between mb-4">
@@ -2339,33 +3217,46 @@ function LandingPage({
   );
 }
 
-// ─── LOGIN ────────────────────────────────────────────────────────────────────
 export function LoginPage({ onBack }: { onBack: () => void }) {
   const router = useRouter();
+
   const [showEmailFlow, setShowEmailFlow] = useState(false);
+
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+
   const [email, setEmail] = useState("");
+
   const [password, setPassword] = useState("");
+
   const [confirmPassword, setConfirmPassword] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
+
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [loading, setLoading] = useState<"google" | "submit" | null>(null);
 
   const routeAfterAuth = async () => {
     const {
       data: { user },
+
       error: userError,
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
       router.push("/login");
+
       return;
     }
 
     const { data: profile, error: profileError } = await supabase
+
       .from("profiles")
+
       .select("*")
+
       .eq("id", user.id)
+
       .maybeSingle();
 
     if (profileError && profileError.code !== "PGRST116") {
@@ -2384,6 +3275,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
 
     if (incomplete) {
       router.push("/onboarding?freshLogin=1");
+
       return;
     }
 
@@ -2400,6 +3292,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
+
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
@@ -2407,10 +3300,12 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
 
       if (error) {
         console.error(error);
+
         toast.error(error.message || "Google sign-in failed.");
       }
     } catch (error) {
       console.error(error);
+
       toast.error("Google sign-in failed.");
     } finally {
       setLoading(null);
@@ -2422,17 +3317,20 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
 
     if (!trimmedEmail || !password) {
       toast.error("Please enter both your email and password.");
+
       return;
     }
 
     if (mode === "signup") {
       if (!confirmPassword) {
         toast.error("Please confirm your password.");
+
         return;
       }
 
       if (password !== confirmPassword) {
         toast.error("Passwords do not match.");
+
         return;
       }
     }
@@ -2445,11 +3343,13 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
       if (mode === "signin") {
         result = await supabase.auth.signInWithPassword({
           email: trimmedEmail,
+
           password,
         });
       } else {
         result = await supabase.auth.signUp({
           email: trimmedEmail,
+
           password,
         });
       }
@@ -2489,18 +3389,25 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
           toast.success(
             "Account created. Please check your inbox and confirm your email before signing in.",
           );
+
           setMode("signin");
+
           setPassword("");
+
           setConfirmPassword("");
+
           setShowPassword(false);
+
           setShowConfirmPassword(false);
         }
+
         return;
       }
 
       await routeAfterAuth();
     } catch (error) {
       console.error(error);
+
       toast.error("Authentication failed. Please try again.");
     } finally {
       setLoading(null);
@@ -2554,6 +3461,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
               initial={false}
               animate={{
                 height: showEmailFlow ? "auto" : 0,
+
                 opacity: showEmailFlow ? 1 : 0,
               }}
               transition={{ duration: 0.22, ease: "easeInOut" }}
@@ -2670,7 +3578,9 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                     type="button"
                     onClick={() => {
                       setMode(mode === "signin" ? "signup" : "signin");
+
                       setPassword("");
+
                       setConfirmPassword("");
                     }}
                     className="text-green-600 font-semibold hover:text-green-700"
@@ -2683,9 +3593,13 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                   type="button"
                   onClick={() => {
                     setShowEmailFlow(false);
+
                     setPassword("");
+
                     setConfirmPassword("");
+
                     setShowPassword(false);
+
                     setShowConfirmPassword(false);
                   }}
                   className="w-full text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-1 pt-3"
@@ -2713,18 +3627,27 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
   );
 }
 
-// ─── ONBOARDING ───────────────────────────────────────────────────────────────
 export interface OBForm {
   firstName: string;
+
   middleInitial: string;
+
   surname: string;
+
   phone: string;
+
   contactEmail: string;
+
   studentId: string;
+
   program: string;
+
   yearLevel: string;
+
   section: string;
+
   idPhotoUrl?: string;
+
   agreedToTerms?: boolean;
 }
 
@@ -2734,24 +3657,35 @@ export function OnboardingPage({
   onComplete: (d: OBForm) => void;
 }) {
   const [step, setStep] = useState(1);
+
   const [idPhotoUploadState, setIdPhotoUploadState] = useState<
     "idle" | "uploading" | "error"
   >("idle");
+
   const [f, setF] = useState<OBForm>({
     firstName: "",
+
     middleInitial: "",
+
     surname: "",
+
     phone: "",
+
     contactEmail: "",
+
     studentId: "",
+
     program: "",
+
     yearLevel: "",
+
     section: "",
   });
+
   const [agreed, setAgreed] = useState(false);
+
   const idPhotoRef = useRef<HTMLInputElement>(null);
 
-  // Cleanup: revoke blob URL when component unmounts
   useEffect(() => {
     return () => {
       if (f.idPhotoUrl) {
@@ -2759,38 +3693,53 @@ export function OnboardingPage({
       }
     };
   }, []);
+
   const set =
     (k: keyof OBForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setF((p) => ({ ...p, [k]: e.target.value }));
+
   const TOTAL = 6;
+
   const steps = [
     {
       t: "Your name",
+
       d: "Enter your full name as it appears on your school ID.",
     },
+
     { t: "Contact information", d: "Used for important notices and updates." },
+
     { t: "Student ID", d: "Your 7-digit school-issued ID number." },
+
     {
       t: "Enrollment details",
+
       d: "Used to group attendance records by program and section.",
     },
+
     {
       t: "School ID photo",
+
       d: "Take or upload a clear photo of your school-issued ID.",
     },
+
     { t: "Terms & Privacy", d: "Please read and agree to continue." },
   ];
+
   const canContinue = () => {
     if (step === 1) {
       return f.firstName.trim().length > 0 && f.surname.trim().length > 0;
     }
+
     if (step === 2) {
       return f.phone.trim().length > 0 && f.contactEmail.trim().length > 0;
     }
+
     if (step === 3) {
       return /^\d{7,}$/.test(f.studentId.trim());
     }
+
     if (step === 4) {
       return (
         f.program.trim().length > 0 &&
@@ -2798,14 +3747,18 @@ export function OnboardingPage({
         f.section.trim().length > 0
       );
     }
+
     if (step === 5) {
       return !!f.idPhotoUrl;
     }
+
     if (step === 6) {
       return agreed;
     }
+
     return false;
   };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-3.5 bg-[#f8faf9] md:p-6">
       <div className="w-full max-w-md">
@@ -2814,7 +3767,9 @@ export function OnboardingPage({
             {steps.map((_, i) => (
               <div
                 key={i}
-                className={`h-1 flex-1 rounded-full transition-all ${i < step ? "bg-green-600" : "bg-slate-200"}`}
+                className={`h-1 flex-1 rounded-full transition-all ${
+                  i < step ? "bg-green-600" : "bg-slate-200"
+                }`}
               />
             ))}
           </div>
@@ -2926,6 +3881,7 @@ export function OnboardingPage({
                   className="hidden"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
+
                     if (!file) return;
 
                     setIdPhotoUploadState("uploading");
@@ -2934,13 +3890,17 @@ export function OnboardingPage({
 
                     if ("error" in result) {
                       setIdPhotoUploadState("error");
+
                       toast.error(result.error);
+
                       return;
                     }
 
                     setIdPhotoUploadState("idle");
+
                     setF((p) => ({
                       ...p,
+
                       idPhotoUrl: result.url,
                     }));
                   }}
@@ -2980,6 +3940,7 @@ export function OnboardingPage({
                         if (f.idPhotoUrl) {
                           URL.revokeObjectURL(f.idPhotoUrl);
                         }
+
                         setF((p) => ({ ...p, idPhotoUrl: undefined }));
                       }}
                       className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
@@ -3046,7 +4007,11 @@ export function OnboardingPage({
                 </div>
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <div
-                    className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${agreed ? "bg-green-600 border-green-600" : "border-slate-300 group-hover:border-green-400"}`}
+                    className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
+                      agreed
+                        ? "bg-green-600 border-green-600"
+                        : "border-slate-300 group-hover:border-green-400"
+                    }`}
                     onClick={() => setAgreed((v) => !v)}
                   >
                     {agreed && (
@@ -3098,7 +4063,11 @@ export function OnboardingPage({
                   ? setStep((s) => s + 1)
                   : onComplete({ ...f, agreedToTerms: agreed })
               }
-              className={`flex-1 h-10 text-white text-sm font-semibold rounded-lg transition-all shadow-sm ${canContinue() ? "bg-green-600 hover:bg-green-700" : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"}`}
+              className={`flex-1 h-10 text-white text-sm font-semibold rounded-lg transition-all shadow-sm ${
+                canContinue()
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+              }`}
             >
               {step === TOTAL ? "Complete setup" : "Continue"}
             </button>
@@ -3109,19 +4078,25 @@ export function OnboardingPage({
   );
 }
 
-// ─── EXCUSE MODAL ─────────────────────────────────────────────────────────────
 function ExcuseModal({
   record,
+
   onClose,
+
   onSubmit,
 }: {
   record: (typeof ATTENDANCE_RECORDS)[0];
+
   onClose: () => void;
+
   onSubmit: (r: ExcuseRequest) => void;
 }) {
   const [reason, setReason] = useState("");
+
   const [file, setFile] = useState<File | null>(null);
+
   const ref = useRef<HTMLInputElement>(null);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
@@ -3194,17 +4169,27 @@ function ExcuseModal({
           <button
             onClick={() => {
               if (!reason.trim()) return;
+
               onSubmit({
                 id: Date.now().toString(),
+
                 studentName: "Maria Luisa Santos",
+
                 studentId: "2440014",
+
                 event: record.event,
+
                 date: record.date,
+
                 reason,
+
                 proofName: file ? file.name : null,
+
                 status: "pending",
+
                 submittedDate: "Aug 22, 2026",
               });
+
               onClose();
             }}
             disabled={!reason.trim()}
@@ -3219,16 +4204,21 @@ function ExcuseModal({
   );
 }
 
-// ─── Shared Form Modal ────────────────────────────────────────────────────────
 function FormModal({
   title,
+
   onClose,
+
   footer,
+
   children,
 }: {
   title: string;
+
   onClose: () => void;
+
   footer?: React.ReactNode;
+
   children: React.ReactNode;
 }) {
   return (
@@ -3263,35 +4253,40 @@ function FormModal({
   );
 }
 
-// ─── Student Profile Modal (Moderator view, with QR) ─────────────────────────
-// ─── Upcoming Event Card (adaptive: photo or green fallback) ──────────────────
 function UpcomingEventCard({
   event: ev,
+
   onClick,
 }: {
   event: EventData;
+
   onClick: () => void;
 }) {
   const cover = ev.mediaUrls?.[0] ?? null;
 
-  /* Shared text content */
   const greenText = (dim?: boolean) => (
     <>
       <div className="flex items-center justify-between mb-3">
         <Badge status={ev.status} />
         <span
-          className={`text-xs font-medium ${dim ? "text-white/70" : "text-green-300"}`}
+          className={`text-xs font-medium ${
+            dim ? "text-white/70" : "text-green-300"
+          }`}
         >
           Up next
         </span>
       </div>
       <h2
-        className={`font-semibold text-base leading-snug mb-3 ${dim ? "text-white" : "text-white"}`}
+        className={`font-semibold text-base leading-snug mb-3 ${
+          dim ? "text-white" : "text-white"
+        }`}
       >
         {ev.title}
       </h2>
       <div
-        className={`flex flex-wrap gap-3 text-sm font-medium ${dim ? "text-white/75" : "text-green-200"}`}
+        className={`flex flex-wrap gap-3 text-sm font-medium ${
+          dim ? "text-white/75" : "text-green-200"
+        }`}
       >
         <span className="flex items-center gap-1.5">
           <Icons.Calendar />
@@ -3307,9 +4302,8 @@ function UpcomingEventCard({
 
   return (
     <button onClick={onClick} className="w-full text-left mb-5 block group">
-      {/* ── Mobile ── */}
+      {}
       {cover ? (
-        /* Photo full-bleed */
         <div
           className="relative md:hidden overflow-hidden rounded-xl"
           style={{ height: 152 }}
@@ -3347,33 +4341,31 @@ function UpcomingEventCard({
           </div>
         </div>
       ) : (
-        /* Green fallback */
         <div className="md:hidden bg-green-600 group-hover:bg-green-700 rounded-xl p-5 text-white transition-colors shadow-sm">
           {greenText()}
         </div>
       )}
 
-      {/* ── Desktop ── */}
+      {}
       {cover ? (
-        /* Split card: green left + concave photo right */
         <div
           className="relative hidden md:block overflow-hidden rounded-xl shadow-sm group-hover:shadow-md transition-shadow"
           style={{ height: 160 }}
         >
-          {/* SVG clip definition — concave left boundary for photo pane */}
+          {}
           <svg width="0" height="0" style={{ position: "absolute" }}>
             <defs>
               <clipPath id="ec-photo-clip" clipPathUnits="objectBoundingBox">
-                {/* left edge bows leftward at midpoint creating a crescent notch */}
+                {}
                 <path d="M 0.2,0 C 0,0.28 0,0.72 0.2,1 L 1,1 L 1,0 Z" />
               </clipPath>
             </defs>
           </svg>
 
-          {/* Green background full-bleed */}
+          {}
           <div className="absolute inset-0 bg-green-600 group-hover:bg-green-700 transition-colors" />
 
-          {/* Green content pane — left 62% */}
+          {}
           <div
             className="absolute inset-y-0 left-0 z-10 flex flex-col justify-between px-5 py-5 text-white"
             style={{ width: "62%" }}
@@ -3381,7 +4373,7 @@ function UpcomingEventCard({
             {greenText()}
           </div>
 
-          {/* Photo pane — right 45%, clipped with concave left arc */}
+          {}
           <div
             className="absolute inset-y-0 right-0"
             style={{ width: "45%", clipPath: "url(#ec-photo-clip)" }}
@@ -3391,7 +4383,7 @@ function UpcomingEventCard({
               alt={ev.title}
               className="w-full h-full object-cover"
             />
-            {/* Subtle left-edge blend into green */}
+            {}
             <div
               className="absolute inset-0"
               style={{
@@ -3402,7 +4394,6 @@ function UpcomingEventCard({
           </div>
         </div>
       ) : (
-        /* Green fallback */
         <div className="hidden md:block bg-green-600 group-hover:bg-green-700 rounded-xl p-5 text-white transition-colors shadow-sm">
           {greenText()}
         </div>
@@ -3411,42 +4402,64 @@ function UpcomingEventCard({
   );
 }
 
-// ─── STUDENT: Dashboard ───────────────────────────────────────────────────────
 export function DashboardPage({
   user,
+
   onNav,
+
   fines,
+
   showFees,
+
   announcements,
+
   nextEvent,
+
   attendanceStats,
 }: {
   user: User;
+
   onNav: (p: Page) => void;
+
   fines: FineRecord[];
+
   showFees: boolean;
+
   announcements: typeof INITIAL_ANNOUNCEMENTS;
+
   nextEvent?: EventData;
+
   attendanceStats?: {
     present: number;
+
     absent: number;
+
     upcoming: number;
+
     rate: number;
   };
 }) {
   const unpaidFines = fines.filter((f) => f.status === "unpaid");
+
   const total = unpaidFines.reduce((s, f) => s + f.amount, 0);
+
   const latestAnnouncements = announcements.slice(0, 2);
+
   const statValues = attendanceStats ?? {
     present: 0,
+
     absent: 0,
+
     upcoming: 0,
+
     rate: 0,
   };
 
   const attendanceData = [
     { name: "Present", value: statValues.present, fill: "#16a34a" },
+
     { name: "Absent", value: statValues.absent, fill: "#94a3b8" },
+
     { name: "Upcoming", value: statValues.upcoming, fill: "#a7f3d0" },
   ];
 
@@ -3618,7 +4631,10 @@ export function DashboardPage({
             className="bg-white border border-slate-100 rounded-xl px-4 py-3.5"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: 0.02 * Number(a.id) }}
+            transition={{
+              duration: 0.2,
+              delay: 0.02 * Number(a.id),
+            }}
           >
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded uppercase tracking-wide">
@@ -3634,38 +4650,55 @@ export function DashboardPage({
   );
 }
 
-// ─── STUDENT: Events ──────────────────────────────────────────────────────────
 export function EventsPage({
   onNav,
+
   onSelectEvent,
+
   user,
+
   showFees,
+
   events,
 }: {
   onNav: (p: Page) => void;
+
   onSelectEvent: (id: string) => void;
+
   user: User | null;
+
   showFees: boolean;
+
   events: EventData[];
 }) {
   const [filter, setFilter] = useState("all");
+
   const items =
     filter === "all" ? events : events.filter((e) => e.status === filter);
+
   const canSeeFees = user?.role === "student" && showFees;
+
   return (
     <>
       <PageHeader title="Events" subtitle="AY 2026-2027, 1st Semester" />
       <div className="flex gap-2 sm:gap-2 mb-5 overflow-x-auto pb-1 -mx-1 px-1">
         {[
           { k: "all", l: "All" },
+
           { k: "active", l: "Live" },
+
           { k: "upcoming", l: "Upcoming" },
+
           { k: "closed", l: "Closed" },
         ].map((f) => (
           <button
             key={f.k}
             onClick={() => setFilter(f.k)}
-            className={`shrink-0 h-8 px-3.5 rounded-lg text-xs font-semibold transition-all ${filter === f.k ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300"}`}
+            className={`shrink-0 h-8 px-3.5 rounded-lg text-xs font-semibold transition-all ${
+              filter === f.k
+                ? "bg-slate-900 text-white"
+                : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300"
+            }`}
           >
             {f.l}
           </button>
@@ -3678,12 +4711,15 @@ export function EventsPage({
             className="bg-white border border-slate-100 rounded-xl p-5 cursor-pointer hover:border-slate-200 hover:shadow-sm transition-all"
             onClick={() => {
               onSelectEvent(e.id);
+
               onNav("event-detail");
             }}
           >
             {(() => {
               const cover = e.highlightUrl ?? e.mediaUrls?.[0];
+
               if (!cover) return null;
+
               return /\.mp4($|\?)/i.test(cover) ? (
                 <video
                   src={cover}
@@ -3739,24 +4775,35 @@ export function EventsPage({
   );
 }
 
-// ─── STUDENT: Event Detail ────────────────────────────────────────────────────
 function EventDetailPage({
   eventId,
+
   user,
+
   showFees,
+
   onBack,
+
   events,
 }: {
   eventId: string;
+
   user: User | null;
+
   showFees: boolean;
+
   onBack: () => void;
+
   events: EventData[];
 }) {
   const ev = events.find((e) => e.id === eventId) ?? events[0];
+
   const canSeeFees = user?.role === "student" && showFees;
+
   const [lightbox, setLightbox] = useState<string | null>(null);
+
   const primaryMedia = ev.highlightUrl ?? ev.mediaUrls?.[0];
+
   return (
     <>
       <BackButton onClick={onBack} label="Back to Events" />
@@ -3779,13 +4826,13 @@ function EventDetailPage({
         ) : (
           <div className="w-full h-64 bg-green-600" />
         )}
-        {/* Gradient overlay */}
+        {}
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
-        {/* Badge — top-left */}
+        {}
         <div className="absolute top-4 left-4">
           <Badge status={ev.status} />
         </div>
-        {/* Bottom content — pinned with explicit bottom padding */}
+        {}
         <div className="absolute left-0 right-0 bottom-0 px-4 pb-4">
           <h1 className="font-bold text-lg text-white mb-2.5 leading-snug drop-shadow">
             {ev.title}
@@ -3793,6 +4840,7 @@ function EventDetailPage({
           <div className="grid grid-cols-2 gap-1.5">
             {[
               { l: "DATE", v: ev.date },
+
               { l: "TIME", v: ev.time },
             ].map((d) => (
               <div
@@ -3889,7 +4937,7 @@ function EventDetailPage({
           </div>
         </div>
       )}
-      {/* Lightbox */}
+      {}
       {lightbox && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
@@ -3928,72 +4976,118 @@ function EventDetailPage({
   );
 }
 
-// ─── STUDENT: My QR ───────────────────────────────────────────────────────────
 export function MyQRPage({
   user,
+
   qrVersion,
+
   onBack,
 }: {
   user: User;
+
   qrVersion: number;
+
   onBack: () => void;
 }) {
   const name = fullName(user);
+
   const handleDownload = async () => {
     const size = 240,
       pad = 24,
       footH = 72,
       dpr = 2;
+
     const canvas = document.createElement("canvas");
+
     canvas.width = (size + pad * 2) * dpr;
+
     canvas.height = (size + pad * 2 + footH) * dpr;
+
     const ctx = canvas.getContext("2d")!;
+
     ctx.scale(dpr, dpr);
+
     const W = size + pad * 2;
+
     ctx.fillStyle = "#fff";
+
     ctx.beginPath();
+
     ctx.roundRect(0, 0, W, size + pad * 2 + footH, 16);
+
     ctx.fill();
+
     const qrDataUrl = await QRCode.toDataURL(`TAPIN:${user.studentId}`, {
       width: size,
+
       margin: 0,
+
       color: { dark: "#111827", light: "#ffffff" },
+
       errorCorrectionLevel: "H",
     });
+
     const img = new Image();
+
     await new Promise((r) => {
       img.onload = r;
     });
+
     ctx.drawImage(img, pad, pad, size, size);
+
     ctx.strokeStyle = "#f1f5f9";
+
     ctx.lineWidth = 1;
+
     ctx.beginPath();
+
     ctx.moveTo(pad, size + pad + 12);
+
     ctx.lineTo(W - pad, size + pad + 12);
+
     ctx.stroke();
+
     ctx.fillStyle = "#111827";
+
     ctx.font = "bold 13px sans-serif";
+
     ctx.textAlign = "center";
+
     ctx.fillText(name, W / 2, size + pad + 32);
+
     ctx.fillStyle = "#94a3b8";
+
     ctx.font = "11px sans-serif";
+
     ctx.fillText(
       `${user.studentId} · ${user.program} ${user.yearLevel}`,
+
       W / 2,
+
       size + pad + 50,
     );
+
     ctx.fillStyle = "#16a34a";
+
     ctx.font = "bold 10px sans-serif";
+
     ctx.fillText(
       "TapIn · Student Attendance & Fee Tracking System",
+
       W / 2,
+
       size + pad + 66,
     );
+
     const a = document.createElement("a");
+
     a.download = `tapin-qr-${user.studentId}-v${qrVersion}.png`;
+
     a.href = canvas.toDataURL("image/png");
+
     a.click();
   };
+
   return (
     <>
       <BackButton onClick={onBack} label="Back to Home" />
@@ -4019,7 +5113,9 @@ export function MyQRPage({
             </p>
             <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2.5">
               {[user.program, user.yearLevel, user.section]
+
                 .filter(Boolean)
+
                 .map((t) => (
                   <span
                     key={t}
@@ -4056,12 +5152,13 @@ export function MyQRPage({
   );
 }
 
-// ─── STUDENT: Announcements ───────────────────────────────────────────────────
 export function AnnouncementsPage({
   onBack,
+
   announcements,
 }: {
   onBack: () => void;
+
   announcements: typeof INITIAL_ANNOUNCEMENTS;
 }) {
   return (
@@ -4101,25 +5198,35 @@ export function AnnouncementsPage({
   );
 }
 
-// ─── STUDENT: Attendance ──────────────────────────────────────────────────────
 export function AttendanceHistoryPage({
   excuseRequests,
+
   fines,
+
   showFees,
+
   onSubmitExcuse,
+
   onBack,
+
   attendanceRecords = ATTENDANCE_RECORDS,
 }: {
   excuseRequests: ExcuseRequest[];
+
   fines: FineRecord[];
+
   showFees: boolean;
+
   onSubmitExcuse: (r: ExcuseRequest) => void;
+
   onBack: () => void;
+
   attendanceRecords?: typeof ATTENDANCE_RECORDS;
 }) {
   const [modal, setModal] = useState<(typeof ATTENDANCE_RECORDS)[0] | null>(
     null,
   );
+
   return (
     <>
       <BackButton onClick={onBack} label="Back to Home" />
@@ -4127,16 +5234,31 @@ export function AttendanceHistoryPage({
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
         {attendanceRecords.map((r, i) => {
           const req = excuseRequests.find((x) => x.event === r.event);
+
           const eff =
             req?.status === "approved" ? "excused" : req ? "pending" : r.status;
+
           const fine = fines.find((f) => f.eventId === r.eventId);
+
           return (
             <div
               key={r.id}
-              className={`flex items-center gap-4 px-5 py-4 ${i < ATTENDANCE_RECORDS.length - 1 ? "border-b border-slate-50" : ""}`}
+              className={`flex items-center gap-4 px-5 py-4 ${
+                i < ATTENDANCE_RECORDS.length - 1
+                  ? "border-b border-slate-50"
+                  : ""
+              }`}
             >
               <div
-                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${eff === "present" ? "bg-green-50 text-green-600" : eff === "absent" ? "bg-red-50 text-red-400" : eff === "excused" ? "bg-violet-50 text-violet-500" : "bg-amber-50 text-amber-500"}`}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                  eff === "present"
+                    ? "bg-green-50 text-green-600"
+                    : eff === "absent"
+                      ? "bg-red-50 text-red-400"
+                      : eff === "excused"
+                        ? "bg-violet-50 text-violet-500"
+                        : "bg-amber-50 text-amber-500"
+                }`}
               >
                 {eff === "present" ? (
                   <Icons.Check />
@@ -4209,6 +5331,7 @@ export function AttendanceHistoryPage({
           onClose={() => setModal(null)}
           onSubmit={(r) => {
             onSubmitExcuse(r);
+
             setModal(null);
           }}
         />
@@ -4217,18 +5340,23 @@ export function AttendanceHistoryPage({
   );
 }
 
-// ─── STUDENT: My Fines ────────────────────────────────────────────────────────
 export function MyFinesPage({
   fines,
+
   showFees,
+
   onBack,
 }: {
   fines: FineRecord[];
+
   showFees: boolean;
+
   onBack: () => void;
 }) {
   const unpaid = fines.filter((f) => f.status === "unpaid");
+
   const total = unpaid.reduce((s, f) => s + f.amount, 0);
+
   if (!showFees) {
     return (
       <>
@@ -4249,6 +5377,7 @@ export function MyFinesPage({
       </>
     );
   }
+
   return (
     <>
       <BackButton onClick={onBack} label="Back to Home" />
@@ -4275,7 +5404,8 @@ export function MyFinesPage({
               <div>
                 <p className="font-bold text-red-800">Total outstanding</p>
                 <p className="text-xs text-red-600 mt-0.5">
-                  {unpaid.length} unpaid fine{unpaid.length > 1 ? "s" : ""}
+                  {unpaid.length} unpaid fine
+                  {unpaid.length > 1 ? "s" : ""}
                 </p>
               </div>
               <p className="text-2xl font-extrabold text-red-700">
@@ -4287,10 +5417,18 @@ export function MyFinesPage({
             {fines.map((fine, i) => (
               <div
                 key={fine.id}
-                className={`flex items-center gap-4 px-5 py-4 ${i < fines.length - 1 ? "border-b border-slate-50" : ""}`}
+                className={`flex items-center gap-4 px-5 py-4 ${
+                  i < fines.length - 1 ? "border-b border-slate-50" : ""
+                }`}
               >
                 <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${fine.status === "unpaid" ? "bg-red-50 text-red-400" : fine.status === "excused" ? "bg-violet-50 text-violet-500" : "bg-green-50 text-green-600"}`}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    fine.status === "unpaid"
+                      ? "bg-red-50 text-red-400"
+                      : fine.status === "excused"
+                        ? "bg-violet-50 text-violet-500"
+                        : "bg-green-50 text-green-600"
+                  }`}
                 >
                   <Icons.Peso />
                 </div>
@@ -4304,7 +5442,13 @@ export function MyFinesPage({
                 </div>
                 <div className="text-right shrink-0">
                   <p
-                    className={`text-sm font-bold ${fine.status === "unpaid" ? "text-red-600" : fine.status === "excused" ? "text-violet-600" : "text-green-600"}`}
+                    className={`text-sm font-bold ${
+                      fine.status === "unpaid"
+                        ? "text-red-600"
+                        : fine.status === "excused"
+                          ? "text-violet-600"
+                          : "text-green-600"
+                    }`}
                   >
                     ₱{fine.amount}
                   </p>
@@ -4329,32 +5473,43 @@ export function MyFinesPage({
   );
 }
 
-// ─── Profile (shared: student + moderator) ────────────────────────────────────
 export function ProfilePage({
   user,
+
   onSave,
+
   onBack,
+
   saving,
 }: {
   user: User;
+
   onSave: (u: User) => void;
+
   onBack: () => void;
+
   saving?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
+
   const [photoUploadState, setPhotoUploadState] = useState<
     "idle" | "uploading" | "error"
   >("idle");
+
   const [draft, setDraft] = useState({ ...user });
+
   const photoRef = useRef<HTMLInputElement>(null);
+
   const setF =
     (k: keyof User) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setDraft((d) => ({ ...d, [k]: e.target.value }));
+
   const isMod = user.role === "admin";
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+
     if (!file) return;
 
     if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
@@ -4367,15 +5522,17 @@ export function ProfilePage({
 
     if ("error" in result) {
       setPhotoUploadState("error");
+
       toast.error(result.error);
+
       return;
     }
 
     setPhotoUploadState("idle");
+
     setDraft((d) => ({ ...d, photoUrl: result.url }));
   };
 
-  // Cleanup: revoke blob URLs when component unmounts or editing is cancelled
   useEffect(() => {
     return () => {
       if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
@@ -4397,11 +5554,12 @@ export function ProfilePage({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
-                  // Revoke blob URL if present before resetting
                   if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
                     URL.revokeObjectURL(draft.photoUrl);
                   }
+
                   setDraft({ ...user });
+
                   setEditing(false);
                 }}
                 className="h-9 px-4 border border-slate-200 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-50"
@@ -4411,6 +5569,7 @@ export function ProfilePage({
               <button
                 onClick={() => {
                   onSave({ ...user, ...draft });
+
                   setEditing(false);
                 }}
                 disabled={saving}
@@ -4475,10 +5634,14 @@ export function ProfilePage({
             <div className="flex flex-wrap gap-1.5 mt-2">
               {[
                 (editing ? draft : user).program,
+
                 (editing ? draft : user).yearLevel,
+
                 (editing ? draft : user).section,
               ]
+
                 .filter(Boolean)
+
                 .map((t) => (
                   <span
                     key={t}
@@ -4500,25 +5663,45 @@ export function ProfilePage({
           <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
             {[
               { l: "First name", v: user.firstName },
+
               {
                 l: "Middle initial",
+
                 v: user.middleInitial ? user.middleInitial + "." : "—",
               },
+
               { l: "Surname", v: user.surname },
+
               ...(!isMod ? [{ l: "Student ID", v: user.studentId }] : []),
+
               { l: "Program", v: user.program },
+
               ...(!isMod
                 ? [
                     { l: "Year level", v: user.yearLevel },
-                    { l: "Section", v: user.section || "—" },
+
+                    {
+                      l: "Section",
+                      v: user.section || "—",
+                    },
                   ]
                 : []),
-              { l: "Phone", v: user.phone || "—" },
-              { l: "Email", v: user.contactEmail || "—" },
+
+              {
+                l: "Phone",
+                v: user.phone || "—",
+              },
+
+              {
+                l: "Email",
+                v: user.contactEmail || "—",
+              },
             ].map((f, i, arr) => (
               <div
                 key={f.l}
-                className={`flex items-center justify-between px-5 py-3 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}
+                className={`flex items-center justify-between px-5 py-3 ${
+                  i < arr.length - 1 ? "border-b border-slate-50" : ""
+                }`}
               >
                 <span className="text-xs font-semibold text-slate-400">
                   {f.l}
@@ -4655,66 +5838,107 @@ export function ProfilePage({
   );
 }
 
-// ─── MODERATOR: Dashboard ─────────────────────────────────────────────────────
 export function AdminDashboard({
   onNav,
+
   excuseRequests,
+
   stats,
+
   recentScans,
+
   featuredEventTitle,
+
   featuredEventStatus,
 }: {
   onNav: (p: Page) => void;
+
   excuseRequests: ExcuseRequest[];
+
   stats?: {
     scannedToday: number;
+
     duplicates: number;
+
     activeEvents: number;
+
     students: number;
   };
+
   recentScans?: Array<{
     name: string;
+
     id: string;
+
     program: string;
+
     section: string;
+
     time: string;
+
     status: "confirmed" | "duplicate";
   }>;
+
   featuredEventTitle?: string;
+
   featuredEventStatus?: EventStatus;
 }) {
   const pending = excuseRequests.filter((r) => r.status === "pending").length;
+
   const liveStats = stats ?? {
     scannedToday: 0,
+
     duplicates: 0,
+
     activeEvents: 0,
+
     students: 0,
   };
+
   const liveRecentScans = recentScans ?? [];
+
   const statusConfig: Record<
     EventStatus,
-    { label: string; message: string; classes: string; dotClass: string }
+    {
+      label: string;
+      message: string;
+      classes: string;
+      dotClass: string;
+    }
   > = {
     active: {
       label: "Live",
+
       message: "is live now",
+
       classes: "text-green-700 bg-green-50 border border-green-200",
+
       dotClass: "bg-green-500",
     },
+
     upcoming: {
       label: "Upcoming",
+
       message: "is coming up",
+
       classes: "text-sky-700 bg-sky-50 border border-sky-200",
+
       dotClass: "bg-sky-500",
     },
+
     closed: {
       label: "Closed",
+
       message: "is closed",
+
       classes: "text-slate-600 bg-slate-100 border border-slate-200",
+
       dotClass: "bg-slate-500",
     },
   };
+
   const currentStatus = featuredEventStatus ?? "upcoming";
+
   const currentStatusMeta = statusConfig[currentStatus];
 
   return (
@@ -4743,26 +5967,41 @@ export function AdminDashboard({
         {[
           {
             l: "Scanned today",
+
             v: String(liveStats.scannedToday),
+
             sub: "Scanned today",
+
             c: "text-green-600",
           },
+
           {
             l: "Duplicates",
+
             v: String(liveStats.duplicates),
+
             sub: "Rejected",
+
             c: "text-red-500",
           },
+
           {
             l: "Active events",
+
             v: String(liveStats.activeEvents),
+
             sub: "Live now",
+
             c: "text-sky-600",
           },
+
           {
             l: "Students on TapIn",
+
             v: String(liveStats.students),
+
             sub: "Registered",
+
             c: "text-slate-700",
           },
         ].map((s) => (
@@ -4787,16 +6026,24 @@ export function AdminDashboard({
         </button>
         <button
           onClick={() => onNav("admin-excuse-requests")}
-          className={`border rounded-xl p-5 text-left transition-all relative ${pending > 0 ? "bg-amber-50 border-amber-200" : "bg-white border-slate-100"}`}
+          className={`border rounded-xl p-5 text-left transition-all relative ${
+            pending > 0
+              ? "bg-amber-50 border-amber-200"
+              : "bg-white border-slate-100"
+          }`}
         >
           <Icons.FileText />
           <p
-            className={`font-semibold text-sm mt-3 mb-0.5 ${pending > 0 ? "text-amber-800" : "text-slate-900"}`}
+            className={`font-semibold text-sm mt-3 mb-0.5 ${
+              pending > 0 ? "text-amber-800" : "text-slate-900"
+            }`}
           >
             Excuse Requests
           </p>
           <p
-            className={`text-xs ${pending > 0 ? "text-amber-600" : "text-slate-400"}`}
+            className={`text-xs ${
+              pending > 0 ? "text-amber-600" : "text-slate-400"
+            }`}
           >
             {pending > 0 ? `${pending} pending review` : "No pending"}
           </p>
@@ -4823,7 +6070,9 @@ export function AdminDashboard({
         {liveRecentScans.map((s, i) => (
           <div
             key={i}
-            className={`flex items-center gap-3 px-5 py-3.5 ${i < 4 ? "border-b border-slate-50" : ""}`}
+            className={`flex items-center gap-3 px-5 py-3.5 ${
+              i < 4 ? "border-b border-slate-50" : ""
+            }`}
           >
             <Avatar name={s.name} size="sm" />
             <div className="flex-1 min-w-0">
@@ -4847,102 +6096,173 @@ export function AdminDashboard({
   );
 }
 
-// ─── MODERATOR: Events ────────────────────────────────────────────────────────
 interface NewEventDraft {
   title: string;
+
   date: string;
+
   time: string;
+
   location: string;
+
   description: string;
+
   program: string;
+
   fineAmount: string;
+
   photos: File[];
+
   videos: File[];
+
   multiSession: boolean;
+
   strictMorning: boolean;
+
   strictAfternoon: boolean;
+
   morningStart: string;
+
   morningEnd: string;
+
   morningLateCutoff: string;
+
   afternoonStart: string;
+
   afternoonEnd: string;
+
   afternoonLateCutoff: string;
+
   absentFine: string;
+
   lateFine: string;
+
   morningAbsentFine: string;
+
   morningLateFine: string;
+
   afternoonAbsentFine: string;
+
   afternoonLateFine: string;
 }
 
 export function AdminEventsPage({
   onNav,
+
   events,
+
   setEvents,
 }: {
   onNav: (p: Page) => void;
+
   events: EventData[];
+
   setEvents: React.Dispatch<React.SetStateAction<EventData[]>>;
 }) {
   const EMPTY_DRAFT: NewEventDraft = {
     title: "",
+
     date: "",
+
     time: "",
+
     location: "",
+
     description: "",
+
     program: "All Programs",
+
     fineAmount: "0",
+
     photos: [],
+
     videos: [],
+
     multiSession: false,
+
     strictMorning: false,
+
     strictAfternoon: false,
+
     morningStart: "",
+
     morningEnd: "",
+
     morningLateCutoff: "",
+
     afternoonStart: "",
+
     afternoonEnd: "",
+
     afternoonLateCutoff: "",
+
     absentFine: "0",
+
     lateFine: "0",
+
     morningAbsentFine: "0",
+
     morningLateFine: "0",
+
     afternoonAbsentFine: "0",
+
     afternoonLateFine: "0",
   };
 
   const [showForm, setShowForm] = useState(false);
+
   const [editId, setEditId] = useState<string | null>(null);
+
   const [editDraft, setEditDraft] = useState<EventData | null>(null);
+
   const [editOriginal, setEditOriginal] = useState<EventData | null>(null);
+
   const [editFineValues, setEditFineValues] = useState({
     absentFine: "0",
+
     lateFine: "0",
+
     morningAbsentFine: "0",
+
     morningLateFine: "0",
+
     afternoonAbsentFine: "0",
+
     afternoonLateFine: "0",
   });
+
   const [showSensitiveWarning, setShowSensitiveWarning] = useState(false);
+
   const [eventHasScans, setEventHasScans] = useState(false);
 
   const photoRef = useRef<HTMLInputElement>(null);
+
   const videoRef = useRef<HTMLInputElement>(null);
+
   const editPhotoRef = useRef<HTMLInputElement>(null);
+
   const highlightRef = useRef<HTMLInputElement>(null);
+
   const editHighlightRef = useRef<HTMLInputElement>(null);
 
   const [draft, setDraft] = useState<NewEventDraft>(EMPTY_DRAFT);
+
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+
   const [videoNames, setVideoNames] = useState<string[]>([]);
+
   const [highlightUrl, setHighlightUrl] = useState<string | null>(null);
+
   const [highlightUploadState, setHighlightUploadState] = useState<
     "idle" | "uploading" | "error"
   >("idle");
+
   const [mediaUploadState, setMediaUploadState] = useState<
     "idle" | "uploading" | "error"
   >("idle");
+
   const [mediaUploadError, setMediaUploadError] = useState<string | null>(null);
+
   const [editHighlightUploadState, setEditHighlightUploadState] = useState<
     "idle" | "uploading" | "error"
   >("idle");
@@ -4955,37 +6275,91 @@ export function AdminEventsPage({
       >,
     ) =>
       setDraft((d) => ({ ...d, [k]: e.target.value }));
+
   const toggleD = (k: keyof NewEventDraft) => () =>
     setDraft((d) => ({ ...d, [k]: !d[k] }));
 
   const uploadEventMedia = async (files: File[]) => {
     if (!files.length) return;
+
     setMediaUploadState("uploading");
+
     setMediaUploadError(null);
 
     const results = await Promise.all(files.map((file) => uploadImage(file)));
+
     const failed = results.find((result) => "error" in result);
+
     if (failed && "error" in failed) {
       setMediaUploadState("error");
+
       setMediaUploadError(failed.error);
+
       toast.error(failed.error);
+
       return;
     }
 
     const urls = results
+
       .filter(
         (result): result is { url: string; path: string } => "url" in result,
       )
+
       .map((result) => result.url);
+
     setMediaUploadState("idle");
+
     setPhotoUrls((current) => [
       ...current,
+
       ...urls.filter((url) => !/\.mp4($|\?)/i.test(url)),
     ]);
+
     setVideoNames((current) => [
       ...current,
+
       ...urls.filter((url) => /\.mp4($|\?)/i.test(url)),
     ]);
+  };
+
+  const discardCreateMedia = () => {
+    const mediaToDelete = [
+      ...photoUrls,
+
+      ...videoNames,
+
+      ...(highlightUrl && !highlightUrl.startsWith("blob:")
+        ? [highlightUrl]
+        : []),
+    ];
+
+    setPhotoUrls([]);
+
+    setVideoNames([]);
+
+    setHighlightUrl(null);
+
+    void deleteImages(mediaToDelete);
+  };
+
+  const discardEditMedia = () => {
+    const uploadedReplacement =
+      editDraft?.highlightUrl &&
+      editDraft.highlightUrl !== editOriginal?.highlightUrl &&
+      !editDraft.highlightUrl.startsWith("blob:")
+        ? [editDraft.highlightUrl]
+        : [];
+
+    void deleteImages(uploadedReplacement);
+
+    setEditId(null);
+
+    setEditDraft(null);
+
+    setEditOriginal(null);
+
+    setShowSensitiveWarning(false);
   };
 
   const handleCreate = async () => {
@@ -4995,166 +6369,293 @@ export function AdminEventsPage({
       const timeRange = draft.multiSession
         ? null
         : parseEventTimeRange(draft.time);
+
       if (!draft.multiSession && !timeRange) {
         toast.error("Enter time like 3:35 AM - 5:20 AM.");
+
         return;
       }
 
       const persistedHighlightUrl =
         highlightUrl && !highlightUrl.startsWith("blob:") ? highlightUrl : null;
 
-      // Map UI camelCase to database snake_case
       const payload = {
         title: draft.title,
+
         event_date: draft.date,
+
         start_time: timeRange?.start ?? null,
+
         end_time: timeRange?.end ?? null,
+
         location: draft.location,
+
         description: draft.description,
+
         program: draft.program,
+
         image_url: persistedHighlightUrl,
+
         media_urls: [...photoUrls, ...videoNames],
+
         status: "upcoming",
+
         multi_session: draft.multiSession,
+
         strict_morning: draft.strictMorning,
+
         strict_afternoon: draft.strictAfternoon,
+
         morning_start: draft.morningStart || null,
+
         morning_end: draft.morningEnd || null,
+
         morning_late_cutoff: draft.morningLateCutoff || null,
+
         afternoon_start: draft.afternoonStart || null,
+
         afternoon_end: draft.afternoonEnd || null,
+
         afternoon_late_cutoff: draft.afternoonLateCutoff || null,
+
         absent_fine: parseInt(draft.absentFine) || 0,
+
         late_fine: parseInt(draft.lateFine) || 0,
+
         morning_absent_fine: draft.multiSession
           ? parseInt(draft.morningAbsentFine) || 0
           : null,
+
         morning_late_fine: draft.multiSession
           ? parseInt(draft.morningLateFine) || 0
           : null,
+
         afternoon_absent_fine: draft.multiSession
           ? parseInt(draft.afternoonAbsentFine) || 0
           : null,
+
         afternoon_late_fine: draft.multiSession
           ? parseInt(draft.afternoonLateFine) || 0
           : null,
       };
 
       const { data, error } = await supabase
+
         .from("events")
+
         .insert([payload])
+
         .select();
 
       if (error) {
+        await deleteImages([
+          ...photoUrls,
+
+          ...videoNames,
+
+          ...(persistedHighlightUrl ? [persistedHighlightUrl] : []),
+        ]);
+
+        setPhotoUrls([]);
+
+        setVideoNames([]);
+
+        setHighlightUrl(null);
+
         toast.error(`Failed to create event: ${error.message}`);
+
         console.error(error);
+
         return;
       }
 
       if (data && data.length > 0) {
-        // Map returned database row back to EventData shape
         const row = data[0];
+
         const newEvent: EventData = {
           id: row.id,
+
           title: row.title,
+
           date: row.event_date,
+
           time:
             row.start_time && row.end_time
               ? `${row.start_time}–${row.end_time}`
               : "",
+
           location: row.location,
+
           description: row.description,
+
           program: row.program || "All Programs",
+
           status: (row.status as any) || "upcoming",
+
           attendees: 0,
+
           version: 1,
+
           fineAmount: draft.multiSession
             ? (parseInt(draft.morningAbsentFine) || 0) +
               (parseInt(draft.afternoonAbsentFine) || 0)
             : parseInt(draft.absentFine) || 0,
+
           mediaUrls: [
             ...(persistedHighlightUrl ? [persistedHighlightUrl] : []),
+
             ...photoUrls,
+
             ...videoNames,
           ],
+
           highlightUrl: persistedHighlightUrl || undefined,
+
           multiSession: draft.multiSession,
+
           strictMorning: draft.strictMorning,
+
           strictAfternoon: draft.strictAfternoon,
+
           morningStart: draft.morningStart,
+
           morningEnd: draft.morningEnd,
+
           morningLateCutoff: draft.morningLateCutoff,
+
           afternoonStart: draft.afternoonStart,
+
           afternoonEnd: draft.afternoonEnd,
+
           afternoonLateCutoff: draft.afternoonLateCutoff,
+
           absentFine: parseInt(draft.absentFine) || 0,
+
           lateFine: parseInt(draft.lateFine) || 0,
+
           morningAbsentFine: parseInt(draft.morningAbsentFine) || 0,
+
           morningLateFine: parseInt(draft.morningLateFine) || 0,
+
           afternoonAbsentFine: parseInt(draft.afternoonAbsentFine) || 0,
+
           afternoonLateFine: parseInt(draft.afternoonLateFine) || 0,
         };
 
         setEvents((ev) => [newEvent, ...ev]);
+
         setDraft(EMPTY_DRAFT);
+
         setPhotoUrls([]);
+
         setVideoNames([]);
+
         setHighlightUrl(null);
+
         setMediaUploadState("idle");
+
         setMediaUploadError(null);
+
         setShowForm(false);
+
         toast.success("Event created successfully");
       }
     } catch (caughtError) {
+      await deleteImages([
+        ...photoUrls,
+
+        ...videoNames,
+
+        ...(highlightUrl && !highlightUrl.startsWith("blob:")
+          ? [highlightUrl]
+          : []),
+      ]);
+
+      setPhotoUrls([]);
+
+      setVideoNames([]);
+
+      setHighlightUrl(null);
+
       console.error(caughtError);
+
       toast.error("An error occurred while creating the event");
     }
   };
 
   const startEdit = async (e: EventData) => {
     const { count, error } = await supabase
+
       .from("attendance_scans")
+
       .select("*", { count: "exact", head: true })
+
       .eq("event_id", e.id);
 
     setEventHasScans(!error && (count ?? 0) > 0);
+
     setEditId(e.id);
+
     setEditDraft({ ...e });
+
     setEditOriginal({ ...e });
+
     setEditFineValues({
       absentFine: String(e.absentFine ?? e.fineAmount ?? 0),
+
       lateFine: String(e.lateFine ?? 0),
+
       morningAbsentFine: String(e.morningAbsentFine ?? 0),
+
       morningLateFine: String(e.morningLateFine ?? 0),
+
       afternoonAbsentFine: String(e.afternoonAbsentFine ?? 0),
+
       afternoonLateFine: String(e.afternoonLateFine ?? 0),
     });
+
     setShowSensitiveWarning(false);
+
     setShowForm(false);
   };
 
   const SENSITIVE_KEYS: (keyof EventData)[] = [
     "time",
+
     "fineAmount",
+
     "morningStart",
+
     "morningEnd",
+
     "morningLateCutoff",
+
     "afternoonStart",
+
     "afternoonEnd",
+
     "afternoonLateCutoff",
+
     "absentFine",
+
     "lateFine",
+
     "morningAbsentFine",
+
     "morningLateFine",
+
     "afternoonAbsentFine",
+
     "afternoonLateFine",
   ];
 
   const hasSensitiveChanges = () => {
     if (!editDraft || !editOriginal) return false;
+
     const eventFieldChanged = SENSITIVE_KEYS.some(
       (k) => String(editDraft[k] ?? "") !== String(editOriginal[k] ?? ""),
     );
+
     const fineChanged =
       editFineValues.absentFine !==
         String(editOriginal.absentFine ?? editOriginal.fineAmount ?? 0) ||
@@ -5167,19 +6668,23 @@ export function AdminEventsPage({
         String(editOriginal.afternoonAbsentFine ?? 0) ||
       editFineValues.afternoonLateFine !==
         String(editOriginal.afternoonLateFine ?? 0);
+
     return eventFieldChanged || fineChanged;
   };
 
   const commitSave = async () => {
     if (!editDraft) return;
+
     setShowSensitiveWarning(false);
 
     try {
       const timeRange = editDraft.multiSession
         ? null
         : parseEventTimeRange(editDraft.time);
+
       if (!editDraft.multiSession && !timeRange) {
         toast.error("Enter time like 3:35 AM - 5:20 AM.");
+
         return;
       }
 
@@ -5188,8 +6693,19 @@ export function AdminEventsPage({
           ? editDraft.highlightUrl
           : null;
 
-      // multi-admin conflict check: compare version in current state
+      const nextGalleryUrls = (editDraft.mediaUrls ?? []).filter(
+        (url) =>
+          url !== editDraft.highlightUrl && url !== editOriginal?.highlightUrl,
+      );
+
+      const previousMediaUrls = [
+        ...(editOriginal?.mediaUrls ?? []),
+
+        ...(editOriginal?.highlightUrl ? [editOriginal.highlightUrl] : []),
+      ];
+
       const current = events.find((e) => e.id === editDraft.id);
+
       if (
         current &&
         editOriginal &&
@@ -5198,78 +6714,140 @@ export function AdminEventsPage({
         toast.error(
           "Another admin modified this event — please review and try again.",
         );
+
         setEditId(null);
+
         setEditDraft(null);
+
         setEditOriginal(null);
+
         setShowSensitiveWarning(false);
+
         return;
       }
 
-      // Map to database snake_case
       const payload = {
         title: editDraft.title,
+
         event_date: editDraft.date,
+
         start_time: timeRange?.start ?? null,
+
         end_time: timeRange?.end ?? null,
+
         location: editDraft.location,
+
         description: editDraft.description,
+
         program: editDraft.program,
+
         image_url: persistedHighlightUrl,
+
+        media_urls: nextGalleryUrls,
+
         status: editDraft.status,
+
         multi_session: editDraft.multiSession,
+
         strict_morning: editDraft.strictMorning,
+
         strict_afternoon: editDraft.strictAfternoon,
+
         morning_start: editDraft.morningStart || null,
+
         morning_end: editDraft.morningEnd || null,
+
         morning_late_cutoff: editDraft.morningLateCutoff || null,
+
         afternoon_start: editDraft.afternoonStart || null,
+
         afternoon_end: editDraft.afternoonEnd || null,
+
         afternoon_late_cutoff: editDraft.afternoonLateCutoff || null,
+
         absent_fine: Number(editFineValues.absentFine) || 0,
+
         late_fine: Number(editFineValues.lateFine) || 0,
+
         morning_absent_fine: Number(editFineValues.morningAbsentFine) || 0,
+
         morning_late_fine: Number(editFineValues.morningLateFine) || 0,
+
         afternoon_absent_fine: Number(editFineValues.afternoonAbsentFine) || 0,
+
         afternoon_late_fine: Number(editFineValues.afternoonLateFine) || 0,
+
         version: (editOriginal?.version ?? 1) + 1,
       };
 
       const { error } = await supabase
+
         .from("events")
+
         .update(payload)
+
         .eq("id", editDraft.id);
 
       if (error) {
         toast.error(`Failed to update event: ${error.message}`);
+
         console.error(error);
+
         return;
       }
 
+      await deleteImages(
+        previousMediaUrls.filter(
+          (url) =>
+            url !== persistedHighlightUrl && !nextGalleryUrls.includes(url),
+        ),
+      );
+
       const saved: EventData = {
         ...editDraft,
+
         highlightUrl: persistedHighlightUrl || undefined,
-        mediaUrls: persistedHighlightUrl ? [persistedHighlightUrl] : [],
+
+        mediaUrls: [
+          ...(persistedHighlightUrl ? [persistedHighlightUrl] : []),
+
+          ...nextGalleryUrls,
+        ],
+
         version: (editOriginal?.version ?? 1) + 1,
+
         fineAmount: editDraft.multiSession
           ? (Number(editFineValues.morningAbsentFine) || 0) +
             (Number(editFineValues.afternoonAbsentFine) || 0)
           : Number(editFineValues.absentFine) || 0,
+
         absentFine: Number(editFineValues.absentFine) || 0,
+
         lateFine: Number(editFineValues.lateFine) || 0,
+
         morningAbsentFine: Number(editFineValues.morningAbsentFine) || 0,
+
         morningLateFine: Number(editFineValues.morningLateFine) || 0,
+
         afternoonAbsentFine: Number(editFineValues.afternoonAbsentFine) || 0,
+
         afternoonLateFine: Number(editFineValues.afternoonLateFine) || 0,
       };
 
       setEvents((ev) => ev.map((e) => (e.id === saved.id ? saved : e)));
+
       setEditId(null);
+
       setEditDraft(null);
+
       setEditOriginal(null);
+
       setShowSensitiveWarning(false);
+
       toast.success("Event updated successfully");
     } catch (caughtError) {
       console.error(caughtError);
+
       toast.error("An error occurred while updating the event");
     }
   };
@@ -5277,25 +6855,49 @@ export function AdminEventsPage({
   const handleSaveEdit = () => {
     if (hasSensitiveChanges()) {
       setShowSensitiveWarning(true);
+
       return;
     }
+
     commitSave();
   };
 
   const deleteEvent = async (id: string) => {
     try {
+      const event = events.find((item) => item.id === id);
+
+      const mediaUrls = [
+        ...(event?.mediaUrls ?? []),
+
+        ...(event?.highlightUrl ? [event.highlightUrl] : []),
+      ];
+
       const { error } = await supabase.from("events").delete().eq("id", id);
 
       if (error) {
         toast.error(`Failed to delete event: ${error.message}`);
+
         console.error(error);
+
         return;
       }
 
       setEvents((ev) => ev.filter((e) => e.id !== id));
+
+      const cleanupResults = await deleteImages(mediaUrls);
+
+      cleanupResults
+
+        .filter((result) => !result.success)
+
+        .forEach((result) =>
+          console.error("Failed to delete event media", result.error),
+        );
+
       toast.success("Event deleted successfully");
     } catch (caughtError) {
       console.error(caughtError);
+
       toast.error("An error occurred while deleting the event");
     }
   };
@@ -5303,56 +6905,84 @@ export function AdminEventsPage({
   const setStatus = async (id: string, status: EventStatus) => {
     try {
       const current = events.find((e) => e.id === id);
+
       if (!current) {
         toast.error("Event not found");
+
         return;
       }
 
       const payload = {
         status,
+
         version: (current.version ?? 1) + 1,
       };
 
       const { error } = await supabase
+
         .from("events")
+
         .update(payload)
+
         .eq("id", id);
 
       if (error) {
         toast.error(`Failed to update event status: ${error.message}`);
+
         console.error(error);
+
         return;
       }
 
       setEvents((ev) =>
         ev.map((e) =>
-          e.id === id ? { ...e, status, version: (e.version ?? 1) + 1 } : e,
+          e.id === id
+            ? {
+                ...e,
+                status,
+                version: (e.version ?? 1) + 1,
+              }
+            : e,
         ),
       );
+
       toast.success(`Event marked as ${status}`);
     } catch (caughtError) {
       console.error(caughtError);
+
       toast.error("An error occurred while updating event status");
     }
   };
 
   const statusOptions = (
     current: EventStatus,
-  ): { status: EventStatus; label: string; icon: React.ReactNode }[] =>
+  ): {
+    status: EventStatus;
+    label: string;
+    icon: React.ReactNode;
+  }[] =>
     [
       {
         status: "active" as EventStatus,
+
         label: "Mark as Live",
+
         icon: <Icons.Radio />,
       },
+
       {
         status: "upcoming" as EventStatus,
+
         label: "Mark as Upcoming",
+
         icon: <Icons.Calendar />,
       },
+
       {
         status: "closed" as EventStatus,
+
         label: "Mark as Closed",
+
         icon: <Icons.Check />,
       },
     ].filter((o) => o.status !== current);
@@ -5366,7 +6996,9 @@ export function AdminEventsPage({
           <button
             onClick={() => {
               setShowForm(true);
+
               setEditId(null);
+
               setEditDraft(null);
             }}
             className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"
@@ -5377,11 +7009,15 @@ export function AdminEventsPage({
         }
       />
 
-      {/* ── Create event modal ── */}
+      {}
       {showForm && (
         <FormModal
           title="Create New Event"
-          onClose={() => setShowForm(false)}
+          onClose={() => {
+            discardCreateMedia();
+
+            setShowForm(false);
+          }}
           footer={
             <>
               <button
@@ -5392,7 +7028,11 @@ export function AdminEventsPage({
                 Create event
               </button>
               <button
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  discardCreateMedia();
+
+                  setShowForm(false);
+                }}
                 className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50"
               >
                 Cancel
@@ -5432,7 +7072,7 @@ export function AdminEventsPage({
             onChange={setD("location")}
           />
 
-          {/* Multi-session toggle */}
+          {}
           <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
             <div className="flex items-center justify-between py-2.5">
               <div>
@@ -5447,16 +7087,20 @@ export function AdminEventsPage({
                 onClick={toggleD("multiSession")}
                 role="switch"
                 aria-checked={draft.multiSession}
-                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${draft.multiSession ? "bg-green-600" : "bg-slate-200"}`}
+                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${
+                  draft.multiSession ? "bg-green-600" : "bg-slate-200"
+                }`}
               >
                 <span
-                  className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${draft.multiSession ? "translate-x-4" : "translate-x-0"}`}
+                  className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${
+                    draft.multiSession ? "translate-x-4" : "translate-x-0"
+                  }`}
                 />
               </button>
             </div>
           </div>
 
-          {/* Single-session time OR multi-session blocks */}
+          {}
           {!draft.multiSession ? (
             <FieldInput
               label="Time"
@@ -5511,7 +7155,7 @@ export function AdminEventsPage({
             onChange={setD("description")}
           />
 
-          {/* Highlight photo */}
+          {}
           <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
               Highlight Photo
@@ -5523,6 +7167,7 @@ export function AdminEventsPage({
               className="hidden"
               onChange={async (e) => {
                 const f = e.target.files?.[0];
+
                 if (!f) return;
 
                 setHighlightUploadState("uploading");
@@ -5531,11 +7176,14 @@ export function AdminEventsPage({
 
                 if ("error" in result) {
                   setHighlightUploadState("error");
+
                   toast.error(result.error);
+
                   return;
                 }
 
                 setHighlightUploadState("idle");
+
                 setHighlightUrl(result.url);
               }}
             />
@@ -5565,6 +7213,7 @@ export function AdminEventsPage({
                     if (highlightUrl) {
                       URL.revokeObjectURL(highlightUrl);
                     }
+
                     setHighlightUrl(null);
                   }}
                   className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
@@ -5594,6 +7243,7 @@ export function AdminEventsPage({
               className="hidden"
               onChange={async (e) => {
                 await uploadEventMedia(Array.from(e.target.files ?? []));
+
                 e.target.value = "";
               }}
             />
@@ -5605,6 +7255,7 @@ export function AdminEventsPage({
               className="hidden"
               onChange={async (e) => {
                 await uploadEventMedia(Array.from(e.target.files ?? []));
+
                 e.target.value = "";
               }}
             />
@@ -5666,22 +7317,18 @@ export function AdminEventsPage({
         </FormModal>
       )}
 
-      {/* ── Edit event modal ── */}
+      {}
       {editId && editDraft && (
         <FormModal
           title="Edit Event"
-          onClose={() => {
-            setEditId(null);
-            setEditDraft(null);
-            setEditOriginal(null);
-            setShowSensitiveWarning(false);
-          }}
+          onClose={discardEditMedia}
           footer={
             showSensitiveWarning ? (
               <>
                 <button
                   onClick={() => {
                     setShowSensitiveWarning(false);
+
                     void commitSave();
                   }}
                   className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm"
@@ -5704,11 +7351,7 @@ export function AdminEventsPage({
                   Save changes
                 </button>
                 <button
-                  onClick={() => {
-                    setEditId(null);
-                    setEditDraft(null);
-                    setEditOriginal(null);
-                  }}
+                  onClick={discardEditMedia}
                   className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50"
                 >
                   Cancel
@@ -5766,7 +7409,7 @@ export function AdminEventsPage({
             }
           />
 
-          {/* Multi-session toggle */}
+          {}
           <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
             <div className="flex items-center justify-between py-2.5">
               <div>
@@ -5780,6 +7423,7 @@ export function AdminEventsPage({
               <button
                 onClick={() => {
                   if (eventHasScans) return;
+
                   setEditDraft((d) =>
                     d ? { ...d, multiSession: !d.multiSession } : d,
                   );
@@ -5787,10 +7431,14 @@ export function AdminEventsPage({
                 role="switch"
                 aria-checked={!!editDraft.multiSession}
                 disabled={eventHasScans}
-                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${eventHasScans ? "cursor-not-allowed opacity-50" : ""} ${editDraft.multiSession ? "bg-green-600" : "bg-slate-200"}`}
+                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${
+                  eventHasScans ? "cursor-not-allowed opacity-50" : ""
+                } ${editDraft.multiSession ? "bg-green-600" : "bg-slate-200"}`}
               >
                 <span
-                  className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${editDraft.multiSession ? "translate-x-4" : "translate-x-0"}`}
+                  className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${
+                    editDraft.multiSession ? "translate-x-4" : "translate-x-0"
+                  }`}
                 />
               </button>
             </div>
@@ -5867,6 +7515,7 @@ export function AdminEventsPage({
             onChange={(key, value) =>
               setEditFineValues((current) => ({
                 ...current,
+
                 [key]: value,
               }))
             }
@@ -5894,6 +7543,7 @@ export function AdminEventsPage({
               className="hidden"
               onChange={async (e) => {
                 const f = e.target.files?.[0];
+
                 if (!f) return;
 
                 setEditHighlightUploadState("uploading");
@@ -5902,11 +7552,14 @@ export function AdminEventsPage({
 
                 if ("error" in result) {
                   setEditHighlightUploadState("error");
+
                   toast.error(result.error);
+
                   return;
                 }
 
                 setEditHighlightUploadState("idle");
+
                 setEditDraft((d) =>
                   d ? { ...d, highlightUrl: result.url } : d,
                 );
@@ -6009,18 +7662,27 @@ export function AdminEventsPage({
                     items={[
                       ...statusOptions(e.status).map((o) => ({
                         label: o.label,
+
                         icon: o.icon,
+
                         onClick: () => setStatus(e.id, o.status),
                       })),
+
                       {
                         label: "Edit",
+
                         icon: <Icons.Edit />,
+
                         onClick: () => startEdit(e),
                       },
+
                       {
                         label: "Delete",
+
                         icon: <Icons.Trash />,
+
                         danger: true,
+
                         onClick: () => deleteEvent(e.id),
                       },
                     ]}
@@ -6070,7 +7732,8 @@ export function AdminEventsPage({
                   className="flex-1 h-9 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1.5"
                 >
                   <Icons.Users />
-                  Attendees{e.attendees > 0 ? ` (${e.attendees})` : ""}
+                  Attendees
+                  {e.attendees > 0 ? ` (${e.attendees})` : ""}
                 </button>
               </div>
             </div>
@@ -6081,28 +7744,43 @@ export function AdminEventsPage({
   );
 }
 
-// ─── MODERATOR: QR Scanner ────────────────────────────────────────────────────
 function CameraScanner({
   event,
+
   scannerId,
+
   onResult,
+
   onClose,
+
   manualSessionLabel,
 }: {
   event: EventData;
+
   scannerId: string | null;
+
   onResult: (r: ScanRecord) => void;
+
   onClose: () => void;
+
   manualSessionLabel: "morning" | "afternoon" | null;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
   const streamRef = useRef<MediaStream | null>(null);
+
   const animRef = useRef<number>(0);
+
   const scannedRef = useRef<boolean>(false);
+
   const [camError, setCamError] = useState<string | null>(null);
+
   const [scanError, setScanError] = useState<string | null>(null);
+
   const [result, setResult] = useState<ScanRecord | null>(null);
+
   const [torch, setTorch] = useState(false);
 
   const determineSessionLabel = () =>
@@ -6110,11 +7788,14 @@ function CameraScanner({
 
   const resolveQr = async (raw: string) => {
     if (scannedRef.current) return;
+
     scannedRef.current = true;
+
     setScanError(null);
 
     try {
       const studentId = raw.startsWith("TAPIN:") ? raw.slice(6).trim() : "";
+
       if (!studentId || !scannerId) {
         throw new Error("This QR code is not a valid TapIn student code.");
       }
@@ -6122,6 +7803,7 @@ function CameraScanner({
       const sessionMeta = event.multiSession
         ? {
             sessionLabel: manualSessionLabel,
+
             strict:
               manualSessionLabel === "morning"
                 ? !!event.strictMorning
@@ -6130,18 +7812,25 @@ function CameraScanner({
                   : false,
           }
         : getEventSessionMeta(event);
+
       const sessionLabel = sessionMeta.sessionLabel;
+
       if (!sessionLabel) {
         throw new Error("Please select a session before scanning.");
       }
 
       const { data: profile, error: profileError } = await supabase
+
         .from("profiles")
+
         .select("id, student_id, first_name, surname, program, section")
+
         .eq("student_id", studentId)
+
         .maybeSingle();
 
       if (profileError) throw profileError;
+
       if (!profile) {
         throw new Error(
           "Student profile not found. Ask the student to renew their QR code.",
@@ -6149,97 +7838,145 @@ function CameraScanner({
       }
 
       const { data: existing, error: existingError } = await supabase
+
         .from("attendance_scans")
+
         .select("id, session_label, scan_in_at, scan_out_at, status")
+
         .eq("event_id", event.id)
+
         .eq("student_id", profile.id)
+
         .eq("session_label", sessionLabel)
+
         .maybeSingle();
 
       if (existingError) throw existingError;
 
       const now = new Date();
+
       const strictSession = sessionMeta.strict;
+
       const cutoffValue =
         sessionLabel === "morning"
           ? event.morningLateCutoff
           : event.afternoonLateCutoff;
+
       const cutoffMinutes = cutoffValue ? toMinutes(cutoffValue) : null;
+
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
       const isLateScan = cutoffMinutes !== null && nowMinutes > cutoffMinutes;
 
       let action: "time_in" | "time_out" | "duplicate" = "time_in";
+
       let recordId: string | number | undefined = undefined;
+
       let scannedAt: Date | string | undefined;
+
       let status: "confirmed" | "late" | "duplicate" = "confirmed";
 
       if (!existing) {
         const { data: inserted, error: insertError } = await supabase
+
           .from("attendance_scans")
+
           .insert({
             event_id: event.id,
+
             student_id: profile.id,
+
             session_label: sessionLabel,
+
             scan_in_at: now.toISOString(),
+
             scan_out_at: null,
+
             status: isLateScan ? "late" : "present",
+
             scanned_by: scannerId,
           })
+
           .select("id, scan_in_at")
+
           .single();
 
         if (insertError) throw insertError;
 
         recordId = inserted.id;
+
         scannedAt = inserted.scan_in_at ?? now;
+
         action = "time_in";
+
         if (isLateScan) {
           status = "late";
         }
       } else if (existing.scan_in_at && !existing.scan_out_at) {
         if (!strictSession) {
           action = "duplicate";
+
           status = "duplicate";
+
           recordId = existing.id;
+
           scannedAt = existing.scan_in_at ?? now;
         } else {
           const { error: updateError } = await supabase
+
             .from("attendance_scans")
+
             .update({
               scan_out_at: now.toISOString(),
+
               status: "present",
+
               scanned_by: scannerId,
             })
+
             .eq("id", existing.id);
 
           if (updateError) throw updateError;
 
           recordId = existing.id;
+
           scannedAt = now;
+
           action = "time_out";
         }
       } else if (!existing.scan_in_at && !existing.scan_out_at) {
         const { error: updateError } = await supabase
+
           .from("attendance_scans")
+
           .update({
             scan_in_at: now.toISOString(),
+
             status: isLateScan ? "late" : "present",
+
             scanned_by: scannerId,
           })
+
           .eq("id", existing.id);
 
         if (updateError) throw updateError;
 
         recordId = existing.id;
+
         scannedAt = now;
+
         action = "time_in";
+
         if (isLateScan) {
           status = "late";
         }
       } else {
         action = "duplicate";
+
         status = "duplicate";
+
         recordId = existing.id;
+
         scannedAt = existing.scan_in_at ?? now;
       }
 
@@ -6247,77 +7984,111 @@ function CameraScanner({
         name:
           `${profile.first_name ?? ""} ${profile.surname ?? ""}`.trim() ||
           "Student",
+
         id: profile.student_id,
+
         program: profile.program ?? "",
+
         section: profile.section ?? "",
+
         time: new Date(scannedAt ?? Date.now()).toLocaleTimeString("en-US", {
           hour: "2-digit",
+
           minute: "2-digit",
         }),
+
         status,
+
         action,
+
         dbId: recordId ?? "",
       };
 
       setSweeping(true);
+
       setTimeout(() => {
         setResult(rec);
+
         onResult(rec);
       }, 700);
     } catch (caughtError) {
       console.error("Failed to record QR attendance", caughtError);
+
       setScanError(
         caughtError instanceof Error
           ? caughtError.message
           : "Unable to record attendance. Please try again.",
       );
+
       scannedRef.current = false;
     }
   };
 
   useEffect(() => {
     let active = true;
+
     async function start() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: { ideal: "environment" },
+
             width: { ideal: 1280 },
+
             height: { ideal: 720 },
           },
         });
+
         if (!active) {
           stream.getTracks().forEach((t) => t.stop());
+
           return;
         }
+
         streamRef.current = stream;
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+
           await videoRef.current.play();
         }
+
         tickRef.current = () => {
           if (!active || scannedRef.current) return;
+
           const video = videoRef.current;
+
           const canvas = canvasRef.current;
+
           if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
             const { videoWidth: w, videoHeight: h } = video;
+
             canvas.width = w;
+
             canvas.height = h;
+
             const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
             if (ctx) {
               ctx.drawImage(video, 0, 0, w, h);
+
               const imageData = ctx.getImageData(0, 0, w, h);
+
               const code = jsQR(imageData.data, w, h, {
                 inversionAttempts: "dontInvert",
               });
+
               if (code?.data) {
                 resolveQr(code.data);
+
                 return;
               }
             }
           }
+
           animRef.current = requestAnimationFrame(tickRef.current);
         };
+
         animRef.current = requestAnimationFrame(tickRef.current);
       } catch {
         if (active)
@@ -6326,17 +8097,23 @@ function CameraScanner({
           );
       }
     }
+
     start();
+
     return () => {
       active = false;
+
       cancelAnimationFrame(animRef.current);
+
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
 
   const toggleTorch = async () => {
     const track = streamRef.current?.getVideoTracks()[0];
+
     if (!track) return;
+
     try {
       await (
         track as MediaStreamTrack & {
@@ -6345,30 +8122,37 @@ function CameraScanner({
       ).applyConstraints({
         advanced: [{ torch: !torch } as MediaTrackConstraintSet],
       });
+
       setTorch((t) => !t);
-    } catch {
-      /* not supported */
-    }
+    } catch {}
   };
 
   const [sweeping, setSweeping] = useState(false);
+
   const tickRef = useRef<() => void>(() => {});
+
   const scanAgain = () => {
     scannedRef.current = false;
+
     setSweeping(false);
+
     setResult(null);
+
     setScanError(null);
+
     animRef.current = requestAnimationFrame(tickRef.current);
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
-      {/* Scanner header */}
+      {}
       <div
         className="relative z-10 flex items-center justify-between px-4 pt-safe"
         style={{
           paddingTop: "max(16px, env(safe-area-inset-top))",
+
           paddingBottom: "16px",
+
           background:
             "linear-gradient(to bottom, rgba(0,0,0,.7) 0%, transparent 100%)",
         }}
@@ -6388,7 +8172,9 @@ function CameraScanner({
         </div>
         <button
           onClick={toggleTorch}
-          className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${torch ? "bg-yellow-400 text-slate-900" : "bg-white/15 text-white"}`}
+          className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+            torch ? "bg-yellow-400 text-slate-900" : "bg-white/15 text-white"
+          }`}
           title="Toggle flash"
         >
           <svg
@@ -6401,9 +8187,9 @@ function CameraScanner({
         </button>
       </div>
 
-      {/* Camera viewport */}
+      {}
       <div className="flex-1 relative overflow-hidden">
-        {/* Live video */}
+        {}
         <video
           ref={videoRef}
           autoPlay
@@ -6411,10 +8197,10 @@ function CameraScanner({
           muted
           className="absolute inset-0 w-full h-full object-cover"
         />
-        {/* Hidden canvas for jsQR frame decoding */}
+        {}
         <canvas ref={canvasRef} className="hidden" />
 
-        {/* Dark vignette overlay */}
+        {}
         {!result && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div
@@ -6424,25 +8210,34 @@ function CameraScanner({
                   "radial-gradient(ellipse 60% 60% at 50% 50%, transparent 0%, rgba(0,0,0,.55) 100%)",
               }}
             />
-            {/* Scan frame */}
+            {}
             <div className="relative w-64 h-64 sm:w-72 sm:h-72">
-              {/* Scanline — static when idle, single sweep on QR detect */}
+              {}
               <div
-                className={`absolute inset-x-0 h-[2px] rounded-full ${sweeping ? "scan-sweep" : ""}`}
+                className={`absolute inset-x-0 h-[2px] rounded-full ${
+                  sweeping ? "scan-sweep" : ""
+                }`}
                 style={{
                   top: sweeping ? "8%" : "50%",
+
                   background:
                     "linear-gradient(90deg, transparent 0%, rgba(74,222,128,0.9) 20%, #4ade80 50%, rgba(74,222,128,0.9) 80%, transparent 100%)",
+
                   boxShadow: "0 0 10px 2px rgba(74,222,128,0.55)",
+
                   opacity: sweeping ? 1 : 0.6,
+
                   transition: sweeping ? "none" : "opacity 0.3s",
                 }}
               />
-              {/* Corner marks */}
+              {}
               {[
                 "top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-lg",
+
                 "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-lg",
+
                 "bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-lg",
+
                 "bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-lg",
               ].map((cls, i) => (
                 <div
@@ -6459,7 +8254,7 @@ function CameraScanner({
           </div>
         )}
 
-        {/* Camera error state */}
+        {}
         {(camError || scanError) && !result && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950/90 text-center px-8">
             <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center text-white/50">
@@ -6482,7 +8277,7 @@ function CameraScanner({
           </div>
         )}
 
-        {/* Result overlay */}
+        {}
         {result && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 px-8 gap-4">
             <div
@@ -6594,13 +8389,15 @@ function CameraScanner({
         )}
       </div>
 
-      {/* Bottom hint */}
+      {}
       {!result && !camError && (
         <div
           className="relative z-10 px-6 flex flex-col gap-2 items-center"
           style={{
             paddingBottom: "max(24px, env(safe-area-inset-bottom))",
+
             paddingTop: "16px",
+
             background:
               "linear-gradient(to top, rgba(0,0,0,.75) 0%, transparent 100%)",
           }}
@@ -6616,16 +8413,21 @@ function CameraScanner({
 
 export function AdminScannerPage({
   events = [],
+
   scannerId,
 }: {
   events?: EventData[];
+
   scannerId: string | null;
 }) {
   const [selectedEventId, setSelectedEventId] = useState<string>(
     events[0]?.id ?? "",
   );
+
   const [scannerOpen, setScannerOpen] = useState(false);
+
   const [scanned, setScanned] = useState<ScanRecord[]>([]);
+
   const [manualSessionLabel, setManualSessionLabel] = useState<
     "morning" | "afternoon" | null
   >(null);
@@ -6638,28 +8440,36 @@ export function AdminScannerPage({
 
   useEffect(() => {
     const nextEvent = events.find((event) => event.id === selectedEventId);
+
     if (!nextEvent) {
       setManualSessionLabel(null);
+
       return;
     }
 
     if (!nextEvent.multiSession) {
       setManualSessionLabel(null);
+
       return;
     }
 
     const defaultSession =
       getEventSessionMeta(nextEvent).sessionLabel ?? "morning";
+
     setManualSessionLabel(defaultSession);
   }, [selectedEventId, events]);
 
   const activeEvents = events.filter(
     (e) => e.status === "active" || e.status === "upcoming",
   );
+
   const selectedEvent = events.find((e) => e.id === selectedEventId);
+
   const canScanSelectedEvent = selectedEvent?.status === "active";
+
   const selectedSessionMeta = getSelectedSessionMeta(
     selectedEvent,
+
     manualSessionLabel,
   );
 
@@ -6667,11 +8477,14 @@ export function AdminScannerPage({
     setScanned((prev) => [
       {
         ...r,
+
         time: new Date().toLocaleTimeString("en-US", {
           hour: "2-digit",
+
           minute: "2-digit",
         }),
       },
+
       ...prev,
     ]);
   };
@@ -6695,7 +8508,7 @@ export function AdminScannerPage({
         subtitle="Select an event to begin scanning."
       />
       <div className="max-w-lg mx-auto space-y-4">
-        {/* Event selection */}
+        {}
         <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-slate-50">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
@@ -6712,10 +8525,16 @@ export function AdminScannerPage({
               <button
                 key={e.id}
                 onClick={() => setSelectedEventId(e.id)}
-                className={`w-full text-left px-4 py-3.5 rounded-xl transition-all flex items-center gap-4 ${selectedEventId === e.id ? "bg-green-50 ring-1 ring-green-200" : "hover:bg-slate-50"}`}
+                className={`w-full text-left px-4 py-3.5 rounded-xl transition-all flex items-center gap-4 ${
+                  selectedEventId === e.id
+                    ? "bg-green-50 ring-1 ring-green-200"
+                    : "hover:bg-slate-50"
+                }`}
               >
                 <div
-                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${e.status === "active" ? "bg-green-500" : "bg-slate-300"}`}
+                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                    e.status === "active" ? "bg-green-500" : "bg-slate-300"
+                  }`}
                   style={
                     e.status === "active"
                       ? { animation: "pulse 2s infinite" }
@@ -6724,12 +8543,20 @@ export function AdminScannerPage({
                 />
                 <div className="flex-1 min-w-0">
                   <p
-                    className={`text-sm font-semibold truncate ${selectedEventId === e.id ? "text-green-900" : "text-slate-900"}`}
+                    className={`text-sm font-semibold truncate ${
+                      selectedEventId === e.id
+                        ? "text-green-900"
+                        : "text-slate-900"
+                    }`}
                   >
                     {e.title}
                   </p>
                   <p
-                    className={`text-xs mt-0.5 ${selectedEventId === e.id ? "text-green-600" : "text-slate-400"}`}
+                    className={`text-xs mt-0.5 ${
+                      selectedEventId === e.id
+                        ? "text-green-600"
+                        : "text-slate-400"
+                    }`}
                   >
                     {e.date} · {e.location}
                   </p>
@@ -6747,7 +8574,7 @@ export function AdminScannerPage({
           </div>
         </div>
 
-        {/* Open scanner CTA */}
+        {}
         {selectedEvent ? (
           <div className="space-y-3">
             <div className="bg-white border border-slate-100 rounded-xl px-4 py-4 flex items-center gap-4">
@@ -6854,7 +8681,7 @@ export function AdminScannerPage({
           </div>
         )}
 
-        {/* Recent scans this session */}
+        {}
         {scanned.length > 0 && (
           <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
             <div className="px-5 py-3.5 border-b border-slate-50 flex items-center justify-between">
@@ -6868,7 +8695,11 @@ export function AdminScannerPage({
             {scanned.slice(0, 8).map((s, i) => (
               <div
                 key={i}
-                className={`flex items-center gap-3 px-5 py-3.5 ${i < Math.min(scanned.length, 8) - 1 ? "border-b border-slate-50" : ""}`}
+                className={`flex items-center gap-3 px-5 py-3.5 ${
+                  i < Math.min(scanned.length, 8) - 1
+                    ? "border-b border-slate-50"
+                    : ""
+                }`}
               >
                 <Avatar name={s.name} size="sm" />
                 <div className="flex-1 min-w-0">
@@ -6889,24 +8720,33 @@ export function AdminScannerPage({
   );
 }
 
-// ─── MODERATOR: Attendees ─────────────────────────────────────────────────────
 export function AdminAttendeesPage({
   onNav,
+
   events = [],
+
   students = [],
+
   scanState: initialScanState,
+
   onDeleteAttendance,
 }: {
   onNav: (p: Page) => void;
+
   events?: EventData[];
+
   students?: StudentProfile[];
+
   scanState?: Record<string, ScanRecord[]>;
+
   onDeleteAttendance?: (dbId: string | number) => Promise<boolean>;
 }) {
   const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "");
+
   const [scanState, setScanState] = useState<Record<string, ScanRecord[]>>(
     initialScanState ?? {},
   );
+
   const [tab, setTab] = useState<"present" | "absent">("present");
 
   useEffect(() => {
@@ -6923,11 +8763,17 @@ export function AdminAttendeesPage({
 
   const selectedEvent =
     events.find((e) => e.id === selectedEventId) ?? events[0] ?? null;
+
   const scans = selectedEvent ? (scanState[selectedEvent.id] ?? []) : [];
+
   const confirmed = scans.filter((s) => s.status === "confirmed");
+
   const duplicates = scans.filter((s) => s.status === "duplicate");
+
   const attendedIds = new Set(confirmed.map((s) => s.id));
+
   const absentees = students.filter((s) => !attendedIds.has(s.id));
+
   const deleteRecord = async (dbId: string | number) => {
     if (onDeleteAttendance && !(await onDeleteAttendance(dbId))) {
       return;
@@ -6935,6 +8781,7 @@ export function AdminAttendeesPage({
 
     setScanState((st) => ({
       ...st,
+
       [selectedEventId]: (st[selectedEventId] ?? []).filter(
         (r) => r.dbId !== dbId,
       ),
@@ -6945,26 +8792,40 @@ export function AdminAttendeesPage({
     if (!selectedEvent) return;
 
     const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
+
     const rows = scans.map((scan) =>
       [scan.name, scan.id, scan.program, scan.section, scan.time, scan.status]
+
         .map((value) => escapeCsv(String(value ?? "")))
+
         .join(","),
     );
+
     const csv = [
       ["Student", "Student ID", "Program", "Section", "Time", "Status"]
+
         .map(escapeCsv)
+
         .join(","),
+
       ...rows,
     ].join("\n");
+
     const url = URL.createObjectURL(
       new Blob([csv], { type: "text/csv;charset=utf-8" }),
     );
+
     const link = document.createElement("a");
+
     link.href = url;
+
     link.download = `${selectedEvent.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-attendees.csv`;
+
     link.click();
+
     URL.revokeObjectURL(url);
   };
+
   return (
     <>
       <BackButton
@@ -6992,6 +8853,7 @@ export function AdminAttendeesPage({
           value={selectedEventId}
           onChange={(e) => {
             setSelectedEventId(e.target.value);
+
             setTab("present");
           }}
           className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium outline-none focus:border-green-500 appearance-none"
@@ -7011,13 +8873,21 @@ export function AdminAttendeesPage({
       <div className="flex gap-1 mb-5 bg-slate-100 p-1 rounded-xl">
         <button
           onClick={() => setTab("present")}
-          className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${tab === "present" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+          className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${
+            tab === "present"
+              ? "bg-white shadow-sm text-slate-900"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
         >
           Present ({confirmed.length})
         </button>
         <button
           onClick={() => setTab("absent")}
-          className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${tab === "absent" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+          className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${
+            tab === "absent"
+              ? "bg-white shadow-sm text-slate-900"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
         >
           Absent ({absentees.length})
           {selectedEvent && selectedEvent.fineAmount > 0 && (
@@ -7052,7 +8922,9 @@ export function AdminAttendeesPage({
               {confirmed.map((s, i) => (
                 <div
                   key={s.dbId}
-                  className={`${i < confirmed.length - 1 ? "border-b border-slate-50" : ""}`}
+                  className={`${
+                    i < confirmed.length - 1 ? "border-b border-slate-50" : ""
+                  }`}
                 >
                   <div className="block w-full px-3.5 py-3 md:hidden">
                     <div className="flex items-center justify-between gap-3">
@@ -7101,7 +8973,11 @@ export function AdminAttendeesPage({
                 {duplicates.map((s, i) => (
                   <div
                     key={s.dbId}
-                    className={`${i < duplicates.length - 1 ? "border-b border-slate-50" : ""}`}
+                    className={`${
+                      i < duplicates.length - 1
+                        ? "border-b border-slate-50"
+                        : ""
+                    }`}
                   >
                     <div className="block px-3.5 py-3 md:hidden">
                       <div className="flex items-center gap-3">
@@ -7182,7 +9058,9 @@ export function AdminAttendeesPage({
               {absentees.map((s, i) => (
                 <div
                   key={s.id}
-                  className={`${i < absentees.length - 1 ? "border-b border-slate-50" : ""}`}
+                  className={`${
+                    i < absentees.length - 1 ? "border-b border-slate-50" : ""
+                  }`}
                 >
                   <div className="block w-full px-3.5 py-3 md:hidden">
                     <div className="flex items-center justify-between gap-3">
@@ -7239,16 +9117,18 @@ export function AdminAttendeesPage({
   );
 }
 
-// ─── MODERATOR: Students ──────────────────────────────────────────────────────
 export function AdminStudentsPage({
   students = [],
 }: {
   students?: StudentProfile[];
 }) {
   const router = useRouter();
+
   const [query, setQuery] = useState("");
+
   const filtered = students.filter((s) => {
     const q = query.toLowerCase();
+
     return (
       s.name.toLowerCase().includes(q) ||
       s.id.includes(q) ||
@@ -7259,6 +9139,7 @@ export function AdminStudentsPage({
 
   const openStudent = (student: StudentProfile) => {
     const targetId = student.profileId ?? student.id;
+
     router.push(`/admin-students/${encodeURIComponent(targetId)}`);
   };
 
@@ -7303,7 +9184,9 @@ export function AdminStudentsPage({
             <Fragment key={s.profileId ?? s.id}>
               <button
                 onClick={() => openStudent(s)}
-                className={`block w-full px-3.5 py-3.5 text-left transition-colors hover:bg-slate-50/80 active:bg-slate-100 md:hidden ${i < filtered.length - 1 ? "border-b border-gray-100" : ""}`}
+                className={`block w-full px-3.5 py-3.5 text-left transition-colors hover:bg-slate-50/80 active:bg-slate-100 md:hidden ${
+                  i < filtered.length - 1 ? "border-b border-gray-100" : ""
+                }`}
               >
                 <div className="flex items-center gap-3">
                   <div className="shrink-0">
@@ -7334,7 +9217,9 @@ export function AdminStudentsPage({
               </button>
               <button
                 onClick={() => openStudent(s)}
-                className={`hidden w-full px-5 py-3.5 md:grid md:grid-cols-12 md:items-center md:text-left md:hover:bg-slate-50 md:transition-colors ${i < filtered.length - 1 ? "border-b border-slate-50" : ""}`}
+                className={`hidden w-full px-5 py-3.5 md:grid md:grid-cols-12 md:items-center md:text-left md:hover:bg-slate-50 md:transition-colors ${
+                  i < filtered.length - 1 ? "border-b border-slate-50" : ""
+                }`}
               >
                 <div className="col-span-5 flex items-center gap-3 min-w-0">
                   <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
@@ -7363,50 +9248,74 @@ export function AdminStudentsPage({
   );
 }
 
-// ─── MODERATOR: Announcements ─────────────────────────────────────────────────
 export function AdminAnnouncementsPage({
   posts,
+
   setPosts,
+
   onCreate,
+
   onUpdate,
+
   onDelete,
 }: {
   posts: typeof INITIAL_ANNOUNCEMENTS;
+
   setPosts: React.Dispatch<React.SetStateAction<typeof INITIAL_ANNOUNCEMENTS>>;
+
   onCreate?: (payload: {
     title: string;
+
     body: string;
+
     badge: string;
+
     photoUrl: string | null;
   }) => Promise<void>;
+
   onUpdate?: (payload: {
     id: string;
+
     title: string;
+
     body: string;
+
     badge: string;
+
     photoUrl: string | null;
+
     previousPhotoUrl?: string;
   }) => Promise<void>;
+
   onDelete?: (id: string, photoUrl?: string) => Promise<void>;
 }) {
   const [showForm, setShowForm] = useState(false);
+
   const [editId, setEditId] = useState<string | null>(null);
+
   const [editDraft, setEditDraft] = useState<
     (typeof INITIAL_ANNOUNCEMENTS)[0] | null
   >(null);
+
   const [newPhoto, setNewPhoto] = useState<string | null>(null);
+
   const [newPhotoUploadState, setNewPhotoUploadState] = useState<
     "idle" | "uploading" | "error"
   >("idle");
+
   const [editPhotoUploadState, setEditPhotoUploadState] = useState<
     "idle" | "uploading" | "error"
   >("idle");
+
   const photoRef = useRef<HTMLInputElement>(null);
+
   const editPhotoRef = useRef<HTMLInputElement>(null);
 
   const announcementFormSchema = z.object({
     title: z.string().trim().min(1, "Title is required"),
+
     body: z.string().trim().min(10, "Body must be at least 10 characters"),
+
     badge: z.string().trim().min(1, "Category is required"),
   });
 
@@ -7414,14 +9323,20 @@ export function AdminAnnouncementsPage({
 
   const {
     register,
+
     handleSubmit,
+
     reset,
+
     formState: { errors },
   } = useForm<AnnouncementFormValues>({
     resolver: zodResolver(announcementFormSchema),
+
     defaultValues: {
       title: "",
+
       body: "",
+
       badge: "General",
     },
   });
@@ -7429,37 +9344,49 @@ export function AdminAnnouncementsPage({
   const uploadSelectedPhoto = async (file: File) => {
     try {
       const result = await uploadImage(file, "public-images");
+
       if ("error" in result) {
         toast.error(result.error);
+
         return null;
       }
 
       return result.url;
     } catch {
       toast.error("Image upload failed.");
+
       return null;
     }
   };
 
   const uploadNewPhoto = async (file: File) => {
     setNewPhotoUploadState("uploading");
+
     const uploaded = await uploadSelectedPhoto(file);
+
     setNewPhotoUploadState(uploaded ? "idle" : "error");
+
     if (uploaded) setNewPhoto(uploaded);
   };
 
   const uploadEditPhoto = async (file: File) => {
     setEditPhotoUploadState("uploading");
+
     const uploaded = await uploadSelectedPhoto(file);
+
     setEditPhotoUploadState(uploaded ? "idle" : "error");
+
     if (uploaded) setEditDraft((d) => (d ? { ...d, photoUrl: uploaded } : d));
   };
 
   const handlePublish = handleSubmit(async (values) => {
     const payload = {
       title: values.title.trim(),
+
       body: values.body.trim(),
+
       badge: values.badge,
+
       photoUrl: newPhoto ?? null,
     };
 
@@ -7469,37 +9396,57 @@ export function AdminAnnouncementsPage({
       setPosts((p) => [
         {
           id: Date.now().toString(),
+
           title: payload.title,
+
           body: payload.body,
+
           date: "Aug 22, 2026",
+
           author: "Admin",
+
           badge: payload.badge,
+
           photoUrl: payload.photoUrl ?? "",
         },
+
         ...p,
       ]);
     }
 
     reset({ title: "", body: "", badge: "General" });
+
     setNewPhoto(null);
+
     setNewPhotoUploadState("idle");
+
     setShowForm(false);
   });
+
   const startEdit = (a: (typeof INITIAL_ANNOUNCEMENTS)[0]) => {
     setEditId(a.id);
+
     setEditDraft({ ...a });
+
     setShowForm(false);
   };
+
   const saveEdit = async () => {
     if (!editDraft) return;
 
     const currentPost = posts.find((post) => post.id === editDraft.id);
+
     const payload = {
       id: editDraft.id,
+
       title: editDraft.title.trim(),
+
       body: editDraft.body.trim(),
+
       badge: editDraft.badge,
+
       photoUrl: editDraft.photoUrl || null,
+
       previousPhotoUrl: currentPost?.photoUrl || undefined,
     };
 
@@ -7511,9 +9458,13 @@ export function AdminAnnouncementsPage({
           a.id === editDraft.id
             ? {
                 ...a,
+
                 title: payload.title,
+
                 body: payload.body,
+
                 badge: payload.badge,
+
                 photoUrl: payload.photoUrl ?? "",
               }
             : a,
@@ -7522,18 +9473,22 @@ export function AdminAnnouncementsPage({
     }
 
     setEditId(null);
+
     setEditDraft(null);
   };
+
   const deletePost = async (id: string) => {
     const currentPost = posts.find((post) => post.id === id);
 
     if (onDelete) {
       await onDelete(id, currentPost?.photoUrl || undefined);
+
       return;
     }
 
     setPosts((p) => p.filter((a) => a.id !== id));
   };
+
   return (
     <>
       <PageHeader
@@ -7542,7 +9497,9 @@ export function AdminAnnouncementsPage({
           <button
             onClick={() => {
               setShowForm(true);
+
               setEditId(null);
+
               setEditDraft(null);
             }}
             className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"
@@ -7610,6 +9567,7 @@ export function AdminAnnouncementsPage({
               className="hidden"
               onChange={async (e) => {
                 const f = e.target.files?.[0];
+
                 if (!f) return;
 
                 await uploadNewPhoto(f);
@@ -7661,6 +9619,7 @@ export function AdminAnnouncementsPage({
           title="Edit Announcement"
           onClose={() => {
             setEditId(null);
+
             setEditDraft(null);
           }}
           footer={
@@ -7674,6 +9633,7 @@ export function AdminAnnouncementsPage({
               <button
                 onClick={() => {
                   setEditId(null);
+
                   setEditDraft(null);
                 }}
                 className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50"
@@ -7723,6 +9683,7 @@ export function AdminAnnouncementsPage({
               className="hidden"
               onChange={async (e) => {
                 const f = e.target.files?.[0];
+
                 if (!f) return;
 
                 await uploadEditPhoto(f);
@@ -7794,13 +9755,19 @@ export function AdminAnnouncementsPage({
                     items={[
                       {
                         label: "Edit",
+
                         icon: <Icons.Edit />,
+
                         onClick: () => startEdit(a),
                       },
+
                       {
                         label: "Delete",
+
                         icon: <Icons.Trash />,
+
                         danger: true,
+
                         onClick: () => deletePost(a.id),
                       },
                     ]}
@@ -7819,18 +9786,23 @@ export function AdminAnnouncementsPage({
   );
 }
 
-// ─── MODERATOR: Excuse Requests ───────────────────────────────────────────────
 export function AdminExcuseRequestsPage({
   requests,
+
   onAction,
+
   onBack,
 }: {
   requests: ExcuseRequest[];
+
   onAction: (id: string, a: "approved" | "denied") => void;
+
   onBack: () => void;
 }) {
   const pending = requests.filter((r) => r.status === "pending");
+
   const reviewed = requests.filter((r) => r.status !== "pending");
+
   return (
     <>
       <BackButton onClick={onBack} label="Back to Overview" />
@@ -7956,30 +9928,41 @@ export function AdminExcuseRequestsPage({
   );
 }
 
-// ─── MODERATOR: Reports ───────────────────────────────────────────────────────
 export function AdminReportsPage({
   events = [],
+
   reportData,
 }: {
   events?: EventData[];
+
   reportData?: {
     events?: EventData[];
+
     programStats?: Array<{
       label: string;
+
       present: number;
+
       total: number;
+
       rate: number;
     }>;
+
     feeSummary?: Array<{
       label: string;
+
       value: string;
+
       color: string;
     }>;
   };
 }) {
   const liveEvents = reportData?.events ?? events ?? [];
+
   const programRows = reportData?.programStats ?? [];
+
   const fees = reportData?.feeSummary ?? [];
+
   const eventRows = liveEvents.filter((e) => e.status !== "upcoming");
 
   const exportPDF = () => {
@@ -7987,7 +9970,6 @@ export function AdminReportsPage({
       pad = 48,
       dpr = 2;
 
-    // estimate height
     const H =
       80 +
       32 +
@@ -8001,185 +9983,301 @@ export function AdminReportsPage({
       24 +
       (eventRows.length * 26 + 16) +
       48;
+
     const canvas = document.createElement("canvas");
+
     canvas.width = W * dpr;
+
     canvas.height = H * dpr;
+
     const ctx = canvas.getContext("2d")!;
+
     ctx.scale(dpr, dpr);
+
     ctx.fillStyle = "#fff";
+
     ctx.fillRect(0, 0, W, H);
 
     let y = 0;
-    // ── Header bar
+
     ctx.fillStyle = "#16a34a";
+
     ctx.fillRect(0, 0, W, 60);
+
     ctx.fillStyle = "#fff";
+
     ctx.font = "bold 18px system-ui, sans-serif";
+
     ctx.textAlign = "left";
+
     ctx.fillText("TapIn — Attendance & Fees Report", pad, 38);
+
     ctx.font = "12px system-ui, sans-serif";
+
     ctx.textAlign = "right";
+
     ctx.fillText(`AY 2026-2027 · 1st Semester`, W - pad, 38);
+
     y = 60;
 
-    // generated date
     ctx.fillStyle = "#94a3b8";
+
     ctx.font = "10px system-ui, sans-serif";
+
     ctx.textAlign = "left";
+
     ctx.fillText(`Generated ${new Date().toLocaleString()}`, pad, y + 18);
+
     y += 32;
 
     const sectionTitle = (title: string) => {
       ctx.fillStyle = "#f1f5f9";
+
       ctx.fillRect(pad, y, W - pad * 2, 22);
+
       ctx.fillStyle = "#334155";
+
       ctx.font = "bold 11px system-ui, sans-serif";
+
       ctx.fillText(title.toUpperCase(), pad + 8, y + 15);
+
       y += 22;
     };
+
     const tableHeader = (
       cols: { t: string; x: number; align?: CanvasTextAlign }[],
     ) => {
       ctx.fillStyle = "#f8fafc";
+
       ctx.fillRect(pad, y, W - pad * 2, 22);
+
       ctx.strokeStyle = "#e2e8f0";
+
       ctx.lineWidth = 0.5;
+
       ctx.strokeRect(pad, y, W - pad * 2, 22);
+
       cols.forEach((c) => {
         ctx.fillStyle = "#64748b";
+
         ctx.font = "bold 10px system-ui, sans-serif";
+
         ctx.textAlign = c.align ?? "left";
+
         ctx.fillText(c.t, c.x, y + 15);
       });
+
       y += 22;
     };
+
     const tableRow = (
-      cols: { t: string; x: number; align?: CanvasTextAlign; color?: string }[],
+      cols: {
+        t: string;
+        x: number;
+        align?: CanvasTextAlign;
+        color?: string;
+      }[],
+
       shade: boolean,
     ) => {
       if (shade) {
         ctx.fillStyle = "#fafafa";
+
         ctx.fillRect(pad, y, W - pad * 2, 24);
       }
+
       ctx.strokeStyle = "#f1f5f9";
+
       ctx.lineWidth = 0.5;
+
       ctx.beginPath();
+
       ctx.moveTo(pad, y + 24);
+
       ctx.lineTo(W - pad, y + 24);
+
       ctx.stroke();
+
       cols.forEach((c) => {
         ctx.fillStyle = c.color ?? "#1e293b";
+
         ctx.font = "11px system-ui, sans-serif";
+
         ctx.textAlign = c.align ?? "left";
+
         ctx.fillText(c.t, c.x, y + 16);
       });
+
       y += 24;
     };
 
-    // ── Attendance by program
     y += 14;
+
     sectionTitle("Attendance by Program");
+
     tableHeader([
-      { t: "Program", x: pad + 8 },
+      {
+        t: "Program",
+        x: pad + 8,
+      },
+
       { t: "Present", x: W - pad - 200, align: "right" },
+
       { t: "Total", x: W - pad - 120, align: "right" },
+
       { t: "Rate", x: W - pad - 8, align: "right" },
     ]);
+
     programRows.forEach((r, i) =>
       tableRow(
         [
-          { t: r.label, x: pad + 8 },
+          {
+            t: r.label,
+            x: pad + 8,
+          },
+
           { t: r.present.toString(), x: W - pad - 200, align: "right" },
+
           { t: r.total.toString(), x: W - pad - 120, align: "right" },
+
           {
             t: `${r.rate}%`,
+
             x: W - pad - 8,
+
             align: "right",
+
             color:
               r.rate >= 70 ? "#16a34a" : r.rate >= 50 ? "#d97706" : "#dc2626",
           },
         ],
+
         i % 2 === 1,
       ),
     );
+
     y += 14;
 
-    // ── Fees summary
     sectionTitle("Fees Summary");
+
     tableHeader([
-      { t: "Category", x: pad + 8 },
+      {
+        t: "Category",
+        x: pad + 8,
+      },
+
       { t: "Amount", x: W - pad - 8, align: "right" },
     ]);
+
     const feeColors: Record<string, string> = {
       "Total fees issued": "#dc2626",
+
       Collected: "#16a34a",
+
       Pending: "#d97706",
     };
+
     fees.forEach((f, i) =>
       tableRow(
         [
-          { t: f.label, x: pad + 8 },
+          {
+            t: f.label,
+            x: pad + 8,
+          },
+
           {
             t: f.value,
+
             x: W - pad - 8,
+
             align: "right",
+
             color: feeColors[f.label] ?? "#1e293b",
           },
         ],
+
         i % 2 === 1,
       ),
     );
+
     y += 14;
 
-    // ── By event
     sectionTitle("By Event");
+
     tableHeader([
-      { t: "Event", x: pad + 8 },
+      {
+        t: "Event",
+        x: pad + 8,
+      },
+
       { t: "Date", x: W - pad - 200 },
+
       { t: "Fee", x: W - pad - 100, align: "right" },
+
       { t: "Attended", x: W - pad - 8, align: "right" },
     ]);
+
     eventRows.forEach((e, i) =>
       tableRow(
         [
           {
             t: e.title.length > 38 ? e.title.slice(0, 36) + "…" : e.title,
+
             x: pad + 8,
           },
+
           { t: e.date, x: W - pad - 200 },
+
           { t: `₱${e.fineAmount}`, x: W - pad - 100, align: "right" },
+
           {
             t: e.attendees.toString(),
+
             x: W - pad - 8,
+
             align: "right",
+
             color: "#16a34a",
           },
         ],
+
         i % 2 === 1,
       ),
     );
+
     y += 20;
 
-    // ── Footer
     ctx.fillStyle = "#e2e8f0";
+
     ctx.fillRect(pad, y, W - pad * 2, 1);
+
     ctx.fillStyle = "#94a3b8";
+
     ctx.font = "10px system-ui, sans-serif";
+
     ctx.textAlign = "center";
+
     ctx.fillText(
       "TapIn · Student Event Attendance & Fee Tracking System",
+
       W / 2,
+
       y + 18,
     );
 
-    // Open as PDF-like image
     canvas.toBlob((blob) => {
       if (!blob) return;
+
       const url = URL.createObjectURL(blob);
+
       const a = document.createElement("a");
+
       a.href = url;
+
       a.download = `tapin-report-${new Date().toISOString().slice(0, 10)}.png`;
+
       a.click();
+
       URL.revokeObjectURL(url);
     }, "image/png");
   };
@@ -8204,10 +10302,14 @@ export function AdminReportsPage({
         {programRows.map((r, index) => {
           const colors = [
             "bg-green-500",
+
             "bg-sky-500",
+
             "bg-violet-400",
+
             "bg-amber-400",
           ];
+
           return (
             <div
               key={r.label}
@@ -8223,7 +10325,9 @@ export function AdminReportsPage({
               </div>
               <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
                 <div
-                  className={`h-full ${colors[index % colors.length]} rounded-full`}
+                  className={`h-full ${
+                    colors[index % colors.length]
+                  } rounded-full`}
                   style={{ width: `${r.rate}%` }}
                 />
               </div>
@@ -8239,7 +10343,9 @@ export function AdminReportsPage({
         {fees.map((s, i) => (
           <div
             key={s.label}
-            className={`bg-white border border-slate-100 rounded-xl px-4 py-4 ${i === 0 ? "sm:col-span-1" : ""}`}
+            className={`bg-white border border-slate-100 rounded-xl px-4 py-4 ${
+              i === 0 ? "sm:col-span-1" : ""
+            }`}
           >
             <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
             <p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">
@@ -8253,7 +10359,9 @@ export function AdminReportsPage({
         {eventRows.map((e, i, arr) => (
           <div
             key={e.id}
-            className={`flex items-center justify-between px-5 py-4 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}
+            className={`flex items-center justify-between px-5 py-4 ${
+              i < arr.length - 1 ? "border-b border-slate-50" : ""
+            }`}
           >
             <div>
               <p className="text-sm font-semibold text-slate-900">{e.title}</p>
@@ -8274,47 +10382,67 @@ export function AdminReportsPage({
   );
 }
 
-// ─── MODERATOR: Management & Settings ────────────────────────────────────────
 export interface CarouselSlide {
   imageUrl: string;
+
   caption: string;
+
   date: string;
 }
+
 export interface SystemSettings {
   showFees: boolean;
+
   allowExcuseRequests: boolean;
+
   requirePhotoId: boolean;
+
   academicYear: string;
+
   semester: string;
+
   institution: string;
+
   heroImageUrls: string[];
+
   carouselSlides: CarouselSlide[];
 }
 
 export function AdminSettingsPage({
   settings,
+
   onSave,
 }: {
   settings: SystemSettings;
+
   onSave: (s: SystemSettings) => void;
 }) {
   const isBlobUrl = (value?: string) => !!value && value.startsWith("blob:");
+
   const heroImageUrls = settings.heroImageUrls.filter((url) => !isBlobUrl(url));
+
   const carouselSlides = settings.carouselSlides.map((slide) => ({
     ...slide,
+
     imageUrl: isBlobUrl(slide.imageUrl) ? "" : slide.imageUrl,
   }));
+
   type UploadSlot = {
     file: File;
+
     status: "uploading" | "error";
+
     error?: string;
   };
+
   const [heroUploadSlots, setHeroUploadSlots] = useState<
     Record<string, UploadSlot>
   >({});
+
   const [slideUploadSlots, setSlideUploadSlots] = useState<
     Record<number, UploadSlot>
   >({});
+
   const isPublicMediaUrl = (value?: string) =>
     !!value && value.startsWith("https://") && !value.startsWith("blob:");
 
@@ -8323,10 +10451,13 @@ export function AdminSettingsPage({
 
     const slots = files.map((file, index) => ({
       id: `hero-${Date.now()}-${index}`,
+
       file,
     }));
+
     setHeroUploadSlots((current) => ({
       ...current,
+
       ...Object.fromEntries(
         slots.map(({ id, file }) => [id, { file, status: "uploading" }]),
       ),
@@ -8341,10 +10472,13 @@ export function AdminSettingsPage({
             "error" in result
               ? result.error
               : "Upload did not return a valid public image URL.";
+
           setHeroUploadSlots((current) => ({
             ...current,
+
             [id]: { file, status: "error", error },
           }));
+
           return null;
         }
 
@@ -8360,12 +10494,16 @@ export function AdminSettingsPage({
       update({
         heroImageUrls: [
           ...settings.heroImageUrls,
+
           ...validUploads.map((upload) => upload.url),
         ],
       });
+
       setHeroUploadSlots((current) => {
         const next = { ...current };
+
         validUploads.forEach(({ id }) => delete next[id]);
+
         return next;
       });
     }
@@ -8374,8 +10512,10 @@ export function AdminSettingsPage({
   const handleSlideImageUpload = async (i: number, file: File) => {
     setSlideUploadSlots((current) => ({
       ...current,
+
       [i]: { file, status: "uploading" },
     }));
+
     const result = await uploadImage(file);
 
     if ("error" in result || !isPublicMediaUrl(result.url)) {
@@ -8383,54 +10523,75 @@ export function AdminSettingsPage({
         "error" in result
           ? result.error
           : "Upload did not return a valid public image URL.";
+
       setSlideUploadSlots((current) => ({
         ...current,
+
         [i]: { file, status: "error", error },
       }));
+
       return;
     }
 
     patchSlide(i, { imageUrl: result.url });
+
     setSlideUploadSlots((current) => {
       const next = { ...current };
+
       delete next[i];
+
       return next;
     });
   };
 
   const update = (patch: Partial<SystemSettings>) =>
     onSave({ ...settings, ...patch });
+
   const toggle = (k: "showFees" | "allowExcuseRequests" | "requirePhotoId") =>
     onSave({ ...settings, [k]: !settings[k] });
+
   const heroRef = useRef<HTMLInputElement>(null);
+
   const addHero = () => heroRef.current?.click();
+
   const removeHero = (i: number) =>
     update({ heroImageUrls: settings.heroImageUrls.filter((_, j) => j !== i) });
+
   const slideRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   const addSlide = () => {
     if (settings.carouselSlides.length >= 10) return;
+
     update({
       carouselSlides: [
         ...settings.carouselSlides,
+
         { imageUrl: "", caption: "", date: "" },
       ],
     });
   };
+
   const removeSlide = (i: number) =>
     update({
       carouselSlides: settings.carouselSlides.filter((_, j) => j !== i),
     });
+
   const moveSlide = (i: number, dir: -1 | 1) => {
     const arr = [...settings.carouselSlides];
+
     const t = i + dir;
+
     if (t < 0 || t >= arr.length) return;
     [arr[i], arr[t]] = [arr[t], arr[i]];
+
     update({ carouselSlides: arr });
   };
+
   const patchSlide = (i: number, patch: Partial<CarouselSlide>) => {
     const arr = settings.carouselSlides.map((s, j) =>
       j === i ? { ...s, ...patch } : s,
     );
+
     update({ carouselSlides: arr });
   };
 
@@ -8441,7 +10602,7 @@ export function AdminSettingsPage({
         subtitle="Changes are saved automatically"
       />
 
-      {/* Fee Visibility */}
+      {}
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
         Fee Visibility
       </p>
@@ -8455,14 +10616,22 @@ export function AdminSettingsPage({
           />
         </div>
         <div
-          className={`mx-5 mb-4 rounded-lg px-3.5 py-2.5 flex items-center gap-2.5 transition-colors ${settings.showFees ? "bg-green-50 border border-green-200" : "bg-slate-50 border border-slate-200"}`}
+          className={`mx-5 mb-4 rounded-lg px-3.5 py-2.5 flex items-center gap-2.5 transition-colors ${
+            settings.showFees
+              ? "bg-green-50 border border-green-200"
+              : "bg-slate-50 border border-slate-200"
+          }`}
         >
           <span
-            className={`w-1.5 h-1.5 rounded-full shrink-0 ${settings.showFees ? "bg-green-500" : "bg-slate-400"}`}
+            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+              settings.showFees ? "bg-green-500" : "bg-slate-400"
+            }`}
             style={settings.showFees ? { animation: "pulse 2s infinite" } : {}}
           />
           <p
-            className={`text-xs font-medium leading-relaxed ${settings.showFees ? "text-green-800" : "text-slate-500"}`}
+            className={`text-xs font-medium leading-relaxed ${
+              settings.showFees ? "text-green-800" : "text-slate-500"
+            }`}
           >
             Fees are{" "}
             <span className="font-bold">
@@ -8474,7 +10643,7 @@ export function AdminSettingsPage({
         </div>
       </div>
 
-      {/* Attendance & Requests */}
+      {}
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
         Attendance &amp; Requests
       </p>
@@ -8495,7 +10664,7 @@ export function AdminSettingsPage({
         </div>
       </div>
 
-      {/* Academic Information */}
+      {}
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
         Academic Information
       </p>
@@ -8526,12 +10695,12 @@ export function AdminSettingsPage({
         </div>
       </div>
 
-      {/* Landing Page */}
+      {}
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
         Landing Page
       </p>
 
-      {/* Hero images */}
+      {}
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-3">
         <div className="px-5 py-4">
           <div className="flex items-center justify-between mb-0.5">
@@ -8552,7 +10721,9 @@ export function AdminSettingsPage({
             className="hidden"
             onChange={async (e) => {
               const files = Array.from(e.target.files ?? []);
+
               const remaining = 6 - settings.heroImageUrls.length;
+
               const toAdd = files.slice(0, remaining);
 
               if (toAdd.length) {
@@ -8601,9 +10772,12 @@ export function AdminSettingsPage({
                       onClick={() => {
                         setHeroUploadSlots((current) => {
                           const next = { ...current };
+
                           delete next[slotId];
+
                           return next;
                         });
+
                         void handleHeroImageUpload([slot.file]);
                       }}
                       className="h-7 px-2.5 rounded-lg border border-red-200 bg-white text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
@@ -8636,9 +10810,12 @@ export function AdminSettingsPage({
                         onClick={() => {
                           setHeroUploadSlots((current) => {
                             const next = { ...current };
+
                             delete next[slotId];
+
                             return next;
                           });
+
                           void handleHeroImageUpload([slot.file]);
                         }}
                         className="h-7 px-2.5 rounded-lg border border-red-200 bg-white text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
@@ -8662,7 +10839,7 @@ export function AdminSettingsPage({
         </div>
       </div>
 
-      {/* Carousel slides */}
+      {}
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
         <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
           <div>
@@ -8695,10 +10872,11 @@ export function AdminSettingsPage({
               const ref = (el: HTMLInputElement | null) => {
                 slideRefs.current[i] = el;
               };
+
               return (
                 <div key={i} className="px-5 py-4">
                   <div className="flex items-start gap-3">
-                    {/* Thumbnail */}
+                    {}
                     <div className="shrink-0">
                       <input
                         ref={ref}
@@ -8707,6 +10885,7 @@ export function AdminSettingsPage({
                         className="hidden"
                         onChange={async (e) => {
                           const f = e.target.files?.[0];
+
                           if (f) {
                             await handleSlideImageUpload(i, f);
                           }
@@ -8722,6 +10901,7 @@ export function AdminSettingsPage({
                           <button
                             onClick={() => {
                               const slot = slideUploadSlots[i];
+
                               if (slot) {
                                 void handleSlideImageUpload(i, slot.file);
                               }
@@ -8763,7 +10943,7 @@ export function AdminSettingsPage({
                         </button>
                       )}
                     </div>
-                    {/* Fields */}
+                    {}
                     <div className="flex-1 space-y-2 min-w-0">
                       <FieldInput
                         label="Caption"
@@ -8782,7 +10962,7 @@ export function AdminSettingsPage({
                         }
                       />
                     </div>
-                    {/* Controls */}
+                    {}
                     <div className="flex flex-col gap-1 shrink-0">
                       <button
                         onClick={() => moveSlide(i, -1)}
@@ -8813,19 +10993,23 @@ export function AdminSettingsPage({
         )}
       </div>
 
-      {/* System Info */}
+      {}
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
         System
       </p>
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
         {[
           { l: "System name", v: "TapIn" },
+
           { l: "Version", v: "1.0.0" },
+
           { l: "Environment", v: "Production" },
         ].map((r, i, arr) => (
           <div
             key={r.l}
-            className={`flex items-center justify-between px-5 py-3.5 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}
+            className={`flex items-center justify-between px-5 py-3.5 ${
+              i < arr.length - 1 ? "border-b border-slate-50" : ""
+            }`}
           >
             <span className="text-sm text-slate-500">{r.l}</span>
             <span className="text-sm font-semibold text-slate-900">{r.v}</span>
@@ -8842,7 +11026,9 @@ export default function LandingExperienceClient({
   settings: SystemSettings;
 }) {
   const router = useRouter();
+
   const [user, setUser] = useState<User | null>(null);
+
   const [showLoader, setShowLoader] = useState(true);
 
   useEffect(() => {
@@ -8860,6 +11046,7 @@ export default function LandingExperienceClient({
       try {
         const {
           data: { session },
+
           error: sessionError,
         } = await supabase.auth.getSession();
 
@@ -8871,13 +11058,18 @@ export default function LandingExperienceClient({
           if (!cancelled) {
             setUser(null);
           }
+
           return;
         }
 
         const { data: profile, error: profileError } = await supabase
+
           .from("profiles")
+
           .select("*")
+
           .eq("id", session.user.id)
+
           .maybeSingle();
 
         if (profileError && profileError.code !== "PGRST116") {
@@ -8888,6 +11080,7 @@ export default function LandingExperienceClient({
           if (!cancelled) {
             setUser(null);
           }
+
           return;
         }
 
@@ -8903,27 +11096,40 @@ export default function LandingExperienceClient({
           if (!cancelled) {
             setUser(null);
           }
+
           return;
         }
 
         if (!cancelled) {
           setUser({
             firstName: profile.first_name ?? "",
+
             middleInitial: profile.middle_initial ?? "",
+
             surname: profile.surname ?? "",
+
             studentId: profile.student_id ?? "",
+
             program: profile.program ?? "",
+
             yearLevel: profile.year_level ?? "",
+
             section: profile.section ?? "",
+
             phone: profile.phone ?? "",
+
             contactEmail: profile.contact_email ?? profile.email ?? "",
+
             role: profile.role ?? "student",
+
             photoUrl: profile.photo_url ?? undefined,
+
             idPhotoUrl: profile.id_photo_url ?? undefined,
           });
         }
       } catch (caughtError) {
         console.error(caughtError);
+
         if (!cancelled) {
           setUser(null);
         }
@@ -8940,24 +11146,43 @@ export default function LandingExperienceClient({
   const handleLandingNav = (page: Page) => {
     const routeFromPage: Record<Page, string> = {
       landing: "/",
+
       login: "/login",
+
       onboarding: "/onboarding",
+
       dashboard: "/dashboard",
+
       "my-qr": "/my-qr",
+
       events: "/events",
+
       "event-detail": "/events",
+
       announcements: "/announcements",
+
       "attendance-history": "/attendance-history",
+
       "my-fines": "/my-fines",
+
       profile: "/profile",
+
       "admin-dashboard": "/admin-dashboard",
+
       "admin-events": "/admin-events",
+
       "admin-scanner": "/admin-scanner",
+
       "admin-attendees": "/admin-attendees",
+
       "admin-students": "/admin-students",
+
       "admin-announcements": "/admin-announcements",
+
       "admin-reports": "/admin-reports",
+
       "admin-excuse-requests": "/admin-excuse-requests",
+
       "admin-settings": "/admin-settings",
     };
 
@@ -8979,16 +11204,22 @@ export default function LandingExperienceClient({
             initial={{ scale: 0.92, opacity: 0.7 }}
             animate={{
               scale: [0.94, 1, 0.96],
+
               opacity: [0.72, 1, 0.8],
+
               filter: [
                 "drop-shadow(0 0 0 rgba(16,185,129,0))",
+
                 "drop-shadow(0 0 18px rgba(16,185,129,0.2))",
+
                 "drop-shadow(0 0 0 rgba(16,185,129,0))",
               ],
             }}
             transition={{
               duration: 1.8,
+
               ease: "easeInOut",
+
               repeat: Number.POSITIVE_INFINITY,
             }}
             className="flex flex-col items-center justify-center"

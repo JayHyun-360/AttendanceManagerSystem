@@ -1,120 +1,157 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { AdminSettingsPage, type SystemSettings } from "../../shared-page";
-import { supabase } from "@/lib/supabase";
-import { deleteImage } from "@/lib/uploadImage";
+import { useEffect, useState } from "react"
+
+import { toast } from "sonner"
+
+import { AdminSettingsPage, type SystemSettings } from "../../shared-page"
+
+import { supabase } from "@/lib/supabase"
+
+import { deleteImages } from "@/lib/uploadImage"
 
 const defaultSettings: SystemSettings = {
   showFees: true,
+
   allowExcuseRequests: true,
+
   requirePhotoId: true,
+
   academicYear: "2026-2027",
+
   semester: "1st Semester",
+
   institution: "TapIn University",
+
   heroImageUrls: [],
+
   carouselSlides: [],
-};
+}
 
 const stripBlobUrls = (value?: string) =>
-  typeof value === "string" && value.startsWith("blob:") ? "" : (value ?? "");
+  typeof value === "string" && value.startsWith("blob:") ? "" : (value ?? "")
 
 const normalizeSettings = (
   rawSettings?: Partial<SystemSettings> | null,
 ): SystemSettings => ({
   showFees: rawSettings?.showFees ?? defaultSettings.showFees,
+
   allowExcuseRequests:
     rawSettings?.allowExcuseRequests ?? defaultSettings.allowExcuseRequests,
+
   requirePhotoId: rawSettings?.requirePhotoId ?? defaultSettings.requirePhotoId,
+
   academicYear: rawSettings?.academicYear ?? defaultSettings.academicYear,
+
   semester: rawSettings?.semester ?? defaultSettings.semester,
+
   institution: rawSettings?.institution ?? defaultSettings.institution,
-  heroImageUrls: (
-    rawSettings?.heroImageUrls ?? defaultSettings.heroImageUrls
-  ).filter((url) => !!stripBlobUrls(url)),
+
+  heroImageUrls: (rawSettings?.heroImageUrls ?? defaultSettings.heroImageUrls)
+
+    .filter((url) => !!stripBlobUrls(url)),
+
   carouselSlides: (
     rawSettings?.carouselSlides ?? defaultSettings.carouselSlides
-  ).map((slide) => ({
-    ...slide,
-    imageUrl: stripBlobUrls(slide?.imageUrl),
-  })),
-});
+  )
+
+    .map((slide) => ({
+      ...slide,
+
+      imageUrl: stripBlobUrls(slide?.imageUrl),
+    })),
+})
 
 export default function AdminSettingsRoutePage() {
-  const [settings, setSettings] = useState<SystemSettings>(defaultSettings);
-  const [settingsReady, setSettingsReady] = useState(false);
-  const [saveState, setSaveState] = useState<
-    "idle" | "saving" | "saved" | "error"
-  >("idle");
+  const [settings, setSettings] = useState<SystemSettings>(defaultSettings)
+
+  const [settingsReady, setSettingsReady] = useState(false)
+
+  const [saveState, setSaveState] =
+    useState<"idle" | "saving" | "saved" | "error">("idle")
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false
 
     async function loadSettings() {
       const { data, error } = await supabase
+
         .from("system_settings")
+
         .select("settings")
+
         .eq("id", 1)
-        .maybeSingle();
+
+        .maybeSingle()
 
       if (error) {
-        console.error("Failed to load settings", error);
+        console.error("Failed to load settings", error)
+
         if (!cancelled) {
-          setSettingsReady(true);
+          setSettingsReady(true)
         }
-        return;
+
+        return
       }
 
       if (!cancelled) {
         const cleanedSettings = normalizeSettings(
           data?.settings as Partial<SystemSettings>,
-        );
+        )
 
-        setSettings(cleanedSettings);
+        setSettings(cleanedSettings)
 
         if (
           data?.settings &&
           JSON.stringify(data.settings) !== JSON.stringify(cleanedSettings)
         ) {
           await supabase
+
             .from("system_settings")
+
             .update({
               settings: cleanedSettings,
+
               updated_at: new Date().toISOString(),
             })
-            .eq("id", 1);
+
+            .eq("id", 1)
         }
 
-        setSettingsReady(true);
+        setSettingsReady(true)
       }
     }
 
-    void loadSettings();
+    void loadSettings()
 
     return () => {
-      cancelled = true;
-    };
-  }, []);
+      cancelled = true
+    }
+  }, [])
 
   const handleSave = async (nextSettings: SystemSettings) => {
     const sanitizedSettings: SystemSettings = {
       ...nextSettings,
+
       heroImageUrls: nextSettings.heroImageUrls.filter(
         (url) => !!stripBlobUrls(url),
       ),
+
       carouselSlides: nextSettings.carouselSlides.map((slide) => ({
         ...slide,
+
         imageUrl: stripBlobUrls(slide.imageUrl),
       })),
-    };
+    }
 
     const removedHeroUrls = settings.heroImageUrls.filter(
       (url) => !sanitizedSettings.heroImageUrls.includes(url),
-    );
+    )
 
     const removedCarouselUrls = settings.carouselSlides
+
       .map((slide) => slide.imageUrl)
+
       .filter(
         (url) =>
           !!url &&
@@ -122,43 +159,60 @@ export default function AdminSettingsRoutePage() {
           !sanitizedSettings.carouselSlides.some(
             (slide) => slide.imageUrl === url,
           ),
-      );
+      )
 
-    setSettings(sanitizedSettings);
-    setSaveState("saving");
+    setSettings(sanitizedSettings)
+
+    setSaveState("saving")
 
     const { error } = await supabase
+
       .from("system_settings")
+
       .update({
         settings: sanitizedSettings,
+
         updated_at: new Date().toISOString(),
       })
-      .eq("id", 1);
+
+      .eq("id", 1)
 
     if (error) {
-      console.error("Failed to save settings", error);
-      setSaveState("error");
-      toast.error("Settings save failed.");
-      return;
+      console.error("Failed to save settings", error)
+
+      setSaveState("error")
+
+      toast.error("Settings save failed.")
+
+      return
     }
 
-    const cleanupUrls = [...removedHeroUrls, ...removedCarouselUrls];
+    const retainedUrls = new Set([
+      ...sanitizedSettings.heroImageUrls,
+
+      ...sanitizedSettings.carouselSlides.map((slide) => slide.imageUrl),
+    ])
+
+    const cleanupUrls = [...removedHeroUrls, ...removedCarouselUrls].filter(
+      (url) => !retainedUrls.has(url),
+    )
 
     if (cleanupUrls.length > 0) {
-      await Promise.all(
-        cleanupUrls.map(async (url) => {
-          const { error: deleteError } = await deleteImage(url);
+      const cleanupResults = await deleteImages(cleanupUrls)
 
-          if (deleteError) {
-            console.error("Failed to delete image", deleteError, url);
-          }
-        }),
-      );
+      cleanupResults
+
+        .filter((result) => !result.success)
+
+        .forEach((result) =>
+          console.error("Failed to delete settings media", result.error),
+        )
     }
 
-    setSaveState("saved");
-    toast.success("Settings saved.");
-  };
+    setSaveState("saved")
+
+    toast.success("Settings saved.")
+  }
 
   if (!settingsReady) {
     return (
@@ -179,7 +233,7 @@ export default function AdminSettingsRoutePage() {
           <div className="h-40 rounded-xl bg-slate-200" />
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -206,5 +260,5 @@ export default function AdminSettingsRoutePage() {
 
       <AdminSettingsPage settings={settings} onSave={handleSave} />
     </div>
-  );
+  )
 }
