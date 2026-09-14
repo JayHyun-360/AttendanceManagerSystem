@@ -1474,7 +1474,11 @@ export function BackButton({
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
 export function PageShell({ children }: { children: React.ReactNode }) {
-  return <div className="px-5 py-6 max-w-3xl mx-auto pb-8">{children}</div>;
+  return (
+    <div className="px-3.5 py-3 md:max-w-6xl md:mx-auto md:px-6 md:py-6">
+      {children}
+    </div>
+  );
 }
 export function PageHeader({
   title,
@@ -2199,7 +2203,7 @@ function LandingPage({
 
         {/* Hero content */}
         <div
-          className={`relative max-w-5xl mx-auto px-6 flex flex-col ${hasHero ? "items-start text-left pt-28 pb-24" : "items-center text-center pt-24 pb-20"}`}
+          className={`relative w-full mx-auto px-3.5 flex flex-col md:max-w-6xl md:px-6 ${hasHero ? "items-start text-left pt-6 pb-6 md:pt-10 md:pb-12" : "items-center text-center pt-6 pb-6 md:pt-10 md:pb-12"}`}
         >
           <div
             className={`inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full mb-8 ${hasHero ? "text-green-300 bg-white/10 border border-white/25 backdrop-blur-sm" : "text-green-700 bg-green-50 border border-green-200"}`}
@@ -2264,7 +2268,7 @@ function LandingPage({
       </div>
 
       {/* ── Feature cards ─────────────────────────────────────────── */}
-      <div className="max-w-5xl mx-auto px-6 py-16">
+      <div className="w-full mx-auto px-3.5 py-6 md:max-w-6xl md:px-6 md:py-10">
         <div className="grid md:grid-cols-3 gap-4">
           {[
             {
@@ -2285,7 +2289,7 @@ function LandingPage({
           ].map((f) => (
             <div
               key={f.t}
-              className="bg-white border border-slate-100 rounded-2xl p-6 hover:border-slate-200 hover:shadow-sm transition-all"
+              className="bg-white border border-slate-100 rounded-2xl p-3.5 hover:border-slate-200 hover:shadow-sm transition-all md:p-6"
             >
               <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center text-green-600 mb-4">
                 <f.I />
@@ -2756,7 +2760,7 @@ export function OnboardingPage({
     return false;
   };
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[#f8faf9]">
+    <div className="min-h-screen flex items-center justify-center p-3.5 bg-[#f8faf9] md:p-6">
       <div className="w-full max-w-md">
         <div className="mb-6">
           <div className="flex gap-1 mb-3">
@@ -2772,13 +2776,13 @@ export function OnboardingPage({
           </p>
         </div>
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-3.5 py-3.5 border-b border-slate-100 md:px-6 md:py-5">
             <h2 className="font-bold text-slate-900 text-lg">
               {steps[step - 1].t}
             </h2>
             <p className="text-sm text-slate-400 mt-0.5">{steps[step - 1].d}</p>
           </div>
-          <div className="px-6 py-5 space-y-4">
+          <div className="px-3.5 py-3.5 space-y-3 md:px-6 md:py-5 md:space-y-4">
             {step === 1 && (
               <>
                 <div className="grid grid-cols-3 gap-3">
