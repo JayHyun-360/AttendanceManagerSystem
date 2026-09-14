@@ -148,7 +148,7 @@ export default function StudentDetailRoutePage() {
 
         <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
           <div className="bg-gradient-to-r from-emerald-500 via-green-600 to-emerald-700 px-4 py-5 md:px-8 md:py-7">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-4 md:gap-5">
                 {student.photoUrl ? (
                   <img
@@ -167,25 +167,26 @@ export default function StudentDetailRoutePage() {
                       .toUpperCase() || "S"}
                   </div>
                 )}
+
+                <div className="min-w-0 text-white">
+                  <p className="text-xl font-bold tracking-tight md:text-3xl">
+                    {student.name}
+                  </p>
+                  <p className="mt-1 text-sm text-emerald-50 md:text-base">
+                    {student.studentId}
+                  </p>
+                </div>
               </div>
 
-              <div className="min-w-0 flex-1 text-white">
-                <p className="text-xl font-bold tracking-tight md:text-3xl">
-                  {student.name}
-                </p>
-                <p className="mt-1 text-sm text-emerald-50 md:text-base">
-                  {student.studentId}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {badges.map((badge) => (
-                    <span
-                      key={badge}
-                      className="rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-white md:text-[11px]"
-                    >
-                      {badge}
-                    </span>
-                  ))}
-                </div>
+              <div className="flex flex-wrap gap-2 md:justify-end">
+                {badges.map((badge) => (
+                  <span
+                    key={badge}
+                    className="rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-white md:text-[11px]"
+                  >
+                    {badge}
+                  </span>
+                ))}
               </div>
             </div>
           </div>
@@ -248,16 +249,19 @@ export default function StudentDetailRoutePage() {
 
               <TabsContent value="id-photo" className="space-y-4">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 md:p-5">
-                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px]">
+                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_260px]">
                     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-sm md:p-3">
                       {student.idPhotoUrl ? (
-                        <img
-                          src={student.idPhotoUrl}
-                          alt="Student ID"
-                          className="w-full rounded-xl object-cover md:max-h-[520px]"
-                        />
+                        <div className="overflow-hidden rounded-xl bg-slate-100">
+                          <img
+                            src={student.idPhotoUrl}
+                            alt="Student ID"
+                            className="h-[260px] w-full rounded-xl object-cover md:h-[360px] xl:h-[420px]"
+                            style={{ objectFit: "contain" }}
+                          />
+                        </div>
                       ) : (
-                        <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-dashed border-amber-200 bg-amber-50 p-6 text-center">
+                        <div className="flex min-h-[260px] items-center justify-center rounded-xl border border-dashed border-amber-200 bg-amber-50 p-6 text-center md:min-h-[360px] xl:min-h-[420px]">
                           <div>
                             <p className="text-sm font-semibold text-amber-800">
                               No ID photo uploaded
