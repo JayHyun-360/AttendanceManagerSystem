@@ -38,6 +38,7 @@ export default function AdminStudentsRoutePage() {
         if (!cancelled) {
           setStudents(
             (data ?? []).map((row: any) => ({
+              profileId: row.id,
               name:
                 `${row.first_name ?? ""} ${row.surname ?? ""}`.trim() ||
                 row.email ||

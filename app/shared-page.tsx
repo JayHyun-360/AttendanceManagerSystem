@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Fragment } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -218,6 +218,7 @@ export interface FineRecord {
 }
 
 export interface StudentProfile {
+  profileId?: string;
   name: string;
   id: string;
   program: string;
@@ -3224,143 +3225,6 @@ function FormModal({
 }
 
 // ─── Student Profile Modal (Moderator view, with QR) ─────────────────────────
-function StudentProfileModal({
-  student,
-  onClose,
-}: {
-  student: StudentProfile;
-  onClose: () => void;
-}) {
-  const [tab, setTab] = useState<"info" | "id" | "qr">("info");
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <p className="font-bold text-slate-900">Student Profile</p>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
-          >
-            <Icons.X />
-          </button>
-        </div>
-        <div className="px-5 pt-4 pb-3 flex items-center gap-4">
-          <Avatar name={student.name} photoUrl={student.photoUrl} size="lg" />
-          <div>
-            <p className="font-bold text-slate-900 text-base leading-tight">
-              {student.name}
-            </p>
-            <p className="text-sm text-slate-400 font-medium">{student.id}</p>
-            <div className="flex flex-wrap gap-1.5 mt-1.5">
-              {[student.program, student.yearLevel, student.section]
-                .filter(Boolean)
-                .map((t) => (
-                  <span
-                    key={t}
-                    className="text-[11px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded"
-                  >
-                    {t}
-                  </span>
-                ))}
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-1 mx-5 mb-4 bg-slate-100 p-1 rounded-xl">
-          <button
-            onClick={() => setTab("info")}
-            className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-all ${tab === "info" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
-          >
-            Profile Info
-          </button>
-          <button
-            onClick={() => setTab("id")}
-            className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-all ${tab === "id" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
-          >
-            ID Photo
-          </button>
-          <button
-            onClick={() => setTab("qr")}
-            className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${tab === "qr" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
-          >
-            <Icons.QrCode />
-            QR Code
-          </button>
-        </div>
-        {tab === "info" && (
-          <div className="px-5 pb-5">
-            <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
-              {[
-                { l: "Phone", v: student.phone },
-                { l: "Email", v: student.email },
-                { l: "Joined TapIn", v: student.joinedDate },
-              ].map((f, i, arr) => (
-                <div
-                  key={f.l}
-                  className={`flex items-center justify-between px-4 py-3 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}
-                >
-                  <span className="text-xs font-semibold text-slate-400">
-                    {f.l}
-                  </span>
-                  <span className="text-sm font-semibold text-slate-900 text-right max-w-[60%] truncate">
-                    {f.v}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {tab === "id" && (
-          <div className="px-5 pb-5">
-            {student.idPhotoUrl ? (
-              <div className="bg-white border border-slate-100 rounded-xl overflow-hidden p-4">
-                <img
-                  src={student.idPhotoUrl}
-                  alt="School ID"
-                  className="w-full rounded-lg object-cover max-h-48"
-                />
-                <p className="text-[11px] text-slate-400 mt-2.5 text-center">
-                  Used for identity verification by moderators
-                </p>
-              </div>
-            ) : (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
-                <p className="text-sm font-semibold text-amber-800">
-                  No ID photo uploaded
-                </p>
-                <p className="text-[11px] text-amber-700 mt-1">
-                  This student has not uploaded a school ID photo yet.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-        {tab === "qr" && (
-          <div className="px-5 pb-5 text-center">
-            <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 inline-block mb-3">
-              <StudentQR studentId={student.id} size={160} />
-            </div>
-            <p className="text-xs font-semibold text-slate-900">
-              {student.name}
-            </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              {student.id} · {student.program}
-            </p>
-            <p className="text-[10px] text-slate-300 mt-2">
-              Moderator view — for in-person check-in assist
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── Upcoming Event Card (adaptive: photo or green fallback) ──────────────────
 function UpcomingEventCard({
   event: ev,
@@ -7341,8 +7205,8 @@ export function AdminStudentsPage({
 }: {
   students?: StudentProfile[];
 }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<StudentProfile | null>(null);
   const filtered = students.filter((s) => {
     const q = query.toLowerCase();
     return (
@@ -7352,6 +7216,12 @@ export function AdminStudentsPage({
       s.section.toLowerCase().includes(q)
     );
   });
+
+  const openStudent = (student: StudentProfile) => {
+    const targetId = student.profileId ?? student.id;
+    router.push(`/admin-students/${encodeURIComponent(targetId)}`);
+  };
+
   return (
     <PageShell>
       <PageHeader
@@ -7390,10 +7260,9 @@ export function AdminStudentsPage({
             <span className="col-span-1"></span>
           </div>
           {filtered.map((s, i) => (
-            <>
+            <Fragment key={s.profileId ?? s.id}>
               <button
-                key={`mobile-${s.id}`}
-                onClick={() => setSelected(s)}
+                onClick={() => openStudent(s)}
                 className={`block w-full px-3.5 py-3 text-left transition-colors hover:bg-slate-50/80 md:hidden ${i < filtered.length - 1 ? "border-b border-gray-100" : ""}`}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -7411,8 +7280,7 @@ export function AdminStudentsPage({
                 </div>
               </button>
               <button
-                key={`desktop-${s.id}`}
-                onClick={() => setSelected(s)}
+                onClick={() => openStudent(s)}
                 className={`hidden w-full px-5 py-3.5 md:grid md:grid-cols-12 md:items-center md:text-left md:hover:bg-slate-50 md:transition-colors ${i < filtered.length - 1 ? "border-b border-slate-50" : ""}`}
               >
                 <div className="col-span-5 flex items-center gap-3 min-w-0">
@@ -7434,15 +7302,9 @@ export function AdminStudentsPage({
                   <Icons.ChevronRight />
                 </span>
               </button>
-            </>
+            </Fragment>
           ))}
         </div>
-      )}
-      {selected && (
-        <StudentProfileModal
-          student={selected}
-          onClose={() => setSelected(null)}
-        />
       )}
     </PageShell>
   );
