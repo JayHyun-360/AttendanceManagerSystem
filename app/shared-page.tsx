@@ -7263,16 +7263,29 @@ export function AdminStudentsPage({
             <Fragment key={s.profileId ?? s.id}>
               <button
                 onClick={() => openStudent(s)}
-                className={`block w-full px-3.5 py-3 text-left transition-colors hover:bg-slate-50/80 md:hidden ${i < filtered.length - 1 ? "border-b border-gray-100" : ""}`}
+                className={`block w-full px-3.5 py-3.5 text-left transition-colors hover:bg-slate-50/80 active:bg-slate-100 md:hidden ${i < filtered.length - 1 ? "border-b border-gray-100" : ""}`}
               >
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="shrink-0">
+                    <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
+                  </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-slate-900">
                       {s.name}
                     </p>
-                    <p className="mt-0.5 text-[11px] text-slate-500">
-                      {s.id} • {s.program} • {s.section}
+                    <p className="mt-0.5 text-[11px] text-slate-500 truncate">
+                      {s.id}
                     </p>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {[s.program, s.section].filter(Boolean).map((item) => (
+                        <span
+                          key={`${s.id}-${item}`}
+                          className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-medium text-slate-600"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                   <span className="flex shrink-0 text-slate-300">
                     <Icons.ChevronRight />
