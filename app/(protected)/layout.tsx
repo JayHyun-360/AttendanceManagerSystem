@@ -322,7 +322,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     <ProtectedUserContext.Provider
       value={{ user, setUser, authUserId, setAuthUserId, showFees }}
     >
-      <div className="h-screen overflow-hidden bg-[#f8faf9] relative">
+      <div className="w-full min-h-screen m-0 p-0 bg-white md:h-screen md:overflow-hidden md:bg-[#f8faf9] md:relative">
         {showGlobalLoading && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#f8faf9]/85 backdrop-blur-[1px]">
             <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
@@ -332,7 +332,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           </div>
         )}
         <TopBar user={user} onNav={onNav} onMenuOpen={() => setOpen(true)} />
-        <div className="flex h-[calc(100vh-56px)] min-h-0">
+        <div className="flex min-h-0 w-full md:h-[calc(100vh-56px)]">
           <Sidebar
             page={page}
             user={user}
@@ -343,7 +343,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           />
           <main
             id="protected-main-content"
-            className="w-full min-h-screen min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
+            className="w-full min-h-screen min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-gutter:stable] md:min-h-screen"
           >
             <PageShell>{children}</PageShell>
           </main>

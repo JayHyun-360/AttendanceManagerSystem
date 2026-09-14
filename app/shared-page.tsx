@@ -1476,7 +1476,7 @@ export function BackButton({
 // ─── Layout ───────────────────────────────────────────────────────────────────
 export function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-full px-3.5 py-3 md:max-w-6xl md:mx-auto md:px-6 md:py-6 lg:max-w-7xl">
+    <div className="w-full px-2.5 py-2 md:max-w-6xl md:mx-auto md:px-6 md:py-6 lg:max-w-7xl">
       {children}
     </div>
   );
@@ -7070,14 +7070,14 @@ export function AdminAttendeesPage({
       ) : tab === "present" ? (
         <>
           {confirmed.length === 0 ? (
-            <div className="bg-white border border-slate-100 rounded-xl px-5 py-10 text-center">
+            <div className="w-full bg-white border border-slate-100 rounded-xl px-3.5 py-10 text-center md:px-6">
               <p className="text-slate-400 text-sm font-medium">
                 No scans recorded for this event yet.
               </p>
             </div>
           ) : (
-            <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-4">
-              <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 grid grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <div className="mb-4 w-full overflow-hidden rounded-xl border border-slate-100 bg-white">
+              <div className="hidden md:grid px-5 py-3 bg-slate-50 border-b border-slate-100 grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 <span className="col-span-5">Student</span>
                 <span className="col-span-3">Program</span>
                 <span className="col-span-2">Time</span>
@@ -7086,25 +7086,42 @@ export function AdminAttendeesPage({
               {confirmed.map((s, i) => (
                 <div
                   key={s.dbId}
-                  className={`px-5 py-3.5 grid grid-cols-12 items-center ${i < confirmed.length - 1 ? "border-b border-slate-50" : ""}`}
+                  className={`${i < confirmed.length - 1 ? "border-b border-slate-50" : ""}`}
                 >
-                  <div className="col-span-5 flex items-center gap-3 min-w-0">
-                    <Avatar name={s.name} size="sm" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 truncate">
-                        {s.name}
-                      </p>
-                      <p className="text-[11px] text-slate-400">{s.id}</p>
+                  <div className="block w-full px-3.5 py-3 md:hidden">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-slate-900">
+                          {s.name}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-slate-500">
+                          {s.id} • {s.program} • {s.time}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0">
+                        <Badge status={s.status} />
+                      </div>
                     </div>
                   </div>
-                  <span className="col-span-3 text-xs text-slate-500">
-                    {s.program}
-                  </span>
-                  <span className="col-span-2 text-xs text-slate-500">
-                    {s.time}
-                  </span>
-                  <div className="col-span-2 flex justify-end">
-                    <Badge status={s.status} />
+                  <div className="hidden md:grid px-5 py-3.5 md:grid-cols-12 md:items-center">
+                    <div className="col-span-5 flex items-center gap-3 min-w-0">
+                      <Avatar name={s.name} size="sm" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 truncate">
+                          {s.name}
+                        </p>
+                        <p className="text-[11px] text-slate-400">{s.id}</p>
+                      </div>
+                    </div>
+                    <span className="col-span-3 text-xs text-slate-500">
+                      {s.program}
+                    </span>
+                    <span className="col-span-2 text-xs text-slate-500">
+                      {s.time}
+                    </span>
+                    <div className="col-span-2 flex justify-end">
+                      <Badge status={s.status} />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -7113,28 +7130,52 @@ export function AdminAttendeesPage({
           {duplicates.length > 0 && (
             <>
               <SectionLabel>Duplicate scans — tap trash to remove</SectionLabel>
-              <div className="bg-white border border-red-100 rounded-xl overflow-hidden">
+              <div className="w-full overflow-hidden rounded-xl border border-red-100 bg-white">
                 {duplicates.map((s, i) => (
                   <div
                     key={s.dbId}
-                    className={`px-5 py-3.5 flex items-center gap-3 ${i < duplicates.length - 1 ? "border-b border-slate-50" : ""}`}
+                    className={`${i < duplicates.length - 1 ? "border-b border-slate-50" : ""}`}
                   >
-                    <Avatar name={s.name} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 truncate">
-                        {s.name}
-                      </p>
-                      <p className="text-[11px] text-slate-400">
-                        {s.id} · scanned {s.time}
-                      </p>
+                    <div className="block px-3.5 py-3 md:hidden">
+                      <div className="flex items-center gap-3">
+                        <Avatar name={s.name} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-slate-900">
+                            {s.name}
+                          </p>
+                          <p className="mt-0.5 text-[11px] text-slate-400">
+                            {s.id} · scanned {s.time}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge status={s.status} />
+                          <button
+                            onClick={() => void deleteRecord(s.dbId)}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                          >
+                            <Icons.Trash />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <Badge status={s.status} />
-                    <button
-                      onClick={() => void deleteRecord(s.dbId)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                    >
-                      <Icons.Trash />
-                    </button>
+                    <div className="hidden items-center gap-3 px-5 py-3.5 md:flex">
+                      <Avatar name={s.name} size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 truncate">
+                          {s.name}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          {s.id} · scanned {s.time}
+                        </p>
+                      </div>
+                      <Badge status={s.status} />
+                      <button
+                        onClick={() => void deleteRecord(s.dbId)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Icons.Trash />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -7153,7 +7194,7 @@ export function AdminAttendeesPage({
             </div>
           )}
           {absentees.length === 0 ? (
-            <div className="bg-white border border-slate-100 rounded-xl px-5 py-10 text-center">
+            <div className="w-full bg-white border border-slate-100 rounded-xl px-3.5 py-10 text-center md:px-6">
               <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-3 text-green-500">
                 <Icons.CheckCircle />
               </div>
@@ -7165,8 +7206,8 @@ export function AdminAttendeesPage({
               </p>
             </div>
           ) : (
-            <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
-              <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 grid grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <div className="w-full overflow-hidden rounded-xl border border-slate-100 bg-white">
+              <div className="hidden md:grid px-5 py-3 bg-slate-50 border-b border-slate-100 grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 <span className="col-span-5">Student</span>
                 <span className="col-span-4">Program</span>
                 <span className="col-span-3 text-right">Fee</span>
@@ -7174,28 +7215,51 @@ export function AdminAttendeesPage({
               {absentees.map((s, i) => (
                 <div
                   key={s.id}
-                  className={`px-5 py-3.5 grid grid-cols-12 items-center ${i < absentees.length - 1 ? "border-b border-slate-50" : ""}`}
+                  className={`${i < absentees.length - 1 ? "border-b border-slate-50" : ""}`}
                 >
-                  <div className="col-span-5 flex items-center gap-3 min-w-0">
-                    <Avatar name={s.name} size="sm" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 truncate">
-                        {s.name}
-                      </p>
-                      <p className="text-[11px] text-slate-400">{s.id}</p>
+                  <div className="block w-full px-3.5 py-3 md:hidden">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-slate-900">
+                          {s.name}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-slate-500">
+                          {s.id} • {s.program} • {s.section}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        {selectedEvent.fineAmount > 0 ? (
+                          <span className="text-sm font-bold text-red-600">
+                            ₱{selectedEvent.fineAmount}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <span className="col-span-4 text-xs text-slate-500">
-                    {s.program} · {s.section}
-                  </span>
-                  <div className="col-span-3 flex justify-end">
-                    {selectedEvent.fineAmount > 0 ? (
-                      <span className="text-sm font-bold text-red-600">
-                        ₱{selectedEvent.fineAmount}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-slate-400">—</span>
-                    )}
+                  <div className="hidden md:grid px-5 py-3.5 md:grid-cols-12 md:items-center">
+                    <div className="col-span-5 flex items-center gap-3 min-w-0">
+                      <Avatar name={s.name} size="sm" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 truncate">
+                          {s.name}
+                        </p>
+                        <p className="text-[11px] text-slate-400">{s.id}</p>
+                      </div>
+                    </div>
+                    <span className="col-span-4 text-xs text-slate-500">
+                      {s.program} · {s.section}
+                    </span>
+                    <div className="col-span-3 flex justify-end">
+                      {selectedEvent.fineAmount > 0 ? (
+                        <span className="text-sm font-bold text-red-600">
+                          ₱{selectedEvent.fineAmount}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
