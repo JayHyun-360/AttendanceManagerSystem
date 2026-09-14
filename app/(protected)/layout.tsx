@@ -253,17 +253,26 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     }
   }, [pathname, user, router]);
 
+  const resetProtectedAuthState = () => {
+    setUser(null);
+    setAuthUserId(null);
+    setHasSession(false);
+    setSessionReady(false);
+    setSettingsReady(false);
+    setShowFees(false);
+    setPage("landing");
+    setOpen(false);
+  };
+
   const onLogout = async () => {
+    resetProtectedAuthState();
+
     try {
       await supabase.auth.signOut();
     } catch (caughtError) {
       console.error(caughtError);
     }
 
-    setUser(null);
-    setAuthUserId(null);
-    setPage("landing");
-    setOpen(false);
     router.push("/login");
   };
 
