@@ -1567,7 +1567,11 @@ export function TopBar({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const hideAuthButton = pathname === "/login" || pathname.startsWith("/login");
+  const hideAuthButton =
+    pathname === "/login" ||
+    pathname.startsWith("/login") ||
+    pathname === "/onboarding" ||
+    pathname.startsWith("/onboarding");
   const dest =
     user?.role === "admin" ? "/admin-dashboard" : user ? "/dashboard" : "/";
   const isMod = user?.role === "admin";
@@ -1708,7 +1712,7 @@ export function TopBar({
           ) : hideAuthButton ? null : (
             <button
               onClick={() => go("/login")}
-              className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+              className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
             >
               Sign in
             </button>
@@ -2208,10 +2212,10 @@ function LandingPage({
           className={`relative w-full mx-auto px-3.5 flex flex-col md:max-w-6xl md:px-6 ${hasHero ? "items-start text-left pt-6 pb-6 md:pt-10 md:pb-12" : "items-center text-center pt-6 pb-6 md:pt-10 md:pb-12"}`}
         >
           <div
-            className={`inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full mb-8 ${hasHero ? "text-green-300 bg-white/10 border border-white/25 backdrop-blur-sm" : "text-green-700 bg-green-50 border border-green-200"}`}
+            className={`inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full mb-8 ${hasHero ? "text-emerald-200 bg-white/10 border border-white/25 backdrop-blur-sm" : "text-emerald-700 bg-emerald-50 border border-emerald-200"}`}
           >
             <span
-              className="w-1.5 h-1.5 bg-green-400 rounded-full"
+              className="w-1.5 h-1.5 bg-emerald-400 rounded-full"
               style={{ animation: "pulse 2s infinite" }}
             />
             AY 2026-2027 · 1st Semester
@@ -2255,7 +2259,7 @@ function LandingPage({
                   onNav("login");
                 }
               }}
-              className="h-11 px-6 bg-green-500 hover:bg-green-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-px"
+              className="h-11 px-6 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-px"
             >
               {user ? "Go to Dashboard" : "Get Started"}
             </button>
@@ -2293,7 +2297,7 @@ function LandingPage({
               key={f.t}
               className="bg-white border border-slate-100 rounded-2xl p-3.5 hover:border-slate-200 hover:shadow-sm transition-all md:p-6"
             >
-              <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center text-green-600 mb-4">
+              <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-4">
                 <f.I />
               </div>
               <h3 className="font-semibold text-slate-900 text-sm mb-1.5">
