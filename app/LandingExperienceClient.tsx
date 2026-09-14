@@ -8892,37 +8892,15 @@ export default function LandingExperienceClient({
           className="fixed inset-0 z-50 flex items-center justify-center bg-white"
         >
           <motion.div
-            initial={{ scale: 0.92, opacity: 0.7 }}
-            animate={{
-              scale: [0.94, 1, 0.96],
-              opacity: [0.72, 1, 0.8],
-              filter: [
-                "drop-shadow(0 0 0 rgba(16,185,129,0))",
-                "drop-shadow(0 0 18px rgba(16,185,129,0.2))",
-                "drop-shadow(0 0 0 rgba(16,185,129,0))",
-              ],
-            }}
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 1, rotate: 360 }}
             transition={{
-              duration: 1.8,
-              ease: "easeInOut",
+              duration: 0.8,
+              ease: "linear",
               repeat: Number.POSITIVE_INFINITY,
             }}
-            className="flex flex-col items-center justify-center"
-          >
-            <img
-              src={tapInLogoSrc}
-              alt="TapIn logo"
-              className="h-16 w-16 md:h-20 md:w-20 object-contain"
-            />
-            <motion.div
-              initial={{ opacity: 0.7 }}
-              animate={{ opacity: [0.6, 1, 0.7] }}
-              transition={{ duration: 1.4, repeat: Number.POSITIVE_INFINITY }}
-              className="mt-4 text-xs font-semibold uppercase tracking-[0.32em] text-emerald-600"
-            >
-              Loading
-            </motion.div>
-          </motion.div>
+            className="h-12 w-12 rounded-full border-2 border-slate-200 border-t-green-600"
+          />
         </motion.div>
       ) : (
         <motion.div

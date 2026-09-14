@@ -296,15 +296,13 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     setOpen(false);
   };
 
-  if (
-    !sessionReady ||
-    !settingsReady ||
-    (!user && (!hasSession || pathname !== "/onboarding"))
-  ) {
+  const showGlobalLoading = (!sessionReady || !settingsReady) && !user;
+
+  if (showGlobalLoading) {
     return (
       <div className="min-h-screen bg-[#f8faf9] flex items-center justify-center">
         <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
-          <span className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
+          <span className="h-4 w-4 rounded-full border-2 border-slate-200 border-t-green-600 animate-spin" />
           Loading TapIn...
         </div>
       </div>
@@ -315,7 +313,15 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     <ProtectedUserContext.Provider
       value={{ user, setUser, authUserId, setAuthUserId, showFees }}
     >
-      <div className="h-screen overflow-hidden bg-[#f8faf9]">
+      <div className="h-screen overflow-hidden bg-[#f8faf9] relative">
+        {showGlobalLoading && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#f8faf9]/85 backdrop-blur-[1px]">
+            <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
+              <span className="h-4 w-4 rounded-full border-2 border-slate-200 border-t-green-600 animate-spin" />
+              Loading TapIn...
+            </div>
+          </div>
+        )}
         <TopBar user={user} onNav={onNav} onMenuOpen={() => setOpen(true)} />
         <div className="flex h-[calc(100vh-56px)] min-h-0">
           <Sidebar

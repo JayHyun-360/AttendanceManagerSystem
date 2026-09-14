@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -1663,12 +1664,15 @@ export function Sidebar({
           const count = badges?.[p] ?? 0;
           const badgeLabel =
             count > 9 ? "9+" : count > 0 ? String(count) : null;
+          const target = routeFromPage[p] ?? "/dashboard";
           return (
-            <button
+            <Link
               key={p}
+              href={target}
+              prefetch
               onMouseEnter={() => prefetchRoute(p)}
               onFocus={() => prefetchRoute(p)}
-              onClick={() => handleNav(p)}
+              onClick={onClose}
               className={`w-full flex items-center gap-3 border-l-[3px] px-3 h-10 rounded-lg text-sm transition-colors duration-150 ease-in-out ${active ? "border-green-600 bg-green-50/70 text-green-800 font-medium" : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-normal"}`}
             >
               <span
@@ -1682,7 +1686,7 @@ export function Sidebar({
                 )}
               </span>
               <span className="truncate">{l}</span>
-            </button>
+            </Link>
           );
         })}
       </nav>
