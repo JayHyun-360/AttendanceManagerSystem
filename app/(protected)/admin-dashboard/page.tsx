@@ -21,6 +21,9 @@ export default function AdminDashboardRoute() {
   const [recentScans, setRecentScans] = useState<any[]>([]);
   const [featuredEventTitle, setFeaturedEventTitle] =
     useState<string>("TapIn overview");
+  const [featuredEventStatus, setFeaturedEventStatus] = useState<
+    "active" | "upcoming" | "closed"
+  >("upcoming");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -76,7 +79,14 @@ export default function AdminDashboardRoute() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const activeEvents = (eventsResult.data ?? []).filter((row: any) => {
+        const eventRows = eventsResult.data ?? [];
+        const featuredRow =
+          eventRows.find((row: any) => row.status === "active") ??
+          eventRows.find((row: any) => row.status === "upcoming") ??
+          eventRows.find((row: any) => row.status === "closed") ??
+          null;
+
+        const activeEvents = eventRows.filter((row: any) => {
           return row.status === "active";
         }).length;
 
@@ -115,8 +125,10 @@ export default function AdminDashboardRoute() {
           students: profileResult.data?.length ?? 0,
         });
         setRecentScans(recent);
-        setFeaturedEventTitle(
-          (eventsResult.data ?? [])[0]?.title || "TapIn overview",
+        setFeaturedEventTitle(featuredRow?.title || "TapIn overview");
+        setFeaturedEventStatus(
+          (featuredRow?.status as "active" | "upcoming" | "closed") ??
+            "upcoming",
         );
       } catch (caughtError) {
         console.error(caughtError);
@@ -214,6 +226,7 @@ export default function AdminDashboardRoute() {
       stats={stats}
       recentScans={recentScans}
       featuredEventTitle={featuredEventTitle}
+      featuredEventStatus={featuredEventStatus}
     />
   );
 }
