@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageShell, PageHeader } from "../../../shared-page";
+import { PageShell, PageHeader, StudentQR } from "../../../shared-page";
 import { supabase } from "@/lib/supabase";
 
 interface StudentDetail {
@@ -192,24 +192,24 @@ export default function StudentDetailRoutePage() {
 
           <div className="p-3 md:p-6">
             <Tabs defaultValue="profile" className="w-full">
-              <TabsList className="mb-4 grid w-full grid-cols-3 gap-1 bg-slate-100 p-1 md:mb-5 md:justify-start md:w-auto md:grid-cols-none">
+              <TabsList className="mb-4 flex w-full gap-1.5 bg-slate-100 p-1 md:mb-5 md:w-fit md:justify-start">
                 <TabsTrigger
                   value="profile"
-                  className="flex-1 rounded-lg px-2 py-2 text-[11px] font-semibold md:flex-none md:px-4 md:text-sm"
+                  className="flex-1 rounded-lg px-2 py-2 text-[11px] font-semibold whitespace-nowrap md:flex-none md:px-4 md:text-sm"
                 >
                   Profile Info
                 </TabsTrigger>
                 <TabsTrigger
                   value="id-photo"
-                  className="flex-1 rounded-lg px-2 py-2 text-[11px] font-semibold md:flex-none md:px-4 md:text-sm"
+                  className="flex-1 rounded-lg px-2 py-2 text-[11px] font-semibold whitespace-nowrap md:flex-none md:px-4 md:text-sm"
                 >
-                  ID Photo
+                  ID Photo & QR
                 </TabsTrigger>
                 <TabsTrigger
                   value="attendance"
-                  className="flex-1 rounded-lg px-2 py-2 text-[11px] font-semibold md:flex-none md:px-4 md:text-sm"
+                  className="flex-1 rounded-lg px-2 py-2 text-[11px] font-semibold whitespace-nowrap md:flex-none md:px-4 md:text-sm"
                 >
-                  Attendance
+                  Attendance History
                 </TabsTrigger>
               </TabsList>
 
@@ -248,24 +248,41 @@ export default function StudentDetailRoutePage() {
 
               <TabsContent value="id-photo" className="space-y-4">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 md:p-5">
-                  {student.idPhotoUrl ? (
+                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px]">
                     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-sm md:p-3">
-                      <img
-                        src={student.idPhotoUrl}
-                        alt="Student ID"
-                        className="w-full rounded-xl object-cover md:max-h-[520px]"
-                      />
+                      {student.idPhotoUrl ? (
+                        <img
+                          src={student.idPhotoUrl}
+                          alt="Student ID"
+                          className="w-full rounded-xl object-cover md:max-h-[520px]"
+                        />
+                      ) : (
+                        <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-dashed border-amber-200 bg-amber-50 p-6 text-center">
+                          <div>
+                            <p className="text-sm font-semibold text-amber-800">
+                              No ID photo uploaded
+                            </p>
+                            <p className="mt-1 text-xs text-amber-700">
+                              This student has not uploaded a school ID photo
+                              yet.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
-                      <p className="text-sm font-semibold text-amber-800">
-                        No ID photo uploaded
+
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                        Student QR
                       </p>
-                      <p className="mt-1 text-xs text-amber-700">
-                        This student has not uploaded a school ID photo yet.
+                      <div className="mt-3 flex justify-center rounded-xl bg-slate-50 p-3">
+                        <StudentQR studentId={student.studentId} size={150} />
+                      </div>
+                      <p className="mt-3 text-center text-xs font-medium text-slate-500">
+                        {student.studentId}
                       </p>
                     </div>
-                  )}
+                  </div>
                 </div>
               </TabsContent>
 

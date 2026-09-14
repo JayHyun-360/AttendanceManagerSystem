@@ -1530,7 +1530,13 @@ export function TapInMark({ className = "w-7 h-7" }: { className?: string }) {
 }
 
 // ─── QR Code ──────────────────────────────────────────────────────────────────
-function StudentQR({ studentId, size }: { studentId: string; size: number }) {
+export function StudentQR({
+  studentId,
+  size,
+}: {
+  studentId: string;
+  size: number;
+}) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   useEffect(() => {
     QRCode.toDataURL(`TAPIN:${studentId}`, {
