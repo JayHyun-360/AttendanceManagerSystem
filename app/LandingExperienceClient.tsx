@@ -1134,6 +1134,167 @@ function Badge({ status }: { status: string }) {
   );
 }
 
+function InlineToggle({
+  on,
+  onToggle,
+  label,
+}: {
+  on: boolean;
+  onToggle: () => void;
+  label: string;
+}) {
+  return (
+    <div className="flex items-center justify-between py-2">
+      <span className="text-xs font-semibold text-slate-700">{label}</span>
+      <button
+        onClick={onToggle}
+        role="switch"
+        aria-checked={on}
+        className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 focus:outline-none ${on ? "bg-green-600" : "bg-slate-200"}`}
+      >
+        <span
+          className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${on ? "translate-x-4" : "translate-x-0"}`}
+        />
+      </button>
+    </div>
+  );
+}
+
+function SessionFields({
+  prefix,
+  label,
+  start,
+  onStart,
+  end,
+  onEnd,
+  cutoff,
+  onCutoff,
+  strict,
+  onStrict,
+}: {
+  prefix: string;
+  label: string;
+  start: string;
+  onStart: (v: string) => void;
+  end: string;
+  onEnd: (v: string) => void;
+  cutoff: string;
+  onCutoff: (v: string) => void;
+  strict: boolean;
+  onStrict: () => void;
+}) {
+  return (
+    <div className="border border-slate-100 rounded-xl p-3 space-y-2.5">
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        {label} Session
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <FieldInput
+          label="Start time"
+          type="time"
+          value={start}
+          onChange={(e) => onStart(e.target.value)}
+        />
+        <FieldInput
+          label="End time"
+          type="time"
+          value={end}
+          onChange={(e) => onEnd(e.target.value)}
+        />
+      </div>
+      <FieldInput
+        label="Late cutoff time"
+        type="time"
+        value={cutoff}
+        onChange={(e) => onCutoff(e.target.value)}
+      />
+      <InlineToggle
+        on={strict}
+        onToggle={onStrict}
+        label="Strict attendance (require time-out scan)"
+      />
+    </div>
+  );
+}
+
+function FineFields({
+  multi,
+  values,
+  onChange,
+}: {
+  multi: boolean;
+  values: {
+    absentFine: string;
+    lateFine: string;
+    morningAbsentFine: string;
+    morningLateFine: string;
+    afternoonAbsentFine: string;
+    afternoonLateFine: string;
+  };
+  onChange: (k: string, v: string) => void;
+}) {
+  return (
+    <div className="space-y-2.5">
+      <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block">
+        Fines (₱)
+      </label>
+      {!multi ? (
+        <div className="grid grid-cols-2 gap-2">
+          <FieldInput
+            label="Absent fine"
+            type="number"
+            min="0"
+            value={values.absentFine}
+            onChange={(e) => onChange("absentFine", e.target.value)}
+          />
+          <FieldInput
+            label="Late fine"
+            type="number"
+            min="0"
+            value={values.lateFine}
+            onChange={(e) => onChange("lateFine", e.target.value)}
+          />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            <FieldInput
+              label="Morning absent"
+              type="number"
+              min="0"
+              value={values.morningAbsentFine}
+              onChange={(e) => onChange("morningAbsentFine", e.target.value)}
+            />
+            <FieldInput
+              label="Morning late"
+              type="number"
+              min="0"
+              value={values.morningLateFine}
+              onChange={(e) => onChange("morningLateFine", e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <FieldInput
+              label="Afternoon absent"
+              type="number"
+              min="0"
+              value={values.afternoonAbsentFine}
+              onChange={(e) => onChange("afternoonAbsentFine", e.target.value)}
+            />
+            <FieldInput
+              label="Afternoon late"
+              type="number"
+              min="0"
+              value={values.afternoonLateFine}
+              onChange={(e) => onChange("afternoonLateFine", e.target.value)}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Avatar / ProfileIcon ─────────────────────────────────────────────────────
 function Avatar({
   name,
@@ -5221,163 +5382,6 @@ export function AdminEventsPage({
         icon: <Icons.Check />,
       },
     ].filter((o) => o.status !== current);
-
-  // Compact inline toggle for use inside modals
-  const InlineToggle = ({
-    on,
-    onToggle,
-    label,
-  }: {
-    on: boolean;
-    onToggle: () => void;
-    label: string;
-  }) => (
-    <div className="flex items-center justify-between py-2">
-      <span className="text-xs font-semibold text-slate-700">{label}</span>
-      <button
-        onClick={onToggle}
-        role="switch"
-        aria-checked={on}
-        className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 focus:outline-none ${on ? "bg-green-600" : "bg-slate-200"}`}
-      >
-        <span
-          className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${on ? "translate-x-4" : "translate-x-0"}`}
-        />
-      </button>
-    </div>
-  );
-
-  // Session fields block (reused for create and edit)
-  const SessionFields = ({
-    prefix,
-    label,
-    start,
-    onStart,
-    end,
-    onEnd,
-    cutoff,
-    onCutoff,
-    strict,
-    onStrict,
-  }: {
-    prefix: string;
-    label: string;
-    start: string;
-    onStart: (v: string) => void;
-    end: string;
-    onEnd: (v: string) => void;
-    cutoff: string;
-    onCutoff: (v: string) => void;
-    strict: boolean;
-    onStrict: () => void;
-  }) => (
-    <div className="border border-slate-100 rounded-xl p-3 space-y-2.5">
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-        {label} Session
-      </p>
-      <div className="grid grid-cols-2 gap-2">
-        <FieldInput
-          label="Start time"
-          type="time"
-          value={start}
-          onChange={(e) => onStart(e.target.value)}
-        />
-        <FieldInput
-          label="End time"
-          type="time"
-          value={end}
-          onChange={(e) => onEnd(e.target.value)}
-        />
-      </div>
-      <FieldInput
-        label="Late cutoff time"
-        type="time"
-        value={cutoff}
-        onChange={(e) => onCutoff(e.target.value)}
-      />
-      <InlineToggle
-        on={strict}
-        onToggle={onStrict}
-        label="Strict attendance (require time-out scan)"
-      />
-    </div>
-  );
-
-  const FineFields = ({
-    multi,
-    values,
-    onChange,
-  }: {
-    multi: boolean;
-    values: {
-      absentFine: string;
-      lateFine: string;
-      morningAbsentFine: string;
-      morningLateFine: string;
-      afternoonAbsentFine: string;
-      afternoonLateFine: string;
-    };
-    onChange: (k: string, v: string) => void;
-  }) => (
-    <div className="space-y-2.5">
-      <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block">
-        Fines (₱)
-      </label>
-      {!multi ? (
-        <div className="grid grid-cols-2 gap-2">
-          <FieldInput
-            label="Absent fine"
-            type="number"
-            min="0"
-            value={values.absentFine}
-            onChange={(e) => onChange("absentFine", e.target.value)}
-          />
-          <FieldInput
-            label="Late fine"
-            type="number"
-            min="0"
-            value={values.lateFine}
-            onChange={(e) => onChange("lateFine", e.target.value)}
-          />
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-2">
-            <FieldInput
-              label="Morning absent"
-              type="number"
-              min="0"
-              value={values.morningAbsentFine}
-              onChange={(e) => onChange("morningAbsentFine", e.target.value)}
-            />
-            <FieldInput
-              label="Morning late"
-              type="number"
-              min="0"
-              value={values.morningLateFine}
-              onChange={(e) => onChange("morningLateFine", e.target.value)}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <FieldInput
-              label="Afternoon absent"
-              type="number"
-              min="0"
-              value={values.afternoonAbsentFine}
-              onChange={(e) => onChange("afternoonAbsentFine", e.target.value)}
-            />
-            <FieldInput
-              label="Afternoon late"
-              type="number"
-              min="0"
-              value={values.afternoonLateFine}
-              onChange={(e) => onChange("afternoonLateFine", e.target.value)}
-            />
-          </div>
-        </>
-      )}
-    </div>
-  );
 
   return (
     <PageShell>
