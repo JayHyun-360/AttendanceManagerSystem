@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageShell, PageHeader, StudentQR } from "../../../shared-page";
+import { PageHeader, StudentQR } from "../../../shared-page";
 import { supabase } from "@/lib/supabase";
 
 interface StudentDetail {
@@ -96,7 +96,7 @@ export default function StudentDetailRoutePage() {
 
   if (isLoading) {
     return (
-      <PageShell>
+      <>
         <Skeleton className="h-8 w-40 rounded-lg" />
         <div className="mt-4 space-y-4">
           <div className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -110,13 +110,13 @@ export default function StudentDetailRoutePage() {
           </div>
           <Skeleton className="h-48 w-full rounded-2xl" />
         </div>
-      </PageShell>
+      </>
     );
   }
 
   if (!student) {
     return (
-      <PageShell>
+      <>
         <PageHeader title="Student Profile" />
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
           <p className="text-sm font-semibold text-amber-800">
@@ -129,12 +129,12 @@ export default function StudentDetailRoutePage() {
             Back to students
           </button>
         </div>
-      </PageShell>
+      </>
     );
   }
 
   return (
-    <PageShell>
+    <>
       <div className="mx-auto w-full max-w-5xl space-y-5 md:space-y-6">
         <div className="flex items-center justify-between gap-3 px-1">
           <button
@@ -308,6 +308,6 @@ export default function StudentDetailRoutePage() {
           </div>
         </div>
       </div>
-    </PageShell>
+    </>
   );
 }

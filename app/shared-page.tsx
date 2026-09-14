@@ -1480,7 +1480,7 @@ export function BackButton({
 // ─── Layout ───────────────────────────────────────────────────────────────────
 export function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-full px-2.5 py-2 md:max-w-6xl md:mx-auto md:px-6 md:py-6 lg:max-w-7xl">
+    <div className="w-full px-2.5 pt-2 pb-12 md:max-w-6xl md:mx-auto md:px-6 md:pt-4 md:pb-16 lg:max-w-7xl">
       {children}
     </div>
   );
@@ -3450,7 +3450,7 @@ export function DashboardPage({
   ];
 
   return (
-    <PageShell>
+    <>
       <div className="mb-7">
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">
           Aug 22, 2026 · Friday
@@ -3629,7 +3629,7 @@ export function DashboardPage({
           </motion.div>
         ))}
       </div>
-    </PageShell>
+    </>
   );
 }
 
@@ -3652,7 +3652,7 @@ export function EventsPage({
     filter === "all" ? events : events.filter((e) => e.status === filter);
   const canSeeFees = user?.role === "student" && showFees;
   return (
-    <PageShell>
+    <>
       <PageHeader title="Events" subtitle="AY 2026-2027, 1st Semester" />
       <div className="flex gap-2 sm:gap-2 mb-5 overflow-x-auto pb-1 -mx-1 px-1">
         {[
@@ -3734,7 +3734,7 @@ export function EventsPage({
           </div>
         ))}
       </div>
-    </PageShell>
+    </>
   );
 }
 
@@ -3757,7 +3757,7 @@ function EventDetailPage({
   const [lightbox, setLightbox] = useState<string | null>(null);
   const primaryMedia = ev.highlightUrl ?? ev.mediaUrls?.[0];
   return (
-    <PageShell>
+    <>
       <BackButton onClick={onBack} label="Back to Events" />
       <div className="relative rounded-xl overflow-hidden mb-4 shadow-sm">
         {primaryMedia ? (
@@ -3923,7 +3923,7 @@ function EventDetailPage({
           </div>
         </div>
       )}
-    </PageShell>
+    </>
   );
 }
 
@@ -3960,7 +3960,6 @@ export function MyQRPage({
       errorCorrectionLevel: "H",
     });
     const img = new Image();
-    img.src = qrDataUrl;
     await new Promise((r) => {
       img.onload = r;
     });
@@ -3995,7 +3994,7 @@ export function MyQRPage({
     a.click();
   };
   return (
-    <PageShell>
+    <>
       <BackButton onClick={onBack} label="Back to Home" />
       <PageHeader
         title="My QR Code"
@@ -4052,7 +4051,7 @@ export function MyQRPage({
           </p>
         </div>
       </div>
-    </PageShell>
+    </>
   );
 }
 
@@ -4065,7 +4064,7 @@ export function AnnouncementsPage({
   announcements: typeof INITIAL_ANNOUNCEMENTS;
 }) {
   return (
-    <PageShell>
+    <>
       <BackButton onClick={onBack} label="Back" />
       <PageHeader title="Announcements" />
       <div className="space-y-3">
@@ -4097,7 +4096,7 @@ export function AnnouncementsPage({
           </div>
         ))}
       </div>
-    </PageShell>
+    </>
   );
 }
 
@@ -4121,7 +4120,7 @@ export function AttendanceHistoryPage({
     null,
   );
   return (
-    <PageShell>
+    <>
       <BackButton onClick={onBack} label="Back to Home" />
       <PageHeader title="My Attendance" subtitle="AY 2026-2027, 1st Semester" />
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
@@ -4213,7 +4212,7 @@ export function AttendanceHistoryPage({
           }}
         />
       )}
-    </PageShell>
+    </>
   );
 }
 
@@ -4231,7 +4230,7 @@ export function MyFinesPage({
   const total = unpaid.reduce((s, f) => s + f.amount, 0);
   if (!showFees) {
     return (
-      <PageShell>
+      <>
         <BackButton onClick={onBack} label="Back to Home" />
         <PageHeader title="My Fines" />
         <div className="bg-white border border-slate-100 rounded-xl px-5 py-12 text-center">
@@ -4246,11 +4245,11 @@ export function MyFinesPage({
             soon.
           </p>
         </div>
-      </PageShell>
+      </>
     );
   }
   return (
-    <PageShell>
+    <>
       <BackButton onClick={onBack} label="Back to Home" />
       <PageHeader
         title="My Fines"
@@ -4325,7 +4324,7 @@ export function MyFinesPage({
           </div>
         </>
       )}
-    </PageShell>
+    </>
   );
 }
 
@@ -4385,7 +4384,7 @@ export function ProfilePage({
   }, []);
 
   return (
-    <PageShell>
+    <>
       <BackButton
         onClick={onBack}
         label={isMod ? "Back to Overview" : "Back to Home"}
@@ -4651,7 +4650,7 @@ export function ProfilePage({
           </div>
         )}
       </div>
-    </PageShell>
+    </>
   );
 }
 
@@ -4718,7 +4717,7 @@ export function AdminDashboard({
   const currentStatusMeta = statusConfig[currentStatus];
 
   return (
-    <PageShell>
+    <>
       <div className="flex items-start justify-between mb-6">
         <div>
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">
@@ -4843,7 +4842,7 @@ export function AdminDashboard({
           </div>
         ))}
       </div>
-    </PageShell>
+    </>
   );
 }
 
@@ -5358,7 +5357,7 @@ export function AdminEventsPage({
     ].filter((o) => o.status !== current);
 
   return (
-    <PageShell>
+    <>
       <PageHeader
         title="Events"
         subtitle="AY 2026-2027, 1st Semester"
@@ -6077,7 +6076,7 @@ export function AdminEventsPage({
           </div>
         ))}
       </div>
-    </PageShell>
+    </>
   );
 }
 
@@ -6689,7 +6688,7 @@ export function AdminScannerPage({
   }
 
   return (
-    <PageShell>
+    <>
       <PageHeader
         title="QR Scanner"
         subtitle="Select an event to begin scanning."
@@ -6885,7 +6884,7 @@ export function AdminScannerPage({
           </div>
         )}
       </div>
-    </PageShell>
+    </>
   );
 }
 
@@ -6966,7 +6965,7 @@ export function AdminAttendeesPage({
     URL.revokeObjectURL(url);
   };
   return (
-    <PageShell>
+    <>
       <BackButton
         onClick={() => onNav("admin-events")}
         label="Back to Events"
@@ -7233,7 +7232,7 @@ export function AdminAttendeesPage({
           )}
         </>
       )}
-    </PageShell>
+    </>
   );
 }
 
@@ -7261,7 +7260,7 @@ export function AdminStudentsPage({
   };
 
   return (
-    <PageShell>
+    <>
       <PageHeader
         title="Students"
         subtitle={`${students.length} students registered on TapIn`}
@@ -7357,7 +7356,7 @@ export function AdminStudentsPage({
           ))}
         </div>
       )}
-    </PageShell>
+    </>
   );
 }
 
@@ -7533,7 +7532,7 @@ export function AdminAnnouncementsPage({
     setPosts((p) => p.filter((a) => a.id !== id));
   };
   return (
-    <PageShell>
+    <>
       <PageHeader
         title="Announcements"
         action={
@@ -7813,7 +7812,7 @@ export function AdminAnnouncementsPage({
           </div>
         ))}
       </div>
-    </PageShell>
+    </>
   );
 }
 
@@ -7830,7 +7829,7 @@ export function AdminExcuseRequestsPage({
   const pending = requests.filter((r) => r.status === "pending");
   const reviewed = requests.filter((r) => r.status !== "pending");
   return (
-    <PageShell>
+    <>
       <BackButton onClick={onBack} label="Back to Overview" />
       <PageHeader
         title="Excuse Requests"
@@ -7950,7 +7949,7 @@ export function AdminExcuseRequestsPage({
           </div>
         </>
       )}
-    </PageShell>
+    </>
   );
 }
 
@@ -8183,7 +8182,7 @@ export function AdminReportsPage({
   };
 
   return (
-    <PageShell>
+    <>
       <PageHeader
         title="Reports"
         subtitle="AY 2026-2027, 1st Semester"
@@ -8268,7 +8267,7 @@ export function AdminReportsPage({
           </div>
         ))}
       </div>
-    </PageShell>
+    </>
   );
 }
 
@@ -8433,7 +8432,7 @@ export function AdminSettingsPage({
   };
 
   return (
-    <PageShell>
+    <>
       <PageHeader
         title="Management & Settings"
         subtitle="Changes are saved automatically"
@@ -8830,7 +8829,7 @@ export function AdminSettingsPage({
           </div>
         ))}
       </div>
-    </PageShell>
+    </>
   );
 }
 

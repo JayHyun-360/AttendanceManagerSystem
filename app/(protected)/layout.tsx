@@ -343,7 +343,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           />
           <main
             id="protected-main-content"
-            className="w-full min-h-screen min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-gutter:stable] md:min-h-screen"
+            className="w-full min-w-0 flex-1 min-h-0 overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
           >
             <PageShell>{children}</PageShell>
           </main>
