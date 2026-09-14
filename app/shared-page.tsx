@@ -199,6 +199,7 @@ export interface ExcuseRequest {
   id: string;
   studentName: string;
   studentId: string;
+  photoUrl?: string;
   event: string;
   date: string;
   reason: string;
@@ -224,6 +225,8 @@ export interface StudentProfile {
   section: string;
   phone: string;
   email: string;
+  photoUrl?: string;
+  idPhotoUrl?: string;
   joinedDate: string;
 }
 
@@ -3228,7 +3231,7 @@ function StudentProfileModal({
   student: StudentProfile;
   onClose: () => void;
 }) {
-  const [tab, setTab] = useState<"info" | "qr">("info");
+  const [tab, setTab] = useState<"info" | "id" | "qr">("info");
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
@@ -3248,7 +3251,7 @@ function StudentProfileModal({
           </button>
         </div>
         <div className="px-5 pt-4 pb-3 flex items-center gap-4">
-          <Avatar name={student.name} size="lg" />
+          <Avatar name={student.name} photoUrl={student.photoUrl} size="lg" />
           <div>
             <p className="font-bold text-slate-900 text-base leading-tight">
               {student.name}
@@ -3274,6 +3277,12 @@ function StudentProfileModal({
             className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-all ${tab === "info" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
           >
             Profile Info
+          </button>
+          <button
+            onClick={() => setTab("id")}
+            className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-all ${tab === "id" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            ID Photo
           </button>
           <button
             onClick={() => setTab("qr")}
@@ -3304,6 +3313,31 @@ function StudentProfileModal({
                 </div>
               ))}
             </div>
+          </div>
+        )}
+        {tab === "id" && (
+          <div className="px-5 pb-5">
+            {student.idPhotoUrl ? (
+              <div className="bg-white border border-slate-100 rounded-xl overflow-hidden p-4">
+                <img
+                  src={student.idPhotoUrl}
+                  alt="School ID"
+                  className="w-full rounded-lg object-cover max-h-48"
+                />
+                <p className="text-[11px] text-slate-400 mt-2.5 text-center">
+                  Used for identity verification by moderators
+                </p>
+              </div>
+            ) : (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+                <p className="text-sm font-semibold text-amber-800">
+                  No ID photo uploaded
+                </p>
+                <p className="text-[11px] text-amber-700 mt-1">
+                  This student has not uploaded a school ID photo yet.
+                </p>
+              </div>
+            )}
           </div>
         )}
         {tab === "qr" && (
@@ -7382,7 +7416,7 @@ export function AdminStudentsPage({
                 className={`hidden w-full px-5 py-3.5 md:grid md:grid-cols-12 md:items-center md:text-left md:hover:bg-slate-50 md:transition-colors ${i < filtered.length - 1 ? "border-b border-slate-50" : ""}`}
               >
                 <div className="col-span-5 flex items-center gap-3 min-w-0">
-                  <Avatar name={s.name} size="sm" />
+                  <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-900 truncate">
                       {s.name}
@@ -7913,7 +7947,11 @@ export function AdminExcuseRequestsPage({
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3">
-                    <Avatar name={r.studentName} size="sm" />
+                    <Avatar
+                      name={r.studentName}
+                      photoUrl={r.photoUrl}
+                      size="sm"
+                    />
                     <div>
                       <p className="text-sm font-semibold text-slate-900">
                         {r.studentName}
@@ -7978,7 +8016,11 @@ export function AdminExcuseRequestsPage({
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <Avatar name={r.studentName} size="xs" />
+                    <Avatar
+                      name={r.studentName}
+                      photoUrl={r.photoUrl}
+                      size="xs"
+                    />
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-900 truncate">
                         {r.studentName}

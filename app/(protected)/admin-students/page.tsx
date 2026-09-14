@@ -48,6 +48,8 @@ export default function AdminStudentsRoutePage() {
               section: row.section || "",
               phone: row.phone || "",
               email: row.contact_email || row.email || "",
+              photoUrl: row.photo_url || undefined,
+              idPhotoUrl: row.id_photo_url || undefined,
               joinedDate: new Date(row.created_at).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
