@@ -88,6 +88,8 @@ export default function AdminAttendeesRoutePage() {
             section: row.section || "",
             phone: row.phone || "",
             email: row.contact_email || row.email || "",
+            photoUrl: row.photo_url || undefined,
+            idPhotoUrl: row.id_photo_url || undefined,
             joinedDate: new Date(row.created_at).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
@@ -99,7 +101,7 @@ export default function AdminAttendeesRoutePage() {
         const attendanceResult = await supabase
           .from("attendance_logs")
           .select(
-            "*, student_profile:profiles!attendance_logs_student_id_fkey(student_id, first_name, surname, program, section)",
+            "*, student_profile:profiles!attendance_logs_student_id_fkey(student_id, first_name, surname, program, section, photo_url)",
           )
           .order("scanned_at", { ascending: false });
 
@@ -121,6 +123,7 @@ export default function AdminAttendeesRoutePage() {
               id: studentId || row.student_id,
               program: row.student_profile?.program || "",
               section: row.student_profile?.section || "",
+              photoUrl: row.student_profile?.photo_url || undefined,
               time: new Date(row.scanned_at).toLocaleTimeString("en-US", {
                 hour: "2-digit",
                 minute: "2-digit",

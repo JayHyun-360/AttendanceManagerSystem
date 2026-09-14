@@ -189,6 +189,7 @@ interface ScanRecord {
   id: string;
   program: string;
   section: string;
+  photoUrl?: string;
   time: string;
   status: "confirmed" | "late" | "duplicate";
   action?: "time_in" | "time_out" | "duplicate";
@@ -7055,6 +7056,7 @@ export function AdminAttendeesPage({
                 >
                   <div className="block w-full px-3.5 py-3 md:hidden">
                     <div className="flex items-center justify-between gap-3">
+                      <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-slate-900">
                           {s.name}
@@ -7070,7 +7072,7 @@ export function AdminAttendeesPage({
                   </div>
                   <div className="hidden md:grid px-5 py-3.5 md:grid-cols-12 md:items-center">
                     <div className="col-span-5 flex items-center gap-3 min-w-0">
-                      <Avatar name={s.name} size="sm" />
+                      <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-slate-900 truncate">
                           {s.name}
@@ -7103,7 +7105,7 @@ export function AdminAttendeesPage({
                   >
                     <div className="block px-3.5 py-3 md:hidden">
                       <div className="flex items-center gap-3">
-                        <Avatar name={s.name} size="sm" />
+                        <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold text-slate-900">
                             {s.name}
@@ -7124,7 +7126,7 @@ export function AdminAttendeesPage({
                       </div>
                     </div>
                     <div className="hidden items-center gap-3 px-5 py-3.5 md:flex">
-                      <Avatar name={s.name} size="sm" />
+                      <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-900 truncate">
                           {s.name}
@@ -7184,6 +7186,7 @@ export function AdminAttendeesPage({
                 >
                   <div className="block w-full px-3.5 py-3 md:hidden">
                     <div className="flex items-center justify-between gap-3">
+                      <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-slate-900">
                           {s.name}
@@ -7205,7 +7208,7 @@ export function AdminAttendeesPage({
                   </div>
                   <div className="hidden md:grid px-5 py-3.5 md:grid-cols-12 md:items-center">
                     <div className="col-span-5 flex items-center gap-3 min-w-0">
-                      <Avatar name={s.name} size="sm" />
+                      <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-slate-900 truncate">
                           {s.name}
