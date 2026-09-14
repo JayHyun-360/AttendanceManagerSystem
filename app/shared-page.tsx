@@ -7230,7 +7230,7 @@ export function AdminStudentsPage({
         title="Students"
         subtitle={`${students.length} students registered on TapIn`}
       />
-      <div className="relative mb-5">
+      <div className="relative mb-5 w-full px-3.5 md:px-6">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
           <Icons.Search />
         </span>
@@ -7250,42 +7250,63 @@ export function AdminStudentsPage({
         )}
       </div>
       {filtered.length === 0 ? (
-        <div className="bg-white border border-slate-100 rounded-xl px-5 py-10 text-center">
+        <div className="w-full bg-white border border-slate-100 rounded-xl px-3.5 py-10 text-center md:px-6">
           <p className="text-slate-400 text-sm">No students match "{query}"</p>
         </div>
       ) : (
-        <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
-          <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 grid grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        <div className="w-full overflow-hidden rounded-xl border border-slate-100 bg-white">
+          <div className="hidden md:grid px-5 py-3 bg-slate-50 border-b border-slate-100 grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
             <span className="col-span-5">Student</span>
             <span className="col-span-3">Program</span>
             <span className="col-span-3">Section</span>
             <span className="col-span-1"></span>
           </div>
           {filtered.map((s, i) => (
-            <button
-              key={s.id}
-              onClick={() => setSelected(s)}
-              className={`w-full px-5 py-3.5 grid grid-cols-12 items-center text-left hover:bg-slate-50 transition-colors ${i < filtered.length - 1 ? "border-b border-slate-50" : ""}`}
-            >
-              <div className="col-span-5 flex items-center gap-3 min-w-0">
-                <Avatar name={s.name} size="sm" />
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 truncate">
-                    {s.name}
-                  </p>
-                  <p className="text-[11px] text-slate-400">{s.id}</p>
+            <>
+              <button
+                key={`mobile-${s.id}`}
+                onClick={() => setSelected(s)}
+                className={`block w-full px-3.5 py-3 text-left transition-colors hover:bg-slate-50/80 md:hidden ${i < filtered.length - 1 ? "border-b border-gray-100" : ""}`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-900">
+                      {s.name}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-slate-500">
+                      {s.id} • {s.program} • {s.section}
+                    </p>
+                  </div>
+                  <span className="flex shrink-0 text-slate-300">
+                    <Icons.ChevronRight />
+                  </span>
                 </div>
-              </div>
-              <span className="col-span-3 text-xs text-slate-500 font-medium">
-                {s.program}
-              </span>
-              <span className="col-span-3 text-xs text-slate-500 font-medium">
-                {s.section}
-              </span>
-              <span className="col-span-1 flex justify-end text-slate-300">
-                <Icons.ChevronRight />
-              </span>
-            </button>
+              </button>
+              <button
+                key={`desktop-${s.id}`}
+                onClick={() => setSelected(s)}
+                className={`hidden w-full px-5 py-3.5 md:grid md:grid-cols-12 md:items-center md:text-left md:hover:bg-slate-50 md:transition-colors ${i < filtered.length - 1 ? "border-b border-slate-50" : ""}`}
+              >
+                <div className="col-span-5 flex items-center gap-3 min-w-0">
+                  <Avatar name={s.name} size="sm" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 truncate">
+                      {s.name}
+                    </p>
+                    <p className="text-[11px] text-slate-400">{s.id}</p>
+                  </div>
+                </div>
+                <span className="col-span-3 text-xs text-slate-500 font-medium">
+                  {s.program}
+                </span>
+                <span className="col-span-3 text-xs text-slate-500 font-medium">
+                  {s.section}
+                </span>
+                <span className="col-span-1 flex justify-end text-slate-300">
+                  <Icons.ChevronRight />
+                </span>
+              </button>
+            </>
           ))}
         </div>
       )}
