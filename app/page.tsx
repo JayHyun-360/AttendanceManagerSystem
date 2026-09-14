@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { ArrowLeft, ChevronDown, ChevronUp, LogOut } from "lucide-react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Bar,
   Cell,
@@ -8768,6 +8768,8 @@ export default function App() {
   const router = useRouter();
   const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
   const [user, setUser] = useState<User | null>(null);
+  const [settingsReady, setSettingsReady] = useState(false);
+  const [showLanding, setShowLanding] = useState(false);
 
   const sanitizeSettings = (
     value: Partial<SystemSettings> | null | undefined,
@@ -8804,7 +8806,6 @@ export default function App() {
 
       if (error) {
         console.error("Failed to load landing settings", error);
-        return;
       }
 
       if (!cancelled) {
@@ -8813,6 +8814,7 @@ export default function App() {
           {};
 
         setSettings(sanitizeSettings(savedSettings));
+        setSettingsReady(true);
       }
     }
 
@@ -8822,6 +8824,17 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!settingsReady) return;
+
+    const minimumDelayMs = 260;
+    const timer = window.setTimeout(() => {
+      setShowLanding(true);
+    }, minimumDelayMs);
+
+    return () => window.clearTimeout(timer);
+  }, [settingsReady]);
 
   useEffect(() => {
     let cancelled = false;
@@ -8935,6 +8948,64 @@ export default function App() {
   };
 
   return (
-    <LandingPage onNav={handleLandingNav} settings={settings} user={user} />
+    <AnimatePresence mode="wait">
+      {!showLanding ? (
+        <motion.div
+          key="landing-loader"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.35, ease: "easeInOut" }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-white"
+        >
+          <motion.div
+            initial={{ scale: 0.92, opacity: 0.7 }}
+            animate={{
+              scale: [0.94, 1, 0.96],
+              opacity: [0.72, 1, 0.8],
+              filter: [
+                "drop-shadow(0 0 0 rgba(16,185,129,0))",
+                "drop-shadow(0 0 18px rgba(16,185,129,0.2))",
+                "drop-shadow(0 0 0 rgba(16,185,129,0))",
+              ],
+            }}
+            transition={{
+              duration: 1.8,
+              ease: "easeInOut",
+              repeat: Number.POSITIVE_INFINITY,
+            }}
+            className="flex flex-col items-center justify-center"
+          >
+            <img
+              src={tapInLogoSrc}
+              alt="TapIn logo"
+              className="h-16 w-16 md:h-20 md:w-20 object-contain"
+            />
+            <motion.div
+              initial={{ opacity: 0.7 }}
+              animate={{ opacity: [0.6, 1, 0.7] }}
+              transition={{ duration: 1.4, repeat: Number.POSITIVE_INFINITY }}
+              className="mt-4 text-xs font-semibold uppercase tracking-[0.32em] text-emerald-600"
+            >
+              Loading
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      ) : (
+        <motion.div
+          key="landing-page"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+        >
+          <LandingPage
+            onNav={handleLandingNav}
+            settings={settings}
+            user={user}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
