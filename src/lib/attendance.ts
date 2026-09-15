@@ -1,10 +1,13 @@
 import { supabase } from "@/lib/supabase";
 
+export type AttendanceMethod = "qr_scan" | "manual";
+export type AttendanceStatus = "present" | "late" | "absent";
+
 export type AttendanceRecordResult =
   | {
       outcome: "success";
       action: "time_in" | "time_out";
-      status: "confirmed" | "late";
+      status: "confirmed" | "late" | "absent";
       recordId: string | number;
       scannedAt: Date | string;
     }
@@ -25,10 +28,12 @@ type RecordAttendanceInput = {
   eventId: string;
   studentId: string;
   sessionLabel: "morning" | "afternoon";
-  status: "present" | "late";
+  status: AttendanceStatus;
   scannedBy: string;
   strictSession: boolean;
   canTimeOut: boolean;
+  method?: AttendanceMethod;
+  overwrite?: boolean;
   now?: Date;
 };
 
@@ -40,6 +45,8 @@ export async function recordAttendance({
   scannedBy,
   strictSession,
   canTimeOut,
+  method = "qr_scan",
+  overwrite = false,
   now = new Date(),
 }: RecordAttendanceInput): Promise<AttendanceRecordResult> {
   try {
@@ -55,6 +62,34 @@ export async function recordAttendance({
       return { outcome: "error", error: existingError };
     }
 
+    if (existing && overwrite) {
+      const { error: overwriteError } = await supabase
+        .from("attendance_scans")
+        .update({
+          status,
+          method,
+          scanned_by: scannedBy,
+        })
+        .eq("id", existing.id);
+
+      if (overwriteError) {
+        return { outcome: "error", error: overwriteError };
+      }
+
+      return {
+        outcome: "success",
+        action: "time_in",
+        status:
+          status === "late"
+            ? "late"
+            : status === "absent"
+              ? "absent"
+              : "confirmed",
+        recordId: existing.id,
+        scannedAt: existing.scan_in_at ?? now,
+      };
+    }
+
     if (!existing) {
       const { data: inserted, error: insertError } = await supabase
         .from("attendance_scans")
@@ -66,6 +101,7 @@ export async function recordAttendance({
           scan_out_at: null,
           status,
           scanned_by: scannedBy,
+          method,
         })
         .select("id, scan_in_at")
         .single();
@@ -88,7 +124,12 @@ export async function recordAttendance({
       return {
         outcome: "success",
         action: "time_in",
-        status: status === "late" ? "late" : "confirmed",
+        status:
+          status === "late"
+            ? "late"
+            : status === "absent"
+              ? "absent"
+              : "confirmed",
         recordId: inserted.id,
         scannedAt: inserted.scan_in_at ?? now,
       };
@@ -123,6 +164,7 @@ export async function recordAttendance({
           scan_out_at: now.toISOString(),
           status: "present",
           scanned_by: scannedBy,
+          method,
         })
         .eq("id", existing.id);
 
@@ -146,6 +188,7 @@ export async function recordAttendance({
           scan_in_at: now.toISOString(),
           status,
           scanned_by: scannedBy,
+          method,
         })
         .eq("id", existing.id);
 
@@ -156,7 +199,12 @@ export async function recordAttendance({
       return {
         outcome: "success",
         action: "time_in",
-        status: status === "late" ? "late" : "confirmed",
+        status:
+          status === "late"
+            ? "late"
+            : status === "absent"
+              ? "absent"
+              : "confirmed",
         recordId: existing.id,
         scannedAt: now,
       };

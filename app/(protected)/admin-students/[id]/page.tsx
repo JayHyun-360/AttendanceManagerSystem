@@ -2,10 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader, StudentQR } from "../../../shared-page";
 import { supabase } from "@/lib/supabase";
+import { recordAttendance, type AttendanceStatus } from "@/lib/attendance";
+import { useProtectedUser } from "../../layout";
 
 interface StudentDetail {
   id: string;
@@ -22,12 +25,86 @@ interface StudentDetail {
   joinedDate: string;
 }
 
+interface AttendanceEvent {
+  id: string;
+  title: string;
+  date: string;
+  multiSession: boolean;
+  morningStart?: string | null;
+  morningEnd?: string | null;
+  afternoonStart?: string | null;
+  afternoonEnd?: string | null;
+}
+
+interface ExistingAttendance {
+  id: string;
+  status: AttendanceStatus;
+  session_label: "morning" | "afternoon";
+  scan_in_at: string | null;
+  scan_out_at: string | null;
+  method: "qr_scan" | "manual";
+}
+
+function toMinutes(value?: string | null) {
+  if (!value) return null;
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!match) return null;
+
+  let hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const meridiem = match[3]?.toUpperCase();
+  if (hour > 23 || minute > 59) return null;
+  if (meridiem === "AM" && hour === 12) hour = 0;
+  if (meridiem === "PM" && hour !== 12) hour += 12;
+  return hour * 60 + minute;
+}
+
+function suggestedSession(event: AttendanceEvent) {
+  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const morningStart = toMinutes(event.morningStart);
+  const morningEnd = toMinutes(event.morningEnd);
+  const afternoonStart = toMinutes(event.afternoonStart);
+  const afternoonEnd = toMinutes(event.afternoonEnd);
+
+  if (
+    morningStart !== null &&
+    morningEnd !== null &&
+    nowMinutes >= morningStart &&
+    nowMinutes <= morningEnd
+  ) {
+    return "morning" as const;
+  }
+
+  if (
+    afternoonStart !== null &&
+    afternoonEnd !== null &&
+    nowMinutes >= afternoonStart &&
+    nowMinutes <= afternoonEnd
+  ) {
+    return "afternoon" as const;
+  }
+
+  return null;
+}
+
 export default function StudentDetailRoutePage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const routeId = params?.id ?? null;
+  const { authUserId, user } = useProtectedUser();
   const [student, setStudent] = useState<StudentDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [events, setEvents] = useState<AttendanceEvent[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState("");
+  const [sessionLabel, setSessionLabel] = useState<"morning" | "afternoon">(
+    "morning",
+  );
+  const [attendanceStatus, setAttendanceStatus] =
+    useState<AttendanceStatus>("present");
+  const [existingAttendance, setExistingAttendance] =
+    useState<ExistingAttendance | null>(null);
+  const [isCheckingAttendance, setIsCheckingAttendance] = useState(false);
+  const [isSavingAttendance, setIsSavingAttendance] = useState(false);
 
   useEffect(() => {
     if (!routeId) return;
@@ -87,6 +164,150 @@ export default function StudentDetailRoutePage() {
       cancelled = true;
     };
   }, [routeId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEvents() {
+      const { data, error } = await supabase
+        .from("events")
+        .select(
+          "id, title, event_date, multi_session, morning_start, morning_end, afternoon_start, afternoon_end",
+        )
+        .order("event_date", { ascending: false });
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      if (!cancelled) {
+        const nextEvents = (data ?? []).map((event) => ({
+          id: event.id,
+          title: event.title,
+          date: event.event_date,
+          multiSession: Boolean(event.multi_session),
+          morningStart: event.morning_start,
+          morningEnd: event.morning_end,
+          afternoonStart: event.afternoon_start,
+          afternoonEnd: event.afternoon_end,
+        }));
+        setEvents(nextEvents);
+        setSelectedEventId((current) => current || nextEvents[0]?.id || "");
+      }
+    }
+
+    if (user?.role === "admin") {
+      void loadEvents();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const selectedEvent = events.find((event) => event.id === selectedEventId);
+
+  useEffect(() => {
+    if (!selectedEvent) {
+      setExistingAttendance(null);
+      return;
+    }
+
+    if (!selectedEvent.multiSession) {
+      setSessionLabel("morning");
+    } else {
+      setSessionLabel(suggestedSession(selectedEvent) ?? "morning");
+    }
+  }, [selectedEvent]);
+
+  useEffect(() => {
+    if (!routeId || !selectedEventId || !sessionLabel) return;
+
+    let cancelled = false;
+    setIsCheckingAttendance(true);
+
+    async function loadExistingAttendance() {
+      const { data, error } = await supabase
+        .from("attendance_scans")
+        .select("id, status, session_label, scan_in_at, scan_out_at, method")
+        .eq("event_id", selectedEventId)
+        .eq("student_id", routeId)
+        .eq("session_label", sessionLabel)
+        .maybeSingle();
+
+      if (error) {
+        console.error(error);
+        if (!cancelled) toast.error("Could not check existing attendance.");
+      } else if (!cancelled) {
+        setExistingAttendance(data as ExistingAttendance | null);
+      }
+
+      if (!cancelled) setIsCheckingAttendance(false);
+    }
+
+    void loadExistingAttendance();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [routeId, selectedEventId, sessionLabel]);
+
+  const sessionMismatch =
+    selectedEvent?.multiSession &&
+    suggestedSession(selectedEvent) !== null &&
+    suggestedSession(selectedEvent) !== sessionLabel;
+
+  const markAttendance = async (overwrite = false) => {
+    if (!routeId || !authUserId || !selectedEventId || !selectedEvent) {
+      toast.error("Select an event before marking attendance.");
+      return;
+    }
+
+    if (existingAttendance && !overwrite) {
+      toast.error("Choose Overwrite or Cancel for the existing record.");
+      return;
+    }
+
+    setIsSavingAttendance(true);
+    const result = await recordAttendance({
+      eventId: selectedEventId,
+      studentId: routeId,
+      sessionLabel,
+      status: attendanceStatus,
+      scannedBy: authUserId,
+      strictSession: false,
+      canTimeOut: false,
+      method: "manual",
+      overwrite,
+    });
+
+    setIsSavingAttendance(false);
+
+    if (result.outcome === "error") {
+      console.error(result.error);
+      toast.error("Attendance could not be saved.");
+      return;
+    }
+
+    if (result.outcome !== "success") {
+      toast.error("Attendance already exists. Review it before overwriting.");
+      return;
+    }
+
+    toast.success(
+      `${overwrite ? "Attendance overwritten" : "Attendance marked"} for ${selectedEvent.title}.`,
+    );
+    setExistingAttendance(null);
+    const { data } = await supabase
+      .from("attendance_scans")
+      .select("id, status, session_label, scan_in_at, scan_out_at, method")
+      .eq("event_id", selectedEventId)
+      .eq("student_id", routeId)
+      .eq("session_label", sessionLabel)
+      .maybeSingle();
+    setExistingAttendance(data as ExistingAttendance | null);
+  };
 
   const badges = useMemo(
     () =>
@@ -291,17 +512,137 @@ export default function StudentDetailRoutePage() {
               </TabsContent>
 
               <TabsContent value="attendance" className="space-y-4">
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center md:p-8">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-slate-200">
-                    <span className="text-lg">📋</span>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:p-5">
+                  <div className="mb-4">
+                    <p className="text-base font-semibold text-slate-800">
+                      Mark Attendance
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Record attendance for this student and one event session.
+                    </p>
                   </div>
-                  <p className="mt-4 text-base font-semibold text-slate-800">
-                    Attendance History
-                  </p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    This placeholder is reserved for future attendance records
-                    and summaries.
-                  </p>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="space-y-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        Event
+                      </span>
+                      <select
+                        value={selectedEventId}
+                        onChange={(event) =>
+                          setSelectedEventId(event.target.value)
+                        }
+                        className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                      >
+                        <option value="">Select an event</option>
+                        {events.map((event) => (
+                          <option key={event.id} value={event.id}>
+                            {event.title} · {event.date}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="space-y-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        Status
+                      </span>
+                      <select
+                        value={attendanceStatus}
+                        onChange={(event) =>
+                          setAttendanceStatus(
+                            event.target.value as AttendanceStatus,
+                          )
+                        }
+                        className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                      >
+                        <option value="present">Present</option>
+                        <option value="late">Late</option>
+                        <option value="absent">Absent</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  {selectedEvent?.multiSession && (
+                    <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        Session
+                      </p>
+                      <div className="mt-2 flex gap-2">
+                        {(["morning", "afternoon"] as const).map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() => setSessionLabel(option)}
+                            className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${sessionLabel === option ? "bg-emerald-600 text-white" : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+                          >
+                            {option === "morning" ? "Morning" : "Afternoon"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {sessionMismatch && (
+                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                      <p className="text-xs font-semibold text-amber-800">
+                        The selected session does not match the event session
+                        suggested by the current time. You can continue
+                        manually.
+                      </p>
+                    </div>
+                  )}
+
+                  {isCheckingAttendance ? (
+                    <p className="mt-4 text-sm text-slate-500">
+                      Checking existing attendance...
+                    </p>
+                  ) : existingAttendance ? (
+                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                      <p className="text-sm font-semibold text-amber-900">
+                        Attendance already exists for this event and session.
+                      </p>
+                      <p className="mt-2 text-xs text-amber-800">
+                        Status: {existingAttendance.status} · Recorded:{" "}
+                        {existingAttendance.scan_in_at
+                          ? new Date(
+                              existingAttendance.scan_in_at,
+                            ).toLocaleString()
+                          : "No timestamp"}{" "}
+                        · Method: {existingAttendance.method}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={isSavingAttendance}
+                          onClick={() => void markAttendance(true)}
+                          className="h-9 rounded-lg bg-amber-600 px-3 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+                        >
+                          Overwrite
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isSavingAttendance}
+                          onClick={() => {
+                            setExistingAttendance(null);
+                            setSelectedEventId("");
+                          }}
+                          className="h-9 rounded-lg border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={isSavingAttendance || !selectedEventId}
+                      onClick={() => void markAttendance()}
+                      className="mt-4 h-10 w-full rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isSavingAttendance ? "Saving..." : "Mark Attendance"}
+                    </button>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>

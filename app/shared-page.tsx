@@ -8035,7 +8035,8 @@ function CameraScanner({
           minute: "2-digit",
         }),
 
-        status: attendance.status,
+        status:
+          attendance.status === "absent" ? "duplicate" : attendance.status,
 
         action: attendance.action,
 
