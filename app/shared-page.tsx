@@ -4739,69 +4739,91 @@ export function EventsPage({
           </button>
         ))}
       </div>
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {items.map((e) => (
           <div
             key={e.id}
-            className="bg-white border border-slate-100 rounded-xl p-5 cursor-pointer hover:border-slate-200 hover:shadow-sm transition-all"
+            className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden h-full cursor-pointer"
             onClick={() => {
               onSelectEvent(e.id);
 
               onNav("event-detail");
             }}
           >
-            {(() => {
-              const cover = e.highlightUrl ?? e.mediaUrls?.[0];
+            <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
+              {(() => {
+                const cover = e.highlightUrl ?? e.mediaUrls?.[0];
 
-              if (!cover) return null;
+                if (!cover) {
+                  return (
+                    <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                      <span className="text-sm font-semibold text-slate-400">
+                        No media
+                      </span>
+                    </div>
+                  );
+                }
 
-              return /\.mp4($|\?)/i.test(cover) ? (
-                <video
-                  src={cover}
-                  muted
-                  playsInline
-                  className="w-full h-40 object-cover rounded-lg mb-4"
-                />
-              ) : (
-                <img
-                  src={cover}
-                  alt={e.title}
-                  className="w-full h-40 object-cover rounded-lg mb-4"
-                />
-              );
-            })()}
-            <div className="flex items-start justify-between mb-3">
-              <Badge status={e.status} />
-              {e.attendees > 0 && (
-                <span className="text-xs text-slate-400">
-                  {e.attendees} attended
-                </span>
-              )}
+                return /\.mp4($|\?)/i.test(cover) ? (
+                  <video
+                    src={cover}
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <img
+                    src={cover}
+                    alt={e.title}
+                    className="w-full h-full object-cover"
+                  />
+                );
+              })()}
+
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/25 via-transparent to-slate-900/10" />
+
+              <div className="absolute top-3 left-3 z-10">
+                <Badge status={e.status} />
+              </div>
+
+              <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+                {e.attendees > 0 && (
+                  <span className="rounded-full border border-white/30 bg-slate-900/25 px-2 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur-sm">
+                    {e.attendees} attended
+                  </span>
+                )}
+                {canSeeFees && e.fineAmount > 0 && (
+                  <span className="rounded-full border border-red-200 bg-red-500/90 px-2 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur-sm">
+                    ₱{e.fineAmount} fine
+                  </span>
+                )}
+              </div>
             </div>
-            <h3 className="font-semibold text-slate-900 mb-1.5 leading-snug">
-              {e.title}
-            </h3>
-            <p className="text-xs text-slate-400 mb-4 leading-relaxed line-clamp-2">
-              {e.description}
-            </p>
-            <div className="flex flex-wrap gap-4 text-xs text-slate-400 font-medium">
-              <span className="flex items-center gap-1.5">
-                <Icons.Calendar />
-                {e.date}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Icons.Clock />
-                {e.time}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Icons.MapPin />
-                {e.location}
-              </span>
-              {canSeeFees && e.fineAmount > 0 && (
-                <span className="flex items-center gap-1.5 text-red-400 font-semibold">
-                  ₱{e.fineAmount} fine
+
+            <div className="p-5 flex flex-col flex-1 justify-between gap-3">
+              <div className="space-y-2">
+                <h3 className="font-bold text-slate-900 text-base line-clamp-1">
+                  {e.title}
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">
+                  {e.description}
+                </p>
+              </div>
+
+              <div className="text-xs text-slate-500 flex flex-col gap-1 pt-3 border-t border-slate-50">
+                <span className="flex items-center gap-1.5">
+                  <Icons.Calendar />
+                  {e.date}
                 </span>
-              )}
+                <span className="flex items-center gap-1.5">
+                  <Icons.Clock />
+                  {e.time}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Icons.MapPin />
+                  {e.location}
+                </span>
+              </div>
             </div>
           </div>
         ))}
@@ -5200,31 +5222,57 @@ export function AnnouncementsPage({
     <>
       <BackButton onClick={onBack} label="Back" />
       <PageHeader title="Announcements" />
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {announcements.map((a) => (
           <div
             key={a.id}
-            className="bg-white border border-slate-100 rounded-xl overflow-hidden"
+            className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden h-full"
           >
-            {a.photoUrl && (
-              <img
-                src={a.photoUrl}
-                alt=""
-                className="w-full h-44 object-cover"
-              />
-            )}
-            <div className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded uppercase tracking-wide">
+            <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
+              {a.photoUrl ? (
+                <img
+                  src={a.photoUrl}
+                  alt={a.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                  <span className="text-sm font-semibold text-slate-400">
+                    No image
+                  </span>
+                </div>
+              )}
+
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/25 via-transparent to-slate-900/10" />
+
+              <div className="absolute top-3 left-3 z-10">
+                <span className="text-[10px] font-bold text-green-700 bg-green-50/90 border border-green-100 px-2 py-0.5 rounded-full uppercase tracking-wide shadow-sm backdrop-blur-sm">
                   {a.badge}
                 </span>
-                <span className="text-[11px] text-slate-400">{a.date}</span>
               </div>
-              <h3 className="font-semibold text-slate-900 mb-2">{a.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">{a.body}</p>
-              <p className="text-[11px] text-slate-400 mt-4 pt-3 border-t border-slate-50">
-                Posted by {a.author}
-              </p>
+
+              <div className="absolute top-3 right-3 z-10">
+                <span className="rounded-full border border-white/30 bg-slate-900/25 px-2 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur-sm">
+                  {a.date}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-5 flex flex-col flex-1 justify-between gap-3">
+              <div className="space-y-2">
+                <h3 className="font-bold text-slate-900 text-base line-clamp-1">
+                  {a.title}
+                </h3>
+                <p className="text-sm text-slate-500 leading-relaxed line-clamp-3">
+                  {a.body}
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-slate-50">
+                <p className="text-[11px] text-slate-400">
+                  Posted by {a.author}
+                </p>
+              </div>
             </div>
           </div>
         ))}
@@ -8623,10 +8671,10 @@ export function AdminScannerPage({
         title="QR Scanner"
         subtitle="Select an event to begin scanning."
       />
-      <div className="max-w-lg mx-auto space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full max-w-7xl mx-auto">
         {}
-        <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-slate-50">
+        <div className="lg:col-span-3 bg-white border border-slate-100 rounded-2xl overflow-hidden max-h-[80vh] overflow-y-auto">
+          <div className="px-5 py-3.5 border-b border-slate-50 sticky top-0 bg-white z-10">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
               Select event
             </p>
@@ -8690,115 +8738,170 @@ export function AdminScannerPage({
           </div>
         </div>
 
-        {}
-        {selectedEvent ? (
-          <div className="space-y-3">
-            <div className="bg-white border border-slate-100 rounded-xl px-4 py-4 flex items-center gap-4">
-              <div className="w-10 h-10 bg-green-50 border border-green-100 rounded-xl flex items-center justify-center text-green-600 shrink-0">
-                <Icons.Scan />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-900 truncate">
-                  {selectedEvent.title}
-                </p>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {selectedEvent.date} · {selectedEvent.location}
-                </p>
-              </div>
-              {selectedEvent.fineAmount > 0 && (
-                <span className="text-xs font-bold text-red-500 shrink-0">
-                  ₱{selectedEvent.fineAmount} fee
-                </span>
-              )}
-            </div>
-
-            {selectedEvent.multiSession && (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  Session
-                </p>
-                <div className="mt-2 flex gap-2">
-                  {(["morning", "afternoon"] as const).map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => setManualSessionLabel(option)}
-                      className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-all ${
-                        manualSessionLabel === option
-                          ? "bg-green-600 text-white shadow-sm"
-                          : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
-                      }`}
-                    >
-                      {option === "morning" ? "Morning" : "Afternoon"}
-                    </button>
-                  ))}
+        <div className="lg:col-span-5">
+          {selectedEvent ? (
+            <div className="space-y-4">
+              <div className="bg-white border border-slate-100 rounded-2xl px-5 py-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-green-50 border border-green-100 rounded-xl flex items-center justify-center text-green-600 shrink-0">
+                    <Icons.Scan />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-lg font-bold text-slate-900">
+                      {selectedEvent.title}
+                    </p>
+                    <p className="text-sm text-slate-400 mt-1">
+                      {selectedEvent.date} · {selectedEvent.location}
+                    </p>
+                  </div>
                 </div>
               </div>
-            )}
 
-            <div className="flex flex-wrap gap-2">
-              {selectedEvent.multiSession &&
-              selectedSessionMeta.sessionLabel ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  {selectedSessionMeta.sessionLabel === "morning"
-                    ? "Morning Session Selected"
-                    : "Afternoon Session Selected"}
-                </span>
-              ) : !selectedEvent.multiSession ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  Morning Session Active
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
-                  No active session right now for this event
-                </span>
+              {selectedEvent.multiSession && (
+                <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Session
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    {(["morning", "afternoon"] as const).map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => setManualSessionLabel(option)}
+                        className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-all ${
+                          manualSessionLabel === option
+                            ? "bg-green-600 text-white shadow-sm"
+                            : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        {option === "morning" ? "Morning" : "Afternoon"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
 
-              {selectedSessionMeta.sessionLabel &&
-                selectedSessionMeta.strict && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 ring-1 ring-violet-200">
-                    Strict Mode: Time-in + Time-out required
+              <div className="mt-5 flex flex-wrap gap-2">
+                {selectedEvent.multiSession &&
+                selectedSessionMeta.sessionLabel ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    {selectedSessionMeta.sessionLabel === "morning"
+                      ? "Morning Session Selected"
+                      : "Afternoon Session Selected"}
+                  </span>
+                ) : !selectedEvent.multiSession ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Morning Session Active
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    No active session right now for this event
                   </span>
                 )}
-            </div>
 
-            {!canScanSelectedEvent && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-left">
-                <p className="text-[11px] font-semibold text-amber-800">
-                  Scanning is only available while this event is live.
+                {selectedSessionMeta.sessionLabel &&
+                  selectedSessionMeta.strict && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 ring-1 ring-violet-200">
+                      Strict Mode: Time-in + Time-out required
+                    </span>
+                  )}
+              </div>
+
+              {!canScanSelectedEvent && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left">
+                  <p className="text-[11px] font-semibold text-amber-800">
+                    Scanning is only available while this event is live.
+                  </p>
+                </div>
+              )}
+
+              <button
+                onClick={() => canScanSelectedEvent && setScannerOpen(true)}
+                disabled={!canScanSelectedEvent}
+                className={`w-full h-14 text-white text-base font-bold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-md ${
+                  canScanSelectedEvent
+                    ? "bg-green-600 hover:bg-green-700 active:scale-[.99] shadow-green-900/20"
+                    : "bg-slate-300 cursor-not-allowed shadow-slate-300/20"
+                }`}
+              >
+                <Icons.Scan />
+                Open QR Scanner
+              </button>
+            </div>
+          ) : (
+            <div className="bg-slate-100 rounded-2xl px-5 py-10 flex flex-col items-center gap-3 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-slate-300">
+                <Icons.Scan />
+              </div>
+              <p className="text-slate-500 text-sm font-medium">
+                Select an event above to open the scanner
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="lg:col-span-4 space-y-4">
+          {selectedEvent && (
+            <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-slate-50">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                  Event info & rules
                 </p>
               </div>
-            )}
-
-            <button
-              onClick={() => canScanSelectedEvent && setScannerOpen(true)}
-              disabled={!canScanSelectedEvent}
-              className={`w-full h-14 text-white text-base font-bold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-md ${
-                canScanSelectedEvent
-                  ? "bg-green-600 hover:bg-green-700 active:scale-[.99] shadow-green-900/20"
-                  : "bg-slate-300 cursor-not-allowed shadow-slate-300/20"
-              }`}
-            >
-              <Icons.Scan />
-              Open QR Scanner
-            </button>
-          </div>
-        ) : (
-          <div className="bg-slate-100 rounded-2xl px-5 py-10 flex flex-col items-center gap-3 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-slate-300">
-              <Icons.Scan />
+              <div className="p-5 space-y-4">
+                <div>
+                  <p className="text-sm font-bold text-slate-900">
+                    {selectedEvent.title}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {selectedEvent.status === "active"
+                      ? "Live now"
+                      : "Upcoming"}
+                  </p>
+                </div>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-slate-400">Date</span>
+                    <span className="font-semibold text-slate-700 text-right">
+                      {selectedEvent.date}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-slate-400">Location</span>
+                    <span className="font-semibold text-slate-700 text-right">
+                      {selectedEvent.location}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-slate-400">Schedule</span>
+                    <span className="font-semibold text-slate-700 text-right">
+                      {selectedEvent.time}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-slate-400">Attendance rule</span>
+                    <span className="font-semibold text-slate-700 text-right">
+                      {selectedSessionMeta.strict
+                        ? "Time-in + Time-out"
+                        : "Standard scan"}
+                    </span>
+                  </div>
+                  {selectedEvent.fineAmount > 0 && (
+                    <div className="flex items-start justify-between gap-4 border-t border-slate-100 pt-3">
+                      <span className="text-slate-400">Late/absence fine</span>
+                      <span className="font-bold text-red-500">
+                        ₱{selectedEvent.fineAmount}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <p className="text-slate-500 text-sm font-medium">
-              Select an event above to open the scanner
-            </p>
-          </div>
-        )}
+          )}
 
-        {}
-        {scanned.length > 0 && (
           <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
             <div className="px-5 py-3.5 border-b border-slate-50 flex items-center justify-between">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
@@ -8808,29 +8911,35 @@ export function AdminScannerPage({
                 {scanned.length}
               </span>
             </div>
-            {scanned.slice(0, 8).map((s, i) => (
-              <div
-                key={i}
-                className={`flex items-center gap-3 px-5 py-3.5 ${
-                  i < Math.min(scanned.length, 8) - 1
-                    ? "border-b border-slate-50"
-                    : ""
-                }`}
-              >
-                <Avatar name={s.name} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 truncate">
-                    {s.name}
-                  </p>
-                  <p className="text-[11px] text-slate-400">
-                    {s.id} · {s.time}
-                  </p>
+            {scanned.length > 0 ? (
+              scanned.slice(0, 8).map((s, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center gap-3 px-5 py-3.5 ${
+                    i < Math.min(scanned.length, 8) - 1
+                      ? "border-b border-slate-50"
+                      : ""
+                  }`}
+                >
+                  <Avatar name={s.name} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 truncate">
+                      {s.name}
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      {s.id} · {s.time}
+                    </p>
+                  </div>
+                  <Badge status={s.status} />
                 </div>
-                <Badge status={s.status} />
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="px-5 py-6 text-sm text-slate-400 text-center">
+                No scans recorded yet.
+              </p>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </>
   );
