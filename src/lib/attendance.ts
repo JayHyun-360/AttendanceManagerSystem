@@ -66,6 +66,8 @@ export async function recordAttendance({
       const { error: overwriteError } = await supabase
         .from("attendance_scans")
         .update({
+          scan_in_at: status === "absent" ? null : now.toISOString(),
+          ...(status === "absent" ? { scan_out_at: null } : {}),
           status,
           method,
           scanned_by: scannedBy,
@@ -97,7 +99,7 @@ export async function recordAttendance({
           event_id: eventId,
           student_id: studentId,
           session_label: sessionLabel,
-          scan_in_at: now.toISOString(),
+          scan_in_at: status === "absent" ? null : now.toISOString(),
           scan_out_at: null,
           status,
           scanned_by: scannedBy,
@@ -185,7 +187,7 @@ export async function recordAttendance({
       const { error: updateError } = await supabase
         .from("attendance_scans")
         .update({
-          scan_in_at: now.toISOString(),
+          scan_in_at: status === "absent" ? null : now.toISOString(),
           status,
           scanned_by: scannedBy,
           method,
