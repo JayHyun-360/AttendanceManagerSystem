@@ -6408,9 +6408,13 @@ export function AdminEventsPage({
 
         strict_afternoon: draft.strictAfternoon,
 
-        morning_start: draft.morningStart || null,
+        morning_start: draft.multiSession
+          ? draft.morningStart || null
+          : (timeRange?.start ?? null),
 
-        morning_end: draft.morningEnd || null,
+        morning_end: draft.multiSession
+          ? draft.morningEnd || null
+          : (timeRange?.end ?? null),
 
         morning_late_cutoff: draft.morningLateCutoff || null,
 
@@ -6755,9 +6759,13 @@ export function AdminEventsPage({
 
         strict_afternoon: editDraft.strictAfternoon,
 
-        morning_start: editDraft.morningStart || null,
+        morning_start: editDraft.multiSession
+          ? editDraft.morningStart || null
+          : (timeRange?.start ?? null),
 
-        morning_end: editDraft.morningEnd || null,
+        morning_end: editDraft.multiSession
+          ? editDraft.morningEnd || null
+          : (timeRange?.end ?? null),
 
         morning_late_cutoff: editDraft.morningLateCutoff || null,
 
@@ -7104,12 +7112,25 @@ export function AdminEventsPage({
 
           {}
           {!draft.multiSession ? (
-            <FieldInput
-              label="Time"
-              placeholder="e.g. 8:00 AM – 5:00 PM"
-              value={draft.time}
-              onChange={setD("time")}
-            />
+            <div className="space-y-2.5">
+              <FieldInput
+                label="Time"
+                placeholder="e.g. 8:00 AM – 5:00 PM"
+                value={draft.time}
+                onChange={setD("time")}
+              />
+              <FieldInput
+                label="Late cutoff time"
+                type="time"
+                value={draft.morningLateCutoff}
+                onChange={setD("morningLateCutoff")}
+              />
+              <InlineToggle
+                on={draft.strictMorning}
+                onToggle={toggleD("strictMorning")}
+                label="Strict attendance (require time-out scan)"
+              />
+            </div>
           ) : (
             <div className="space-y-2.5">
               <SessionFields
@@ -7453,13 +7474,34 @@ export function AdminEventsPage({
           </div>
 
           {!editDraft.multiSession ? (
-            <FieldInput
-              label="Time"
-              value={editDraft.time}
-              onChange={(e) =>
-                setEditDraft((d) => (d ? { ...d, time: e.target.value } : d))
-              }
-            />
+            <div className="space-y-2.5">
+              <FieldInput
+                label="Time"
+                value={editDraft.time}
+                onChange={(e) =>
+                  setEditDraft((d) => (d ? { ...d, time: e.target.value } : d))
+                }
+              />
+              <FieldInput
+                label="Late cutoff time"
+                type="time"
+                value={editDraft.morningLateCutoff ?? ""}
+                onChange={(e) =>
+                  setEditDraft((d) =>
+                    d ? { ...d, morningLateCutoff: e.target.value } : d,
+                  )
+                }
+              />
+              <InlineToggle
+                on={!!editDraft.strictMorning}
+                onToggle={() =>
+                  setEditDraft((d) =>
+                    d ? { ...d, strictMorning: !d.strictMorning } : d,
+                  )
+                }
+                label="Strict attendance (require time-out scan)"
+              />
+            </div>
           ) : (
             <div className="space-y-2.5">
               <SessionFields
