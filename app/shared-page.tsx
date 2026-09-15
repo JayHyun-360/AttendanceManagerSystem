@@ -488,7 +488,9 @@ function fullName(u: Pick<User, "firstName" | "middleInitial" | "surname">) {
 function normalizeEventTime(value: string): string | null {
   const normalized = value.trim().replace(/;/g, ":").toUpperCase();
 
-  const twelveHour = normalized.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+  const twelveHour = normalized.match(
+    /^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/,
+  );
 
   if (twelveHour) {
     let hour = Number(twelveHour[1]);
@@ -504,7 +506,7 @@ function normalizeEventTime(value: string): string | null {
     return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
   }
 
-  const twentyFourHour = normalized.match(/^(\d{1,2}):(\d{2})$/);
+  const twentyFourHour = normalized.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
 
   if (twentyFourHour) {
     const hour = Number(twentyFourHour[1]);
@@ -6636,11 +6638,15 @@ export function AdminEventsPage({
 
     "morningLateCutoff",
 
+    "strictMorning",
+
     "afternoonStart",
 
     "afternoonEnd",
 
     "afternoonLateCutoff",
+
+    "strictAfternoon",
 
     "absentFine",
 
