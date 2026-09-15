@@ -176,6 +176,551 @@ import { supabase } from "@/lib/supabase";
 
 import { recordAttendance } from "@/lib/attendance";
 
+/*
+import { deleteImages, uploadImage } from "@/lib/uploadImage";
+
+import { Skeleton } from "@/components/ui/skeleton";
+      <div className="space-y-6">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-1">
+          <BackButton
+            onClick={onBack}
+            label={isMod ? "Back to Overview" : "Back to Home"}
+          />
+          <div className="flex items-center gap-2">
+            {editing ? (
+              <>
+                <button
+                  onClick={() => {
+                    if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
+                      URL.revokeObjectURL(draft.photoUrl);
+                    }
+
+                    setDraft({ ...user });
+                    setEditing(false);
+                  }}
+                  className="h-9 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-500 hover:bg-slate-50"
+                >
+                  Discard
+                </button>
+                <button
+                  onClick={() => {
+                    onSave({ ...user, ...draft });
+                    setEditing(false);
+                  }}
+                  disabled={saving}
+                  className="h-9 rounded-lg bg-green-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {saving ? "Saving..." : "Save"}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setEditing(true)}
+                className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+              >
+                <Icons.Edit />
+                Edit profile
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="mx-auto w-full max-w-7xl">
+          <div className="mb-5">
+            <p className="text-2xl font-bold tracking-tight text-slate-900">
+              {fullName(profile) || "Your name"}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {[profile.program, profile.yearLevel, profile.section]
+                .filter(Boolean)
+                .map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200"
+                  >
+                    {tag}
+                  </span>
+                ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            <aside className="space-y-4 lg:col-span-4">
+              <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white pt-1 shadow-sm">
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-green-600 to-emerald-700" />
+                <div className="p-5 text-center">
+                  <div className="relative mx-auto w-fit">
+                    {editing && photoUploadState === "uploading" ? (
+                      <Skeleton className="h-24 w-24 rounded-full" />
+                    ) : (
+                      <ProfileIcon photoUrl={profile.photoUrl} size="lg" />
+                    )}
+                    {editing && photoUploadState === "error" && (
+                      <p className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold text-red-600">
+                        Upload failed, try again
+                      </p>
+                    )}
+                    {editing && (
+                      <>
+                        <input
+                          ref={photoRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handlePhotoChange}
+                        />
+                        <button
+                          onClick={() => photoRef.current?.click()}
+                          className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-green-600 text-white shadow-md transition-colors hover:bg-green-700"
+                          aria-label="Change profile photo"
+                        >
+                          <Icons.Camera />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  {editing && (
+                    <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
+                      <Icons.Camera />
+                      Tap the camera button to change your photo
+                    </p>
+                  )}
+                  <p className="mt-4 text-lg font-bold text-slate-900">
+                    {fullName(profile) || "Your name"}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {profile.studentId || (isMod ? "Admin" : "No ID")}
+                  </p>
+                  {!isMod && (
+                    <div className="mt-5 rounded-xl bg-slate-50 p-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                        Student QR
+                      </p>
+                      <div className="mt-3 flex justify-center rounded-xl bg-white p-3">
+                        <StudentQR studentId={profile.studentId} size={170} />
+                      </div>
+                      <p className="mt-3 text-center text-xs font-medium text-slate-500">
+                        TAPIN:{profile.studentId}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Contact & info
+                </p>
+                <div className="mt-4 divide-y divide-slate-100">
+                  {[
+                    { label: "Phone", value: profile.phone || "Not provided" },
+                    {
+                      label: "Email",
+                      value: profile.contactEmail || "Not provided",
+                    },
+                    { label: "Joined TapIn", value: profile.joinedDate },
+                  ].map((item) => (
+                    <div key={item.label} className="py-3 first:pt-0 last:pb-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                        {item.label}
+                      </p>
+                      <p className="mt-1 break-words text-sm font-semibold text-slate-900">
+                        {item.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+
+            <main className="space-y-4 lg:col-span-8">
+              <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:p-5">
+                <p className="text-base font-semibold text-slate-800">
+                  Profile information
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {editing
+                    ? "Keep your TapIn profile details up to date."
+                    : "Your current account and enrollment details."}
+                </p>
+
+                {!editing ? (
+                  <div className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                    {[
+                      { label: "First name", value: user.firstName },
+                      {
+                        label: "Middle initial",
+                        value: user.middleInitial
+                          ? `${user.middleInitial}.`
+                          : "—",
+                      },
+                      { label: "Surname", value: user.surname },
+                      ...(!isMod
+                        ? [{ label: "Student ID", value: user.studentId }]
+                        : []),
+                      { label: "Program", value: user.program },
+                      ...(!isMod
+                        ? [
+                            { label: "Year level", value: user.yearLevel },
+                            {
+                              label: "Section",
+                              value: user.section || "—",
+                            },
+                          ]
+                        : []),
+                    ].map((item, index, items) => (
+                      <div
+                        key={item.label}
+                        className={`flex items-center justify-between gap-4 bg-white px-4 py-3 ${
+                          index < items.length - 1
+                            ? "border-b border-slate-100"
+                            : ""
+                        }`}
+                      >
+                        <span className="text-xs font-semibold text-slate-400">
+                          {item.label}
+                        </span>
+                        <span className="text-right text-sm font-semibold text-slate-900">
+                          {item.value || "—"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-5 overflow-hidden rounded-xl border border-slate-200">
+                    <div className="border-b border-slate-100 px-4 py-3">
+                      <SectionLabel>Name</SectionLabel>
+                    </div>
+                    <div className="space-y-3 px-4 py-4">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="col-span-2">
+                          <FieldInput
+                            label="First Name"
+                            value={draft.firstName}
+                            onChange={setF("firstName")}
+                          />
+                        </div>
+                        <FieldInput
+                          label="M.I."
+                          value={draft.middleInitial}
+                          maxLength={2}
+                          onChange={setF("middleInitial")}
+                        />
+                      </div>
+                      <FieldInput
+                        label="Surname"
+                        value={draft.surname}
+                        onChange={setF("surname")}
+                      />
+                    </div>
+                    <div className="border-y border-slate-100 px-4 py-3">
+                      <SectionLabel>Contact</SectionLabel>
+                    </div>
+                    <div className="space-y-3 px-4 py-4">
+                      <FieldInput
+                        label="Phone"
+                        type="tel"
+                        placeholder="09XX XXX XXXX"
+                        value={draft.phone}
+                        onChange={setF("phone")}
+                      />
+                      <FieldInput
+                        label="Email"
+                        type="email"
+                        value={draft.contactEmail}
+                        onChange={setF("contactEmail")}
+                      />
+                    </div>
+                    {!isMod && (
+                      <>
+                        <div className="border-y border-slate-100 px-4 py-3">
+                          <SectionLabel>Enrollment</SectionLabel>
+                        </div>
+                        <div className="space-y-3 px-4 py-4">
+                          <FieldInput
+                            label="Student ID (7 digits)"
+                            value={draft.studentId}
+                            onChange={setF("studentId")}
+                          />
+                          <FieldSelect
+                            label="Program"
+                            value={draft.program}
+                            onChange={setF("program")}
+                          >
+                            <option value="">Select program</option>
+                            <option>BSIT - Information Technology</option>
+                            <option>BSCS - Computer Science</option>
+                            <option>BSBA - Business Administration</option>
+                            <option>BSEd - Secondary Education</option>
+                            <option>BSHM - Hospitality Management</option>
+                          </FieldSelect>
+                          <FieldSelect
+                            label="Year Level"
+                            value={draft.yearLevel}
+                            onChange={setF("yearLevel")}
+                          >
+                            <option value="">Select year level</option>
+                            <option>1st Year</option>
+                            <option>2nd Year</option>
+                            <option>3rd Year</option>
+                            <option>4th Year</option>
+                          </FieldSelect>
+                          <FieldInput
+                            label="Section"
+                            placeholder="e.g. IT-2A"
+                            value={draft.section}
+                            onChange={setF("section")}
+                          />
+                        </div>
+                        <div className="flex items-start gap-2.5 border-t border-amber-100 bg-amber-50 px-4 py-3.5">
+                          <span className="mt-0.5 shrink-0 text-amber-500">
+                            <Icons.AlertCircle />
+                          </span>
+                          <p className="text-xs leading-relaxed text-amber-700">
+                            Saving changes will regenerate your QR code.
+                            Previously downloaded images will be invalidated.
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {!isMod && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      School ID photo
+                    </p>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-300">
+                      Verification
+                    </span>
+                  </div>
+                  <div className="mt-4 overflow-hidden rounded-xl bg-slate-100">
+                    {profile.idPhotoUrl ? (
+                      <img
+                        src={profile.idPhotoUrl}
+                        alt="School ID"
+                        className="h-[260px] w-full object-contain md:h-[360px]"
+                      />
+                    ) : (
+                      <div className="flex min-h-[260px] items-center justify-center border border-dashed border-amber-200 bg-amber-50 p-6 text-center md:min-h-[360px]">
+                        </div>
+                  import { deleteImages, uploadImage } from "@/lib/uploadImage";
+
+                  import { Skeleton } from "@/components/ui/skeleton";
+
+                  const tapInLogoSrc = "/tapin-logo.svg";
+
+                  const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
+
+                  function toMinutes(value?: string | null) {
+                    if (!value) return null;
+                    const cleaned = value.trim();
+                    const spanMatch = cleaned.match(
+                      /^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(AM|PM)?$/i,
+                    );
+                    if (!spanMatch) return null;
+                    let hour = Number(spanMatch[1]);
+                    const minute = Number(spanMatch[2]);
+                    const meridiem = spanMatch[3]?.toUpperCase();
+                    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+                    if (meridiem === "AM" && hour === 12) hour = 0;
+                    if (meridiem === "PM" && hour !== 12) hour += 12;
+                    return hour * 60 + minute;
+                  }
+
+                  function getEventSessionMeta(event: EventData | null | undefined) {
+                    if (!event) {
+                      return {
+                        sessionLabel: null as "morning" | "afternoon" | null,
+                        strict: false,
+                        hasActiveSession: false,
+                      };
+                    }
+                    if (!event.multiSession) {
+                      return {
+                        sessionLabel: "morning" as const,
+                        strict: !!event.strictMorning,
+                        hasActiveSession: true,
+                      };
+                    }
+                    const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+                    const morningStart = toMinutes(event.morningStart);
+                    const morningEnd = toMinutes(event.morningEnd);
+                    const afternoonStart = toMinutes(event.afternoonStart);
+                    const afternoonEnd = toMinutes(event.afternoonEnd);
+                    if (
+                      morningStart !== null &&
+                      morningEnd !== null &&
+                      nowMinutes >= morningStart &&
+                      nowMinutes <= morningEnd
+                    ) {
+                      return {
+                        sessionLabel: "morning" as const,
+                        strict: !!event.strictMorning,
+                        hasActiveSession: true,
+                      };
+                    }
+                    if (
+                      afternoonStart !== null &&
+                      afternoonEnd !== null &&
+                      nowMinutes >= afternoonStart &&
+                      nowMinutes <= afternoonEnd
+                    ) {
+                      return {
+                        sessionLabel: "afternoon" as const,
+                        strict: !!event.strictAfternoon,
+                        hasActiveSession: true,
+                      };
+                    }
+                    return { sessionLabel: null, strict: false, hasActiveSession: false };
+                  }
+
+                  function getSelectedSessionMeta(
+                    event: EventData | null | undefined,
+                    manualSessionLabel: "morning" | "afternoon" | null,
+                  ) {
+                    if (!event) {
+                      return {
+                        sessionLabel: null as "morning" | "afternoon" | null,
+                        strict: false,
+                      };
+                    }
+                    if (!event.multiSession) {
+                      return { sessionLabel: "morning" as const, strict: !!event.strictMorning };
+                    }
+                    if (manualSessionLabel === "morning" || manualSessionLabel === "afternoon") {
+                      return {
+                        sessionLabel: manualSessionLabel,
+                        strict:
+                          manualSessionLabel === "morning"
+                            ? !!event.strictMorning
+                            : !!event.strictAfternoon,
+                      };
+                    }
+                    return getEventSessionMeta(event);
+                  }
+
+                  export type Page = string;
+                  export type Role = "student" | "admin" | null;
+                  export type FineStatus = "unpaid" | "paid" | "excused";
+                  export type EventStatus = "active" | "upcoming" | "closed";
+
+                  export interface User {
+                    firstName: string;
+                    middleInitial: string;
+                    surname: string;
+                    studentId: string;
+                    program: string;
+                    yearLevel: string;
+                    section: string;
+                    phone: string;
+                    contactEmail: string;
+                    role: Role;
+                    photoUrl?: string;
+                    idPhotoUrl?: string;
+                  }
+
+                  export interface EventData {
+                    id: string;
+                    title: string;
+                    date: string;
+                    time: string;
+                    location: string;
+                    status: EventStatus;
+                    attendees: number;
+                    description: string;
+                    program: string;
+                    fineAmount: number;
+                    mediaUrls?: string[];
+                    highlightUrl?: string;
+                    multiSession?: boolean;
+                    strictMorning?: boolean;
+                    strictAfternoon?: boolean;
+                    morningStart?: string;
+                    morningEnd?: string;
+                    morningLateCutoff?: string;
+                    afternoonStart?: string;
+                    afternoonEnd?: string;
+                    afternoonLateCutoff?: string;
+                    absentFine?: number;
+                    lateFine?: number;
+                    morningAbsentFine?: number;
+                    morningLateFine?: number;
+                    afternoonAbsentFine?: number;
+                    afternoonLateFine?: number;
+                    version?: number;
+                  }
+
+                  interface ScanRecord {
+                    name: string;
+                    id: string;
+                    program: string;
+                    section: string;
+                    photoUrl?: string;
+                    time: string;
+                    status: "confirmed" | "late" | "duplicate";
+                    action?: "time_in" | "time_out" | "time_out_rejected" | "duplicate";
+                    dbId: string | number;
+                  }
+
+                  export interface ExcuseRequest {
+                    id: string;
+                    studentName: string;
+                    studentId: string;
+                    photoUrl?: string;
+                    event: string;
+                    date: string;
+                    reason: string;
+                    proofName: string | null;
+                    status: "pending" | "approved" | "denied";
+                    submittedDate: string;
+                  }
+
+                  export interface FineRecord {
+                    id: string;
+                    eventId: string;
+                    eventTitle: string;
+                    eventDate: string;
+                    amount: number;
+                    status: FineStatus;
+                  }
+
+                  export interface StudentProfile {
+                    profileId?: string;
+                    name: string;
+                    id: string;
+                    program: string;
+                    yearLevel: string;
+                    section: string;
+                    phone: string;
+                    email: string;
+                    photoUrl?: string;
+                    idPhotoUrl?: string;
+                    joinedDate: string;
+                  }
+
+                            No ID photo uploaded
+                          </p>
+                          <p className="mt-1 text-xs text-amber-700">
+                            Upload a school ID photo from Edit profile.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <p className="mt-2.5 text-center text-[11px] text-slate-400">
+                    Used for identity verification by moderators
+                  </p>
+                </div>
+              )}
+            </main>
+          </div>
+        </div>
+      </div>
+*/
 import { deleteImages, uploadImage } from "@/lib/uploadImage";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -186,31 +731,16 @@ const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
 
 function toMinutes(value?: string | null) {
   if (!value) return null;
-
-  const cleaned = value.trim();
-
-  const spanMatch = cleaned.match(
-    /^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(AM|PM)?$/i,
-  );
-
-  if (!spanMatch) return null;
-
-  let hour = Number(spanMatch[1]);
-
-  const minute = Number(spanMatch[2]);
-
-  const meridiem = spanMatch[3]?.toUpperCase();
-
-  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-
-  if (!meridiem) {
-    return hour * 60 + minute;
-  }
-
+  const match = value
+    .trim()
+    .match(/^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(AM|PM)?$/i);
+  if (!match) return null;
+  let hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const meridiem = match[3]?.toUpperCase();
+  if (hour > 23 || minute > 59) return null;
   if (meridiem === "AM" && hour === 12) hour = 0;
-
   if (meridiem === "PM" && hour !== 12) hour += 12;
-
   return hour * 60 + minute;
 }
 
@@ -218,33 +748,22 @@ function getEventSessionMeta(event: EventData | null | undefined) {
   if (!event) {
     return {
       sessionLabel: null as "morning" | "afternoon" | null,
-
       strict: false,
-
       hasActiveSession: false,
     };
   }
-
   if (!event.multiSession) {
     return {
       sessionLabel: "morning" as const,
-
       strict: !!event.strictMorning,
-
       hasActiveSession: true,
     };
   }
-
   const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
-
   const morningStart = toMinutes(event.morningStart);
-
   const morningEnd = toMinutes(event.morningEnd);
-
   const afternoonStart = toMinutes(event.afternoonStart);
-
   const afternoonEnd = toMinutes(event.afternoonEnd);
-
   if (
     morningStart !== null &&
     morningEnd !== null &&
@@ -253,13 +772,10 @@ function getEventSessionMeta(event: EventData | null | undefined) {
   ) {
     return {
       sessionLabel: "morning" as const,
-
       strict: !!event.strictMorning,
-
       hasActiveSession: true,
     };
   }
-
   if (
     afternoonStart !== null &&
     afternoonEnd !== null &&
@@ -268,216 +784,134 @@ function getEventSessionMeta(event: EventData | null | undefined) {
   ) {
     return {
       sessionLabel: "afternoon" as const,
-
       strict: !!event.strictAfternoon,
-
       hasActiveSession: true,
     };
   }
-
   return { sessionLabel: null, strict: false, hasActiveSession: false };
 }
 
 function getSelectedSessionMeta(
   event: EventData | null | undefined,
-
   manualSessionLabel: "morning" | "afternoon" | null,
 ) {
   if (!event) {
     return {
       sessionLabel: null as "morning" | "afternoon" | null,
-
       strict: false,
     };
   }
-
   if (!event.multiSession) {
     return { sessionLabel: "morning" as const, strict: !!event.strictMorning };
   }
-
   if (manualSessionLabel === "morning" || manualSessionLabel === "afternoon") {
     return {
       sessionLabel: manualSessionLabel,
-
       strict:
         manualSessionLabel === "morning"
           ? !!event.strictMorning
           : !!event.strictAfternoon,
     };
   }
-
   return getEventSessionMeta(event);
 }
 
 export type Page = string;
-
 export type Role = "student" | "admin" | null;
-
 export type FineStatus = "unpaid" | "paid" | "excused";
-
 export type EventStatus = "active" | "upcoming" | "closed";
 
 export interface User {
   firstName: string;
-
   middleInitial: string;
-
   surname: string;
-
   studentId: string;
-
   program: string;
-
   yearLevel: string;
-
   section: string;
-
   phone: string;
-
   contactEmail: string;
-
   role: Role;
-
   photoUrl?: string;
-
   idPhotoUrl?: string;
 }
 
 export interface EventData {
   id: string;
-
   title: string;
-
   date: string;
-
   time: string;
-
   location: string;
-
   status: EventStatus;
-
   attendees: number;
-
   description: string;
-
   program: string;
-
   fineAmount: number;
-
   mediaUrls?: string[];
-
   highlightUrl?: string;
-
   multiSession?: boolean;
-
   strictMorning?: boolean;
-
   strictAfternoon?: boolean;
-
   morningStart?: string;
-
   morningEnd?: string;
-
   morningLateCutoff?: string;
-
   afternoonStart?: string;
-
   afternoonEnd?: string;
-
   afternoonLateCutoff?: string;
-
   absentFine?: number;
-
   lateFine?: number;
-
   morningAbsentFine?: number;
-
   morningLateFine?: number;
-
   afternoonAbsentFine?: number;
-
   afternoonLateFine?: number;
-
   version?: number;
 }
 
 interface ScanRecord {
   name: string;
-
   id: string;
-
   program: string;
-
   section: string;
-
   photoUrl?: string;
-
   time: string;
-
   status: "confirmed" | "late" | "duplicate";
-
   action?: "time_in" | "time_out" | "time_out_rejected" | "duplicate";
-
   dbId: string | number;
 }
 
 export interface ExcuseRequest {
   id: string;
-
   studentName: string;
-
   studentId: string;
-
   photoUrl?: string;
-
   event: string;
-
   date: string;
-
   reason: string;
-
   proofName: string | null;
-
   status: "pending" | "approved" | "denied";
-
   submittedDate: string;
 }
 
 export interface FineRecord {
   id: string;
-
   eventId: string;
-
   eventTitle: string;
-
   eventDate: string;
-
   amount: number;
-
   status: FineStatus;
 }
 
 export interface StudentProfile {
   profileId?: string;
-
   name: string;
-
   id: string;
-
   program: string;
-
   yearLevel: string;
-
   section: string;
-
   phone: string;
-
   email: string;
-
   photoUrl?: string;
-
   idPhotoUrl?: string;
-
   joinedDate: string;
 }
 
@@ -5624,6 +6058,8 @@ export function ProfilePage({
     };
   }, []);
 
+  const profile = editing ? draft : user;
+
   return (
     <>
       <BackButton
@@ -5672,250 +6108,290 @@ export function ProfilePage({
           )
         }
       />
-      <div className="max-w-sm">
-        <div className="bg-white border border-slate-100 rounded-xl p-5 flex items-center gap-4 mb-4">
-          <div className="relative">
-            {editing && photoUploadState === "uploading" ? (
-              <Skeleton className="w-20 h-20 rounded-full" />
-            ) : (
-              <ProfileIcon
-                photoUrl={(editing ? draft : user).photoUrl}
-                size="lg"
-              />
-            )}
-            {editing && photoUploadState === "error" && (
-              <p className="absolute -bottom-8 left-0 text-[10px] font-semibold text-red-600 whitespace-nowrap">
-                Upload failed, try again
-              </p>
-            )}
-            {editing && (
-              <>
-                <input
-                  ref={photoRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handlePhotoChange}
+      <div className="grid grid-cols-1 gap-6 w-full max-w-7xl mx-auto lg:grid-cols-12">
+        <aside className="space-y-4 lg:col-span-4">
+          <div className="bg-white border border-slate-100 rounded-xl p-5 flex items-center gap-4 mb-4">
+            <div className="relative">
+              {editing && photoUploadState === "uploading" ? (
+                <Skeleton className="w-20 h-20 rounded-full" />
+              ) : (
+                <ProfileIcon
+                  photoUrl={(editing ? draft : user).photoUrl}
+                  size="lg"
                 />
-                <button
-                  onClick={() => photoRef.current?.click()}
-                  className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center shadow-md transition-colors"
-                >
-                  <Icons.Camera />
-                </button>
-              </>
-            )}
-          </div>
-          <div>
-            <p className="font-bold text-slate-900">
-              {fullName(editing ? draft : user) || "Your name"}
-            </p>
-            <p className="text-sm text-slate-400 mt-0.5">
-              {(editing ? draft : user).studentId ||
-                (isMod ? "Admin" : "No ID")}
-            </p>
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {[
-                (editing ? draft : user).program,
-
-                (editing ? draft : user).yearLevel,
-
-                (editing ? draft : user).section,
-              ]
-
-                .filter(Boolean)
-
-                .map((t) => (
-                  <span
-                    key={t}
-                    className="text-[11px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded"
+              )}
+              {editing && photoUploadState === "error" && (
+                <p className="absolute -bottom-8 left-0 text-[10px] font-semibold text-red-600 whitespace-nowrap">
+                  Upload failed, try again
+                </p>
+              )}
+              {editing && (
+                <>
+                  <input
+                    ref={photoRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoChange}
+                  />
+                  <button
+                    onClick={() => photoRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center shadow-md transition-colors"
                   >
-                    {t}
-                  </span>
-                ))}
+                    <Icons.Camera />
+                  </button>
+                </>
+              )}
             </div>
-          </div>
-        </div>
-        {editing && (
-          <p className="text-[11px] text-slate-400 mb-3 flex items-center gap-1.5 -mt-1">
-            <Icons.Camera />
-            Tap the camera icon on the photo to change it
-          </p>
-        )}
-        {!editing ? (
-          <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
-            {[
-              { l: "First name", v: user.firstName },
+            <div>
+              <p className="font-bold text-slate-900">
+                {fullName(editing ? draft : user) || "Your name"}
+              </p>
+              <p className="text-sm text-slate-400 mt-0.5">
+                {(editing ? draft : user).studentId ||
+                  (isMod ? "Admin" : "No ID")}
+              </p>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {[
+                  (editing ? draft : user).program,
 
-              {
-                l: "Middle initial",
+                  (editing ? draft : user).yearLevel,
 
-                v: user.middleInitial ? user.middleInitial + "." : "—",
-              },
+                  (editing ? draft : user).section,
+                ]
 
-              { l: "Surname", v: user.surname },
+                  .filter(Boolean)
 
-              ...(!isMod ? [{ l: "Student ID", v: user.studentId }] : []),
-
-              { l: "Program", v: user.program },
-
-              ...(!isMod
-                ? [
-                    { l: "Year level", v: user.yearLevel },
-
-                    {
-                      l: "Section",
-                      v: user.section || "—",
-                    },
-                  ]
-                : []),
-
-              {
-                l: "Phone",
-                v: user.phone || "—",
-              },
-
-              {
-                l: "Email",
-                v: user.contactEmail || "—",
-              },
-            ].map((f, i, arr) => (
-              <div
-                key={f.l}
-                className={`flex items-center justify-between px-5 py-3 ${
-                  i < arr.length - 1 ? "border-b border-slate-50" : ""
-                }`}
-              >
-                <span className="text-xs font-semibold text-slate-400">
-                  {f.l}
-                </span>
-                <span className="text-sm font-semibold text-slate-900">
-                  {f.v}
-                </span>
+                  .map((t) => (
+                    <span
+                      key={t}
+                      className="text-[11px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded"
+                    >
+                      {t}
+                    </span>
+                  ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-slate-100">
-              <SectionLabel>Name</SectionLabel>
             </div>
-            <div className="px-5 py-4 space-y-3">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
+          </div>
+          {editing && (
+            <p className="text-[11px] text-slate-400 mb-3 flex items-center gap-1.5 -mt-1">
+              <Icons.Camera />
+              Tap the camera icon on the photo to change it
+            </p>
+          )}
+          {!isMod && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Student QR
+              </p>
+              <div className="mt-3 flex justify-center rounded-xl bg-slate-50 p-3">
+                <StudentQR studentId={profile.studentId} size={170} />
+              </div>
+              <p className="mt-3 text-center text-xs font-medium text-slate-500">
+                TAPIN:{profile.studentId}
+              </p>
+            </div>
+          )}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+              Contact & info
+            </p>
+            <div className="mt-4 divide-y divide-slate-100">
+              {[
+                { label: "Phone", value: profile.phone || "Not provided" },
+                {
+                  label: "Email",
+                  value: profile.contactEmail || "Not provided",
+                },
+              ].map((item) => (
+                <div key={item.label} className="py-3 first:pt-0 last:pb-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 break-words text-sm font-semibold text-slate-900">
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+        <main className="space-y-4 lg:col-span-8">
+          {!editing ? (
+            <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
+              {[
+                { l: "First name", v: user.firstName },
+
+                {
+                  l: "Middle initial",
+
+                  v: user.middleInitial ? user.middleInitial + "." : "—",
+                },
+
+                { l: "Surname", v: user.surname },
+
+                ...(!isMod ? [{ l: "Student ID", v: user.studentId }] : []),
+
+                { l: "Program", v: user.program },
+
+                ...(!isMod
+                  ? [
+                      { l: "Year level", v: user.yearLevel },
+
+                      {
+                        l: "Section",
+                        v: user.section || "—",
+                      },
+                    ]
+                  : []),
+
+                {
+                  l: "Phone",
+                  v: user.phone || "—",
+                },
+
+                {
+                  l: "Email",
+                  v: user.contactEmail || "—",
+                },
+              ].map((f, i, arr) => (
+                <div
+                  key={f.l}
+                  className={`flex items-center justify-between px-5 py-3 ${
+                    i < arr.length - 1 ? "border-b border-slate-50" : ""
+                  }`}
+                >
+                  <span className="text-xs font-semibold text-slate-400">
+                    {f.l}
+                  </span>
+                  <span className="text-sm font-semibold text-slate-900">
+                    {f.v}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-slate-100">
+                <SectionLabel>Name</SectionLabel>
+              </div>
+              <div className="px-5 py-4 space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-2">
+                    <FieldInput
+                      label="First Name"
+                      value={draft.firstName}
+                      onChange={setF("firstName")}
+                    />
+                  </div>
                   <FieldInput
-                    label="First Name"
-                    value={draft.firstName}
-                    onChange={setF("firstName")}
+                    label="M.I."
+                    value={draft.middleInitial}
+                    maxLength={2}
+                    onChange={setF("middleInitial")}
                   />
                 </div>
                 <FieldInput
-                  label="M.I."
-                  value={draft.middleInitial}
-                  maxLength={2}
-                  onChange={setF("middleInitial")}
+                  label="Surname"
+                  value={draft.surname}
+                  onChange={setF("surname")}
                 />
               </div>
-              <FieldInput
-                label="Surname"
-                value={draft.surname}
-                onChange={setF("surname")}
-              />
+              <div className="px-5 py-3.5 border-t border-slate-100 border-b border-slate-100">
+                <SectionLabel>Contact</SectionLabel>
+              </div>
+              <div className="px-5 py-4 space-y-3">
+                <FieldInput
+                  label="Phone"
+                  type="tel"
+                  placeholder="09XX XXX XXXX"
+                  value={draft.phone}
+                  onChange={setF("phone")}
+                />
+                <FieldInput
+                  label="Email"
+                  type="email"
+                  value={draft.contactEmail}
+                  onChange={setF("contactEmail")}
+                />
+              </div>
+              {!isMod && (
+                <>
+                  <div className="px-5 py-3.5 border-t border-slate-100 border-b border-slate-100">
+                    <SectionLabel>Enrollment</SectionLabel>
+                  </div>
+                  <div className="px-5 py-4 space-y-3">
+                    <FieldInput
+                      label="Student ID (7 digits)"
+                      value={draft.studentId}
+                      onChange={setF("studentId")}
+                    />
+                    <FieldSelect
+                      label="Program"
+                      value={draft.program}
+                      onChange={setF("program")}
+                    >
+                      <option value="">Select program</option>
+                      <option>BSIT - Information Technology</option>
+                      <option>BSCS - Computer Science</option>
+                      <option>BSBA - Business Administration</option>
+                      <option>BSEd - Secondary Education</option>
+                      <option>BSHM - Hospitality Management</option>
+                    </FieldSelect>
+                    <FieldSelect
+                      label="Year Level"
+                      value={draft.yearLevel}
+                      onChange={setF("yearLevel")}
+                    >
+                      <option value="">Select year level</option>
+                      <option>1st Year</option>
+                      <option>2nd Year</option>
+                      <option>3rd Year</option>
+                      <option>4th Year</option>
+                    </FieldSelect>
+                    <FieldInput
+                      label="Section"
+                      placeholder="e.g. IT-2A"
+                      value={draft.section}
+                      onChange={setF("section")}
+                    />
+                  </div>
+                  <div className="px-5 py-3.5 bg-amber-50 border-t border-amber-100 flex items-start gap-2.5">
+                    <span className="text-amber-500 shrink-0 mt-0.5">
+                      <Icons.AlertCircle />
+                    </span>
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      Saving changes will regenerate your QR code. Previously
+                      downloaded images will be invalidated.
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
-            <div className="px-5 py-3.5 border-t border-slate-100 border-b border-slate-100">
-              <SectionLabel>Contact</SectionLabel>
+          )}
+          {!isMod && profile.idPhotoUrl && (
+            <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mt-4">
+              <div className="px-5 py-3.5 border-b border-slate-50 flex items-center justify-between">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  School ID
+                </p>
+                <span className="text-[10px] text-slate-300 font-semibold uppercase tracking-wide">
+                  Verification
+                </span>
+              </div>
+              <div className="p-4">
+                <img
+                  src={profile.idPhotoUrl}
+                  alt="School ID"
+                  className="w-full rounded-lg object-cover max-h-48"
+                />
+                <p className="text-[11px] text-slate-400 mt-2.5 text-center">
+                  Used for identity verification by moderators
+                </p>
+              </div>
             </div>
-            <div className="px-5 py-4 space-y-3">
-              <FieldInput
-                label="Phone"
-                type="tel"
-                placeholder="09XX XXX XXXX"
-                value={draft.phone}
-                onChange={setF("phone")}
-              />
-              <FieldInput
-                label="Email"
-                type="email"
-                value={draft.contactEmail}
-                onChange={setF("contactEmail")}
-              />
-            </div>
-            {!isMod && (
-              <>
-                <div className="px-5 py-3.5 border-t border-slate-100 border-b border-slate-100">
-                  <SectionLabel>Enrollment</SectionLabel>
-                </div>
-                <div className="px-5 py-4 space-y-3">
-                  <FieldInput
-                    label="Student ID (7 digits)"
-                    value={draft.studentId}
-                    onChange={setF("studentId")}
-                  />
-                  <FieldSelect
-                    label="Program"
-                    value={draft.program}
-                    onChange={setF("program")}
-                  >
-                    <option value="">Select program</option>
-                    <option>BSIT - Information Technology</option>
-                    <option>BSCS - Computer Science</option>
-                    <option>BSBA - Business Administration</option>
-                    <option>BSEd - Secondary Education</option>
-                    <option>BSHM - Hospitality Management</option>
-                  </FieldSelect>
-                  <FieldSelect
-                    label="Year Level"
-                    value={draft.yearLevel}
-                    onChange={setF("yearLevel")}
-                  >
-                    <option value="">Select year level</option>
-                    <option>1st Year</option>
-                    <option>2nd Year</option>
-                    <option>3rd Year</option>
-                    <option>4th Year</option>
-                  </FieldSelect>
-                  <FieldInput
-                    label="Section"
-                    placeholder="e.g. IT-2A"
-                    value={draft.section}
-                    onChange={setF("section")}
-                  />
-                </div>
-                <div className="px-5 py-3.5 bg-amber-50 border-t border-amber-100 flex items-start gap-2.5">
-                  <span className="text-amber-500 shrink-0 mt-0.5">
-                    <Icons.AlertCircle />
-                  </span>
-                  <p className="text-xs text-amber-700 leading-relaxed">
-                    Saving changes will regenerate your QR code. Previously
-                    downloaded images will be invalidated.
-                  </p>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-        {!isMod && user.idPhotoUrl && (
-          <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mt-4">
-            <div className="px-5 py-3.5 border-b border-slate-50 flex items-center justify-between">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                School ID
-              </p>
-              <span className="text-[10px] text-slate-300 font-semibold uppercase tracking-wide">
-                Verification
-              </span>
-            </div>
-            <div className="p-4">
-              <img
-                src={user.idPhotoUrl}
-                alt="School ID"
-                className="w-full rounded-lg object-cover max-h-48"
-              />
-              <p className="text-[11px] text-slate-400 mt-2.5 text-center">
-                Used for identity verification by moderators
-              </p>
-            </div>
-          </div>
-        )}
+          )}
+        </main>
       </div>
     </>
   );
@@ -9406,24 +9882,27 @@ export function AdminStudentsPage({
         title="Students"
         subtitle={`${students.length} students registered on TapIn`}
       />
-      <div className="relative mb-5 w-full px-3.5 md:px-6">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-          <Icons.Search />
-        </span>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name, ID, program, or section..."
-          className="w-full h-10 pl-9 pr-9 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
-        />
-        {query && (
-          <button
-            onClick={() => setQuery("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
-          >
-            <Icons.X />
-          </button>
-        )}
+      <div className="mb-5 w-full px-3.5 md:px-6">
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+            <Icons.Search />
+          </span>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name, ID, program, or section..."
+            className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition-all focus:border-green-500 focus:ring-2 focus:ring-green-100"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 transition-colors hover:text-slate-500"
+              aria-label="Clear student search"
+            >
+              <Icons.X />
+            </button>
+          )}
+        </div>
       </div>
       {filtered.length === 0 ? (
         <div className="w-full bg-white border border-slate-100 rounded-xl px-3.5 py-10 text-center md:px-6">
