@@ -6250,6 +6250,8 @@ export function AdminEventsPage({
 
   const [activeTab, setActiveTab] = useState<CreateEventTab>("basic");
 
+  const [editEventTab, setEditEventTab] = useState<CreateEventTab>("basic");
+
   const [editId, setEditId] = useState<string | null>(null);
 
   const [editDraft, setEditDraft] = useState<EventData | null>(null);
@@ -6638,6 +6640,8 @@ export function AdminEventsPage({
     setEventHasScans(!error && (count ?? 0) > 0);
 
     setEditId(e.id);
+
+    setEditEventTab("basic");
 
     setEditDraft({ ...e });
 
@@ -7434,6 +7438,36 @@ export function AdminEventsPage({
       {editId && editDraft && (
         <FormModal
           title="Edit Event"
+          sidebar={
+            <nav className="space-y-1" aria-label="Edit event sections">
+              {[
+                [
+                  "basic",
+                  "Basic Details",
+                  "Title, date, program, location, description",
+                ],
+                ["session", "Session & Timing", "Session mode, times, cutoffs"],
+                ["fines", "Fines & Rules", "Attendance fine settings"],
+                ["media", "Media & Assets", "Photos and event media"],
+              ].map(([value, label, description]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setEditEventTab(value as CreateEventTab)}
+                  className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
+                    editEventTab === value
+                      ? "bg-white text-green-700 shadow-sm ring-1 ring-slate-200"
+                      : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
+                  }`}
+                >
+                  <span className="block text-xs font-bold">{label}</span>
+                  <span className="mt-1 block text-[10px] leading-relaxed text-slate-400">
+                    {description}
+                  </span>
+                </button>
+              ))}
+            </nav>
+          }
           onClose={discardEditMedia}
           footer={
             showSensitiveWarning ? (
@@ -7484,263 +7518,288 @@ export function AdminEventsPage({
               </p>
             </div>
           )}
-          <FieldInput
-            label="Title"
-            value={editDraft.title}
-            onChange={(e) =>
-              setEditDraft((d) => (d ? { ...d, title: e.target.value } : d))
-            }
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <FieldInput
-              label="Date"
-              type="date"
-              value={editDraft.date}
-              onChange={(e) =>
-                setEditDraft((d) => (d ? { ...d, date: e.target.value } : d))
-              }
-            />
-            <FieldSelect
-              label="Program"
-              value={editDraft.program}
-              onChange={(e) =>
-                setEditDraft((d) => (d ? { ...d, program: e.target.value } : d))
-              }
-            >
-              <option>All Programs</option>
-              <option>BSIT / BSCS</option>
-              <option>BSIT</option>
-              <option>BSCS</option>
-              <option>BSBA</option>
-            </FieldSelect>
-          </div>
-          <FieldInput
-            label="Location"
-            value={editDraft.location}
-            onChange={(e) =>
-              setEditDraft((d) => (d ? { ...d, location: e.target.value } : d))
-            }
-          />
 
-          {}
-          <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
-            <div className="flex items-center justify-between py-2.5">
-              <div>
-                <p className="text-xs font-semibold text-slate-800">
-                  Multi-Session
-                </p>
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  Split into Morning &amp; Afternoon sessions
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  if (eventHasScans) return;
-
-                  setEditDraft((d) =>
-                    d ? { ...d, multiSession: !d.multiSession } : d,
-                  );
-                }}
-                role="switch"
-                aria-checked={!!editDraft.multiSession}
-                disabled={eventHasScans}
-                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${
-                  eventHasScans ? "cursor-not-allowed opacity-50" : ""
-                } ${editDraft.multiSession ? "bg-green-600" : "bg-slate-200"}`}
-              >
-                <span
-                  className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${
-                    editDraft.multiSession ? "translate-x-4" : "translate-x-0"
-                  }`}
-                />
-              </button>
-            </div>
-            {eventHasScans && (
-              <p className="px-1 pb-2 text-[10px] text-amber-700">
-                Can't change session mode — this event already has recorded
-                attendance.
-              </p>
-            )}
-          </div>
-
-          {!editDraft.multiSession ? (
-            <div className="space-y-2.5">
+          {editEventTab === "basic" && (
+            <>
               <FieldInput
-                label="Time"
-                value={editDraft.time}
+                label="Title"
+                value={editDraft.title}
                 onChange={(e) =>
-                  setEditDraft((d) => (d ? { ...d, time: e.target.value } : d))
+                  setEditDraft((d) => (d ? { ...d, title: e.target.value } : d))
                 }
               />
-              <FieldInput
-                label="Late cutoff time"
-                type="time"
-                value={editDraft.morningLateCutoff ?? ""}
-                onChange={(e) =>
-                  setEditDraft((d) =>
-                    d ? { ...d, morningLateCutoff: e.target.value } : d,
-                  )
-                }
-              />
-              <InlineToggle
-                on={!!editDraft.strictMorning}
-                onToggle={() =>
-                  setEditDraft((d) =>
-                    d ? { ...d, strictMorning: !d.strictMorning } : d,
-                  )
-                }
-                label="Strict attendance (require time-out scan)"
-              />
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              <SessionFields
-                prefix="em"
-                label="Morning"
-                start={editDraft.morningStart ?? ""}
-                onStart={(v) =>
-                  setEditDraft((d) => (d ? { ...d, morningStart: v } : d))
-                }
-                end={editDraft.morningEnd ?? ""}
-                onEnd={(v) =>
-                  setEditDraft((d) => (d ? { ...d, morningEnd: v } : d))
-                }
-                cutoff={editDraft.morningLateCutoff ?? ""}
-                onCutoff={(v) =>
-                  setEditDraft((d) => (d ? { ...d, morningLateCutoff: v } : d))
-                }
-                strict={!!editDraft.strictMorning}
-                onStrict={() =>
-                  setEditDraft((d) =>
-                    d ? { ...d, strictMorning: !d.strictMorning } : d,
-                  )
-                }
-              />
-              <SessionFields
-                prefix="ea"
-                label="Afternoon"
-                start={editDraft.afternoonStart ?? ""}
-                onStart={(v) =>
-                  setEditDraft((d) => (d ? { ...d, afternoonStart: v } : d))
-                }
-                end={editDraft.afternoonEnd ?? ""}
-                onEnd={(v) =>
-                  setEditDraft((d) => (d ? { ...d, afternoonEnd: v } : d))
-                }
-                cutoff={editDraft.afternoonLateCutoff ?? ""}
-                onCutoff={(v) =>
-                  setEditDraft((d) =>
-                    d ? { ...d, afternoonLateCutoff: v } : d,
-                  )
-                }
-                strict={!!editDraft.strictAfternoon}
-                onStrict={() =>
-                  setEditDraft((d) =>
-                    d ? { ...d, strictAfternoon: !d.strictAfternoon } : d,
-                  )
-                }
-              />
-            </div>
-          )}
-
-          <FineFields
-            multi={!!editDraft.multiSession}
-            values={editFineValues}
-            onChange={(key, value) =>
-              setEditFineValues((current) => ({
-                ...current,
-
-                [key]: value,
-              }))
-            }
-          />
-
-          <FieldTextarea
-            label="Description"
-            rows={3}
-            value={editDraft.description}
-            onChange={(e) =>
-              setEditDraft((d) =>
-                d ? { ...d, description: e.target.value } : d,
-              )
-            }
-          />
-
-          <div>
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
-              Highlight Photo
-            </label>
-            <input
-              ref={editHighlightRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={async (e) => {
-                const f = e.target.files?.[0];
-
-                if (!f) return;
-
-                setEditHighlightUploadState("uploading");
-
-                const result = await uploadImage(f);
-
-                if ("error" in result) {
-                  setEditHighlightUploadState("error");
-
-                  toast.error(result.error);
-
-                  return;
-                }
-
-                setEditHighlightUploadState("idle");
-
-                setEditDraft((d) =>
-                  d ? { ...d, highlightUrl: result.url } : d,
-                );
-              }}
-            />
-            {editHighlightUploadState === "uploading" ? (
-              <Skeleton className="w-full h-36 rounded-xl" />
-            ) : editHighlightUploadState === "error" ? (
-              <div className="w-full h-36 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
-                <p className="text-sm font-semibold text-red-600">
-                  Upload failed
-                </p>
-                <button
-                  onClick={() => editHighlightRef.current?.click()}
-                  className="text-xs font-semibold text-red-700 underline"
-                >
-                  Try again
-                </button>
-              </div>
-            ) : editDraft.highlightUrl ? (
-              <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                <img
-                  src={editDraft.highlightUrl}
-                  alt=""
-                  className="w-full h-36 object-cover"
-                />
-                <button
-                  onClick={() =>
+              <div className="grid grid-cols-2 gap-3">
+                <FieldInput
+                  label="Date"
+                  type="date"
+                  value={editDraft.date}
+                  onChange={(e) =>
                     setEditDraft((d) =>
-                      d ? { ...d, highlightUrl: undefined } : d,
+                      d ? { ...d, date: e.target.value } : d,
                     )
                   }
-                  className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                />
+                <FieldSelect
+                  label="Program"
+                  value={editDraft.program}
+                  onChange={(e) =>
+                    setEditDraft((d) =>
+                      d ? { ...d, program: e.target.value } : d,
+                    )
+                  }
                 >
-                  <Icons.X />
-                </button>
+                  <option>All Programs</option>
+                  <option>BSIT / BSCS</option>
+                  <option>BSIT</option>
+                  <option>BSCS</option>
+                  <option>BSBA</option>
+                </FieldSelect>
               </div>
-            ) : (
-              <button
-                onClick={() => editHighlightRef.current?.click()}
-                className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2 transition-colors"
-              >
-                <Icons.Image />
-                Upload highlight photo
-              </button>
-            )}
-          </div>
+              <FieldInput
+                label="Location"
+                value={editDraft.location}
+                onChange={(e) =>
+                  setEditDraft((d) =>
+                    d ? { ...d, location: e.target.value } : d,
+                  )
+                }
+              />
+              <FieldTextarea
+                label="Description"
+                rows={4}
+                value={editDraft.description}
+                onChange={(e) =>
+                  setEditDraft((d) =>
+                    d ? { ...d, description: e.target.value } : d,
+                  )
+                }
+              />
+            </>
+          )}
+
+          {editEventTab === "session" && (
+            <>
+              <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
+                <div className="flex items-center justify-between py-2.5">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-800">
+                      Multi-Session
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Split into Morning &amp; Afternoon sessions
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (eventHasScans) return;
+
+                      setEditDraft((d) =>
+                        d ? { ...d, multiSession: !d.multiSession } : d,
+                      );
+                    }}
+                    role="switch"
+                    aria-checked={!!editDraft.multiSession}
+                    disabled={eventHasScans}
+                    className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${
+                      eventHasScans ? "cursor-not-allowed opacity-50" : ""
+                    } ${editDraft.multiSession ? "bg-green-600" : "bg-slate-200"}`}
+                  >
+                    <span
+                      className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${
+                        editDraft.multiSession
+                          ? "translate-x-4"
+                          : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+                {eventHasScans && (
+                  <p className="px-1 pb-2 text-[10px] text-amber-700">
+                    Can't change session mode — this event already has recorded
+                    attendance.
+                  </p>
+                )}
+              </div>
+
+              {!editDraft.multiSession ? (
+                <div className="space-y-2.5">
+                  <FieldInput
+                    label="Time"
+                    value={editDraft.time}
+                    onChange={(e) =>
+                      setEditDraft((d) =>
+                        d ? { ...d, time: e.target.value } : d,
+                      )
+                    }
+                  />
+                  <FieldInput
+                    label="Late cutoff time"
+                    type="time"
+                    value={editDraft.morningLateCutoff ?? ""}
+                    onChange={(e) =>
+                      setEditDraft((d) =>
+                        d ? { ...d, morningLateCutoff: e.target.value } : d,
+                      )
+                    }
+                  />
+                  <InlineToggle
+                    on={!!editDraft.strictMorning}
+                    onToggle={() =>
+                      setEditDraft((d) =>
+                        d ? { ...d, strictMorning: !d.strictMorning } : d,
+                      )
+                    }
+                    label="Strict attendance (require time-out scan)"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <SessionFields
+                    prefix="em"
+                    label="Morning"
+                    start={editDraft.morningStart ?? ""}
+                    onStart={(v) =>
+                      setEditDraft((d) => (d ? { ...d, morningStart: v } : d))
+                    }
+                    end={editDraft.morningEnd ?? ""}
+                    onEnd={(v) =>
+                      setEditDraft((d) => (d ? { ...d, morningEnd: v } : d))
+                    }
+                    cutoff={editDraft.morningLateCutoff ?? ""}
+                    onCutoff={(v) =>
+                      setEditDraft((d) =>
+                        d ? { ...d, morningLateCutoff: v } : d,
+                      )
+                    }
+                    strict={!!editDraft.strictMorning}
+                    onStrict={() =>
+                      setEditDraft((d) =>
+                        d ? { ...d, strictMorning: !d.strictMorning } : d,
+                      )
+                    }
+                  />
+                  <SessionFields
+                    prefix="ea"
+                    label="Afternoon"
+                    start={editDraft.afternoonStart ?? ""}
+                    onStart={(v) =>
+                      setEditDraft((d) => (d ? { ...d, afternoonStart: v } : d))
+                    }
+                    end={editDraft.afternoonEnd ?? ""}
+                    onEnd={(v) =>
+                      setEditDraft((d) => (d ? { ...d, afternoonEnd: v } : d))
+                    }
+                    cutoff={editDraft.afternoonLateCutoff ?? ""}
+                    onCutoff={(v) =>
+                      setEditDraft((d) =>
+                        d ? { ...d, afternoonLateCutoff: v } : d,
+                      )
+                    }
+                    strict={!!editDraft.strictAfternoon}
+                    onStrict={() =>
+                      setEditDraft((d) =>
+                        d ? { ...d, strictAfternoon: !d.strictAfternoon } : d,
+                      )
+                    }
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {editEventTab === "fines" && (
+            <FineFields
+              multi={!!editDraft.multiSession}
+              values={editFineValues}
+              onChange={(key, value) =>
+                setEditFineValues((current) => ({
+                  ...current,
+
+                  [key]: value,
+                }))
+              }
+            />
+          )}
+
+          {editEventTab === "media" && (
+            <>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
+                  Highlight Photo
+                </label>
+                <input
+                  ref={editHighlightRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+
+                    if (!f) return;
+
+                    setEditHighlightUploadState("uploading");
+
+                    const result = await uploadImage(f);
+
+                    if ("error" in result) {
+                      setEditHighlightUploadState("error");
+
+                      toast.error(result.error);
+
+                      return;
+                    }
+
+                    setEditHighlightUploadState("idle");
+
+                    setEditDraft((d) =>
+                      d ? { ...d, highlightUrl: result.url } : d,
+                    );
+                  }}
+                />
+                {editHighlightUploadState === "uploading" ? (
+                  <Skeleton className="w-full h-36 rounded-xl" />
+                ) : editHighlightUploadState === "error" ? (
+                  <div className="w-full h-36 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
+                    <p className="text-sm font-semibold text-red-600">
+                      Upload failed
+                    </p>
+                    <button
+                      onClick={() => editHighlightRef.current?.click()}
+                      className="text-xs font-semibold text-red-700 underline"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                ) : editDraft.highlightUrl ? (
+                  <div className="relative rounded-xl overflow-hidden border border-slate-200">
+                    <img
+                      src={editDraft.highlightUrl}
+                      alt=""
+                      className="w-full h-36 object-cover"
+                    />
+                    <button
+                      onClick={() =>
+                        setEditDraft((d) =>
+                          d ? { ...d, highlightUrl: undefined } : d,
+                        )
+                      }
+                      className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                    >
+                      <Icons.X />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => editHighlightRef.current?.click()}
+                    className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Icons.Image />
+                    Upload highlight photo
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </FormModal>
       )}
 
@@ -9336,6 +9395,9 @@ export function AdminAnnouncementsPage({
 
   const [newPostTab, setNewPostTab] = useState<NewPostTab>("details");
 
+  const [editAnnouncementTab, setEditAnnouncementTab] =
+    useState<NewPostTab>("details");
+
   const [editId, setEditId] = useState<string | null>(null);
 
   const [editDraft, setEditDraft] = useState<
@@ -9470,6 +9532,8 @@ export function AdminAnnouncementsPage({
 
   const startEdit = (a: (typeof INITIAL_ANNOUNCEMENTS)[0]) => {
     setEditId(a.id);
+
+    setEditAnnouncementTab("details");
 
     setEditDraft({ ...a });
 
@@ -9698,6 +9762,34 @@ export function AdminAnnouncementsPage({
       {editId && editDraft && (
         <FormModal
           title="Edit Announcement"
+          sidebar={
+            <nav className="space-y-1" aria-label="Edit announcement sections">
+              {[
+                [
+                  "details",
+                  "Post Details",
+                  "Title, category, and announcement body",
+                ],
+                ["media", "Media", "Optional announcement photo"],
+              ].map(([value, label, description]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setEditAnnouncementTab(value as NewPostTab)}
+                  className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
+                    editAnnouncementTab === value
+                      ? "bg-white text-green-700 shadow-sm ring-1 ring-slate-200"
+                      : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
+                  }`}
+                >
+                  <span className="block text-xs font-bold">{label}</span>
+                  <span className="mt-1 block text-[10px] leading-relaxed text-slate-400">
+                    {description}
+                  </span>
+                </button>
+              ))}
+            </nav>
+          }
           onClose={() => {
             setEditId(null);
 
@@ -9724,92 +9816,98 @@ export function AdminAnnouncementsPage({
             </>
           }
         >
-          <FieldInput
-            label="Title"
-            value={editDraft.title}
-            onChange={(e) =>
-              setEditDraft((d) => (d ? { ...d, title: e.target.value } : d))
-            }
-          />
-          <FieldSelect
-            label="Category"
-            value={editDraft.badge}
-            onChange={(e) =>
-              setEditDraft((d) => (d ? { ...d, badge: e.target.value } : d))
-            }
-          >
-            <option>General</option>
-            <option>Academic</option>
-            <option>Schedule</option>
-            <option>Financial</option>
-            <option>Facilities</option>
-            <option>Events</option>
-          </FieldSelect>
-          <FieldTextarea
-            label="Body"
-            rows={4}
-            value={editDraft.body}
-            onChange={(e) =>
-              setEditDraft((d) => (d ? { ...d, body: e.target.value } : d))
-            }
-          />
-          <div>
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
-              Photo
-            </label>
-            <input
-              ref={editPhotoRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={async (e) => {
-                const f = e.target.files?.[0];
+          {editAnnouncementTab === "details" && (
+            <>
+              <FieldInput
+                label="Title"
+                value={editDraft.title}
+                onChange={(e) =>
+                  setEditDraft((d) => (d ? { ...d, title: e.target.value } : d))
+                }
+              />
+              <FieldSelect
+                label="Category"
+                value={editDraft.badge}
+                onChange={(e) =>
+                  setEditDraft((d) => (d ? { ...d, badge: e.target.value } : d))
+                }
+              >
+                <option>General</option>
+                <option>Academic</option>
+                <option>Schedule</option>
+                <option>Financial</option>
+                <option>Facilities</option>
+                <option>Events</option>
+              </FieldSelect>
+              <FieldTextarea
+                label="Body"
+                rows={8}
+                value={editDraft.body}
+                onChange={(e) =>
+                  setEditDraft((d) => (d ? { ...d, body: e.target.value } : d))
+                }
+              />
+            </>
+          )}
+          {editAnnouncementTab === "media" && (
+            <div>
+              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
+                Photo
+              </label>
+              <input
+                ref={editPhotoRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
 
-                if (!f) return;
+                  if (!f) return;
 
-                await uploadEditPhoto(f);
-              }}
-            />
-            {editPhotoUploadState === "uploading" ? (
-              <Skeleton className="w-full h-40 rounded-xl" />
-            ) : editPhotoUploadState === "error" ? (
-              <div className="w-full h-40 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
-                <p className="text-sm font-semibold text-red-600">
-                  Upload failed
-                </p>
+                  await uploadEditPhoto(f);
+                }}
+              />
+              {editPhotoUploadState === "uploading" ? (
+                <Skeleton className="w-full h-40 rounded-xl" />
+              ) : editPhotoUploadState === "error" ? (
+                <div className="w-full h-40 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
+                  <p className="text-sm font-semibold text-red-600">
+                    Upload failed
+                  </p>
+                  <button
+                    onClick={() => editPhotoRef.current?.click()}
+                    className="text-xs font-semibold text-red-700 underline"
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : editDraft.photoUrl ? (
+                <div className="relative rounded-xl overflow-hidden border border-slate-200">
+                  <img
+                    src={editDraft.photoUrl}
+                    alt=""
+                    className="w-full h-40 object-cover"
+                  />
+                  <button
+                    onClick={() =>
+                      setEditDraft((d) => (d ? { ...d, photoUrl: "" } : d))
+                    }
+                    className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                  >
+                    <Icons.X />
+                  </button>
+                </div>
+              ) : (
                 <button
                   onClick={() => editPhotoRef.current?.click()}
-                  className="text-xs font-semibold text-red-700 underline"
+                  className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2"
                 >
-                  Try again
+                  <Icons.Image />
+                  Attach photo
                 </button>
-              </div>
-            ) : editDraft.photoUrl ? (
-              <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                <img
-                  src={editDraft.photoUrl}
-                  alt=""
-                  className="w-full h-40 object-cover"
-                />
-                <button
-                  onClick={() =>
-                    setEditDraft((d) => (d ? { ...d, photoUrl: "" } : d))
-                  }
-                  className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
-                >
-                  <Icons.X />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => editPhotoRef.current?.click()}
-                className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2"
-              >
-                <Icons.Image />
-                Attach photo
-              </button>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </FormModal>
       )}
       <div className="space-y-3">
