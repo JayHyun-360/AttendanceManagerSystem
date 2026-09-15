@@ -174,6 +174,8 @@ import { toast } from "sonner";
 
 import { supabase } from "@/lib/supabase";
 
+import { recordAttendance } from "@/lib/attendance";
+
 import { deleteImages, uploadImage } from "@/lib/uploadImage";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7969,22 +7971,6 @@ function CameraScanner({
         );
       }
 
-      const { data: existing, error: existingError } = await supabase
-
-        .from("attendance_scans")
-
-        .select("id, session_label, scan_in_at, scan_out_at, status")
-
-        .eq("event_id", event.id)
-
-        .eq("student_id", profile.id)
-
-        .eq("session_label", sessionLabel)
-
-        .maybeSingle();
-
-      if (existingError) throw existingError;
-
       const now = new Date();
 
       const strictSession = sessionMeta.strict;
@@ -8000,171 +7986,60 @@ function CameraScanner({
 
       const isLateScan = cutoffMinutes !== null && nowMinutes > cutoffMinutes;
 
-      let action: "time_in" | "time_out" | "time_out_rejected" | "duplicate" =
-        "time_in";
+      const sessionEndValue =
+        sessionLabel === "morning" ? event.morningEnd : event.afternoonEnd;
+      const sessionEndMinutes = sessionEndValue
+        ? toMinutes(sessionEndValue)
+        : null;
+      const canTimeOut =
+        sessionEndMinutes !== null &&
+        now.getHours() * 60 + now.getMinutes() >= sessionEndMinutes;
+      const attendance = await recordAttendance({
+        eventId: event.id,
+        studentId: profile.id,
+        sessionLabel,
+        status: isLateScan ? "late" : "present",
+        scannedBy: scannerId,
+        strictSession,
+        canTimeOut,
+        now,
+      });
 
-      let recordId: string | number | undefined = undefined;
-
-      let scannedAt: Date | string | undefined;
-
-      let status: "confirmed" | "late" | "duplicate" = "confirmed";
-
-      if (!existing) {
-        const { data: inserted, error: insertError } = await supabase
-
-          .from("attendance_scans")
-
-          .insert({
-            event_id: event.id,
-
-            student_id: profile.id,
-
-            session_label: sessionLabel,
-
-            scan_in_at: now.toISOString(),
-
-            scan_out_at: null,
-
-            status: isLateScan ? "late" : "present",
-
-            scanned_by: scannerId,
-          })
-
-          .select("id, scan_in_at")
-
-          .single();
-
-        if (insertError) {
-          if (insertError.code === "23505") {
-            setScanError(
-              "Attendance already recorded for this student and session.",
-            );
-            scannedRef.current = false;
-            return;
-          }
-
-          throw insertError;
-        }
-
-        recordId = inserted.id;
-
-        scannedAt = inserted.scan_in_at ?? now;
-
-        action = "time_in";
-
-        if (isLateScan) {
-          status = "late";
-        }
-      } else if (existing.scan_in_at && !existing.scan_out_at) {
-        if (!strictSession) {
-          action = "duplicate";
-
-          status = "duplicate";
-
-          recordId = existing.id;
-
-          scannedAt = existing.scan_in_at ?? now;
-        } else {
-          const sessionEndValue =
-            sessionLabel === "morning" ? event.morningEnd : event.afternoonEnd;
-
-          const sessionEndMinutes = sessionEndValue
-            ? toMinutes(sessionEndValue)
-            : null;
-
-          if (
-            sessionEndMinutes === null ||
-            now.getHours() * 60 + now.getMinutes() < sessionEndMinutes
-          ) {
-            action = "time_out_rejected";
-
-            status = "duplicate";
-
-            recordId = existing.id;
-
-            scannedAt = existing.scan_in_at ?? now;
-          } else {
-            const { error: updateError } = await supabase
-
-              .from("attendance_scans")
-
-              .update({
-                scan_out_at: now.toISOString(),
-
-                status: "present",
-
-                scanned_by: scannerId,
-              })
-
-              .eq("id", existing.id);
-
-            if (updateError) throw updateError;
-
-            recordId = existing.id;
-
-            scannedAt = now;
-
-            action = "time_out";
-          }
-        }
-      } else if (!existing.scan_in_at && !existing.scan_out_at) {
-        const { error: updateError } = await supabase
-
-          .from("attendance_scans")
-
-          .update({
-            scan_in_at: now.toISOString(),
-
-            status: isLateScan ? "late" : "present",
-
-            scanned_by: scannerId,
-          })
-
-          .eq("id", existing.id);
-
-        if (updateError) throw updateError;
-
-        recordId = existing.id;
-
-        scannedAt = now;
-
-        action = "time_in";
-
-        if (isLateScan) {
-          status = "late";
-        }
-      } else {
-        action = "duplicate";
-
-        status = "duplicate";
-
-        recordId = existing.id;
-
-        scannedAt = existing.scan_in_at ?? now;
+      if (attendance.outcome === "error") {
+        throw attendance.error;
       }
 
+      if (
+        attendance.outcome === "duplicate" &&
+        attendance.reason === "unique_violation"
+      ) {
+        setScanError(
+          "Attendance already recorded for this student and session.",
+        );
+        scannedRef.current = false;
+        return;
+      }
       const rec: ScanRecord = {
         name:
           `${profile.first_name ?? ""} ${profile.surname ?? ""}`.trim() ||
           "Student",
-
         id: profile.student_id,
 
         program: profile.program ?? "",
 
         section: profile.section ?? "",
 
-        time: new Date(scannedAt ?? Date.now()).toLocaleTimeString("en-US", {
+        time: new Date(attendance.scannedAt).toLocaleTimeString("en-US", {
           hour: "2-digit",
 
           minute: "2-digit",
         }),
 
-        status,
+        status: attendance.status,
 
-        action,
+        action: attendance.action,
 
-        dbId: recordId ?? "",
+        dbId: attendance.recordId,
       };
 
       setSweeping(true);
