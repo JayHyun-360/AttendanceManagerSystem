@@ -9454,7 +9454,11 @@ export function AdminAnnouncementsPage({
 
   onDelete?: (id: string, photoUrl?: string) => Promise<void>;
 }) {
+  type NewPostTab = "details" | "media";
+
   const [showForm, setShowForm] = useState(false);
+
+  const [newPostTab, setNewPostTab] = useState<NewPostTab>("details");
 
   const [editId, setEditId] = useState<string | null>(null);
 
@@ -9663,6 +9667,8 @@ export function AdminAnnouncementsPage({
             onClick={() => {
               setShowForm(true);
 
+              setNewPostTab("details");
+
               setEditId(null);
 
               setEditDraft(null);
@@ -9678,6 +9684,34 @@ export function AdminAnnouncementsPage({
       {showForm && (
         <FormModal
           title="New Announcement"
+          sidebar={
+            <nav className="space-y-1" aria-label="New post sections">
+              {[
+                [
+                  "details",
+                  "Post Details",
+                  "Title, category, and announcement body",
+                ],
+                ["media", "Media", "Optional announcement photo"],
+              ].map(([value, label, description]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setNewPostTab(value as NewPostTab)}
+                  className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
+                    newPostTab === value
+                      ? "bg-white text-green-700 shadow-sm ring-1 ring-slate-200"
+                      : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
+                  }`}
+                >
+                  <span className="block text-xs font-bold">{label}</span>
+                  <span className="mt-1 block text-[10px] leading-relaxed text-slate-400">
+                    {description}
+                  </span>
+                </button>
+              ))}
+            </nav>
+          }
           onClose={() => setShowForm(false)}
           footer={
             <>
@@ -9696,86 +9730,92 @@ export function AdminAnnouncementsPage({
             </>
           }
         >
-          <FieldInput
-            label="Title"
-            placeholder="e.g. Enrollment Now Open"
-            {...register("title")}
-            error={errors.title?.message}
-          />
-          <FieldSelect
-            label="Category"
-            {...register("badge")}
-            error={errors.badge?.message}
-          >
-            <option>General</option>
-            <option>Academic</option>
-            <option>Schedule</option>
-            <option>Financial</option>
-            <option>Facilities</option>
-            <option>Events</option>
-          </FieldSelect>
-          <FieldTextarea
-            label="Body"
-            placeholder="Write your announcement..."
-            rows={4}
-            {...register("body")}
-            error={errors.body?.message}
-          />
-          <div>
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
-              Photo (optional)
-            </label>
-            <input
-              ref={photoRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={async (e) => {
-                const f = e.target.files?.[0];
+          {newPostTab === "details" && (
+            <>
+              <FieldInput
+                label="Title"
+                placeholder="e.g. Enrollment Now Open"
+                {...register("title")}
+                error={errors.title?.message}
+              />
+              <FieldSelect
+                label="Category"
+                {...register("badge")}
+                error={errors.badge?.message}
+              >
+                <option>General</option>
+                <option>Academic</option>
+                <option>Schedule</option>
+                <option>Financial</option>
+                <option>Facilities</option>
+                <option>Events</option>
+              </FieldSelect>
+              <FieldTextarea
+                label="Body"
+                placeholder="Write your announcement..."
+                rows={8}
+                {...register("body")}
+                error={errors.body?.message}
+              />
+            </>
+          )}
+          {newPostTab === "media" && (
+            <div>
+              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
+                Photo (optional)
+              </label>
+              <input
+                ref={photoRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
 
-                if (!f) return;
+                  if (!f) return;
 
-                await uploadNewPhoto(f);
-              }}
-            />
-            {newPhotoUploadState === "uploading" ? (
-              <Skeleton className="w-full h-40 rounded-xl" />
-            ) : newPhotoUploadState === "error" ? (
-              <div className="w-full h-40 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
-                <p className="text-sm font-semibold text-red-600">
-                  Upload failed
-                </p>
+                  await uploadNewPhoto(f);
+                }}
+              />
+              {newPhotoUploadState === "uploading" ? (
+                <Skeleton className="w-full h-40 rounded-xl" />
+              ) : newPhotoUploadState === "error" ? (
+                <div className="w-full h-40 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
+                  <p className="text-sm font-semibold text-red-600">
+                    Upload failed
+                  </p>
+                  <button
+                    onClick={() => photoRef.current?.click()}
+                    className="text-xs font-semibold text-red-700 underline"
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : newPhoto ? (
+                <div className="relative rounded-xl overflow-hidden border border-slate-200">
+                  <img
+                    src={newPhoto}
+                    alt=""
+                    className="w-full h-40 object-cover"
+                  />
+                  <button
+                    onClick={() => setNewPhoto(null)}
+                    className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                  >
+                    <Icons.X />
+                  </button>
+                </div>
+              ) : (
                 <button
                   onClick={() => photoRef.current?.click()}
-                  className="text-xs font-semibold text-red-700 underline"
+                  className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2"
                 >
-                  Try again
+                  <Icons.Image />
+                  Attach photo
                 </button>
-              </div>
-            ) : newPhoto ? (
-              <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                <img
-                  src={newPhoto}
-                  alt=""
-                  className="w-full h-40 object-cover"
-                />
-                <button
-                  onClick={() => setNewPhoto(null)}
-                  className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
-                >
-                  <Icons.X />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => photoRef.current?.click()}
-                className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2"
-              >
-                <Icons.Image />
-                Attach photo
-              </button>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </FormModal>
       )}
 
