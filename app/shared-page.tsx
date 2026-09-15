@@ -7803,54 +7803,60 @@ export function AdminEventsPage({
         </FormModal>
       )}
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {events.map((e) => (
           <div
             key={e.id}
-            className="bg-white border border-slate-100 rounded-xl overflow-hidden"
+            className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden h-full"
           >
-            {e.mediaUrls && e.mediaUrls.length > 0 && (
-              <div className="flex overflow-x-auto">
-                {e.mediaUrls.map((url, i) =>
-                  /\.mp4($|\?)/i.test(url) ? (
+            <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
+              {e.mediaUrls && e.mediaUrls.length > 0 ? (
+                (() => {
+                  const primaryMedia = e.mediaUrls[0];
+
+                  return /\.mp4($|\?)/i.test(primaryMedia) ? (
                     <video
-                      key={i}
-                      src={url}
+                      src={primaryMedia}
                       controls
-                      className="h-32 shrink-0 object-cover"
-                      style={{
-                        width: e.mediaUrls!.length === 1 ? "100%" : "50%",
-                      }}
+                      className="w-full h-full object-cover"
                     />
                   ) : (
                     <img
-                      key={i}
-                      src={url}
-                      alt=""
-                      className="h-32 shrink-0 object-cover"
-                      style={{
-                        width: e.mediaUrls!.length === 1 ? "100%" : "50%",
-                      }}
+                      src={primaryMedia}
+                      alt={e.title}
+                      className="w-full h-full object-cover"
                     />
-                  ),
-                )}
-              </div>
-            )}
-            <div className="p-5">
-              <div className="flex items-start justify-between mb-3">
+                  );
+                })()
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                  <span className="text-sm font-semibold text-slate-400">
+                    No media
+                  </span>
+                </div>
+              )}
+
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/25 via-transparent to-slate-900/10" />
+
+              <div className="absolute top-3 left-3 z-10">
                 <Badge status={e.status} />
-                <div className="flex items-center gap-2">
-                  {e.fineAmount > 0 && (
-                    <span className="text-xs text-red-500 font-semibold">
-                      ₱{e.fineAmount} fine
-                    </span>
-                  )}
-                  {e.multiSession && (
-                    <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded border border-violet-100">
-                      2 sessions
-                    </span>
-                  )}
-                  <span className="text-xs text-slate-400">{e.date}</span>
+              </div>
+
+              <div className="absolute top-3 right-3 z-10 flex items-center gap-2 max-w-[72%] justify-end">
+                <div className="flex items-center gap-1.5 rounded-full border border-white/30 bg-slate-900/25 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm shadow-sm">
+                  <span>{e.date}</span>
+                </div>
+                {e.fineAmount > 0 && (
+                  <span className="rounded-full border border-red-200 bg-red-500/90 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm shadow-sm">
+                    ₱{e.fineAmount} fine
+                  </span>
+                )}
+                {e.multiSession && (
+                  <span className="rounded-full border border-violet-200 bg-violet-500/90 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm shadow-sm">
+                    2 sessions
+                  </span>
+                )}
+                <div className="rounded-full border border-white/30 bg-slate-900/25 p-1 text-white backdrop-blur-sm shadow-sm">
                   <DotMenu
                     items={[
                       ...statusOptions(e.status).map((o) => ({
@@ -7882,35 +7888,43 @@ export function AdminEventsPage({
                   />
                 </div>
               </div>
-              <h3 className="font-semibold text-slate-900 mb-1.5">{e.title}</h3>
-              <div className="flex flex-wrap gap-4 text-xs text-slate-400 mb-4">
-                <span className="flex items-center gap-1.5">
-                  <Icons.MapPin />
-                  {e.location || "TBA"}
-                </span>
-                {e.multiSession ? (
-                  <>
-                    <span className="flex items-center gap-1.5">
-                      <Icons.Clock />
-                      {e.morningStart && e.morningEnd
-                        ? `${e.morningStart}–${e.morningEnd}`
-                        : "Morning TBA"}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Icons.Clock />
-                      {e.afternoonStart && e.afternoonEnd
-                        ? `${e.afternoonStart}–${e.afternoonEnd}`
-                        : "Afternoon TBA"}
-                    </span>
-                  </>
-                ) : (
+            </div>
+
+            <div className="p-5 flex flex-col flex-1 justify-between gap-3">
+              <div className="space-y-2">
+                <h3 className="font-bold text-slate-900 text-base line-clamp-1">
+                  {e.title}
+                </h3>
+                <div className="text-xs text-slate-500 flex flex-col gap-1">
                   <span className="flex items-center gap-1.5">
-                    <Icons.Clock />
-                    {e.time || "TBA"}
+                    <Icons.MapPin />
+                    {e.location || "TBA"}
                   </span>
-                )}
+                  {e.multiSession ? (
+                    <>
+                      <span className="flex items-center gap-1.5">
+                        <Icons.Clock />
+                        {e.morningStart && e.morningEnd
+                          ? `${e.morningStart}–${e.morningEnd}`
+                          : "Morning TBA"}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Icons.Clock />
+                        {e.afternoonStart && e.afternoonEnd
+                          ? `${e.afternoonStart}–${e.afternoonEnd}`
+                          : "Afternoon TBA"}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="flex items-center gap-1.5">
+                      <Icons.Clock />
+                      {e.time || "TBA"}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-2 pt-4 border-t border-slate-50">
+
+              <div className="pt-3 border-t border-slate-50 flex items-center justify-between gap-2">
                 {e.status === "active" && (
                   <button
                     onClick={() => onNav("admin-scanner")}
@@ -7922,7 +7936,9 @@ export function AdminEventsPage({
                 )}
                 <button
                   onClick={() => onNav("admin-attendees")}
-                  className="flex-1 h-9 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1.5"
+                  className={`h-9 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1.5 ${
+                    e.status === "active" ? "flex-1" : "w-full"
+                  }`}
                 >
                   <Icons.Users />
                   Attendees
