@@ -8596,6 +8596,8 @@ export function AdminScannerPage({
     "morning" | "afternoon" | null
   >(null);
 
+  const [imageLoading, setImageLoading] = useState(true);
+
   useEffect(() => {
     if (!events.some((event) => event.id === selectedEventId) && events[0]) {
       setSelectedEventId(events[0].id);
@@ -8628,6 +8630,13 @@ export function AdminScannerPage({
   );
 
   const selectedEvent = events.find((e) => e.id === selectedEventId);
+
+  const primaryMedia =
+    selectedEvent?.highlightUrl ?? selectedEvent?.mediaUrls?.[0];
+
+  useEffect(() => {
+    setImageLoading(Boolean(primaryMedia));
+  }, [selectedEventId, primaryMedia]);
 
   const canScanSelectedEvent = selectedEvent?.status === "active";
 
@@ -8741,6 +8750,29 @@ export function AdminScannerPage({
         <div className="lg:col-span-5">
           {selectedEvent ? (
             <div className="space-y-4">
+              <div className="relative w-full aspect-[16/9] sm:aspect-[4/3] rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 shadow-sm">
+                {primaryMedia ? (
+                  <>
+                    {imageLoading && (
+                      <Skeleton className="absolute inset-0 w-full h-full rounded-2xl" />
+                    )}
+                    <img
+                      src={primaryMedia}
+                      alt={`${selectedEvent.title} cover`}
+                      className={`w-full h-full object-cover transition-opacity duration-300 ${
+                        imageLoading ? "opacity-0" : "opacity-100"
+                      }`}
+                      onLoad={() => setImageLoading(false)}
+                      onError={() => setImageLoading(false)}
+                    />
+                  </>
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-400 text-xs font-medium">
+                    No cover media
+                  </div>
+                )}
+              </div>
+
               <div className="bg-white border border-slate-100 rounded-2xl px-5 py-6">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-green-50 border border-green-100 rounded-xl flex items-center justify-center text-green-600 shrink-0">
