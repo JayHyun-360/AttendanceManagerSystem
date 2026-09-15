@@ -4213,6 +4213,8 @@ function FormModal({
 
   onClose,
 
+  sidebar,
+
   footer,
 
   children,
@@ -4220,6 +4222,8 @@ function FormModal({
   title: string;
 
   onClose: () => void;
+
+  sidebar?: React.ReactNode;
 
   footer?: React.ReactNode;
 
@@ -4231,8 +4235,10 @@ function FormModal({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col"
-        style={{ maxHeight: "90vh" }}
+        className={`bg-white rounded-2xl w-full shadow-2xl flex flex-col overflow-hidden ${
+          sidebar ? "max-w-4xl h-[85vh]" : "max-w-lg"
+        }`}
+        style={sidebar ? undefined : { maxHeight: "90vh" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
@@ -4244,13 +4250,36 @@ function FormModal({
             <Icons.X />
           </button>
         </div>
-        <div className="px-5 py-4 space-y-3 overflow-y-auto flex-1">
-          {children}
-        </div>
-        {footer && (
-          <div className="px-5 pt-3 pb-5 flex gap-2.5 shrink-0 border-t border-slate-100">
-            {footer}
+        {sidebar ? (
+          <div className="flex min-h-0 flex-1">
+            <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-slate-50 p-3 md:block">
+              {sidebar}
+            </aside>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <div className="border-b border-slate-100 bg-slate-50 p-2 md:hidden">
+                {sidebar}
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 py-4 md:p-6">
+                <div className="space-y-3">{children}</div>
+              </div>
+              {footer && (
+                <div className="flex shrink-0 gap-2.5 border-t border-slate-100 px-5 pb-5 pt-3">
+                  {footer}
+                </div>
+              )}
+            </div>
           </div>
+        ) : (
+          <>
+            <div className="px-5 py-4 space-y-3 overflow-y-auto flex-1">
+              {children}
+            </div>
+            {footer && (
+              <div className="px-5 pt-3 pb-5 flex gap-2.5 shrink-0 border-t border-slate-100">
+                {footer}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -6150,6 +6179,8 @@ interface NewEventDraft {
   afternoonLateFine: string;
 }
 
+type CreateEventTab = "basic" | "session" | "fines" | "media";
+
 export function AdminEventsPage({
   onNav,
 
@@ -6214,6 +6245,8 @@ export function AdminEventsPage({
   };
 
   const [showForm, setShowForm] = useState(false);
+
+  const [activeTab, setActiveTab] = useState<CreateEventTab>("basic");
 
   const [editId, setEditId] = useState<string | null>(null);
 
@@ -7013,6 +7046,8 @@ export function AdminEventsPage({
             onClick={() => {
               setShowForm(true);
 
+              setActiveTab("basic");
+
               setEditId(null);
 
               setEditDraft(null);
@@ -7029,6 +7064,36 @@ export function AdminEventsPage({
       {showForm && (
         <FormModal
           title="Create New Event"
+          sidebar={
+            <nav className="space-y-1" aria-label="Create event sections">
+              {[
+                [
+                  "basic",
+                  "Basic Details",
+                  "Title, date, program, location, description",
+                ],
+                ["session", "Session & Timing", "Session mode, times, cutoffs"],
+                ["fines", "Fines & Rules", "Attendance fine settings"],
+                ["media", "Media & Assets", "Photos and event media"],
+              ].map(([value, label, description]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setActiveTab(value as CreateEventTab)}
+                  className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
+                    activeTab === value
+                      ? "bg-white text-green-700 shadow-sm ring-1 ring-slate-200"
+                      : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
+                  }`}
+                >
+                  <span className="block text-xs font-bold">{label}</span>
+                  <span className="mt-1 block text-[10px] leading-relaxed text-slate-400">
+                    {description}
+                  </span>
+                </button>
+              ))}
+            </nav>
+          }
           onClose={() => {
             discardCreateMedia();
 
@@ -7056,293 +7121,310 @@ export function AdminEventsPage({
             </>
           }
         >
-          <FieldInput
-            label="Event title *"
-            placeholder="e.g. Foundation Day Celebration"
-            value={draft.title}
-            onChange={setD("title")}
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <FieldInput
-              label="Date *"
-              type="date"
-              value={draft.date}
-              onChange={setD("date")}
-            />
-            <FieldSelect
-              label="Program"
-              value={draft.program}
-              onChange={setD("program")}
-            >
-              <option>All Programs</option>
-              <option>BSIT / BSCS</option>
-              <option>BSIT</option>
-              <option>BSCS</option>
-              <option>BSBA</option>
-            </FieldSelect>
-          </div>
-          <FieldInput
-            label="Location"
-            placeholder="e.g. Main Gymnasium"
-            value={draft.location}
-            onChange={setD("location")}
-          />
-
-          {}
-          <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
-            <div className="flex items-center justify-between py-2.5">
-              <div>
-                <p className="text-xs font-semibold text-slate-800">
-                  Multi-Session
-                </p>
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  Split into Morning &amp; Afternoon sessions
-                </p>
-              </div>
-              <button
-                onClick={toggleD("multiSession")}
-                role="switch"
-                aria-checked={draft.multiSession}
-                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${
-                  draft.multiSession ? "bg-green-600" : "bg-slate-200"
-                }`}
-              >
-                <span
-                  className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${
-                    draft.multiSession ? "translate-x-4" : "translate-x-0"
-                  }`}
+          {activeTab === "basic" && (
+            <>
+              <FieldInput
+                label="Event title *"
+                placeholder="e.g. Foundation Day Celebration"
+                value={draft.title}
+                onChange={setD("title")}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <FieldInput
+                  label="Date *"
+                  type="date"
+                  value={draft.date}
+                  onChange={setD("date")}
                 />
-              </button>
-            </div>
-          </div>
-
-          {}
-          {!draft.multiSession ? (
-            <div className="space-y-2.5">
+                <FieldSelect
+                  label="Program"
+                  value={draft.program}
+                  onChange={setD("program")}
+                >
+                  <option>All Programs</option>
+                  <option>BSIT / BSCS</option>
+                  <option>BSIT</option>
+                  <option>BSCS</option>
+                  <option>BSBA</option>
+                </FieldSelect>
+              </div>
               <FieldInput
-                label="Time"
-                placeholder="e.g. 8:00 AM – 5:00 PM"
-                value={draft.time}
-                onChange={setD("time")}
+                label="Location"
+                placeholder="e.g. Main Gymnasium"
+                value={draft.location}
+                onChange={setD("location")}
               />
-              <FieldInput
-                label="Late cutoff time"
-                type="time"
-                value={draft.morningLateCutoff}
-                onChange={setD("morningLateCutoff")}
+              <FieldTextarea
+                label="Description"
+                placeholder="What is this event about?"
+                rows={5}
+                value={draft.description}
+                onChange={setD("description")}
               />
-              <InlineToggle
-                on={draft.strictMorning}
-                onToggle={toggleD("strictMorning")}
-                label="Strict attendance (require time-out scan)"
-              />
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              <SessionFields
-                prefix="morning"
-                label="Morning"
-                start={draft.morningStart}
-                onStart={(v) => setDraft((d) => ({ ...d, morningStart: v }))}
-                end={draft.morningEnd}
-                onEnd={(v) => setDraft((d) => ({ ...d, morningEnd: v }))}
-                cutoff={draft.morningLateCutoff}
-                onCutoff={(v) =>
-                  setDraft((d) => ({ ...d, morningLateCutoff: v }))
-                }
-                strict={draft.strictMorning}
-                onStrict={toggleD("strictMorning")}
-              />
-              <SessionFields
-                prefix="afternoon"
-                label="Afternoon"
-                start={draft.afternoonStart}
-                onStart={(v) => setDraft((d) => ({ ...d, afternoonStart: v }))}
-                end={draft.afternoonEnd}
-                onEnd={(v) => setDraft((d) => ({ ...d, afternoonEnd: v }))}
-                cutoff={draft.afternoonLateCutoff}
-                onCutoff={(v) =>
-                  setDraft((d) => ({ ...d, afternoonLateCutoff: v }))
-                }
-                strict={draft.strictAfternoon}
-                onStrict={toggleD("strictAfternoon")}
-              />
-            </div>
+            </>
           )}
 
-          <FineFields
-            multi={draft.multiSession}
-            values={draft}
-            onChange={(k, v) => setDraft((d) => ({ ...d, [k]: v }))}
-          />
+          {}
+          {activeTab === "session" && (
+            <>
+              <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
+                <div className="flex items-center justify-between py-2.5">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-800">
+                      Multi-Session
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Split into Morning &amp; Afternoon sessions
+                    </p>
+                  </div>
+                  <button
+                    onClick={toggleD("multiSession")}
+                    role="switch"
+                    aria-checked={draft.multiSession}
+                    className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${
+                      draft.multiSession ? "bg-green-600" : "bg-slate-200"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${
+                        draft.multiSession ? "translate-x-4" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
 
-          <FieldTextarea
-            label="Description"
-            placeholder="What is this event about?"
-            rows={3}
-            value={draft.description}
-            onChange={setD("description")}
-          />
+              {}
+              {!draft.multiSession ? (
+                <div className="space-y-2.5">
+                  <FieldInput
+                    label="Time"
+                    placeholder="e.g. 8:00 AM – 5:00 PM"
+                    value={draft.time}
+                    onChange={setD("time")}
+                  />
+                  <FieldInput
+                    label="Late cutoff time"
+                    type="time"
+                    value={draft.morningLateCutoff}
+                    onChange={setD("morningLateCutoff")}
+                  />
+                  <InlineToggle
+                    on={draft.strictMorning}
+                    onToggle={toggleD("strictMorning")}
+                    label="Strict attendance (require time-out scan)"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <SessionFields
+                    prefix="morning"
+                    label="Morning"
+                    start={draft.morningStart}
+                    onStart={(v) =>
+                      setDraft((d) => ({ ...d, morningStart: v }))
+                    }
+                    end={draft.morningEnd}
+                    onEnd={(v) => setDraft((d) => ({ ...d, morningEnd: v }))}
+                    cutoff={draft.morningLateCutoff}
+                    onCutoff={(v) =>
+                      setDraft((d) => ({ ...d, morningLateCutoff: v }))
+                    }
+                    strict={draft.strictMorning}
+                    onStrict={toggleD("strictMorning")}
+                  />
+                  <SessionFields
+                    prefix="afternoon"
+                    label="Afternoon"
+                    start={draft.afternoonStart}
+                    onStart={(v) =>
+                      setDraft((d) => ({ ...d, afternoonStart: v }))
+                    }
+                    end={draft.afternoonEnd}
+                    onEnd={(v) => setDraft((d) => ({ ...d, afternoonEnd: v }))}
+                    cutoff={draft.afternoonLateCutoff}
+                    onCutoff={(v) =>
+                      setDraft((d) => ({ ...d, afternoonLateCutoff: v }))
+                    }
+                    strict={draft.strictAfternoon}
+                    onStrict={toggleD("strictAfternoon")}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === "fines" && (
+            <FineFields
+              multi={draft.multiSession}
+              values={draft}
+              onChange={(k, v) => setDraft((d) => ({ ...d, [k]: v }))}
+            />
+          )}
 
           {}
-          <div>
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
-              Highlight Photo
-            </label>
-            <input
-              ref={highlightRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={async (e) => {
-                const f = e.target.files?.[0];
+          {activeTab === "media" && (
+            <>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
+                  Highlight Photo
+                </label>
+                <input
+                  ref={highlightRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
 
-                if (!f) return;
+                    if (!f) return;
 
-                setHighlightUploadState("uploading");
+                    setHighlightUploadState("uploading");
 
-                const result = await uploadImage(f);
+                    const result = await uploadImage(f);
 
-                if ("error" in result) {
-                  setHighlightUploadState("error");
+                    if ("error" in result) {
+                      setHighlightUploadState("error");
 
-                  toast.error(result.error);
+                      toast.error(result.error);
 
-                  return;
-                }
-
-                setHighlightUploadState("idle");
-
-                setHighlightUrl(result.url);
-              }}
-            />
-            {highlightUploadState === "uploading" ? (
-              <Skeleton className="w-full h-36 rounded-xl" />
-            ) : highlightUploadState === "error" ? (
-              <div className="w-full h-36 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
-                <p className="text-sm font-semibold text-red-600">
-                  Upload failed
-                </p>
-                <button
-                  onClick={() => highlightRef.current?.click()}
-                  className="text-xs font-semibold text-red-700 underline"
-                >
-                  Try again
-                </button>
-              </div>
-            ) : highlightUrl ? (
-              <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                <img
-                  src={highlightUrl}
-                  alt=""
-                  className="w-full h-36 object-cover"
-                />
-                <button
-                  onClick={() => {
-                    if (highlightUrl) {
-                      URL.revokeObjectURL(highlightUrl);
+                      return;
                     }
 
-                    setHighlightUrl(null);
+                    setHighlightUploadState("idle");
+
+                    setHighlightUrl(result.url);
                   }}
-                  className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
-                >
-                  <Icons.X />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => highlightRef.current?.click()}
-                className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2 transition-colors"
-              >
-                <Icons.Image />
-                Upload highlight photo
-              </button>
-            )}
-          </div>
-          <div className="space-y-2">
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block">
-              Event media
-            </label>
-            <input
-              ref={photoRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={async (e) => {
-                await uploadEventMedia(Array.from(e.target.files ?? []));
-
-                e.target.value = "";
-              }}
-            />
-            <input
-              ref={videoRef}
-              type="file"
-              accept="video/mp4,video/*"
-              multiple
-              className="hidden"
-              onChange={async (e) => {
-                await uploadEventMedia(Array.from(e.target.files ?? []));
-
-                e.target.value = "";
-              }}
-            />
-            {mediaUploadState === "uploading" ? (
-              <Skeleton className="h-20 w-full rounded-xl" />
-            ) : mediaUploadState === "error" ? (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold text-red-600 truncate">
-                  {mediaUploadError || "Media upload failed."}
-                </p>
-                <button
-                  onClick={() => photoRef.current?.click()}
-                  className="text-xs font-semibold text-red-700 underline shrink-0"
-                >
-                  Retry
-                </button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => photoRef.current?.click()}
-                  className="flex-1 h-10 border-2 border-dashed border-slate-200 rounded-xl text-xs font-semibold text-slate-400 hover:border-green-400 hover:text-green-600"
-                >
-                  Add images
-                </button>
-                <button
-                  onClick={() => videoRef.current?.click()}
-                  className="flex-1 h-10 border-2 border-dashed border-slate-200 rounded-xl text-xs font-semibold text-slate-400 hover:border-green-400 hover:text-green-600"
-                >
-                  Add MP4 video
-                </button>
-              </div>
-            )}
-            {(photoUrls.length > 0 || videoNames.length > 0) && (
-              <div className="space-y-1 text-xs text-slate-500">
-                {photoUrls.map((url) => (
-                  <div key={url} className="flex items-center gap-2">
+                />
+                {highlightUploadState === "uploading" ? (
+                  <Skeleton className="w-full h-36 rounded-xl" />
+                ) : highlightUploadState === "error" ? (
+                  <div className="w-full h-36 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
+                    <p className="text-sm font-semibold text-red-600">
+                      Upload failed
+                    </p>
+                    <button
+                      onClick={() => highlightRef.current?.click()}
+                      className="text-xs font-semibold text-red-700 underline"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                ) : highlightUrl ? (
+                  <div className="relative rounded-xl overflow-hidden border border-slate-200">
                     <img
-                      src={url}
+                      src={highlightUrl}
                       alt=""
-                      className="h-10 w-14 rounded object-cover"
+                      className="w-full h-36 object-cover"
                     />
-                    <span className="truncate">Uploaded image</span>
+                    <button
+                      onClick={() => {
+                        if (highlightUrl) {
+                          URL.revokeObjectURL(highlightUrl);
+                        }
+
+                        setHighlightUrl(null);
+                      }}
+                      className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                    >
+                      <Icons.X />
+                    </button>
                   </div>
-                ))}
-                {videoNames.map((url) => (
-                  <div key={url} className="flex items-center gap-2">
-                    <video
-                      src={url}
-                      controls
-                      className="h-10 w-14 rounded object-cover"
-                    />
-                    <span className="truncate">Uploaded MP4 video</span>
-                  </div>
-                ))}
+                ) : (
+                  <button
+                    onClick={() => highlightRef.current?.click()}
+                    className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Icons.Image />
+                    Upload highlight photo
+                  </button>
+                )}
               </div>
-            )}
-          </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block">
+                  Event media
+                </label>
+                <input
+                  ref={photoRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={async (e) => {
+                    await uploadEventMedia(Array.from(e.target.files ?? []));
+
+                    e.target.value = "";
+                  }}
+                />
+                <input
+                  ref={videoRef}
+                  type="file"
+                  accept="video/mp4,video/*"
+                  multiple
+                  className="hidden"
+                  onChange={async (e) => {
+                    await uploadEventMedia(Array.from(e.target.files ?? []));
+
+                    e.target.value = "";
+                  }}
+                />
+                {mediaUploadState === "uploading" ? (
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                ) : mediaUploadState === "error" ? (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-center justify-between gap-3">
+                    <p className="text-xs font-semibold text-red-600 truncate">
+                      {mediaUploadError || "Media upload failed."}
+                    </p>
+                    <button
+                      onClick={() => photoRef.current?.click()}
+                      className="text-xs font-semibold text-red-700 underline shrink-0"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => photoRef.current?.click()}
+                      className="flex-1 h-10 border-2 border-dashed border-slate-200 rounded-xl text-xs font-semibold text-slate-400 hover:border-green-400 hover:text-green-600"
+                    >
+                      Add images
+                    </button>
+                    <button
+                      onClick={() => videoRef.current?.click()}
+                      className="flex-1 h-10 border-2 border-dashed border-slate-200 rounded-xl text-xs font-semibold text-slate-400 hover:border-green-400 hover:text-green-600"
+                    >
+                      Add MP4 video
+                    </button>
+                  </div>
+                )}
+                {(photoUrls.length > 0 || videoNames.length > 0) && (
+                  <div className="space-y-1 text-xs text-slate-500">
+                    {photoUrls.map((url) => (
+                      <div key={url} className="flex items-center gap-2">
+                        <img
+                          src={url}
+                          alt=""
+                          className="h-10 w-14 rounded object-cover"
+                        />
+                        <span className="truncate">Uploaded image</span>
+                      </div>
+                    ))}
+                    {videoNames.map((url) => (
+                      <div key={url} className="flex items-center gap-2">
+                        <video
+                          src={url}
+                          controls
+                          className="h-10 w-14 rounded object-cover"
+                        />
+                        <span className="truncate">Uploaded MP4 video</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </FormModal>
       )}
 
