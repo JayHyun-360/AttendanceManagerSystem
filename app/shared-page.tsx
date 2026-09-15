@@ -9926,26 +9926,40 @@ export function AdminAnnouncementsPage({
           )}
         </FormModal>
       )}
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {posts.map((a) => (
           <div
             key={a.id}
-            className="bg-white border border-slate-100 rounded-xl overflow-hidden hover:border-slate-200 hover:shadow-sm transition-all"
+            className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden h-full"
           >
-            {a.photoUrl && (
-              <img
-                src={a.photoUrl}
-                alt=""
-                className="w-full h-40 object-cover"
-              />
-            )}
-            <div className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded uppercase tracking-wide">
+            <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
+              {a.photoUrl ? (
+                <img
+                  src={a.photoUrl}
+                  alt={a.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                  <span className="text-sm font-semibold text-slate-400">
+                    No image
+                  </span>
+                </div>
+              )}
+
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/25 via-transparent to-slate-900/10" />
+
+              <div className="absolute top-3 left-3 z-10">
+                <span className="text-[10px] font-bold text-green-700 bg-green-50/90 border border-green-100 px-2 py-0.5 rounded-full uppercase tracking-wide shadow-sm backdrop-blur-sm">
                   {a.badge}
                 </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-slate-400">{a.date}</span>
+              </div>
+
+              <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+                <span className="rounded-full border border-white/30 bg-slate-900/25 px-2 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur-sm">
+                  {a.date}
+                </span>
+                <div className="rounded-full border border-white/30 bg-slate-900/25 p-1 text-white shadow-sm backdrop-blur-sm">
                   <DotMenu
                     items={[
                       {
@@ -9969,10 +9983,23 @@ export function AdminAnnouncementsPage({
                   />
                 </div>
               </div>
-              <h3 className="font-semibold text-slate-900 mb-2">{a.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed line-clamp-3">
-                {a.body}
-              </p>
+            </div>
+
+            <div className="p-5 flex flex-col flex-1 justify-between gap-3">
+              <div className="space-y-2">
+                <h3 className="font-bold text-slate-900 text-base line-clamp-1">
+                  {a.title}
+                </h3>
+                <p className="text-sm text-slate-500 leading-relaxed line-clamp-3">
+                  {a.body}
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-slate-50">
+                <p className="text-[11px] text-slate-400">
+                  Posted by {a.author}
+                </p>
+              </div>
             </div>
           </div>
         ))}
