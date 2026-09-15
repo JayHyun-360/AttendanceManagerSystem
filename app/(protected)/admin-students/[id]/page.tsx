@@ -369,41 +369,36 @@ export default function StudentDetailRoutePage() {
             <p className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
               {student.name}
             </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {badges.map((badge) => (
-                <span
-                  key={badge}
-                  className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 md:text-[11px]"
-                >
-                  {badge}
-                </span>
-              ))}
-            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              Student profile, credentials, and session overrides
+            </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full max-w-7xl mx-auto">
           <aside className="lg:col-span-4 space-y-4">
-            <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white pt-1 shadow-sm">
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-green-600 to-emerald-700" />
-              <div className="p-5 text-center">
-                {student.photoUrl ? (
-                  <img
-                    src={student.photoUrl}
-                    alt={student.name}
-                    className="mx-auto h-24 w-24 rounded-full border-4 border-white object-cover shadow-md"
-                  />
-                ) : (
-                  <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 text-2xl font-bold text-emerald-700 ring-4 ring-white shadow-md">
-                    {student.name
-                      .split(" ")
-                      .filter(Boolean)
-                      .map((part) => part[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase() || "S"}
-                  </div>
-                )}
+            <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="relative h-20 w-full rounded-t-2xl bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-800" />
+              <div className="relative p-5 pt-0 text-center">
+                <div className="relative -mt-12 mx-auto w-fit">
+                  {student.photoUrl ? (
+                    <img
+                      src={student.photoUrl}
+                      alt={student.name}
+                      className="mx-auto h-24 w-24 rounded-full border-4 border-white object-cover shadow-md"
+                    />
+                  ) : (
+                    <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 text-2xl font-bold text-emerald-700 ring-4 ring-white shadow-md">
+                      {student.name
+                        .split(" ")
+                        .filter(Boolean)
+                        .map((part) => part[0])
+                        .slice(0, 2)
+                        .join("")
+                        .toUpperCase() || "S"}
+                    </div>
+                  )}
+                </div>
                 <p className="mt-4 text-lg font-bold text-slate-900">
                   {student.name}
                 </p>
@@ -414,7 +409,7 @@ export default function StudentDetailRoutePage() {
                   {badges.map((badge) => (
                     <span
                       key={badge}
-                      className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600"
+                      className="rounded-full border border-emerald-200/60 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700"
                     >
                       {badge}
                     </span>
@@ -478,7 +473,7 @@ export default function StudentDetailRoutePage() {
                       onChange={(event) =>
                         setSelectedEventId(event.target.value)
                       }
-                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-sm text-slate-800 outline-none transition-colors focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                     >
                       <option value="">Select an event</option>
                       {events.map((event) => (
@@ -500,7 +495,7 @@ export default function StudentDetailRoutePage() {
                           event.target.value as AttendanceStatus,
                         )
                       }
-                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-sm text-slate-800 outline-none transition-colors focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                     >
                       <option value="present">Present</option>
                       <option value="late">Late</option>
@@ -595,15 +590,15 @@ export default function StudentDetailRoutePage() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                 School ID photo
               </p>
-              <div className="mt-4 overflow-hidden rounded-xl bg-slate-100">
+              <div className="relative mt-4 aspect-[4/3] overflow-hidden rounded-xl border border-slate-200 bg-slate-900/5">
                 {student.idPhotoUrl ? (
                   <img
                     src={student.idPhotoUrl}
                     alt="Student ID"
-                    className="h-[260px] w-full object-contain md:h-[360px]"
+                    className="h-full w-full object-contain"
                   />
                 ) : (
-                  <div className="flex min-h-[260px] items-center justify-center border border-dashed border-amber-200 bg-amber-50 p-6 text-center md:min-h-[360px]">
+                  <div className="flex h-full items-center justify-center border border-dashed border-amber-200 bg-amber-50 p-6 text-center">
                     <div>
                       <p className="text-sm font-semibold text-amber-800">
                         No ID photo uploaded
