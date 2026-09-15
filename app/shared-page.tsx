@@ -7901,7 +7901,17 @@ function CameraScanner({
 
           .single();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          if (insertError.code === "23505") {
+            setScanError(
+              "Attendance already recorded for this student and session.",
+            );
+            scannedRef.current = false;
+            return;
+          }
+
+          throw insertError;
+        }
 
         recordId = inserted.id;
 
