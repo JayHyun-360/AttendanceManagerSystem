@@ -187,7 +187,9 @@ function toMinutes(value?: string | null) {
 
   const cleaned = value.trim();
 
-  const spanMatch = cleaned.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  const spanMatch = cleaned.match(
+    /^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(AM|PM)?$/i,
+  );
 
   if (!spanMatch) return null;
 
@@ -412,7 +414,7 @@ interface ScanRecord {
 
   status: "confirmed" | "late" | "duplicate";
 
-  action?: "time_in" | "time_out" | "duplicate";
+  action?: "time_in" | "time_out" | "time_out_rejected" | "duplicate";
 
   dbId: string | number;
 }
@@ -7868,7 +7870,8 @@ function CameraScanner({
 
       const isLateScan = cutoffMinutes !== null && nowMinutes > cutoffMinutes;
 
-      let action: "time_in" | "time_out" | "duplicate" = "time_in";
+      let action: "time_in" | "time_out" | "time_out_rejected" | "duplicate" =
+        "time_in";
 
       let recordId: string | number | undefined = undefined;
 
@@ -7932,27 +7935,47 @@ function CameraScanner({
 
           scannedAt = existing.scan_in_at ?? now;
         } else {
-          const { error: updateError } = await supabase
+          const sessionEndValue =
+            sessionLabel === "morning" ? event.morningEnd : event.afternoonEnd;
 
-            .from("attendance_scans")
+          const sessionEndMinutes = sessionEndValue
+            ? toMinutes(sessionEndValue)
+            : null;
 
-            .update({
-              scan_out_at: now.toISOString(),
+          if (
+            sessionEndMinutes === null ||
+            now.getHours() * 60 + now.getMinutes() < sessionEndMinutes
+          ) {
+            action = "time_out_rejected";
 
-              status: "present",
+            status = "duplicate";
 
-              scanned_by: scannerId,
-            })
+            recordId = existing.id;
 
-            .eq("id", existing.id);
+            scannedAt = existing.scan_in_at ?? now;
+          } else {
+            const { error: updateError } = await supabase
 
-          if (updateError) throw updateError;
+              .from("attendance_scans")
 
-          recordId = existing.id;
+              .update({
+                scan_out_at: now.toISOString(),
 
-          scannedAt = now;
+                status: "present",
 
-          action = "time_out";
+                scanned_by: scannerId,
+              })
+
+              .eq("id", existing.id);
+
+            if (updateError) throw updateError;
+
+            recordId = existing.id;
+
+            scannedAt = now;
+
+            action = "time_out";
+          }
         }
       } else if (!existing.scan_in_at && !existing.scan_out_at) {
         const { error: updateError } = await supabase
@@ -8370,9 +8393,11 @@ function CameraScanner({
                   ? "Time-in Recorded — Late"
                   : result.action === "time_in"
                     ? "Time-in Recorded"
-                    : result.action === "time_out"
-                      ? "Time-out Recorded"
-                      : "Already Scanned for This Session"}
+                    : result.action === "time_out_rejected"
+                      ? "Rejected: QR already scanned, wait for time-out."
+                      : result.action === "time_out"
+                        ? "Time-out Recorded"
+                        : "Already Scanned for This Session"}
               </p>
               <p className="text-white text-base font-semibold mt-1">
                 {result.name}
