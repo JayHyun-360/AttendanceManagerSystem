@@ -5216,6 +5216,21 @@ export function EventsPage({
 
   const canSeeFees = user?.role === "student" && showFees;
 
+  if (selectedEventId) {
+    return (
+      <EventDetailPageView
+        event={items.find((event) => event.id === selectedEventId) ?? null}
+        user={user}
+        showFees={showFees}
+        onClose={() => setSelectedEventId(null)}
+        onPrimaryAction={() => {
+          setSelectedEventId(null);
+          onNav("my-qr");
+        }}
+      />
+    );
+  }
+
   return (
     <>
       <PageHeader title="Events" subtitle="AY 2026-2027, 1st Semester" />
@@ -5327,18 +5342,6 @@ export function EventsPage({
           </div>
         ))}
       </div>
-      {selectedEventId && (
-        <EventDetailModal
-          event={items.find((event) => event.id === selectedEventId) ?? null}
-          user={user}
-          showFees={showFees}
-          onClose={() => setSelectedEventId(null)}
-          onPrimaryAction={() => {
-            setSelectedEventId(null);
-            onNav("my-qr");
-          }}
-        />
-      )}
     </>
   );
 }
@@ -5544,7 +5547,7 @@ function EventDetailPage({
   );
 }
 
-function EventDetailModal({
+function EventDetailPageView({
   event,
   user,
   viewerRole,
@@ -5560,33 +5563,60 @@ function EventDetailModal({
   onPrimaryAction: () => void;
 }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (!event) return null;
+  useEffect(() => {
+    setIsLoading(true);
+    const frame = requestAnimationFrame(() => setIsLoading(false));
+
+    return () => cancelAnimationFrame(frame);
+  }, [event?.id]);
+
+  if (isLoading || !event) {
+    return (
+      <div className="min-h-screen bg-slate-50/60">
+        <div className="mx-auto max-w-7xl p-6">
+          <Skeleton className="mb-6 h-5 w-32" />
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+            <div className="space-y-5 lg:col-span-7">
+              <Skeleton className="aspect-video w-full rounded-2xl" />
+              <Skeleton className="h-80 w-full rounded-2xl" />
+            </div>
+            <div className="lg:col-span-5">
+              <Skeleton className="mb-4 h-8 w-48" />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {[0, 1, 2, 3].map((item) => (
+                  <Skeleton
+                    key={item}
+                    className="aspect-video w-full rounded-xl"
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const role = user?.role ?? viewerRole;
   const canSeeFees = role === "student" && showFees;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="relative max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-slate-100 bg-white p-6 shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
+    <div className="min-h-screen bg-slate-50/60">
+      <div className="mx-auto max-w-7xl p-6">
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-slate-50 hover:text-slate-800"
-          aria-label="Close event details"
+          className="mb-6 flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900"
         >
-          <Icons.X />
+          <Icons.ChevronLeft />
+          Back to Events
         </button>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div className="space-y-5">
-            <div className="aspect-video overflow-hidden rounded-xl bg-slate-50 shadow-sm">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+          <div className="space-y-5 lg:col-span-7 lg:sticky lg:top-6 lg:self-start">
+            <div className="aspect-video overflow-hidden rounded-2xl bg-slate-50 shadow-sm">
               {event.highlightUrl ? (
                 <img
                   src={event.highlightUrl}
@@ -5683,7 +5713,7 @@ function EventDetailModal({
             </div>
           </div>
 
-          <div>
+          <div className="max-h-[calc(100vh-120px)] overflow-y-auto pr-2 custom-scrollbar lg:col-span-5">
             <div className="mb-3 flex items-center justify-between pr-10">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
@@ -5744,7 +5774,6 @@ function EventDetailModal({
           </div>
         </div>
       </div>
-
       {lightbox && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/90 p-4"
@@ -7977,6 +8006,22 @@ export function AdminEventsPage({
       },
     ].filter((o) => o.status !== current);
 
+  if (selectedEventId) {
+    return (
+      <EventDetailPageView
+        event={events.find((event) => event.id === selectedEventId) ?? null}
+        user={null}
+        viewerRole="admin"
+        showFees
+        onClose={() => setSelectedEventId(null)}
+        onPrimaryAction={() => {
+          setSelectedEventId(null);
+          onNav("admin-attendees");
+        }}
+      />
+    );
+  }
+
   return (
     <>
       <PageHeader
@@ -8882,19 +8927,6 @@ export function AdminEventsPage({
           </div>
         ))}
       </div>
-      {selectedEventId && (
-        <EventDetailModal
-          event={events.find((event) => event.id === selectedEventId) ?? null}
-          user={null}
-          viewerRole="admin"
-          showFees
-          onClose={() => setSelectedEventId(null)}
-          onPrimaryAction={() => {
-            setSelectedEventId(null);
-            onNav("admin-attendees");
-          }}
-        />
-      )}
     </>
   );
 }
