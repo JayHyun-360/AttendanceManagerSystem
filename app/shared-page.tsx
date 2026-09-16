@@ -10496,12 +10496,26 @@ export function AdminAttendeesPage({
 
 export function AdminStudentsPage({
   students = [],
+  events = [],
+  authUserId,
 }: {
   students?: StudentProfile[];
+  events?: EventData[];
+  authUserId?: string | null;
 }) {
   const router = useRouter();
 
   const [query, setQuery] = useState("");
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "");
+  const [sessionLabel, setSessionLabel] = useState<"morning" | "afternoon">(
+    "morning",
+  );
+  const [existingStudentIds, setExistingStudentIds] = useState<string[]>([]);
+  const [isChecking, setIsChecking] = useState(false);
+  const [isMarking, setIsMarking] = useState(false);
 
   const filtered = students.filter((s) => {
     const q = query.toLowerCase();
@@ -10514,10 +10528,138 @@ export function AdminStudentsPage({
     );
   });
 
+  const selectedEvent = events.find((event) => event.id === selectedEventId);
+  const visibleIds = filtered.map((student) => student.profileId ?? student.id);
+  const allVisibleSelected =
+    visibleIds.length > 0 &&
+    visibleIds.every((id) => selectedStudentIds.has(id));
+  const selectedSessionMeta = getSelectedSessionMeta(
+    selectedEvent,
+    selectedEvent?.multiSession ? sessionLabel : null,
+  );
+  const suggestedSessionLabel = selectedEvent
+    ? getEventSessionMeta(selectedEvent).sessionLabel
+    : null;
+  const sessionMismatch =
+    selectedEvent?.multiSession &&
+    suggestedSessionLabel !== null &&
+    suggestedSessionLabel !== sessionLabel;
+
   const openStudent = (student: StudentProfile) => {
     const targetId = student.profileId ?? student.id;
 
     router.push(`/admin-students/${encodeURIComponent(targetId)}`);
+  };
+
+  useEffect(() => {
+    if (!events.some((event) => event.id === selectedEventId) && events[0]) {
+      setSelectedEventId(events[0].id);
+    }
+  }, [events, selectedEventId]);
+
+  useEffect(() => {
+    if (!selectedEvent) return;
+    setSessionLabel(
+      selectedEvent.multiSession
+        ? (getEventSessionMeta(selectedEvent).sessionLabel ?? "morning")
+        : "morning",
+    );
+  }, [selectedEvent]);
+
+  const toggleStudent = (studentId: string) => {
+    setSelectedStudentIds((current) => {
+      const next = new Set(current);
+      if (next.has(studentId)) next.delete(studentId);
+      else next.add(studentId);
+      return next;
+    });
+  };
+
+  const toggleVisibleStudents = () => {
+    setSelectedStudentIds((current) => {
+      const next = new Set(current);
+      if (allVisibleSelected) visibleIds.forEach((id) => next.delete(id));
+      else visibleIds.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedStudentIds(new Set());
+    setExistingStudentIds([]);
+  };
+
+  const markSelected = async (overwriteExisting: boolean) => {
+    if (!selectedEventId || !selectedEvent || !authUserId) {
+      toast.error("Select an event before marking attendance.");
+      return;
+    }
+
+    const studentIds = Array.from(selectedStudentIds);
+    setIsMarking(true);
+    const results = await Promise.all(
+      studentIds.map((studentId) =>
+        recordAttendance({
+          eventId: selectedEventId,
+          studentId,
+          sessionLabel,
+          status: "present",
+          scannedBy: authUserId,
+          strictSession: false,
+          canTimeOut: false,
+          method: "manual",
+          overwrite:
+            overwriteExisting || !existingStudentIds.includes(studentId),
+        }),
+      ),
+    );
+    setIsMarking(false);
+
+    const marked = results.filter(
+      (result) => result.outcome === "success",
+    ).length;
+    const failed = results.filter(
+      (result) => result.outcome === "error",
+    ).length;
+    const skipped = results.filter(
+      (result) =>
+        result.outcome === "duplicate" || result.outcome === "rejected",
+    ).length;
+
+    toast.success(
+      `${marked} marked present, ${skipped} skipped, ${failed} failed.`,
+    );
+    clearSelection();
+  };
+
+  const preflightAndMark = async () => {
+    if (!selectedEventId || !selectedEvent || !authUserId) {
+      toast.error("Select an event before marking attendance.");
+      return;
+    }
+
+    const studentIds = Array.from(selectedStudentIds);
+    setIsChecking(true);
+    const { data, error } = await supabase
+      .from("attendance_scans")
+      .select("student_id")
+      .eq("event_id", selectedEventId)
+      .eq("session_label", sessionLabel)
+      .in("student_id", studentIds);
+    setIsChecking(false);
+
+    if (error) {
+      console.error(error);
+      toast.error("Could not check existing attendance.");
+      return;
+    }
+
+    const existingIds = Array.from(
+      new Set((data ?? []).map((row) => String(row.student_id))),
+    );
+    setExistingStudentIds(existingIds);
+    if (existingIds.length > 0) return;
+    await markSelected(false);
   };
 
   return (
@@ -10548,6 +10690,96 @@ export function AdminStudentsPage({
           )}
         </div>
       </div>
+      {selectedStudentIds.size > 0 && (
+        <div className="mb-5 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 md:px-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-semibold text-emerald-900">
+              {selectedStudentIds.size} selected
+            </span>
+            <label className="min-w-[220px] flex-1">
+              <span className="sr-only">Event</span>
+              <select
+                value={selectedEventId}
+                onChange={(event) => setSelectedEventId(event.target.value)}
+                className="h-9 w-full rounded-lg border border-emerald-200 bg-white px-3 text-sm text-slate-800"
+              >
+                <option value="">Select event</option>
+                {events.map((event) => (
+                  <option key={event.id} value={event.id}>
+                    {event.title} · {event.date}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {selectedEvent?.multiSession && (
+              <div className="flex gap-1 rounded-lg bg-white p-1">
+                {(["morning", "afternoon"] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setSessionLabel(option)}
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold ${sessionLabel === option ? "bg-emerald-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}
+                  >
+                    {option === "morning" ? "Morning" : "Afternoon"}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              disabled={isChecking || isMarking || !selectedEventId}
+              onClick={() => void preflightAndMark()}
+              className="h-9 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {isChecking || isMarking
+                ? "Marking..."
+                : "Mark selected as Present"}
+            </button>
+            <button
+              type="button"
+              onClick={clearSelection}
+              className="h-9 rounded-lg border border-emerald-300 bg-white px-3 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+            >
+              Clear selection
+            </button>
+          </div>
+          {sessionMismatch && (
+            <p className="mt-3 text-xs font-semibold text-amber-800">
+              The selected session does not match the event session suggested by
+              the current time. You can continue manually.
+            </p>
+          )}
+          {existingStudentIds.length > 0 && (
+            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+              <p className="font-semibold">
+                {existingStudentIds.length} students already have records for
+                this event and session.
+              </p>
+              <p className="mt-1">
+                Choose whether to skip them or overwrite all selected records.
+              </p>
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  disabled={isMarking}
+                  onClick={() => void markSelected(false)}
+                  className="h-8 rounded-md border border-amber-300 bg-white px-3 font-semibold hover:bg-amber-100 disabled:opacity-50"
+                >
+                  Skip existing
+                </button>
+                <button
+                  type="button"
+                  disabled={isMarking}
+                  onClick={() => void markSelected(true)}
+                  className="h-8 rounded-md bg-amber-600 px-3 font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+                >
+                  Overwrite all
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       {filtered.length === 0 ? (
         <div className="w-full bg-white border border-slate-100 rounded-xl px-3.5 py-10 text-center md:px-6">
           <p className="text-slate-400 text-sm">No students match "{query}"</p>
@@ -10555,20 +10787,39 @@ export function AdminStudentsPage({
       ) : (
         <div className="w-full overflow-hidden rounded-xl border border-slate-100 bg-white">
           <div className="hidden md:grid px-5 py-3 bg-slate-50 border-b border-slate-100 grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            <span className="col-span-5">Student</span>
+            <label className="col-span-1 flex items-center">
+              <input
+                type="checkbox"
+                checked={allVisibleSelected}
+                onChange={toggleVisibleStudents}
+                aria-label="Select all visible students"
+                className="h-4 w-4 accent-emerald-600"
+              />
+            </label>
+            <span className="col-span-4">Student</span>
             <span className="col-span-3">Program</span>
             <span className="col-span-3">Section</span>
             <span className="col-span-1"></span>
           </div>
           {filtered.map((s, i) => (
             <Fragment key={s.profileId ?? s.id}>
-              <button
-                onClick={() => openStudent(s)}
-                className={`block w-full px-3.5 py-3.5 text-left transition-colors hover:bg-slate-50/80 active:bg-slate-100 md:hidden ${
+              <div
+                className={`flex w-full items-center gap-3 px-3.5 py-3.5 transition-colors hover:bg-slate-50/80 active:bg-slate-100 md:hidden ${
                   i < filtered.length - 1 ? "border-b border-gray-100" : ""
                 }`}
               >
-                <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={selectedStudentIds.has(s.profileId ?? s.id)}
+                  onChange={() => toggleStudent(s.profileId ?? s.id)}
+                  aria-label={`Select ${s.name}`}
+                  className="h-4 w-4 shrink-0 accent-emerald-600"
+                />
+                <button
+                  type="button"
+                  onClick={() => openStudent(s)}
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                >
                   <div className="shrink-0">
                     <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
                   </div>
@@ -10593,15 +10844,27 @@ export function AdminStudentsPage({
                   <span className="flex shrink-0 text-slate-300">
                     <Icons.ChevronRight />
                   </span>
-                </div>
-              </button>
-              <button
-                onClick={() => openStudent(s)}
+                </button>
+              </div>
+              <div
                 className={`hidden w-full px-5 py-3.5 md:grid md:grid-cols-12 md:items-center md:text-left md:hover:bg-slate-50 md:transition-colors ${
                   i < filtered.length - 1 ? "border-b border-slate-50" : ""
                 }`}
               >
-                <div className="col-span-5 flex items-center gap-3 min-w-0">
+                <div className="col-span-1">
+                  <input
+                    type="checkbox"
+                    checked={selectedStudentIds.has(s.profileId ?? s.id)}
+                    onChange={() => toggleStudent(s.profileId ?? s.id)}
+                    aria-label={`Select ${s.name}`}
+                    className="h-4 w-4 accent-emerald-600"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openStudent(s)}
+                  className="col-span-4 flex min-w-0 items-center gap-3 text-left"
+                >
                   <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-900 truncate">
@@ -10609,7 +10872,7 @@ export function AdminStudentsPage({
                     </p>
                     <p className="text-[11px] text-slate-400">{s.id}</p>
                   </div>
-                </div>
+                </button>
                 <span className="col-span-3 text-xs text-slate-500 font-medium">
                   {s.program}
                 </span>
@@ -10619,7 +10882,7 @@ export function AdminStudentsPage({
                 <span className="col-span-1 flex justify-end text-slate-300">
                   <Icons.ChevronRight />
                 </span>
-              </button>
+              </div>
             </Fragment>
           ))}
         </div>

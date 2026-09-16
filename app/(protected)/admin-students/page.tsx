@@ -3,15 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AdminStudentsPage } from "../../shared-page";
+import { AdminStudentsPage, type EventData } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 
 export default function AdminStudentsRoutePage() {
   const router = useRouter();
-  const { user } = useProtectedUser();
+  const { user, authUserId } = useProtectedUser();
   const [students, setStudents] = useState<any[]>([]);
+  const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -24,20 +25,32 @@ export default function AdminStudentsRoutePage() {
           return;
         }
 
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("role", "student")
-          .order("surname", { ascending: true });
+        const [studentsResult, eventsResult] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("*")
+            .eq("role", "student")
+            .order("surname", { ascending: true }),
+          supabase
+            .from("events")
+            .select("*")
+            .order("event_date", { ascending: false }),
+        ]);
 
-        if (error) {
-          console.error(error);
+        if (studentsResult.error) {
+          console.error(studentsResult.error);
+        }
+        if (eventsResult.error) {
+          console.error(eventsResult.error);
+        }
+
+        if (studentsResult.error || eventsResult.error) {
           return;
         }
 
         if (!cancelled) {
           setStudents(
-            (data ?? []).map((row: any) => ({
+            (studentsResult.data ?? []).map((row: any) => ({
               profileId: row.id,
               name:
                 `${row.first_name ?? ""} ${row.surname ?? ""}`.trim() ||
@@ -56,6 +69,32 @@ export default function AdminStudentsRoutePage() {
                 day: "numeric",
                 year: "numeric",
               }),
+            })),
+          );
+          setEvents(
+            (eventsResult.data ?? []).map((row: any) => ({
+              id: String(row.id),
+              title: row.title,
+              date: row.event_date,
+              time:
+                row.start_time && row.end_time
+                  ? `${row.start_time}–${row.end_time}`
+                  : "",
+              location: row.location || "",
+              description: row.description || "",
+              program: row.program || "All Programs",
+              fineAmount: Number(row.absent_fine || 0),
+              status: row.status || "upcoming",
+              attendees: 0,
+              multiSession: Boolean(row.multi_session),
+              strictMorning: Boolean(row.strict_morning),
+              strictAfternoon: Boolean(row.strict_afternoon),
+              morningStart: row.morning_start,
+              morningEnd: row.morning_end,
+              morningLateCutoff: row.morning_late_cutoff,
+              afternoonStart: row.afternoon_start,
+              afternoonEnd: row.afternoon_end,
+              afternoonLateCutoff: row.afternoon_late_cutoff,
             })),
           );
         }
@@ -93,5 +132,11 @@ export default function AdminStudentsRoutePage() {
     );
   }
 
-  return <AdminStudentsPage students={students} />;
+  return (
+    <AdminStudentsPage
+      students={students}
+      events={events}
+      authUserId={authUserId}
+    />
+  );
 }
