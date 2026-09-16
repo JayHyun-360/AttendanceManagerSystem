@@ -65,7 +65,10 @@ export default function AdminAttendeesRoutePage() {
           location: row.location,
           description: row.description,
           program: row.program || "All Programs",
-          fineAmount: row.absent_fine || 0,
+          fineAmount: row.multi_session
+            ? Number(row.morning_absent_fine ?? 0) +
+              Number(row.afternoon_absent_fine ?? 0)
+            : Number(row.absent_fine ?? 0),
           status: row.status || "upcoming",
           attendees: 0,
           mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
@@ -73,6 +76,13 @@ export default function AdminAttendeesRoutePage() {
             row.image_url && !row.image_url.startsWith("blob:")
               ? row.image_url
               : undefined,
+          multiSession: Boolean(row.multi_session),
+          absentFine: Number(row.absent_fine ?? 0),
+          lateFine: Number(row.late_fine ?? 0),
+          morningAbsentFine: Number(row.morning_absent_fine ?? row.absent_fine ?? 0),
+          morningLateFine: Number(row.morning_late_fine ?? row.late_fine ?? 0),
+          afternoonAbsentFine: Number(row.afternoon_absent_fine ?? row.absent_fine ?? 0),
+          afternoonLateFine: Number(row.afternoon_late_fine ?? row.late_fine ?? 0),
         }));
 
         setEvents(mappedEvents);
@@ -146,6 +156,7 @@ export default function AdminAttendeesRoutePage() {
                   })
                 : "",
               status: row.status === "late" ? "late" : "present",
+              sessionLabel: row.session_label === "afternoon" ? "afternoon" : "morning",
               dbId: String(row.id),
             });
           }

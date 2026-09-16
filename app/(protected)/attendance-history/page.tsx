@@ -31,8 +31,7 @@ export default function AttendanceHistoryRoutePage() {
           return;
         }
 
-        const [finesResult, excuseResult, attendanceResult] = await Promise.all(
-          [
+        const [finesResult, excuseResult, attendanceResult, profileResult, eventsResult] = await Promise.all([
             supabase
               .from("fines")
               .select("*")
@@ -48,6 +47,10 @@ export default function AttendanceHistoryRoutePage() {
               .select("*, events(title, event_date, start_time, end_time)")
               .eq("student_id", authUserId)
               .order("scan_in_at", { ascending: false }),
+            supabase.from("profiles").select("program").eq("id", authUserId).single(),
+            supabase
+              .from("events")
+              .select("id, title, event_date, status, program, multi_session, start_time, end_time, absent_fine, morning_absent_fine, afternoon_absent_fine"),
           ],
         );
 
@@ -62,9 +65,11 @@ export default function AttendanceHistoryRoutePage() {
         if (attendanceResult.error) {
           console.error(attendanceResult.error);
         }
+        if (profileResult.error) console.error(profileResult.error);
+        if (eventsResult.error) console.error(eventsResult.error);
 
         const queryError =
-          finesResult.error || excuseResult.error || attendanceResult.error;
+          finesResult.error || excuseResult.error || attendanceResult.error || profileResult.error || eventsResult.error;
         if (queryError) {
           setLoadError("Your attendance records could not be loaded.");
           return;
@@ -74,17 +79,16 @@ export default function AttendanceHistoryRoutePage() {
           return;
         }
 
-        setFines(
-          (finesResult.data ?? []).map((row: any) => ({
+        const storedFines = (finesResult.data ?? []).map((row: any) => ({
             id: String(row.id),
             eventId: row.event_id,
             attendanceScanId: row.attendance_scan_id ?? undefined,
+            sessionLabel: row.session_label ?? undefined,
             eventTitle: row.events?.title ?? "Event",
             eventDate: row.events?.event_date ?? "",
             amount: Number(row.amount || 0),
             status: row.status || "unpaid",
-          })),
-        );
+          }));
 
         setExcuseRequests(
           (excuseResult.data ?? []).map((row: any) => ({
@@ -94,6 +98,7 @@ export default function AttendanceHistoryRoutePage() {
             event: row.events?.title ?? "Attendance event",
             eventId: row.event_id ?? undefined,
             fineId: row.fine_id ?? undefined,
+            sessionLabel: row.session_label ?? undefined,
             date: row.created_at,
             reason: row.reason,
             proofName: row.document_url ? "Supporting document" : null,
@@ -109,8 +114,7 @@ export default function AttendanceHistoryRoutePage() {
           })),
         );
 
-        setAttendanceRecords(
-          (attendanceResult.data ?? []).map((row: any, index: number) => ({
+        const storedAttendance = (attendanceResult.data ?? []).map((row: any, index: number) => ({
             id: String(row.id ?? index),
             eventId: row.event_id,
             event: row.events?.title ?? "Event",
@@ -123,8 +127,67 @@ export default function AttendanceHistoryRoutePage() {
                 })
               : "—",
             status: row.status || "present",
-          })),
+          }));
+        const scannedSessionKeys = new Set(
+          (attendanceResult.data ?? []).map(
+            (row: any) => `${row.event_id}:${row.session_label}`,
+          ),
         );
+        const todayKey = new Date().toISOString().slice(0, 10);
+        const inferredAttendance = (eventsResult.data ?? []).flatMap((event: any) => {
+          if (
+            event.event_date > todayKey ||
+            event.status === "upcoming" ||
+            (event.program &&
+              event.program !== "All Programs" &&
+              event.program !== profileResult.data?.program)
+          ) {
+            return [];
+          }
+          const sessions: ("morning" | "afternoon")[] = event.multi_session
+            ? ["morning", "afternoon"]
+            : ["morning"];
+          return sessions
+            .filter((sessionLabel) => !scannedSessionKeys.has(`${event.id}:${sessionLabel}`))
+            .map((sessionLabel) => ({
+              id: `inferred-${event.id}-${sessionLabel}`,
+              eventId: event.id,
+              event: event.title ?? "Event",
+              sessionLabel,
+              date: event.event_date ?? "",
+              time: "—",
+              status: "absent" as const,
+            }));
+        });
+        const storedFineKeys = new Set(
+          storedFines
+            .filter((fine) => fine.eventId && fine.sessionLabel)
+            .map((fine) => `${fine.eventId}:${fine.sessionLabel}`),
+        );
+        const inferredFines = inferredAttendance.flatMap((record: any) => {
+          const key = `${record.eventId}:${record.sessionLabel}`;
+          if (storedFineKeys.has(key)) return [];
+          const event = (eventsResult.data ?? []).find(
+            (item: any) => item.id === record.eventId,
+          );
+          const amount =
+            record.sessionLabel === "afternoon"
+              ? Number(event?.afternoon_absent_fine ?? event?.absent_fine ?? 0)
+              : Number(event?.morning_absent_fine ?? event?.absent_fine ?? 0);
+          return amount > 0
+            ? [{
+                id: `inferred-fine-${record.eventId}-${record.sessionLabel}`,
+                eventId: record.eventId,
+                sessionLabel: record.sessionLabel,
+                eventTitle: record.event,
+                eventDate: record.date,
+                amount,
+                status: "unpaid" as const,
+              }]
+            : [];
+        });
+        setFines([...storedFines, ...inferredFines]);
+        setAttendanceRecords([...storedAttendance, ...inferredAttendance]);
       } catch (caughtError) {
         console.error(caughtError);
       } finally {
@@ -176,7 +239,8 @@ export default function AttendanceHistoryRoutePage() {
         fines.find(
           (fine) =>
             (fine.attendanceScanId === record.id ||
-              fine.eventId === record.eventId) &&
+              (fine.eventId === record.eventId &&
+                (!fine.sessionLabel || fine.sessionLabel === record.sessionLabel))) &&
             fine.status === "unpaid",
         )?.id ?? null,
       reason: record.reason,

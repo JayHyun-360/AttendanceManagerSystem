@@ -877,6 +877,7 @@ interface ScanRecord {
   photoUrl?: string;
   time: string;
   status: "present" | "confirmed" | "late" | "duplicate";
+  sessionLabel?: "morning" | "afternoon";
   action?: "time_in" | "time_out" | "time_out_rejected" | "duplicate";
   dbId: string | number;
 }
@@ -889,6 +890,7 @@ export interface ExcuseRequest {
   event: string;
   eventId?: string;
   fineId?: string;
+  sessionLabel?: "morning" | "afternoon";
   date: string;
   reason: string;
   proofName: string | null;
@@ -900,7 +902,7 @@ export interface FineRecord {
   id: string;
   eventId: string;
   attendanceScanId?: string;
-  sessionLabel?: string;
+  sessionLabel?: "morning" | "afternoon";
   eventTitle: string;
   eventDate: string;
   amount: number;
@@ -6288,9 +6290,14 @@ export function AttendanceHistoryPage({
             </p>
           </div>
         ) : attendanceRecords.map((r, i) => {
+          const rowSessionLabel =
+            "sessionLabel" in r ? r.sessionLabel : undefined;
           const req = excuseRequests.find(
             (x) =>
-              (x.eventId && x.eventId === r.eventId) || x.event === r.event,
+              (x.eventId &&
+                x.eventId === r.eventId &&
+                (!x.sessionLabel || x.sessionLabel === rowSessionLabel)) ||
+              (!x.eventId && x.event === r.event),
           );
 
           const eff =
@@ -6303,7 +6310,8 @@ export function AttendanceHistoryPage({
           const fine = fines.find(
             (f) =>
               f.attendanceScanId === r.id ||
-              f.eventId === r.eventId,
+              (f.eventId === r.eventId &&
+                (!f.sessionLabel || f.sessionLabel === rowSessionLabel)),
           );
 
           return (
@@ -6340,6 +6348,9 @@ export function AttendanceHistoryPage({
                 </p>
                 <p className="text-xs text-slate-400 mt-0.5">
                   {r.date}
+                  {rowSessionLabel
+                    ? ` · ${rowSessionLabel === "morning" ? "Morning" : "Afternoon"}`
+                    : ""}
                   {r.time !== "—" ? ` · ${r.time}` : ""}
                 </p>
                 {showFees && fine && (eff === "absent" || eff === "late") && (
@@ -6348,7 +6359,7 @@ export function AttendanceHistoryPage({
                   </p>
                 )}
               </div>
-              {eff === "absent" ? (
+              {eff === "absent" && !String(r.id).startsWith("inferred-") ? (
                 <button
                   onClick={() => setModal(r)}
                   className="shrink-0 h-8 px-3 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-semibold rounded-lg flex items-center gap-1.5"
@@ -10178,6 +10189,9 @@ export function AdminAttendeesPage({
   );
 
   const [tab, setTab] = useState<"present" | "absent">("present");
+  const [selectedSession, setSelectedSession] = useState<
+    "morning" | "afternoon"
+  >("morning");
 
   useEffect(() => {
     if (initialScanState) {
@@ -10194,7 +10208,21 @@ export function AdminAttendeesPage({
   const selectedEvent =
     events.find((e) => e.id === selectedEventId) ?? events[0] ?? null;
 
-  const scans = selectedEvent ? (scanState[selectedEvent.id] ?? []) : [];
+  useEffect(() => {
+    setSelectedSession("morning");
+  }, [selectedEventId]);
+
+  const scans = selectedEvent
+    ? (scanState[selectedEvent.id] ?? []).filter(
+        (scan) => (scan.sessionLabel ?? "morning") === selectedSession,
+      )
+    : [];
+
+  const sessionFine = selectedEvent
+    ? selectedSession === "afternoon"
+      ? selectedEvent.afternoonAbsentFine ?? selectedEvent.absentFine ?? 0
+      : selectedEvent.morningAbsentFine ?? selectedEvent.absentFine ?? 0
+    : 0;
 
   const confirmed = scans.filter(
     (s) =>
@@ -10233,7 +10261,15 @@ export function AdminAttendeesPage({
     const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
 
     const rows = scans.map((scan) =>
-      [scan.name, scan.id, scan.program, scan.section, scan.time, scan.status]
+      [
+        scan.name,
+        scan.id,
+        scan.program,
+        scan.section,
+        scan.sessionLabel ?? "morning",
+        scan.time,
+        scan.status,
+      ]
 
         .map((value) => escapeCsv(String(value ?? "")))
 
@@ -10241,7 +10277,15 @@ export function AdminAttendeesPage({
     );
 
     const csv = [
-      ["Student", "Student ID", "Program", "Section", "Time", "Status"]
+      [
+        "Student",
+        "Student ID",
+        "Program",
+        "Section",
+        "Session",
+        "Time",
+        "Status",
+      ]
 
         .map(escapeCsv)
 
@@ -10309,6 +10353,28 @@ export function AdminAttendeesPage({
           ? `${selectedEvent.location} · ${selectedEvent.time}`
           : "No event selected"}
       </p>
+      {selectedEvent?.multiSession && (
+        <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50 p-1.5">
+          <div className="grid grid-cols-2 gap-1">
+            {(["morning", "afternoon"] as const).map((session) => {
+              const amount =
+                session === "afternoon"
+                  ? selectedEvent.afternoonAbsentFine ?? selectedEvent.absentFine ?? 0
+                  : selectedEvent.morningAbsentFine ?? selectedEvent.absentFine ?? 0;
+              return (
+                <button
+                  key={session}
+                  type="button"
+                  onClick={() => setSelectedSession(session)}
+                  className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${selectedSession === session ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                  {session === "morning" ? "Morning" : "Afternoon"} · ₱{amount}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div className="flex gap-1 mb-5 bg-slate-100 p-1 rounded-xl">
         <button
           onClick={() => setTab("present")}
@@ -10329,9 +10395,9 @@ export function AdminAttendeesPage({
           }`}
         >
           Absent ({absentees.length})
-          {selectedEvent && selectedEvent.fineAmount > 0 && (
+          {selectedEvent && sessionFine > 0 && (
             <span className="text-red-500 ml-1">
-              · P{selectedEvent.fineAmount}
+              · ₱{sessionFine}
             </span>
           )}
         </button>
@@ -10373,7 +10439,7 @@ export function AdminAttendeesPage({
                           {s.name}
                         </p>
                         <p className="mt-0.5 text-[11px] text-slate-500">
-                          {s.id} • {s.program} • {s.time}
+                          {s.id} • {s.program} • {s.sessionLabel ?? "Morning"} • {s.time}
                         </p>
                       </div>
                       <div className="flex shrink-0">
@@ -10395,7 +10461,7 @@ export function AdminAttendeesPage({
                       {s.program}
                     </span>
                     <span className="col-span-2 text-xs text-slate-500">
-                      {s.time}
+                      {(s.sessionLabel ?? "morning").replace(/^./, (value) => value.toUpperCase())} · {s.time}
                     </span>
                     <div className="col-span-2 flex justify-end">
                       <Badge status={s.status} />
@@ -10466,12 +10532,12 @@ export function AdminAttendeesPage({
         </>
       ) : (
         <>
-          {selectedEvent.fineAmount > 0 && (
+          {sessionFine > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
               <Icons.AlertCircle />
               <p className="text-sm text-red-700">
-                Each absentee is automatically fined{" "}
-                <span className="font-bold">₱{selectedEvent.fineAmount}</span>.
+                Each {selectedSession} absentee is automatically fined{" "}
+                <span className="font-bold">₱{sessionFine}</span>.
               </p>
             </div>
           )}
@@ -10513,9 +10579,9 @@ export function AdminAttendeesPage({
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        {selectedEvent.fineAmount > 0 ? (
+                        {sessionFine > 0 ? (
                           <span className="text-sm font-bold text-red-600">
-                            ₱{selectedEvent.fineAmount}
+                            ₱{sessionFine}
                           </span>
                         ) : (
                           <span className="text-xs text-slate-400">—</span>
@@ -10537,9 +10603,9 @@ export function AdminAttendeesPage({
                       {s.program} · {s.section}
                     </span>
                     <div className="col-span-3 flex justify-end">
-                      {selectedEvent.fineAmount > 0 ? (
+                      {sessionFine > 0 ? (
                         <span className="text-sm font-bold text-red-600">
-                          ₱{selectedEvent.fineAmount}
+                          ₱{sessionFine}
                         </span>
                       ) : (
                         <span className="text-xs text-slate-400">—</span>

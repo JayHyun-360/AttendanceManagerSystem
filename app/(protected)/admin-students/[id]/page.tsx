@@ -271,7 +271,14 @@ export default function StudentDetailRoutePage() {
           const scan = scanBySession.get(key);
           if (fineBySession.has(key)) return sessionTotal;
           if (!scan) {
-            return sessionTotal + Number(event.morning_absent_fine ?? event.absent_fine ?? 0);
+            return (
+              sessionTotal +
+              Number(
+                sessionLabel === "afternoon"
+                  ? event.afternoon_absent_fine ?? event.absent_fine ?? 0
+                  : event.morning_absent_fine ?? event.absent_fine ?? 0,
+              )
+            );
           }
           if (
             (scan.status !== "absent" && scan.status !== "late") ||

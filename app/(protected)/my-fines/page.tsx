@@ -126,7 +126,7 @@ export default function MyFinesRoutePage() {
             ) {
               return [];
             }
-            const sessions = event.multi_session
+            const sessions: ("morning" | "afternoon")[] = event.multi_session
               ? ["morning", "afternoon"]
               : ["morning"];
             return sessions.flatMap((sessionLabel) => {
