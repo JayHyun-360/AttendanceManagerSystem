@@ -186,14 +186,18 @@ export default function StudentDetailRoutePage() {
 
     async function loadStudentMetrics() {
       const [eventsResult, scansResult, finesResult] = await Promise.all([
-        supabase.from("events").select("id, event_date, multi_session"),
+        supabase
+          .from("events")
+          .select(
+            "id, event_date, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+          ),
         supabase
           .from("attendance_scans")
-          .select("event_id, status, scan_in_at")
+          .select("id, event_id, session_label, status, scan_in_at")
           .eq("student_id", routeId),
         supabase
           .from("fines")
-          .select("amount, status")
+          .select("id, attendance_scan_id, amount, status")
           .eq("student_id", routeId),
       ]);
 
@@ -222,9 +226,44 @@ export default function StudentDetailRoutePage() {
           (scan.status === "present" || scan.status === "late") &&
           !!scan.scan_in_at,
       ).length;
-      const fineBalance = (finesResult.data ?? [])
+      const actualUnpaidScanIds = new Set(
+        (finesResult.data ?? [])
+          .filter((fine) => fine.status === "unpaid" && fine.attendance_scan_id)
+          .map((fine) => fine.attendance_scan_id),
+      );
+      const linkedFineScanIds = new Set(
+        (finesResult.data ?? [])
+          .filter((fine) => fine.attendance_scan_id)
+          .map((fine) => fine.attendance_scan_id),
+      );
+      const actualUnpaidTotal = (finesResult.data ?? [])
         .filter((fine) => fine.status === "unpaid")
         .reduce((total, fine) => total + Number(fine.amount ?? 0), 0);
+      const eventById = new Map(
+        (eventsResult.data ?? []).map((event) => [event.id, event]),
+      );
+      const missingFineTotal = (scansResult.data ?? []).reduce((total, scan) => {
+        if (
+          !completedEventIds.has(scan.event_id) ||
+          (scan.status !== "absent" && scan.status !== "late") ||
+          (scan.status === "late" && !scan.scan_in_at) ||
+          linkedFineScanIds.has(scan.id)
+        ) {
+          return total;
+        }
+        const event = eventById.get(scan.event_id);
+        if (!event) return total;
+        const amount =
+          scan.status === "absent"
+            ? scan.session_label === "afternoon"
+              ? Number(event.afternoon_absent_fine ?? event.absent_fine ?? 0)
+              : Number(event.morning_absent_fine ?? event.absent_fine ?? 0)
+            : scan.session_label === "afternoon"
+              ? Number(event.afternoon_late_fine ?? event.late_fine ?? 0)
+              : Number(event.morning_late_fine ?? event.late_fine ?? 0);
+        return total + amount;
+      }, 0);
+      const fineBalance = actualUnpaidTotal + missingFineTotal;
 
       setMetrics({
         attendanceRate:
