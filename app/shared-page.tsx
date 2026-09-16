@@ -318,7 +318,6 @@ import { Skeleton } from "@/components/ui/skeleton";
                       label: "Email",
                       value: profile.contactEmail || "Not provided",
                     },
-                    { label: "Joined TapIn", value: profile.joinedDate },
                   ].map((item) => (
                     <div key={item.label} className="py-3 first:pt-0 last:pb-0">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
@@ -2647,9 +2646,7 @@ export function PageHeader({
   return (
     <div className="flex items-start justify-between mb-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-          {title}
-        </h1>
+        <p className="text-xl font-bold text-slate-900">{title}</p>
         {subtitle && (
           <p className="text-sm text-slate-400 font-medium mt-0.5">
             {subtitle}
@@ -6108,91 +6105,108 @@ export function ProfilePage({
           )
         }
       />
-      <div className="grid grid-cols-1 gap-6 w-full max-w-7xl mx-auto lg:grid-cols-12">
-        <aside className="space-y-4 lg:col-span-4">
-          <div className="bg-white border border-slate-100 rounded-xl p-5 flex items-center gap-4 mb-4">
-            <div className="relative">
-              {editing && photoUploadState === "uploading" ? (
-                <Skeleton className="w-20 h-20 rounded-full" />
-              ) : (
-                <ProfileIcon
-                  photoUrl={(editing ? draft : user).photoUrl}
-                  size="lg"
-                />
-              )}
-              {editing && photoUploadState === "error" && (
-                <p className="absolute -bottom-8 left-0 text-[10px] font-semibold text-red-600 whitespace-nowrap">
-                  Upload failed, try again
-                </p>
-              )}
-              {editing && (
-                <>
-                  <input
-                    ref={photoRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handlePhotoChange}
-                  />
-                  <button
-                    onClick={() => photoRef.current?.click()}
-                    className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center shadow-md transition-colors"
-                  >
-                    <Icons.Camera />
-                  </button>
-                </>
-              )}
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 lg:grid-cols-[1.05fr_1.4fr]">
+        <aside className="space-y-6">
+          <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+            <div className="relative h-36 w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-slate-100 via-emerald-50 to-slate-200 md:h-40">
+              <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full bg-white/50 blur-3xl" />
+              <div className="absolute bottom-0 left-1/3 h-24 w-56 rounded-full bg-emerald-100/40 blur-3xl" />
             </div>
-            <div>
-              <p className="font-bold text-slate-900">
-                {fullName(editing ? draft : user) || "Your name"}
-              </p>
-              <p className="text-sm text-slate-400 mt-0.5">
-                {(editing ? draft : user).studentId ||
-                  (isMod ? "Admin" : "No ID")}
-              </p>
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {[
-                  (editing ? draft : user).program,
-
-                  (editing ? draft : user).yearLevel,
-
-                  (editing ? draft : user).section,
-                ]
-
-                  .filter(Boolean)
-
-                  .map((t) => (
-                    <span
-                      key={t}
-                      className="text-[11px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded"
+            <div className="relative px-5 pb-5 md:px-6">
+              <div className="relative z-10 -mt-10 ml-6">
+                {editing && photoUploadState === "uploading" ? (
+                  <Skeleton className="h-20 w-20 rounded-full" />
+                ) : (
+                  <ProfileIcon
+                    photoUrl={(editing ? draft : user).photoUrl}
+                    size="lg"
+                  />
+                )}
+                {editing && photoUploadState === "error" && (
+                  <p className="absolute -bottom-8 left-0 text-[10px] font-semibold text-red-600 whitespace-nowrap">
+                    Upload failed, try again
+                  </p>
+                )}
+                {editing && (
+                  <>
+                    <input
+                      ref={photoRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoChange}
+                    />
+                    <button
+                      onClick={() => photoRef.current?.click()}
+                      className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md transition-colors hover:bg-emerald-700"
                     >
-                      {t}
-                    </span>
-                  ))}
+                      <Icons.Camera />
+                    </button>
+                  </>
+                )}
+              </div>
+              <div className="mt-4">
+                <p className="text-xl font-bold text-slate-900">
+                  {fullName(editing ? draft : user) || "Your name"}
+                </p>
+                <p className="mt-1 text-sm font-medium text-slate-500">
+                  {(editing ? draft : user).studentId ||
+                    (isMod ? "Admin" : "No ID")}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[
+                    (editing ? draft : user).program,
+                    (editing ? draft : user).yearLevel,
+                    (editing ? draft : user).section,
+                  ]
+                    .filter(Boolean)
+                    .map((t) => (
+                      <span
+                        key={t}
+                        className="rounded-full border border-emerald-100 bg-emerald-50/90 px-3 py-1 text-xs font-medium text-emerald-700"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                </div>
               </div>
             </div>
-          </div>
+            <div className="grid grid-cols-3 gap-2 border-t border-slate-100 bg-slate-50/60 p-4 text-center">
+              {[
+                ["Profile", "Status"],
+                [isMod ? "Admin" : "Student", "Role"],
+                [profile.contactEmail ? "Verified" : "Pending", "Contact"],
+              ].map(([value, label]) => (
+                <div key={label}>
+                  <p className="text-lg font-bold text-slate-900">{value}</p>
+                  <p className="text-[11px] text-slate-500">{label}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
           {editing && (
-            <p className="text-[11px] text-slate-400 mb-3 flex items-center gap-1.5 -mt-1">
+            <p className="-mt-1 mb-0 text-[11px] text-slate-400 flex items-center gap-1.5">
               <Icons.Camera />
-              Tap the camera icon on the photo to change it
+              Tap the camera icon to update your profile photo
             </p>
           )}
+
           {!isMod && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+            <section className="rounded-2xl border border-slate-100 bg-slate-50/80 p-5 shadow-sm md:p-6">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                 Student QR
               </p>
-              <div className="mt-3 flex justify-center rounded-xl bg-slate-50 p-3">
+              <div className="mt-3 flex justify-center rounded-xl border border-slate-100 bg-white p-4">
                 <StudentQR studentId={profile.studentId} size={170} />
               </div>
               <p className="mt-3 text-center text-xs font-medium text-slate-500">
                 TAPIN:{profile.studentId}
               </p>
-            </div>
+            </section>
           )}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+
+          <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
             <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
               Contact & info
             </p>
@@ -6214,70 +6228,65 @@ export function ProfilePage({
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         </aside>
-        <main className="space-y-4 lg:col-span-8">
+
+        <main className="space-y-6">
           {!editing ? (
-            <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
-              {[
-                { l: "First name", v: user.firstName },
-
-                {
-                  l: "Middle initial",
-
-                  v: user.middleInitial ? user.middleInitial + "." : "—",
-                },
-
-                { l: "Surname", v: user.surname },
-
-                ...(!isMod ? [{ l: "Student ID", v: user.studentId }] : []),
-
-                { l: "Program", v: user.program },
-
-                ...(!isMod
-                  ? [
-                      { l: "Year level", v: user.yearLevel },
-
-                      {
-                        l: "Section",
-                        v: user.section || "—",
-                      },
-                    ]
-                  : []),
-
-                {
-                  l: "Phone",
-                  v: user.phone || "—",
-                },
-
-                {
-                  l: "Email",
-                  v: user.contactEmail || "—",
-                },
-              ].map((f, i, arr) => (
-                <div
-                  key={f.l}
-                  className={`flex items-center justify-between px-5 py-3 ${
-                    i < arr.length - 1 ? "border-b border-slate-50" : ""
-                  }`}
-                >
-                  <span className="text-xs font-semibold text-slate-400">
-                    {f.l}
-                  </span>
-                  <span className="text-sm font-semibold text-slate-900">
-                    {f.v}
-                  </span>
+            <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-base font-semibold text-slate-900">
+                    Personal details
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Account information tied to your TapIn profile.
+                  </p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-              <div className="px-5 py-3.5 border-b border-slate-100">
-                <SectionLabel>Name</SectionLabel>
               </div>
-              <div className="px-5 py-4 space-y-3">
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="col-span-2">
+              <div className="divide-y divide-slate-100">
+                {[
+                  { l: "First name", v: user.firstName },
+                  {
+                    l: "Middle initial",
+                    v: user.middleInitial ? user.middleInitial + "." : "—",
+                  },
+                  { l: "Surname", v: user.surname },
+                  ...(!isMod ? [{ l: "Student ID", v: user.studentId }] : []),
+                  { l: "Program", v: user.program },
+                  ...(!isMod
+                    ? [
+                        { l: "Year level", v: user.yearLevel },
+                        { l: "Section", v: user.section || "—" },
+                      ]
+                    : []),
+                  { l: "Phone", v: user.phone || "—" },
+                  { l: "Email", v: user.contactEmail || "—" },
+                ].map((f, i, arr) => (
+                  <div
+                    key={f.l}
+                    className={`flex items-center justify-between gap-4 py-3 ${
+                      i < arr.length - 1 ? "border-b border-slate-50" : ""
+                    }`}
+                  >
+                    <span className="text-xs font-semibold text-slate-400">
+                      {f.l}
+                    </span>
+                    <span className="text-right text-sm font-semibold text-slate-900">
+                      {f.v}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : (
+            <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+              <div className="border-b border-slate-100 px-5 py-3.5 md:px-6">
+                <SectionLabel>Profile details</SectionLabel>
+              </div>
+              <div className="space-y-4 p-5 md:p-6">
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div className="md:col-span-2">
                     <FieldInput
                       label="First Name"
                       value={draft.firstName}
@@ -6297,10 +6306,11 @@ export function ProfilePage({
                   onChange={setF("surname")}
                 />
               </div>
-              <div className="px-5 py-3.5 border-t border-slate-100 border-b border-slate-100">
+
+              <div className="border-y border-slate-100 px-5 py-3.5 md:px-6">
                 <SectionLabel>Contact</SectionLabel>
               </div>
-              <div className="px-5 py-4 space-y-3">
+              <div className="space-y-4 p-5 md:p-6">
                 <FieldInput
                   label="Phone"
                   type="tel"
@@ -6315,12 +6325,13 @@ export function ProfilePage({
                   onChange={setF("contactEmail")}
                 />
               </div>
+
               {!isMod && (
                 <>
-                  <div className="px-5 py-3.5 border-t border-slate-100 border-b border-slate-100">
+                  <div className="border-y border-slate-100 px-5 py-3.5 md:px-6">
                     <SectionLabel>Enrollment</SectionLabel>
                   </div>
-                  <div className="px-5 py-4 space-y-3">
+                  <div className="space-y-4 p-5 md:p-6">
                     <FieldInput
                       label="Student ID (7 digits)"
                       value={draft.studentId}
@@ -6356,40 +6367,43 @@ export function ProfilePage({
                       onChange={setF("section")}
                     />
                   </div>
-                  <div className="px-5 py-3.5 bg-amber-50 border-t border-amber-100 flex items-start gap-2.5">
-                    <span className="text-amber-500 shrink-0 mt-0.5">
-                      <Icons.AlertCircle />
-                    </span>
-                    <p className="text-xs text-amber-700 leading-relaxed">
-                      Saving changes will regenerate your QR code. Previously
-                      downloaded images will be invalidated.
-                    </p>
+                  <div className="px-5 pb-5 md:px-6 md:pb-6">
+                    <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3.5">
+                      <span className="mt-0.5 shrink-0 text-amber-500">
+                        <Icons.AlertCircle />
+                      </span>
+                      <p className="text-xs text-amber-700 leading-relaxed">
+                        Saving changes will regenerate your QR code. Previously
+                        downloaded images will be invalidated.
+                      </p>
+                    </div>
                   </div>
                 </>
               )}
-            </div>
+            </section>
           )}
+
           {!isMod && profile.idPhotoUrl && (
-            <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mt-4">
-              <div className="px-5 py-3.5 border-b border-slate-50 flex items-center justify-between">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+            <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <p className="text-base font-semibold text-slate-900">
                   School ID
                 </p>
-                <span className="text-[10px] text-slate-300 font-semibold uppercase tracking-wide">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Verification
                 </span>
               </div>
-              <div className="p-4">
+              <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-slate-100 bg-slate-50/80">
                 <img
                   src={profile.idPhotoUrl}
                   alt="School ID"
-                  className="w-full rounded-lg object-cover max-h-48"
+                  className="h-full w-full object-contain"
                 />
-                <p className="text-[11px] text-slate-400 mt-2.5 text-center">
-                  Used for identity verification by moderators
-                </p>
               </div>
-            </div>
+              <p className="mt-3 text-center text-[11px] text-slate-400">
+                Used for identity verification by moderators
+              </p>
+            </section>
           )}
         </main>
       </div>
