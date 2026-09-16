@@ -2484,14 +2484,35 @@ function Avatar({
   );
 }
 
+function isGoogleProfilePhotoUrl(photoUrl?: string) {
+  if (!photoUrl) return false;
+
+  try {
+    const hostname = new URL(photoUrl).hostname.toLowerCase();
+
+    return (
+      hostname === "googleusercontent.com" ||
+      hostname.endsWith(".googleusercontent.com") ||
+      hostname === "google.com" ||
+      hostname.endsWith(".google.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function ProfileIcon({
   photoUrl,
 
   size = "sm",
+
+  previewable = true,
 }: {
   photoUrl?: string;
 
   size?: "xs" | "sm" | "md" | "lg";
+
+  previewable?: boolean;
 }) {
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -2519,7 +2540,7 @@ export function ProfileIcon({
     </div>
   );
 
-  if (!photoUrl) {
+  if (!photoUrl || !previewable || isGoogleProfilePhotoUrl(photoUrl)) {
     return content;
   }
 
@@ -2844,7 +2865,11 @@ export function TopBar({
                 className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100 transition-colors group"
                 aria-label="View profile"
               >
-                <ProfileIcon photoUrl={user.photoUrl} size="sm" />
+                <ProfileIcon
+                  photoUrl={user.photoUrl}
+                  size="sm"
+                  previewable={false}
+                />
                 <span className="hidden sm:block text-xs font-semibold text-slate-600 group-hover:text-slate-900 transition-colors truncate max-w-[120px]">
                   {user.firstName || (isMod ? "Admin" : "My Profile")}
                 </span>
@@ -3547,7 +3572,11 @@ function LandingPage({
             }`}
             aria-label="Open profile"
           >
-            <ProfileIcon photoUrl={user.photoUrl} size="sm" />
+            <ProfileIcon
+              photoUrl={user.photoUrl}
+              size="sm"
+              previewable={false}
+            />
           </button>
         )}
 
