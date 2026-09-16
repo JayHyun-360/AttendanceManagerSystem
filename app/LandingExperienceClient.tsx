@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { ArrowLeft, ChevronDown, ChevronUp, LogOut } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Bar,
   Cell,
@@ -7960,15 +7960,6 @@ export default function LandingExperienceClient({
 }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [showLoader, setShowLoader] = useState(true);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setShowLoader(false);
-    }, 180);
-
-    return () => window.clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -8082,42 +8073,12 @@ export default function LandingExperienceClient({
   };
 
   return (
-    <AnimatePresence mode="wait">
-      {showLoader ? (
-        <motion.div
-          key="landing-loader"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.35, ease: "easeInOut" }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-white"
-        >
-          <motion.div
-            initial={{ opacity: 0.5 }}
-            animate={{ opacity: 1, rotate: 360 }}
-            transition={{
-              duration: 0.8,
-              ease: "linear",
-              repeat: Number.POSITIVE_INFINITY,
-            }}
-            className="h-12 w-12 rounded-full border-2 border-slate-200 border-t-emerald-500"
-          />
-        </motion.div>
-      ) : (
-        <motion.div
-          key="landing-page"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.4, ease: "easeInOut" }}
-        >
-          <LandingPage
-            onNav={handleLandingNav}
-            settings={settings}
-            user={user}
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4, ease: "easeInOut" }}
+    >
+      <LandingPage onNav={handleLandingNav} settings={settings} user={user} />
+    </motion.div>
   );
 }
