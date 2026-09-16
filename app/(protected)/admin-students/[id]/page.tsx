@@ -46,6 +46,12 @@ interface ExistingAttendance {
   method: "qr_scan" | "manual";
 }
 
+interface StudentMetrics {
+  attendanceRate: number | null;
+  recordedSessions: number;
+  fineBalance: number;
+}
+
 function toMinutes(value?: string | null) {
   if (!value) return null;
   const match = value.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
@@ -106,6 +112,12 @@ export default function StudentDetailRoutePage() {
     useState<ExistingAttendance | null>(null);
   const [isCheckingAttendance, setIsCheckingAttendance] = useState(false);
   const [isSavingAttendance, setIsSavingAttendance] = useState(false);
+  const [metrics, setMetrics] = useState<StudentMetrics>({
+    attendanceRate: null,
+    recordedSessions: 0,
+    fineBalance: 0,
+  });
+  const [metricsRefreshKey, setMetricsRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!routeId) return;
@@ -166,6 +178,70 @@ export default function StudentDetailRoutePage() {
       cancelled = true;
     };
   }, [routeId]);
+
+  useEffect(() => {
+    if (!routeId || user?.role !== "admin") return;
+
+    let cancelled = false;
+
+    async function loadStudentMetrics() {
+      const [eventsResult, scansResult, finesResult] = await Promise.all([
+        supabase.from("events").select("id, event_date, multi_session"),
+        supabase
+          .from("attendance_scans")
+          .select("event_id, status, scan_in_at")
+          .eq("student_id", routeId),
+        supabase
+          .from("fines")
+          .select("amount, status")
+          .eq("student_id", routeId),
+      ]);
+
+      if (eventsResult.error) console.error(eventsResult.error);
+      if (scansResult.error) console.error(scansResult.error);
+      if (finesResult.error) console.error(finesResult.error);
+
+      if (cancelled) return;
+
+      const today = new Date().toISOString().slice(0, 10);
+      const completedEventIds = new Set(
+        (eventsResult.data ?? [])
+          .filter((event) => event.event_date <= today)
+          .map((event) => event.id),
+      );
+      const completedEvents = (eventsResult.data ?? []).filter((event) =>
+        completedEventIds.has(event.id),
+      );
+      const totalSessions = completedEvents.reduce(
+        (total, event) => total + (event.multi_session ? 2 : 1),
+        0,
+      );
+      const attendedSessions = (scansResult.data ?? []).filter(
+        (scan) =>
+          completedEventIds.has(scan.event_id) &&
+          (scan.status === "present" || scan.status === "late") &&
+          !!scan.scan_in_at,
+      ).length;
+      const fineBalance = (finesResult.data ?? [])
+        .filter((fine) => fine.status === "unpaid")
+        .reduce((total, fine) => total + Number(fine.amount ?? 0), 0);
+
+      setMetrics({
+        attendanceRate:
+          totalSessions > 0
+            ? Math.round((attendedSessions / totalSessions) * 100)
+            : null,
+        recordedSessions: (scansResult.data ?? []).length,
+        fineBalance,
+      });
+    }
+
+    void loadStudentMetrics();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [metricsRefreshKey, routeId, user?.role]);
 
   useEffect(() => {
     let cancelled = false;
@@ -309,6 +385,7 @@ export default function StudentDetailRoutePage() {
       .eq("session_label", sessionLabel)
       .maybeSingle();
     setExistingAttendance(data as ExistingAttendance | null);
+    setMetricsRefreshKey((current) => current + 1);
   };
 
   const badges = useMemo(
@@ -408,9 +485,20 @@ export default function StudentDetailRoutePage() {
             </div>
             <div className="grid grid-cols-3 gap-2 border-t border-slate-100 bg-slate-50/50 p-4 text-center">
               {[
-                ["100%", "Attendance Rate"],
-                ["1", "Recorded Sessions"],
-                ["₱0", "Fine Balance"],
+                [
+                  metrics.attendanceRate === null
+                    ? "—"
+                    : `${metrics.attendanceRate}%`,
+                  "Attendance Rate",
+                ],
+                [String(metrics.recordedSessions), "Recorded Sessions"],
+                [
+                  `₱${metrics.fineBalance.toLocaleString("en-PH", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2,
+                  })}`,
+                  "Fine Balance",
+                ],
               ].map(([value, label]) => (
                 <div key={label}>
                   <p className="text-lg font-bold text-slate-900">{value}</p>
