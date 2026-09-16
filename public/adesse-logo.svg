@@ -1,11 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Adesse logo">
-  <defs>
-    <linearGradient id="adesse-emerald" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#34d399"/>
-      <stop offset="1" stop-color="#10b981"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="17" fill="url(#adesse-emerald)"/>
-  <path d="M17 48 27.25 16h9.5L47 48h-7.6l-2.1-7.05H25.8L23.6 48H17Zm10.75-13.2h7.8l-3.9-12.4-3.9 12.4Z" fill="#ffffff"/>
-  <path d="M27.05 34.8h9.9l-1.65 5.2h-6.6l-1.65-5.2Z" fill="#d1fae5"/>
+  <rect width="64" height="64" rx="16" fill="#10b981"/>
+  <path d="M16 46 27.2 18h7.2L46 46h-7.2l-2.2-5.9H24.4L22.2 46H16Zm10.7-11.8h7.5l-3.8-10.3-3.7 10.3Z" fill="#ffffff"/>
+  <path d="M29.8 35.2h4.4L32 30.8l-2.2 4.4Z" fill="#d1fae5"/>
 </svg>
