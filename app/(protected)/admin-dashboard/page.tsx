@@ -50,7 +50,7 @@ export default function AdminDashboardRoute() {
             supabase
               .from("attendance_scans")
               .select(
-                "id, event_id, student_id, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(first_name, surname, student_id, program, section), events(title)",
+                "id, event_id, student_id, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(first_name, surname, student_id, program, section, photo_url), events(title)",
               )
               .order("scan_in_at", { ascending: false })
               .limit(5),
@@ -115,6 +115,7 @@ export default function AdminDashboardRoute() {
             id: row.student_profile?.student_id || row.student_id,
             program: row.student_profile?.program || "",
             section: row.student_profile?.section || "",
+            photoUrl: row.student_profile?.photo_url || undefined,
             time: row.scan_in_at
               ? new Date(row.scan_in_at).toLocaleTimeString("en-US", {
                   hour: "2-digit",

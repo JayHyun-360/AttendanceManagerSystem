@@ -6600,6 +6600,8 @@ export function AdminDashboard({
 
     section: string;
 
+    photoUrl?: string;
+
     time: string;
 
     status: "confirmed" | "duplicate";
@@ -6800,7 +6802,15 @@ export function AdminDashboard({
               i < 4 ? "border-b border-slate-50" : ""
             }`}
           >
-            <Avatar name={s.name} size="sm" />
+            {s.photoUrl ? (
+              <img
+                src={s.photoUrl}
+                alt=""
+                className="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-slate-200"
+              />
+            ) : (
+              <Avatar name={s.name} size="sm" />
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-slate-900 truncate">
                 {s.name}
