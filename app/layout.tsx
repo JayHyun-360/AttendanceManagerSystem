@@ -3,7 +3,11 @@ import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
-  title: "Attendance Manager System",
+  title: "Adesse",
+  icons: {
+    icon: "/adesse-logo.svg",
+    apple: "/adesse-logo.svg",
+  },
 };
 
 export default function RootLayout({

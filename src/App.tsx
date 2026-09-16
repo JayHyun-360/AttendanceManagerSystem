@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
-import adesseLogoSrc from "@/imports/Free_Simple_Modern_Design_Studio_Logo-1.png";
+const adesseLogoSrc = "/adesse-logo.svg";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Page =
@@ -1265,12 +1265,12 @@ function TopBar({
             </button>
           )}
           <button
-            className="flex items-center gap-2.5 min-w-0"
+            className="flex items-center gap-1.5 min-w-0"
             onClick={() => onNav(dest)}
           >
             <AdesseMark className="w-8 h-8 shrink-0" />
             <div className="flex flex-col leading-none min-w-0">
-              <span className="text-[15px] font-bold text-slate-900 tracking-tight">
+              <span className="adesse-display text-[17px] text-slate-900 leading-none">
                 Adesse
               </span>
               <span className="text-[10px] text-slate-400 font-medium hidden sm:block leading-tight truncate">
