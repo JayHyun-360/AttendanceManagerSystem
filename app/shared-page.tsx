@@ -5564,6 +5564,9 @@ function EventDetailPageView({
 }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mobileSection, setMobileSection] = useState<"details" | "gallery">(
+    "details",
+  );
 
   useEffect(() => {
     setIsLoading(true);
@@ -5614,8 +5617,32 @@ function EventDetailPageView({
           Back to Events
         </button>
 
+        <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl border border-slate-200 bg-white p-1 md:hidden">
+          {[
+            ["details", "Event details"],
+            ["gallery", "Gallery"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setMobileSection(value as "details" | "gallery")}
+              className={`h-9 rounded-lg text-xs font-semibold transition-colors ${
+                mobileSection === value
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="grid grid-cols-1 gap-5 md:gap-8 lg:grid-cols-12">
-          <div className="space-y-5 lg:col-span-7 lg:sticky lg:top-6 lg:self-start">
+          <div
+            className={`space-y-5 lg:col-span-7 lg:sticky lg:top-6 lg:self-start ${
+              mobileSection === "details" ? "" : "hidden md:block"
+            }`}
+          >
             <div className="aspect-video overflow-hidden rounded-2xl bg-slate-50 shadow-sm">
               {event.highlightUrl ? (
                 <img
@@ -5713,7 +5740,11 @@ function EventDetailPageView({
             </div>
           </div>
 
-          <div className="lg:col-span-5 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:pr-2">
+          <div
+            className={`lg:col-span-5 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:pr-2 ${
+              mobileSection === "gallery" ? "" : "hidden md:block"
+            }`}
+          >
             <div className="mb-3 flex items-center justify-between pr-10">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
