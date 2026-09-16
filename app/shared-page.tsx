@@ -2493,20 +2493,22 @@ export function ProfileIcon({
 
   size?: "xs" | "sm" | "md" | "lg";
 }) {
-  const sz = { xs: "w-6 h-6", sm: "w-7 h-7", md: "w-9 h-9", lg: "w-14 h-14" }[
-    size
-  ];
+  const [previewOpen, setPreviewOpen] = useState(false);
 
-  if (photoUrl)
-    return (
-      <img
-        src={photoUrl}
-        alt="Profile"
-        className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200`}
-      />
-    );
+  const sz = {
+    xs: "w-7 h-7",
+    sm: "w-9 h-9",
+    md: "w-11 h-11",
+    lg: "w-16 h-16",
+  }[size];
 
-  return (
+  const content = photoUrl ? (
+    <img
+      src={photoUrl}
+      alt="Profile"
+      className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200 transition-transform duration-200 group-hover:scale-[1.02]`}
+    />
+  ) : (
     <div
       className={`${sz} rounded-full bg-[#b0b3b8] flex items-end justify-center overflow-hidden shrink-0`}
     >
@@ -2515,6 +2517,47 @@ export function ProfileIcon({
         <ellipse cx="18" cy="42" rx="18" ry="15" />
       </svg>
     </div>
+  );
+
+  if (!photoUrl) {
+    return content;
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setPreviewOpen(true)}
+        className="group inline-flex items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+        aria-label="View profile photo"
+      >
+        {content}
+      </button>
+
+      {previewOpen && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/75 p-6 backdrop-blur-sm"
+          onClick={() => setPreviewOpen(false)}
+        >
+          <div className="relative max-h-[80vh] max-w-[80vw]">
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(false)}
+              className="absolute -right-3 -top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-slate-900/90 text-sm font-semibold text-white shadow-lg transition hover:bg-slate-800"
+              aria-label="Close profile preview"
+            >
+              ×
+            </button>
+            <img
+              src={photoUrl}
+              alt="Profile preview"
+              className="max-h-[80vh] max-w-[80vw] rounded-2xl border border-white/20 object-contain bg-white/5 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

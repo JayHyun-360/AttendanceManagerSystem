@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader, StudentQR } from "../../../shared-page";
+import { PageHeader, ProfileIcon, StudentQR } from "../../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { recordAttendance, type AttendanceStatus } from "@/lib/attendance";
 import { useProtectedUser } from "../../layout";
@@ -21,6 +21,7 @@ interface StudentDetail {
   phone: string;
   email: string;
   photoUrl?: string;
+  coverPhotoUrl?: string;
   idPhotoUrl?: string;
   joinedDate: string;
 }
@@ -142,6 +143,7 @@ export default function StudentDetailRoutePage() {
           phone: data.phone || "",
           email: data.contact_email || data.email || "",
           photoUrl: data.photo_url || undefined,
+          coverPhotoUrl: data.cover_photo_url || undefined,
           idPhotoUrl: data.id_photo_url || undefined,
           joinedDate: new Date(data.created_at).toLocaleDateString("en-US", {
             month: "short",
@@ -359,29 +361,24 @@ export default function StudentDetailRoutePage() {
       <div className="grid grid-cols-1 gap-6 w-full max-w-7xl mx-auto lg:grid-cols-2">
         <div className="space-y-6">
           <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-            <div className="relative h-36 w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-slate-100 via-emerald-50 to-slate-200 md:h-40">
-              <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full bg-white/50 blur-3xl" />
-              <div className="absolute bottom-0 left-1/3 h-24 w-56 rounded-full bg-emerald-100/40 blur-3xl" />
+            <div className="relative h-36 w-full overflow-hidden rounded-t-2xl md:h-40">
+              {student.coverPhotoUrl ? (
+                <img
+                  src={student.coverPhotoUrl}
+                  alt="Profile cover"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-100 via-emerald-50 to-slate-200" />
+                  <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full bg-white/50 blur-3xl" />
+                  <div className="absolute bottom-0 left-1/3 h-24 w-56 rounded-full bg-emerald-100/40 blur-3xl" />
+                </>
+              )}
             </div>
             <div className="relative px-5 pb-5 md:px-6">
               <div className="relative z-10 -mt-10 ml-6">
-                {student.photoUrl ? (
-                  <img
-                    src={student.photoUrl}
-                    alt={student.name}
-                    className="h-20 w-20 rounded-full border-4 border-white object-cover shadow-md"
-                  />
-                ) : (
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-slate-100 text-xl font-bold text-slate-600 shadow-md">
-                    {student.name
-                      .split(" ")
-                      .filter(Boolean)
-                      .map((part) => part[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase() || "S"}
-                  </div>
-                )}
+                <ProfileIcon photoUrl={student.photoUrl} size="lg" />
               </div>
               <div className="mt-4">
                 <p className="text-xl font-bold text-slate-900">
