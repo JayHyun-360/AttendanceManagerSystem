@@ -833,7 +833,7 @@ function Toggle({
         onClick={onToggle}
         role="switch"
         aria-checked={on}
-        className={`relative w-11 h-6 rounded-full transition-all duration-200 shrink-0 focus:outline-none focus:ring-2 focus:ring-offset-2 ${on ? "bg-green-600 focus:ring-green-500" : "bg-slate-200 focus:ring-slate-400"}`}
+        className={`relative w-11 h-6 rounded-full transition-all duration-200 shrink-0 focus:outline-none focus:ring-2 focus:ring-offset-2 ${on ? "bg-emerald-500 focus:ring-emerald-500" : "bg-slate-200 focus:ring-slate-400"}`}
       >
         <span
           className={`absolute top-[3px] left-[3px] w-[18px] h-[18px] bg-white rounded-full shadow-md transition-transform duration-200 ${on ? "translate-x-5" : "translate-x-0"}`}
@@ -854,7 +854,7 @@ function FieldInput({
         {label}
       </label>
       <input
-        className="h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
+        className="h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium placeholder:text-slate-300 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all"
         {...p}
       />
     </div>
@@ -874,7 +874,7 @@ function FieldSelect({
         {label}
       </label>
       <select
-        className="h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all appearance-none"
+        className="h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all appearance-none"
         {...p}
       >
         {children}
@@ -892,7 +892,7 @@ function FieldTextarea({
         {label}
       </label>
       <textarea
-        className="px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 resize-none transition-all"
+        className="px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium placeholder:text-slate-300 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 resize-none transition-all"
         {...p}
       />
     </div>
@@ -902,7 +902,7 @@ function FieldTextarea({
 function Badge({ status }: { status: string }) {
   const cfg: Record<string, { cls: string; label: string; dot?: boolean }> = {
     active: {
-      cls: "bg-green-50 text-green-700 ring-1 ring-green-200",
+      cls: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200",
       label: "Live",
       dot: true,
     },
@@ -915,7 +915,7 @@ function Badge({ status }: { status: string }) {
       label: "Closed",
     },
     present: {
-      cls: "bg-green-50 text-green-700 ring-1 ring-green-200",
+      cls: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200",
       label: "Present",
     },
     absent: {
@@ -931,7 +931,7 @@ function Badge({ status }: { status: string }) {
       label: "Pending Review",
     },
     confirmed: {
-      cls: "bg-green-50 text-green-700 ring-1 ring-green-200",
+      cls: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200",
       label: "Confirmed",
     },
     duplicate: {
@@ -939,7 +939,7 @@ function Badge({ status }: { status: string }) {
       label: "Duplicate",
     },
     approved: {
-      cls: "bg-green-50 text-green-700 ring-1 ring-green-200",
+      cls: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200",
       label: "Approved",
     },
     denied: {
@@ -951,7 +951,7 @@ function Badge({ status }: { status: string }) {
       label: "Unpaid",
     },
     paid: {
-      cls: "bg-green-50 text-green-700 ring-1 ring-green-200",
+      cls: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200",
       label: "Paid",
     },
   };
@@ -965,7 +965,7 @@ function Badge({ status }: { status: string }) {
     >
       {c.dot && (
         <span
-          className="w-1.5 h-1.5 rounded-full bg-green-500"
+          className="w-1.5 h-1.5 rounded-full bg-emerald-500"
           style={{ animation: "pulse 2s infinite" }}
         />
       )}
@@ -1011,7 +1011,7 @@ function Avatar({
     }[size];
     return (
       <div
-        className={`${sz} rounded-full bg-gradient-to-br from-green-400 to-green-700 text-white font-bold ${textSz} flex items-center justify-center shrink-0 select-none`}
+        className={`${sz} rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-bold ${textSz} flex items-center justify-center shrink-0 select-none`}
       >
         {letters}
       </div>
@@ -1071,7 +1071,7 @@ function Toast({
       className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-50 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 ${variant === "error" ? "bg-red-600" : "bg-slate-900"}`}
       style={{ animation: "slideUp .25s ease" }}
     >
-      <span className={variant === "error" ? "text-red-300" : "text-green-400"}>
+      <span className={variant === "error" ? "text-red-300" : "text-emerald-400"}>
         {variant === "error" ? <Icons.X /> : <Icons.Check />}
       </span>
       {message}
@@ -1324,7 +1324,7 @@ function TopBar({
                         </p>
                       </div>
                       <button className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left group">
-                        <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center text-green-600 shrink-0 mt-0.5 group-hover:bg-green-100 transition-colors">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0 mt-0.5 group-hover:bg-emerald-100 transition-colors">
                           <svg
                             viewBox="0 0 18 18"
                             fill="none"
@@ -1379,7 +1379,7 @@ function TopBar({
           ) : (
             <button
               onClick={() => onNav("login")}
-              className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+              className="h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
             >
               Sign in
             </button>
@@ -1474,10 +1474,10 @@ function Sidebar({
             <button
               key={p}
               onClick={() => handleNav(p)}
-              className={`w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm transition-all ${active ? "bg-green-50 text-green-800 font-semibold" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium"}`}
+              className={`w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm transition-all ${active ? "bg-emerald-50 text-emerald-700 font-semibold" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium"}`}
             >
               <span
-                className={`relative shrink-0 ${active ? "text-green-600" : "text-slate-400"}`}
+                className={`relative shrink-0 ${active ? "text-emerald-500" : "text-slate-400"}`}
               >
                 <I />
                 {badgeLabel && (
@@ -1496,7 +1496,7 @@ function Sidebar({
       <div className="px-2 py-3 border-t border-slate-100 space-y-0.5 shrink-0">
         <button
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm font-medium text-slate-500 hover:text-green-700 hover:bg-green-50 transition-all"
+          className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm font-medium text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all"
         >
           <span className="shrink-0 text-slate-400">
             <svg
@@ -1781,7 +1781,7 @@ function LandingPage({
         )}
         {/* Fallback radial glow when no image */}
         {!hasHero && (
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gradient-to-b from-green-50 to-transparent rounded-full blur-3xl opacity-60 pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gradient-to-b from-emerald-50 to-transparent rounded-full blur-3xl opacity-60 pointer-events-none" />
         )}
 
         {/* Hero content */}
@@ -1789,10 +1789,10 @@ function LandingPage({
           className={`relative max-w-5xl mx-auto px-6 flex flex-col ${hasHero ? "items-start text-left pt-28 pb-24" : "items-center text-center pt-24 pb-20"}`}
         >
           <div
-            className={`inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full mb-8 ${hasHero ? "text-green-300 bg-white/10 border border-white/25 backdrop-blur-sm" : "text-green-700 bg-green-50 border border-green-200"}`}
+            className={`inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full mb-8 ${hasHero ? "text-emerald-300 bg-white/10 border border-white/25 backdrop-blur-sm" : "text-emerald-600 bg-emerald-50 border border-emerald-200"}`}
           >
             <span
-              className="w-1.5 h-1.5 bg-green-400 rounded-full"
+              className="w-1.5 h-1.5 bg-emerald-400 rounded-full"
               style={{ animation: "pulse 2s infinite" }}
             />
             AY 2026-2027 · 1st Semester
@@ -1823,7 +1823,7 @@ function LandingPage({
           >
             <button
               onClick={() => onNav("login")}
-              className="h-11 px-6 bg-green-500 hover:bg-green-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-px"
+              className="h-11 px-6 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-px"
             >
               Get started
             </button>
@@ -1861,7 +1861,7 @@ function LandingPage({
               key={f.t}
               className="bg-white border border-slate-100 rounded-2xl p-6 hover:border-slate-200 hover:shadow-sm transition-all"
             >
-              <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center text-green-600 mb-4">
+              <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500 mb-4">
                 <f.I />
               </div>
               <h3 className="font-semibold text-slate-900 text-sm mb-1.5">
@@ -1924,9 +1924,9 @@ function LoginPage({
             <div className="space-y-3">
               <button
                 onClick={() => setRole("student")}
-                className="w-full bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 text-left hover:border-green-300 hover:shadow-sm transition-all group"
+                className="w-full bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 text-left hover:border-emerald-300 hover:shadow-sm transition-all group"
               >
-                <div className="w-12 h-12 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center text-green-600 shrink-0 group-hover:bg-green-100 transition-colors">
+                <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500 shrink-0 group-hover:bg-emerald-100 transition-colors">
                   <Icons.User />
                 </div>
                 <div className="flex-1">
@@ -1937,7 +1937,7 @@ function LoginPage({
                     View events, show QR code, track attendance
                   </p>
                 </div>
-                <span className="text-slate-300 group-hover:text-green-500 transition-colors">
+                <span className="text-slate-300 group-hover:text-emerald-500 transition-colors">
                   <Icons.ChevronRight />
                 </span>
               </button>
@@ -1964,7 +1964,7 @@ function LoginPage({
                 New student?{" "}
                 <button
                   onClick={() => setRole("student")}
-                  className="text-green-600 font-semibold hover:text-green-700"
+                  className="text-emerald-500 font-semibold hover:text-emerald-600"
                 >
                   Create an account
                 </button>
@@ -2016,10 +2016,10 @@ function LoginPage({
                 <button
                   onClick={() => proceed("id")}
                   disabled={!!loading}
-                  className="w-full h-12 flex items-center justify-center gap-2.5 bg-green-600 hover:bg-green-700 rounded-xl text-sm font-semibold text-white transition-all shadow-sm disabled:opacity-50"
+                  className="w-full h-12 flex items-center justify-center gap-2.5 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-sm font-semibold text-white transition-all shadow-sm disabled:opacity-50"
                 >
                   {loading === "id" ? (
-                    <div className="w-4 h-4 border-2 border-green-300 border-t-white rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-emerald-300 border-t-white rounded-full animate-spin" />
                   ) : (
                     <Icons.QrCode />
                   )}
@@ -2119,7 +2119,7 @@ function OnboardingPage({ onComplete }: { onComplete: (d: OBForm) => void }) {
             {steps.map((_, i) => (
               <div
                 key={i}
-                className={`h-1 flex-1 rounded-full transition-all ${i < step ? "bg-green-600" : "bg-slate-200"}`}
+                className={`h-1 flex-1 rounded-full transition-all ${i < step ? "bg-emerald-500" : "bg-slate-200"}`}
               />
             ))}
           </div>
@@ -2240,7 +2240,7 @@ function OnboardingPage({ onComplete }: { onComplete: (d: OBForm) => void }) {
                 />
                 {f.idPhotoUrl ? (
                   <div
-                    className="relative w-full rounded-xl overflow-hidden border-2 border-green-400"
+                    className="relative w-full rounded-xl overflow-hidden border-2 border-emerald-400"
                     style={{ aspectRatio: "16/10" }}
                   >
                     <img
@@ -2260,7 +2260,7 @@ function OnboardingPage({ onComplete }: { onComplete: (d: OBForm) => void }) {
                 ) : (
                   <button
                     onClick={() => idPhotoRef.current?.click()}
-                    className="w-full border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center gap-3 py-10 hover:border-green-400 hover:bg-green-50/50 transition-all text-slate-400 hover:text-green-600"
+                    className="w-full border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center gap-3 py-10 hover:border-emerald-400 hover:bg-emerald-50/50 transition-all text-slate-400 hover:text-emerald-500"
                   >
                     <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
                       <Icons.Camera />
@@ -2316,7 +2316,7 @@ function OnboardingPage({ onComplete }: { onComplete: (d: OBForm) => void }) {
                 </div>
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <div
-                    className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${agreed ? "bg-green-600 border-green-600" : "border-slate-300 group-hover:border-green-400"}`}
+                    className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${agreed ? "bg-emerald-500 border-emerald-500" : "border-slate-300 group-hover:border-emerald-400"}`}
                     onClick={() => setAgreed((v) => !v)}
                   >
                     {agreed && (
@@ -2368,7 +2368,7 @@ function OnboardingPage({ onComplete }: { onComplete: (d: OBForm) => void }) {
                   ? setStep((s) => s + 1)
                   : onComplete({ ...f, agreedToTerms: agreed })
               }
-              className={`flex-1 h-10 text-white text-sm font-semibold rounded-lg transition-all shadow-sm ${canContinue() ? "bg-green-600 hover:bg-green-700" : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"}`}
+              className={`flex-1 h-10 text-white text-sm font-semibold rounded-lg transition-all shadow-sm ${canContinue() ? "bg-emerald-500 hover:bg-emerald-600" : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"}`}
             >
               {step === TOTAL ? "Complete setup" : "Continue"}
             </button>
@@ -2447,7 +2447,7 @@ function ExcuseModal({
             />
             <button
               onClick={() => ref.current?.click()}
-              className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm font-medium text-slate-400 hover:border-green-400 hover:text-green-600 transition-all flex items-center justify-center gap-2"
+              className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm font-medium text-slate-400 hover:border-emerald-400 hover:text-emerald-500 transition-all flex items-center justify-center gap-2"
             >
               <Icons.Paperclip />
               {file ? file.name : "Attach photo or PDF"}
@@ -2478,7 +2478,7 @@ function ExcuseModal({
               onClose();
             }}
             disabled={!reason.trim()}
-            className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg disabled:opacity-40 flex items-center justify-center gap-2"
+            className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg disabled:opacity-40 flex items-center justify-center gap-2"
           >
             <Icons.Send />
             Submit
@@ -2656,7 +2656,7 @@ function UpcomingEventCard({
       <div className="flex items-center justify-between mb-3">
         <Badge status={ev.status} />
         <span
-          className={`text-xs font-medium ${dim ? "text-white/70" : "text-green-300"}`}
+          className={`text-xs font-medium ${dim ? "text-white/70" : "text-emerald-300"}`}
         >
           Up next
         </span>
@@ -2667,7 +2667,7 @@ function UpcomingEventCard({
         {ev.title}
       </h2>
       <div
-        className={`flex flex-wrap gap-3 text-sm font-medium ${dim ? "text-white/75" : "text-green-200"}`}
+        className={`flex flex-wrap gap-3 text-sm font-medium ${dim ? "text-white/75" : "text-emerald-200"}`}
       >
         <span className="flex items-center gap-1.5">
           <Icons.Calendar />
@@ -2724,7 +2724,7 @@ function UpcomingEventCard({
         </div>
       ) : (
         /* Green fallback */
-        <div className="md:hidden bg-green-600 group-hover:bg-green-700 rounded-xl p-5 text-white transition-colors shadow-sm">
+        <div className="md:hidden bg-emerald-500 group-hover:bg-emerald-600 rounded-xl p-5 text-white transition-colors shadow-sm">
           {greenText()}
         </div>
       )}
@@ -2747,7 +2747,7 @@ function UpcomingEventCard({
           </svg>
 
           {/* Green background full-bleed */}
-          <div className="absolute inset-0 bg-green-600 group-hover:bg-green-700 transition-colors" />
+          <div className="absolute inset-0 bg-emerald-500 group-hover:bg-emerald-600 transition-colors" />
 
           {/* Green content pane — left 62% */}
           <div
@@ -2779,7 +2779,7 @@ function UpcomingEventCard({
         </div>
       ) : (
         /* Green fallback */
-        <div className="hidden md:block bg-green-600 group-hover:bg-green-700 rounded-xl p-5 text-white transition-colors shadow-sm">
+        <div className="hidden md:block bg-emerald-500 group-hover:bg-emerald-600 rounded-xl p-5 text-white transition-colors shadow-sm">
           {greenText()}
         </div>
       )}
@@ -2861,7 +2861,7 @@ function DashboardPage({
         className="w-full bg-white border border-slate-100 rounded-xl px-5 py-4 flex items-center justify-between hover:border-slate-200 hover:shadow-sm transition-all mb-5 group"
       >
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-green-50 border border-green-100 rounded-xl flex items-center justify-center text-green-600">
+          <div className="w-10 h-10 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center text-emerald-500">
             <Icons.QrCode />
           </div>
           <div className="text-left">
@@ -2881,7 +2881,7 @@ function DashboardPage({
         </p>
         <button
           onClick={() => onNav("announcements")}
-          className="text-xs text-green-600 font-semibold hover:text-green-700 flex items-center gap-0.5"
+          className="text-xs text-emerald-500 font-semibold hover:text-emerald-600 flex items-center gap-0.5"
         >
           View all
           <Icons.ChevronRight />
@@ -2894,7 +2894,7 @@ function DashboardPage({
             className="bg-white border border-slate-100 rounded-xl px-4 py-3.5"
           >
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded uppercase tracking-wide">
+              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-wide">
                 {a.badge}
               </span>
               <span className="text-[11px] text-slate-400">{a.date}</span>
@@ -3022,7 +3022,7 @@ function EventDetailPage({
             className="w-full h-64 object-cover"
           />
         ) : (
-          <div className="w-full h-64 bg-green-600" />
+          <div className="w-full h-64 bg-emerald-500" />
         )}
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
@@ -3141,8 +3141,8 @@ function EventDetailPage({
         </div>
       )}
       {user && ev.status === "active" && (
-        <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-3.5 flex items-center gap-3">
-          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600 shrink-0">
+        <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3.5 flex items-center gap-3">
+          <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-500 shrink-0">
             <Icons.QrCode />
           </div>
           <div>
@@ -3214,7 +3214,7 @@ function MyQRPage({
       W / 2,
       size + pad + 50,
     );
-    ctx.fillStyle = "#16a34a";
+    ctx.fillStyle = "#10b981";
     ctx.font = "bold 10px sans-serif";
     ctx.fillText(
       "Adesse · Student Attendance & Fee Tracking System",
@@ -3236,8 +3236,8 @@ function MyQRPage({
       <div className="max-w-xs mx-auto">
         <div className="bg-white border border-slate-100 rounded-2xl p-6 text-center shadow-sm relative">
           {qrVersion > 1 && (
-            <div className="absolute top-3 right-3 flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+            <div className="absolute top-3 right-3 flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
               Renewed
             </div>
           )}
@@ -3266,7 +3266,7 @@ function MyQRPage({
         <div className="mt-3">
           <button
             onClick={handleDownload}
-            className="w-full h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+            className="w-full h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
           >
             <Icons.Download />
             Download QR as PNG
@@ -3315,7 +3315,7 @@ function AnnouncementsPage({
             )}
             <div className="p-5">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded uppercase tracking-wide">
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded uppercase tracking-wide">
                   {a.badge}
                 </span>
                 <span className="text-[11px] text-slate-400">{a.date}</span>
@@ -3366,7 +3366,7 @@ function AttendanceHistoryPage({
               className={`flex items-center gap-4 px-5 py-4 ${i < ATTENDANCE_RECORDS.length - 1 ? "border-b border-slate-50" : ""}`}
             >
               <div
-                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${eff === "present" ? "bg-green-50 text-green-600" : eff === "absent" ? "bg-red-50 text-red-400" : eff === "excused" ? "bg-violet-50 text-violet-500" : "bg-amber-50 text-amber-500"}`}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${eff === "present" ? "bg-emerald-50 text-emerald-500" : eff === "absent" ? "bg-red-50 text-red-400" : eff === "excused" ? "bg-violet-50 text-violet-500" : "bg-amber-50 text-amber-500"}`}
               >
                 {eff === "present" ? (
                   <Icons.Check />
@@ -3488,7 +3488,7 @@ function MyFinesPage({
       />
       {fines.length === 0 ? (
         <div className="bg-white border border-slate-100 rounded-xl px-5 py-12 text-center">
-          <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-3 text-green-500">
+          <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mx-auto mb-3 text-emerald-500">
             <Icons.Check />
           </div>
           <p className="font-semibold text-slate-900 text-sm">
@@ -3520,7 +3520,7 @@ function MyFinesPage({
                 className={`flex items-center gap-4 px-5 py-4 ${i < fines.length - 1 ? "border-b border-slate-50" : ""}`}
               >
                 <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${fine.status === "unpaid" ? "bg-red-50 text-red-400" : fine.status === "excused" ? "bg-violet-50 text-violet-500" : "bg-green-50 text-green-600"}`}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${fine.status === "unpaid" ? "bg-red-50 text-red-400" : fine.status === "excused" ? "bg-violet-50 text-violet-500" : "bg-emerald-50 text-emerald-500"}`}
                 >
                   <Icons.Peso />
                 </div>
@@ -3534,7 +3534,7 @@ function MyFinesPage({
                 </div>
                 <div className="text-right shrink-0">
                   <p
-                    className={`text-sm font-bold ${fine.status === "unpaid" ? "text-red-600" : fine.status === "excused" ? "text-violet-600" : "text-green-600"}`}
+                    className={`text-sm font-bold ${fine.status === "unpaid" ? "text-red-600" : fine.status === "excused" ? "text-violet-600" : "text-emerald-500"}`}
                   >
                     ₱{fine.amount}
                   </p>
@@ -3608,7 +3608,7 @@ function ProfilePage({
                   onSave({ ...user, ...draft });
                   setEditing(false);
                 }}
-                className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm"
+                className="h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm"
               >
                 Save
               </button>
@@ -3642,7 +3642,7 @@ function ProfilePage({
                 />
                 <button
                   onClick={() => photoRef.current?.click()}
-                  className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center shadow-md transition-colors"
+                  className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-md transition-colors"
                 >
                   <Icons.Camera />
                 </button>
@@ -3861,9 +3861,9 @@ function AdminDashboard({
             SSG General Assembly is live now
           </p>
         </div>
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full shrink-0">
+        <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full shrink-0">
           <span
-            className="w-1.5 h-1.5 bg-green-500 rounded-full"
+            className="w-1.5 h-1.5 bg-emerald-500 rounded-full"
             style={{ animation: "pulse 2s infinite" }}
           />
           Live
@@ -3875,7 +3875,7 @@ function AdminDashboard({
             l: "Scanned today",
             v: "6",
             sub: "SSG Assembly",
-            c: "text-green-600",
+            c: "text-emerald-500",
           },
           { l: "Duplicates", v: "1", sub: "Rejected", c: "text-red-500" },
           { l: "Active events", v: "1", sub: "Live now", c: "text-sky-600" },
@@ -3899,11 +3899,11 @@ function AdminDashboard({
       <div className="grid grid-cols-2 gap-3 mb-5">
         <button
           onClick={() => onNav("admin-scanner")}
-          className="bg-green-600 hover:bg-green-700 text-white rounded-xl p-5 text-left transition-all shadow-sm hover:shadow-md"
+          className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl p-5 text-left transition-all shadow-sm hover:shadow-md"
         >
           <Icons.Scan />
           <p className="font-semibold text-sm mt-3 mb-0.5">Open Scanner</p>
-          <p className="text-green-300 text-xs">Camera-based QR scan</p>
+          <p className="text-emerald-300 text-xs">Camera-based QR scan</p>
         </button>
         <button
           onClick={() => onNav("admin-excuse-requests")}
@@ -3933,7 +3933,7 @@ function AdminDashboard({
         </p>
         <button
           onClick={() => onNav("admin-attendees")}
-          className="text-xs text-green-600 font-semibold hover:text-green-700 flex items-center gap-0.5"
+          className="text-xs text-emerald-500 font-semibold hover:text-emerald-600 flex items-center gap-0.5"
         >
           View all
           <Icons.ChevronRight />
@@ -4217,7 +4217,7 @@ function AdminEventsPage({
         onClick={onToggle}
         role="switch"
         aria-checked={on}
-        className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 focus:outline-none ${on ? "bg-green-600" : "bg-slate-200"}`}
+        className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 focus:outline-none ${on ? "bg-emerald-500" : "bg-slate-200"}`}
       >
         <span
           className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${on ? "translate-x-4" : "translate-x-0"}`}
@@ -4370,7 +4370,7 @@ function AdminEventsPage({
               setEditId(null);
               setEditDraft(null);
             }}
-            className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"
+            className="h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"
           >
             <Icons.Plus />
             New event
@@ -4388,7 +4388,7 @@ function AdminEventsPage({
               <button
                 onClick={handleCreate}
                 disabled={!draft.title || !draft.date}
-                className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40"
+                className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40"
               >
                 Create event
               </button>
@@ -4448,7 +4448,7 @@ function AdminEventsPage({
                 onClick={toggleD("multiSession")}
                 role="switch"
                 aria-checked={draft.multiSession}
-                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${draft.multiSession ? "bg-green-600" : "bg-slate-200"}`}
+                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${draft.multiSession ? "bg-emerald-500" : "bg-slate-200"}`}
               >
                 <span
                   className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${draft.multiSession ? "translate-x-4" : "translate-x-0"}`}
@@ -4544,7 +4544,7 @@ function AdminEventsPage({
             ) : (
               <button
                 onClick={() => highlightRef.current?.click()}
-                className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2 transition-colors"
+                className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center gap-2 transition-colors"
               >
                 <Icons.Image />
                 Upload highlight photo
@@ -4586,14 +4586,14 @@ function AdminEventsPage({
             <div className="flex gap-2">
               <button
                 onClick={() => photoRef.current?.click()}
-                className="flex-1 h-9 border border-slate-200 rounded-lg text-xs font-semibold text-slate-500 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"
+                className="flex-1 h-9 border border-slate-200 rounded-lg text-xs font-semibold text-slate-500 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center gap-1.5"
               >
                 <Icons.Image />
                 Photos
               </button>
               <button
                 onClick={() => videoRef.current?.click()}
-                className="flex-1 h-9 border border-slate-200 rounded-lg text-xs font-semibold text-slate-500 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"
+                className="flex-1 h-9 border border-slate-200 rounded-lg text-xs font-semibold text-slate-500 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center gap-1.5"
               >
                 <Icons.Video />
                 Videos
@@ -4655,7 +4655,7 @@ function AdminEventsPage({
               <>
                 <button
                   onClick={commitSave}
-                  className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm"
+                  className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm"
                 >
                   Confirm &amp; save
                 </button>
@@ -4670,7 +4670,7 @@ function AdminEventsPage({
               <>
                 <button
                   onClick={handleSaveEdit}
-                  className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm"
+                  className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm"
                 >
                   Save changes
                 </button>
@@ -4756,7 +4756,7 @@ function AdminEventsPage({
                 }
                 role="switch"
                 aria-checked={!!editDraft.multiSession}
-                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${editDraft.multiSession ? "bg-green-600" : "bg-slate-200"}`}
+                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${editDraft.multiSession ? "bg-emerald-500" : "bg-slate-200"}`}
               >
                 <span
                   className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${editDraft.multiSession ? "translate-x-4" : "translate-x-0"}`}
@@ -4890,7 +4890,7 @@ function AdminEventsPage({
             ) : (
               <button
                 onClick={() => editHighlightRef.current?.click()}
-                className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2 transition-colors"
+                className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center gap-2 transition-colors"
               >
                 <Icons.Image />
                 Upload highlight photo
@@ -4951,7 +4951,7 @@ function AdminEventsPage({
             )}
             <button
               onClick={() => editPhotoRef.current?.click()}
-              className="w-full h-9 border border-dashed border-slate-200 rounded-lg text-xs font-semibold text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-1.5"
+              className="w-full h-9 border border-dashed border-slate-200 rounded-lg text-xs font-semibold text-slate-400 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center gap-1.5"
             >
               <Icons.Image />
               Add photos
@@ -5050,7 +5050,7 @@ function AdminEventsPage({
                 {e.status === "active" && (
                   <button
                     onClick={() => onNav("admin-scanner")}
-                    className="flex-1 h-9 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700 flex items-center justify-center gap-1.5 shadow-sm"
+                    className="flex-1 h-9 bg-emerald-500 text-white text-xs font-semibold rounded-lg hover:bg-emerald-600 flex items-center justify-center gap-1.5 shadow-sm"
                   >
                     <Icons.Scan />
                     Scanner
@@ -5275,7 +5275,7 @@ function CameraScanner({
                 style={{
                   top: sweeping ? "8%" : "50%",
                   background:
-                    "linear-gradient(90deg, transparent 0%, rgba(74,222,128,0.9) 20%, #4ade80 50%, rgba(74,222,128,0.9) 80%, transparent 100%)",
+                    "linear-gradient(90deg, transparent 0%, rgba(74,222,128,0.9) 20%, #34d399 50%, rgba(74,222,128,0.9) 80%, transparent 100%)",
                   boxShadow: "0 0 10px 2px rgba(74,222,128,0.55)",
                   opacity: sweeping ? 1 : 0.6,
                   transition: sweeping ? "none" : "opacity 0.3s",
@@ -5290,7 +5290,7 @@ function CameraScanner({
               ].map((cls, i) => (
                 <div
                   key={i}
-                  className={`absolute w-8 h-8 border-green-400 ${cls}`}
+                  className={`absolute w-8 h-8 border-emerald-400 ${cls}`}
                 />
               ))}
             </div>
@@ -5319,7 +5319,7 @@ function CameraScanner({
         {result && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 px-8 gap-4">
             <div
-              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-2xl ${result.status === "confirmed" ? "bg-green-500" : "bg-red-500"}`}
+              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-2xl ${result.status === "confirmed" ? "bg-emerald-500" : "bg-red-500"}`}
             >
               {result.status === "confirmed" ? (
                 <svg
@@ -5350,7 +5350,7 @@ function CameraScanner({
             </div>
             <div className="text-center">
               <p
-                className={`text-lg font-bold ${result.status === "confirmed" ? "text-green-400" : "text-red-400"}`}
+                className={`text-lg font-bold ${result.status === "confirmed" ? "text-emerald-400" : "text-red-400"}`}
               >
                 {result.status === "confirmed"
                   ? "Attendance Confirmed"
@@ -5457,10 +5457,10 @@ function AdminScannerPage() {
               <button
                 key={e.id}
                 onClick={() => setSelectedEventId(e.id)}
-                className={`w-full text-left px-4 py-3.5 rounded-xl transition-all flex items-center gap-4 ${selectedEventId === e.id ? "bg-green-50 ring-1 ring-green-200" : "hover:bg-slate-50"}`}
+                className={`w-full text-left px-4 py-3.5 rounded-xl transition-all flex items-center gap-4 ${selectedEventId === e.id ? "bg-emerald-50 ring-1 ring-emerald-200" : "hover:bg-slate-50"}`}
               >
                 <div
-                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${e.status === "active" ? "bg-green-500" : "bg-slate-300"}`}
+                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${e.status === "active" ? "bg-emerald-500" : "bg-slate-300"}`}
                   style={
                     e.status === "active"
                       ? { animation: "pulse 2s infinite" }
@@ -5469,12 +5469,12 @@ function AdminScannerPage() {
                 />
                 <div className="flex-1 min-w-0">
                   <p
-                    className={`text-sm font-semibold truncate ${selectedEventId === e.id ? "text-green-900" : "text-slate-900"}`}
+                    className={`text-sm font-semibold truncate ${selectedEventId === e.id ? "text-emerald-800" : "text-slate-900"}`}
                   >
                     {e.title}
                   </p>
                   <p
-                    className={`text-xs mt-0.5 ${selectedEventId === e.id ? "text-green-600" : "text-slate-400"}`}
+                    className={`text-xs mt-0.5 ${selectedEventId === e.id ? "text-emerald-500" : "text-slate-400"}`}
                   >
                     {e.date} · {e.location}
                   </p>
@@ -5482,7 +5482,7 @@ function AdminScannerPage() {
                 <div className="shrink-0 flex items-center gap-2">
                   {e.status === "active" && <Badge status="active" />}
                   {selectedEventId === e.id && (
-                    <span className="text-green-600">
+                    <span className="text-emerald-500">
                       <Icons.Check />
                     </span>
                   )}
@@ -5496,7 +5496,7 @@ function AdminScannerPage() {
         {selectedEvent ? (
           <div className="space-y-3">
             <div className="bg-white border border-slate-100 rounded-xl px-4 py-4 flex items-center gap-4">
-              <div className="w-10 h-10 bg-green-50 border border-green-100 rounded-xl flex items-center justify-center text-green-600 shrink-0">
+              <div className="w-10 h-10 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center text-emerald-500 shrink-0">
                 <Icons.Scan />
               </div>
               <div className="flex-1 min-w-0">
@@ -5515,7 +5515,7 @@ function AdminScannerPage() {
             </div>
             <button
               onClick={() => setScannerOpen(true)}
-              className="w-full h-14 bg-green-600 hover:bg-green-700 active:scale-[.99] text-white text-base font-bold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-md shadow-green-900/20"
+              className="w-full h-14 bg-emerald-500 hover:bg-emerald-600 active:scale-[.99] text-white text-base font-bold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-md shadow-emerald-800/20"
             >
               <Icons.Scan />
               Open QR Scanner
@@ -5539,7 +5539,7 @@ function AdminScannerPage() {
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                 Scanned this session
               </p>
-              <span className="text-[11px] font-bold text-green-600">
+              <span className="text-[11px] font-bold text-emerald-500">
                 {scanned.length}
               </span>
             </div>
@@ -5618,7 +5618,7 @@ function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
             setSelectedEventId(e.target.value);
             setTab("present");
           }}
-          className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium outline-none focus:border-green-500 appearance-none"
+          className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium outline-none focus:border-emerald-500 appearance-none"
         >
           {INITIAL_EVENTS.map((e) => (
             <option key={e.id} value={e.id}>
@@ -5737,7 +5737,7 @@ function AdminAttendeesPage({ onNav }: { onNav: (p: Page) => void }) {
           )}
           {absentees.length === 0 ? (
             <div className="bg-white border border-slate-100 rounded-xl px-5 py-10 text-center">
-              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-3 text-green-500">
+              <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center mx-auto mb-3 text-emerald-500">
                 <Icons.CheckCircle />
               </div>
               <p className="font-semibold text-slate-900 text-sm">
@@ -5817,7 +5817,7 @@ function AdminStudentsPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name, ID, program, or section..."
-          className="w-full h-10 pl-9 pr-9 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
+          className="w-full h-10 pl-9 pr-9 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all"
         />
         {query && (
           <button
@@ -5941,7 +5941,7 @@ function AdminAnnouncementsPage({
               setEditId(null);
               setEditDraft(null);
             }}
-            className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"
+            className="h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"
           >
             <Icons.Plus />
             New post
@@ -5958,7 +5958,7 @@ function AdminAnnouncementsPage({
               <button
                 onClick={handlePublish}
                 disabled={!newTitle.trim()}
-                className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40"
+                className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40"
               >
                 Publish
               </button>
@@ -6027,7 +6027,7 @@ function AdminAnnouncementsPage({
             ) : (
               <button
                 onClick={() => photoRef.current?.click()}
-                className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2"
+                className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center gap-2"
               >
                 <Icons.Image />
                 Attach photo
@@ -6048,7 +6048,7 @@ function AdminAnnouncementsPage({
             <>
               <button
                 onClick={saveEdit}
-                className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm"
+                className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm"
               >
                 Save changes
               </button>
@@ -6129,7 +6129,7 @@ function AdminAnnouncementsPage({
             ) : (
               <button
                 onClick={() => editPhotoRef.current?.click()}
-                className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2"
+                className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center gap-2"
               >
                 <Icons.Image />
                 Attach photo
@@ -6153,7 +6153,7 @@ function AdminAnnouncementsPage({
             )}
             <div className="p-5">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded uppercase tracking-wide">
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded uppercase tracking-wide">
                   {a.badge}
                 </span>
                 <div className="flex items-center gap-2">
@@ -6266,7 +6266,7 @@ function AdminExcuseRequestsPage({
                 <div className="flex gap-2 pt-4 border-t border-slate-50">
                   <button
                     onClick={() => onAction(r.id, "approved")}
-                    className="flex-1 h-9 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center justify-center gap-1.5"
+                    className="flex-1 h-9 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center justify-center gap-1.5"
                   >
                     <Icons.Check />
                     Approve &amp; waive fee
@@ -6359,7 +6359,7 @@ function AdminReportsPage() {
 
     let y = 0;
     // ── Header bar
-    ctx.fillStyle = "#16a34a";
+    ctx.fillStyle = "#10b981";
     ctx.fillRect(0, 0, W, 60);
     ctx.fillStyle = "#fff";
     ctx.font = "bold 18px system-ui, sans-serif";
@@ -6444,7 +6444,7 @@ function AdminReportsPage() {
             x: W - pad - 8,
             align: "right",
             color:
-              r.pct >= 70 ? "#16a34a" : r.pct >= 50 ? "#d97706" : "#dc2626",
+              r.pct >= 70 ? "#10b981" : r.pct >= 50 ? "#d97706" : "#dc2626",
           },
         ],
         i % 2 === 1,
@@ -6460,7 +6460,7 @@ function AdminReportsPage() {
     ]);
     const feeColors: Record<string, string> = {
       "Total fees issued": "#dc2626",
-      Collected: "#16a34a",
+      Collected: "#10b981",
       Pending: "#d97706",
     };
     fees.forEach((f, i) =>
@@ -6500,7 +6500,7 @@ function AdminReportsPage() {
             t: e.attendees.toString(),
             x: W - pad - 8,
             align: "right",
-            color: "#16a34a",
+            color: "#10b981",
           },
         ],
         i % 2 === 1,
@@ -6550,7 +6550,7 @@ function AdminReportsPage() {
       <SectionLabel>Attendance by program</SectionLabel>
       <div className="grid md:grid-cols-2 gap-3 mb-6">
         {[
-          { l: "BSIT", n: 234, total: 301, pct: 78, c: "bg-green-500" },
+          { l: "BSIT", n: 234, total: 301, pct: 78, c: "bg-emerald-500" },
           { l: "BSCS", n: 198, total: 304, pct: 65, c: "bg-sky-500" },
           { l: "BSBA", n: 156, total: 300, pct: 52, c: "bg-violet-400" },
           { l: "BSEd", n: 89, total: 197, pct: 45, c: "bg-amber-400" },
@@ -6581,7 +6581,7 @@ function AdminReportsPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
         {[
           { l: "Total fees issued", v: "₱42,500", c: "text-red-600" },
-          { l: "Collected", v: "₱18,200", c: "text-green-600" },
+          { l: "Collected", v: "₱18,200", c: "text-emerald-500" },
           { l: "Pending", v: "₱24,300", c: "text-amber-600" },
         ].map((s, i) => (
           <div
@@ -6612,7 +6612,7 @@ function AdminReportsPage() {
                 </p>
               </div>
               <div className="text-right">
-                <p className="font-bold text-green-600 text-lg">
+                <p className="font-bold text-emerald-500 text-lg">
                   {e.attendees}
                 </p>
                 <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
@@ -6708,14 +6708,14 @@ function AdminSettingsPage({
           />
         </div>
         <div
-          className={`mx-5 mb-4 rounded-lg px-3.5 py-2.5 flex items-center gap-2.5 transition-colors ${settings.showFees ? "bg-green-50 border border-green-200" : "bg-slate-50 border border-slate-200"}`}
+          className={`mx-5 mb-4 rounded-lg px-3.5 py-2.5 flex items-center gap-2.5 transition-colors ${settings.showFees ? "bg-emerald-50 border border-emerald-200" : "bg-slate-50 border border-slate-200"}`}
         >
           <span
-            className={`w-1.5 h-1.5 rounded-full shrink-0 ${settings.showFees ? "bg-green-500" : "bg-slate-400"}`}
+            className={`w-1.5 h-1.5 rounded-full shrink-0 ${settings.showFees ? "bg-emerald-500" : "bg-slate-400"}`}
             style={settings.showFees ? { animation: "pulse 2s infinite" } : {}}
           />
           <p
-            className={`text-xs font-medium leading-relaxed ${settings.showFees ? "text-green-800" : "text-slate-500"}`}
+            className={`text-xs font-medium leading-relaxed ${settings.showFees ? "text-emerald-700" : "text-slate-500"}`}
           >
             Fees are{" "}
             <span className="font-bold">
@@ -6845,7 +6845,7 @@ function AdminSettingsPage({
           {settings.heroImageUrls.length < 6 && (
             <button
               onClick={addHero}
-              className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2 transition-colors"
+              className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center gap-2 transition-colors"
             >
               <Icons.Image />
               Add hero photo{settings.heroImageUrls.length > 0 ? "s" : ""}
@@ -6868,7 +6868,7 @@ function AdminSettingsPage({
           {settings.carouselSlides.length < 10 && (
             <button
               onClick={addSlide}
-              className="h-8 px-3 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shrink-0"
+              className="h-8 px-3 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shrink-0"
             >
               <Icons.Plus />
               Add slide
@@ -6920,7 +6920,7 @@ function AdminSettingsPage({
                       ) : (
                         <button
                           onClick={() => slideRefs.current[i]?.click()}
-                          className="w-20 h-14 border-2 border-dashed border-slate-200 rounded-lg text-slate-400 hover:border-green-400 hover:text-green-600 flex items-center justify-center transition-colors"
+                          className="w-20 h-14 border-2 border-dashed border-slate-200 rounded-lg text-slate-400 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center transition-colors"
                         >
                           <Icons.Image />
                         </button>

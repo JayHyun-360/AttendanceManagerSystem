@@ -4,15 +4,15 @@
 :root {
   --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
 
-  --color-brand-50: #f0fdf4;
-  --color-brand-100: #dcfce7;
-  --color-brand-200: #bbf7d0;
-  --color-brand-400: #4ade80;
-  --color-brand-500: #22c55e;
-  --color-brand-600: #16a34a;
-  --color-brand-700: #15803d;
-  --color-brand-800: #166534;
-  --color-brand-900: #14532d;
+  --color-brand-50: #ecfdf5;
+  --color-brand-100: #d1fae5;
+  --color-brand-200: #a7f3d0;
+  --color-brand-400: #34d399;
+  --color-brand-500: #34d399;
+  --color-brand-600: #10b981;
+  --color-brand-700: #059669;
+  --color-brand-800: #047857;
+  --color-brand-900: #065f46;
 
   --color-slate-50: #f8fafc;
   --color-slate-100: #f1f5f9;
@@ -156,10 +156,10 @@ textarea {
 @keyframes qr-glow {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.3);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3);
   }
   50% {
-    box-shadow: 0 0 0 16px rgba(22, 163, 74, 0);
+    box-shadow: 0 0 0 16px rgba(16, 185, 129, 0);
   }
 }
 .qr-glow {

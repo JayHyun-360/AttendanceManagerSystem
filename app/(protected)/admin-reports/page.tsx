@@ -195,7 +195,7 @@ export default function AdminReportsRoutePage() {
             {
               label: "Collected",
               value: `₱${collectedFees.toLocaleString()}`,
-              color: "text-green-600",
+              color: "text-emerald-500",
             },
             {
               label: "Pending",
