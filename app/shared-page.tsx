@@ -178,6 +178,7 @@ import { recordAttendance } from "@/lib/attendance";
 import {
   buildAttendanceSessionRecords,
   type FineEventLike,
+  type FineRowLike,
   type FineScanLike,
 } from "@/lib/attendance-fines";
 
@@ -889,6 +890,8 @@ interface ScanRecord {
   sessionLabel?: "morning" | "afternoon";
   action?: "time_in" | "time_out" | "time_out_rejected" | "duplicate";
   dbId: string | number;
+  fineStatus?: "unpaid" | "paid" | "excused";
+  fineAmount?: number;
 }
 
 export interface ExcuseRequest {
@@ -6329,15 +6332,16 @@ export function AttendanceHistoryPage({
               (f.eventId === r.eventId &&
                 (!f.sessionLabel || f.sessionLabel === rowSessionLabel)),
           );
+          const cleared = fine?.status === "paid" || fine?.status === "excused";
 
           return (
             <div
               key={r.id}
               className={`flex items-center gap-4 px-5 py-4 ${
-                i < ATTENDANCE_RECORDS.length - 1
+                i < attendanceRecords.length - 1
                   ? "border-b border-slate-50"
                   : ""
-              }`}
+              } ${cleared ? "opacity-60" : ""}`}
             >
               <div
                 className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
@@ -6360,7 +6364,7 @@ export function AttendanceHistoryPage({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-900 truncate">
-                  {r.event}
+                  <span className={cleared ? "line-through" : ""}>{r.event}</span>
                 </p>
                 <p className="text-xs text-slate-400 mt-0.5">
                   {r.date}
@@ -6369,13 +6373,15 @@ export function AttendanceHistoryPage({
                     : ""}
                   {r.time !== "—" ? ` · ${r.time}` : ""}
                 </p>
-                {showFees && fine && (eff === "absent" || eff === "late") && (
+                {showFees && fine && !cleared && (eff === "absent" || eff === "late") && (
                   <p className="text-xs text-red-500 font-semibold mt-0.5">
                     Fee: ₱{fine.amount}
                   </p>
                 )}
               </div>
-              {eff === "absent" && !String(r.id).startsWith("inferred-") ? (
+              {cleared ? (
+                <Badge status="cleared" />
+              ) : eff === "absent" && !String(r.id).startsWith("inferred-") ? (
                 <button
                   onClick={() => setModal(r)}
                   className="shrink-0 h-8 px-3 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-semibold rounded-lg flex items-center gap-1.5"
@@ -10189,6 +10195,8 @@ export function AdminAttendeesPage({
 
   scanState: initialScanState,
 
+  fineRows = [],
+
   onDeleteAttendance,
 }: {
   onNav: (p: Page) => void;
@@ -10198,6 +10206,8 @@ export function AdminAttendeesPage({
   students?: StudentProfile[];
 
   scanState?: Record<string, ScanRecord[]>;
+
+  fineRows?: FineRowLike[];
 
   onDeleteAttendance?: (dbId: string | number) => Promise<boolean>;
 }) {
@@ -10245,6 +10255,13 @@ export function AdminAttendeesPage({
       )
     : [];
 
+  const fineForScan = (scan?: ScanRecord) =>
+    scan
+      ? fineRows.find(
+          (fine) => String(fine.attendance_scan_id ?? "") === String(scan.dbId),
+        )
+      : undefined;
+
   const sessionFine = selectedEvent
     ? selectedSession === "afternoon"
       ? selectedEvent.afternoonAbsentFine ?? selectedEvent.absentFine ?? 0
@@ -10280,6 +10297,14 @@ export function AdminAttendeesPage({
       )
     : eligibleStudents;
   const absentees = visibleStudents.filter((s) => !attendedIds.has(s.id));
+  const absentFineForStudent = (studentId: string) => {
+    const absentScan = scans.find((scan) => scan.id === studentId && scan.status === "absent");
+    return fineForScan(absentScan);
+  };
+  const isAbsentCleared = (studentId: string) => {
+    const status = absentFineForStudent(studentId)?.status;
+    return status === "paid" || status === "excused";
+  };
   const visibleConfirmed = searchQuery
     ? confirmed.filter((scan) =>
         [scan.name, scan.id, scan.program, scan.section]
@@ -10320,7 +10345,7 @@ export function AdminAttendeesPage({
               scan_in_at: scan.time,
             })),
         ) as FineScanLike[],
-        [],
+        fineRows,
         matchedStudent.program,
       ).map((record) => {
         const event = events.find((item) => item.id === record.eventId);
@@ -10549,24 +10574,27 @@ export function AdminAttendeesPage({
                 <p className="py-8 text-center text-sm text-slate-400">No completed applicable events.</p>
               ) : (
                 <div className="divide-y divide-slate-100">
-                  {allEventRows.map((row) => (
-                    <div key={row.key} className="flex items-center justify-between gap-3 py-3">
+                  {allEventRows.map((row) => {
+                    const cleared = row.fineStatus === "paid" || row.fineStatus === "excused";
+                    return (
+                    <div key={row.key} className={`flex items-center justify-between gap-3 py-3 ${cleared ? "opacity-60" : ""}`}>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-900">{row.eventTitle}</p>
+                        <p className={`truncate text-sm font-semibold text-slate-900 ${cleared ? "line-through" : ""}`}>{row.eventTitle}</p>
                         <p className="text-xs text-slate-500">
                           {row.eventDate} · {row.sessionLabel === "morning" ? "Morning" : "Afternoon"}
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className={`text-xs font-bold ${row.status === "present" ? "text-emerald-600" : row.status === "late" ? "text-amber-600" : row.status === "absent" || row.status === "no_record" ? "text-red-600" : "text-slate-500"}`}>
-                          {row.status === "no_record" ? "Absent" : row.status}
+                        <p className={`text-xs font-bold ${cleared ? "text-emerald-700" : row.status === "present" ? "text-emerald-600" : row.status === "late" ? "text-amber-600" : row.status === "absent" || row.status === "no_record" ? "text-red-600" : "text-slate-500"}`}>
+                          {cleared ? "Cleared" : row.status === "no_record" ? "Absent" : row.status}
                         </p>
                         {row.fineAmount > 0 && (
                           <p className="text-xs font-semibold text-red-600">₱{row.fineAmount}</p>
                         )}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </>
@@ -10743,7 +10771,7 @@ export function AdminAttendeesPage({
               {absentees.map((s, i) => (
                 <div
                   key={s.id}
-                  className={`${
+                  className={`${isAbsentCleared(s.id) ? "opacity-60" : ""} ${
                     i < absentees.length - 1 ? "border-b border-slate-50" : ""
                   }`}
                 >
@@ -10751,7 +10779,7 @@ export function AdminAttendeesPage({
                     <div className="flex items-center justify-between gap-3">
                       <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-slate-900">
+                        <p className={`truncate text-sm font-semibold text-slate-900 ${isAbsentCleared(s.id) ? "line-through" : ""}`}>
                           {s.name}
                         </p>
                         <p className="mt-0.5 text-[11px] text-slate-500">
@@ -10759,7 +10787,9 @@ export function AdminAttendeesPage({
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        {sessionFine > 0 ? (
+                        {isAbsentCleared(s.id) ? (
+                          <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">Cleared</span>
+                        ) : sessionFine > 0 ? (
                           <span className="text-sm font-bold text-red-600">
                             ₱{sessionFine}
                           </span>
@@ -10783,7 +10813,9 @@ export function AdminAttendeesPage({
                       {s.program} · {s.section}
                     </span>
                     <div className="col-span-3 flex justify-end">
-                      {sessionFine > 0 ? (
+                      {isAbsentCleared(s.id) ? (
+                        <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">Cleared</span>
+                      ) : sessionFine > 0 ? (
                         <span className="text-sm font-bold text-red-600">
                           ₱{sessionFine}
                         </span>

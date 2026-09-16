@@ -18,6 +18,7 @@ export default function AdminAttendeesRoutePage() {
   const [events, setEvents] = useState<EventData[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [scanState, setScanState] = useState<Record<string, any[]>>({});
+  const [fineRows, setFineRows] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -116,6 +117,14 @@ export default function AdminAttendeesRoutePage() {
           )
           .order("scan_in_at", { ascending: false });
 
+        const finesResult = await supabase
+          .from("fines")
+          .select("id, attendance_scan_id, event_id, session_label, amount, status")
+          .in("status", ["unpaid", "paid", "excused"]);
+        if (!finesResult.error) {
+          setFineRows(finesResult.data ?? []);
+        }
+
         if (!attendanceResult.error && attendanceResult.data) {
           const byEvent: Record<string, any[]> = {};
           const seenStudents = new Set<string>();
@@ -161,9 +170,22 @@ export default function AdminAttendeesRoutePage() {
                       : "present",
               sessionLabel: row.session_label === "afternoon" ? "afternoon" : "morning",
               dbId: String(row.id),
+              fineStatus: undefined,
             });
           }
 
+          const fineByScan = new Map(
+            (finesResult.data ?? []).map((fine: any) => [String(fine.attendance_scan_id), fine]),
+          );
+          for (const records of Object.values(byEvent)) {
+            for (const record of records) {
+              const fine = fineByScan.get(String(record.dbId));
+              if (fine) {
+                record.fineStatus = fine.status;
+                record.fineAmount = Number(fine.amount ?? 0);
+              }
+            }
+          }
           setScanState(byEvent);
         }
       } catch (caughtError) {
@@ -187,6 +209,11 @@ export default function AdminAttendeesRoutePage() {
         void loadData();
       }
     });
+    const finesChannel = subscribeToTableChanges("fines", () => {
+      if (!cancelled) {
+        void loadData();
+      }
+    });
     const attendanceChannel = subscribeToTableChanges(
       "attendance_scans",
       () => {
@@ -200,6 +227,7 @@ export default function AdminAttendeesRoutePage() {
       cancelled = true;
       void eventsChannel.unsubscribe();
       void profilesChannel.unsubscribe();
+      void finesChannel.unsubscribe();
       void attendanceChannel.unsubscribe();
     };
   }, [router, user]);
@@ -267,6 +295,7 @@ export default function AdminAttendeesRoutePage() {
       events={events}
       students={students}
       scanState={scanState}
+      fineRows={fineRows}
       onDeleteAttendance={deleteAttendance}
     />
   );
