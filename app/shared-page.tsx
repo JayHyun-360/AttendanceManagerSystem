@@ -10506,6 +10506,7 @@ export function AdminStudentsPage({
   const router = useRouter();
 
   const [query, setQuery] = useState("");
+  const [bulkSelectionEnabled, setBulkSelectionEnabled] = useState(false);
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(
     new Set(),
   );
@@ -10533,10 +10534,6 @@ export function AdminStudentsPage({
   const allVisibleSelected =
     visibleIds.length > 0 &&
     visibleIds.every((id) => selectedStudentIds.has(id));
-  const selectedSessionMeta = getSelectedSessionMeta(
-    selectedEvent,
-    selectedEvent?.multiSession ? sessionLabel : null,
-  );
   const suggestedSessionLabel = selectedEvent
     ? getEventSessionMeta(selectedEvent).sessionLabel
     : null;
@@ -10587,6 +10584,11 @@ export function AdminStudentsPage({
   const clearSelection = () => {
     setSelectedStudentIds(new Set());
     setExistingStudentIds([]);
+  };
+
+  const disableBulkSelection = () => {
+    setBulkSelectionEnabled(false);
+    clearSelection();
   };
 
   const markSelected = async (overwriteExisting: boolean) => {
@@ -10669,28 +10671,43 @@ export function AdminStudentsPage({
         subtitle={`${students.length} students registered on TapIn`}
       />
       <div className="mb-5 w-full px-3.5 md:px-6">
-        <div className="relative">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-            <Icons.Search />
-          </span>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, ID, program, or section..."
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition-all focus:border-green-500 focus:ring-2 focus:ring-green-100"
-          />
-          {query && (
-            <button
-              onClick={() => setQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 transition-colors hover:text-slate-500"
-              aria-label="Clear student search"
-            >
-              <Icons.X />
-            </button>
-          )}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <Icons.Search />
+            </span>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by name, ID, program, or section..."
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition-all focus:border-green-500 focus:ring-2 focus:ring-green-100"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 transition-colors hover:text-slate-500"
+                aria-label="Clear student search"
+              >
+                <Icons.X />
+              </button>
+            )}
+          </div>
+          <label className="flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-emerald-300 hover:text-emerald-700">
+            <input
+              type="checkbox"
+              checked={bulkSelectionEnabled}
+              onChange={(event) =>
+                event.target.checked
+                  ? setBulkSelectionEnabled(true)
+                  : disableBulkSelection()
+              }
+              className="h-4 w-4 accent-emerald-600"
+            />
+            Enable bulk selection
+          </label>
         </div>
       </div>
-      {selectedStudentIds.size > 0 && (
+      {bulkSelectionEnabled && selectedStudentIds.size > 0 && (
         <div className="mb-5 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 md:px-6">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm font-semibold text-emerald-900">
@@ -10787,16 +10804,22 @@ export function AdminStudentsPage({
       ) : (
         <div className="w-full overflow-hidden rounded-xl border border-slate-100 bg-white">
           <div className="hidden md:grid px-5 py-3 bg-slate-50 border-b border-slate-100 grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            <label className="col-span-1 flex items-center">
-              <input
-                type="checkbox"
-                checked={allVisibleSelected}
-                onChange={toggleVisibleStudents}
-                aria-label="Select all visible students"
-                className="h-4 w-4 accent-emerald-600"
-              />
-            </label>
-            <span className="col-span-4">Student</span>
+            {bulkSelectionEnabled && (
+              <label className="col-span-1 flex items-center">
+                <input
+                  type="checkbox"
+                  checked={allVisibleSelected}
+                  onChange={toggleVisibleStudents}
+                  aria-label="Select all visible students"
+                  className="h-4 w-4 accent-emerald-600"
+                />
+              </label>
+            )}
+            <span
+              className={bulkSelectionEnabled ? "col-span-4" : "col-span-5"}
+            >
+              Student
+            </span>
             <span className="col-span-3">Program</span>
             <span className="col-span-3">Section</span>
             <span className="col-span-1"></span>
@@ -10808,13 +10831,15 @@ export function AdminStudentsPage({
                   i < filtered.length - 1 ? "border-b border-gray-100" : ""
                 }`}
               >
-                <input
-                  type="checkbox"
-                  checked={selectedStudentIds.has(s.profileId ?? s.id)}
-                  onChange={() => toggleStudent(s.profileId ?? s.id)}
-                  aria-label={`Select ${s.name}`}
-                  className="h-4 w-4 shrink-0 accent-emerald-600"
-                />
+                {bulkSelectionEnabled && (
+                  <input
+                    type="checkbox"
+                    checked={selectedStudentIds.has(s.profileId ?? s.id)}
+                    onChange={() => toggleStudent(s.profileId ?? s.id)}
+                    aria-label={`Select ${s.name}`}
+                    className="h-4 w-4 shrink-0 accent-emerald-600"
+                  />
+                )}
                 <button
                   type="button"
                   onClick={() => openStudent(s)}
@@ -10851,19 +10876,21 @@ export function AdminStudentsPage({
                   i < filtered.length - 1 ? "border-b border-slate-50" : ""
                 }`}
               >
-                <div className="col-span-1">
-                  <input
-                    type="checkbox"
-                    checked={selectedStudentIds.has(s.profileId ?? s.id)}
-                    onChange={() => toggleStudent(s.profileId ?? s.id)}
-                    aria-label={`Select ${s.name}`}
-                    className="h-4 w-4 accent-emerald-600"
-                  />
-                </div>
+                {bulkSelectionEnabled && (
+                  <div className="col-span-1">
+                    <input
+                      type="checkbox"
+                      checked={selectedStudentIds.has(s.profileId ?? s.id)}
+                      onChange={() => toggleStudent(s.profileId ?? s.id)}
+                      aria-label={`Select ${s.name}`}
+                      className="h-4 w-4 accent-emerald-600"
+                    />
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => openStudent(s)}
-                  className="col-span-4 flex min-w-0 items-center gap-3 text-left"
+                  className={`${bulkSelectionEnabled ? "col-span-4" : "col-span-5"} flex min-w-0 items-center gap-3 text-left`}
                 >
                   <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
                   <div className="min-w-0">
