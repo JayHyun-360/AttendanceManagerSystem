@@ -7247,6 +7247,8 @@ export function AdminEventsPage({
 
   const [editId, setEditId] = useState<string | null>(null);
 
+  const [isCreating, setIsCreating] = useState(false);
+
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   const [editDraft, setEditDraft] = useState<EventData | null>(null);
@@ -7400,6 +7402,10 @@ export function AdminEventsPage({
 
   const handleCreate = async () => {
     if (!draft.title || !draft.date) return;
+
+    if (isCreating) return;
+
+    setIsCreating(true);
 
     try {
       const timeRange = draft.multiSession
@@ -7620,6 +7626,8 @@ export function AdminEventsPage({
       console.error(caughtError);
 
       toast.error("An error occurred while creating the event");
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -8120,10 +8128,17 @@ export function AdminEventsPage({
             <>
               <button
                 onClick={handleCreate}
-                disabled={!draft.title || !draft.date}
+                disabled={!draft.title || !draft.date || isCreating}
                 className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40"
               >
-                Create event
+                {isCreating ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                    Creating...
+                  </span>
+                ) : (
+                  "Create event"
+                )}
               </button>
               <button
                 onClick={() => {
@@ -10524,6 +10539,8 @@ export function AdminAnnouncementsPage({
 
   const [editId, setEditId] = useState<string | null>(null);
 
+  const [isPublishing, setIsPublishing] = useState(false);
+
   const [editDraft, setEditDraft] = useState<
     (typeof INITIAL_ANNOUNCEMENTS)[0] | null
   >(null);
@@ -10611,6 +10628,10 @@ export function AdminAnnouncementsPage({
   };
 
   const handlePublish = handleSubmit(async (values) => {
+    if (isPublishing) return;
+
+    setIsPublishing(true);
+
     const payload = {
       title: values.title.trim(),
 
@@ -10621,37 +10642,41 @@ export function AdminAnnouncementsPage({
       photoUrl: newPhoto ?? null,
     };
 
-    if (onCreate) {
-      await onCreate(payload);
-    } else {
-      setPosts((p) => [
-        {
-          id: Date.now().toString(),
+    try {
+      if (onCreate) {
+        await onCreate(payload);
+      } else {
+        setPosts((p) => [
+          {
+            id: Date.now().toString(),
 
-          title: payload.title,
+            title: payload.title,
 
-          body: payload.body,
+            body: payload.body,
 
-          date: "Aug 22, 2026",
+            date: "Aug 22, 2026",
 
-          author: "Admin",
+            author: "Admin",
 
-          badge: payload.badge,
+            badge: payload.badge,
 
-          photoUrl: payload.photoUrl ?? "",
-        },
+            photoUrl: payload.photoUrl ?? "",
+          },
 
-        ...p,
-      ]);
+          ...p,
+        ]);
+      }
+
+      reset({ title: "", body: "", badge: "General" });
+
+      setNewPhoto(null);
+
+      setNewPhotoUploadState("idle");
+
+      setShowForm(false);
+    } finally {
+      setIsPublishing(false);
     }
-
-    reset({ title: "", body: "", badge: "General" });
-
-    setNewPhoto(null);
-
-    setNewPhotoUploadState("idle");
-
-    setShowForm(false);
   });
 
   const startEdit = (a: (typeof INITIAL_ANNOUNCEMENTS)[0]) => {
@@ -10781,9 +10806,17 @@ export function AdminAnnouncementsPage({
             <>
               <button
                 onClick={handlePublish}
+                disabled={isPublishing}
                 className="flex-1 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40"
               >
-                Publish
+                {isPublishing ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                    Publishing...
+                  </span>
+                ) : (
+                  "Publish"
+                )}
               </button>
               <button
                 onClick={() => setShowForm(false)}
