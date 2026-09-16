@@ -10207,7 +10207,11 @@ export function AdminAttendeesPage({
   }, [initialScanState]);
 
   useEffect(() => {
-    if (!events.some((event) => event.id === selectedEventId) && events[0]) {
+    if (
+      selectedEventId !== ALL_EVENTS_ID &&
+      !events.some((event) => event.id === selectedEventId) &&
+      events[0]
+    ) {
       setSelectedEventId(events[0].id);
     }
   }, [events, selectedEventId]);
@@ -10248,14 +10252,28 @@ export function AdminAttendeesPage({
       selectedEvent.program === "All Programs" ||
       student.program === selectedEvent.program,
   );
-  const absentees = eligibleStudents.filter((s) => !attendedIds.has(s.id));
+  const searchQuery = studentSearch.trim().toLowerCase();
+  const visibleStudents = searchQuery
+    ? eligibleStudents.filter((student) =>
+        [student.name, student.id, student.program, student.section]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(searchQuery)),
+      )
+    : eligibleStudents;
+  const absentees = visibleStudents.filter((s) => !attendedIds.has(s.id));
+  const visibleConfirmed = searchQuery
+    ? confirmed.filter((scan) =>
+        [scan.name, scan.id, scan.program, scan.section]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(searchQuery)),
+      )
+    : confirmed;
 
   const matchedStudent = students.find((student) => {
-    const query = studentSearch.trim().toLowerCase();
-    if (!query) return false;
+    if (!searchQuery) return false;
     return [student.name, student.id, student.program, student.section]
       .filter(Boolean)
-      .some((value) => value.toLowerCase().includes(query));
+      .some((value) => value.toLowerCase().includes(searchQuery));
   });
   const allEventRows = matchedStudent
     ? buildAttendanceSessionRecords(
@@ -10387,7 +10405,7 @@ export function AdminAttendeesPage({
           Event
         </label>
         <select
-          value={allEventsSelected ? "" : selectedEventId}
+          value={selectedEventId}
           onChange={(e) => {
             setSelectedEventId(e.target.value);
 
@@ -10395,6 +10413,7 @@ export function AdminAttendeesPage({
           }}
           className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium outline-none focus:border-emerald-500 appearance-none"
         >
+          <option value={ALL_EVENTS_ID}>All Events</option>
           {events.map((e) => (
             <option key={e.id} value={e.id}>
               {e.title} · {e.date}
@@ -10459,7 +10478,7 @@ export function AdminAttendeesPage({
               : "text-slate-500 hover:text-slate-700"
           }`}
         >
-          Present ({confirmed.length})
+          Present ({visibleConfirmed.length})
         </button>
         <button
           onClick={() => setTab("absent")}
@@ -10533,7 +10552,7 @@ export function AdminAttendeesPage({
         </div>
       ) : tab === "present" ? (
         <>
-          {confirmed.length === 0 ? (
+          {visibleConfirmed.length === 0 ? (
             <div className="w-full bg-white border border-slate-100 rounded-xl px-3.5 py-10 text-center md:px-6">
               <p className="text-slate-400 text-sm font-medium">
                 No scans recorded for this event yet.
@@ -10547,11 +10566,11 @@ export function AdminAttendeesPage({
                 <span className="col-span-2">Time</span>
                 <span className="col-span-2 text-right">Status</span>
               </div>
-              {confirmed.map((s, i) => (
+              {visibleConfirmed.map((s, i) => (
                 <div
                   key={s.dbId}
                   className={`${
-                    i < confirmed.length - 1 ? "border-b border-slate-50" : ""
+                    i < visibleConfirmed.length - 1 ? "border-b border-slate-50" : ""
                   }`}
                 >
                   <div className="block w-full px-3.5 py-3 md:hidden">
