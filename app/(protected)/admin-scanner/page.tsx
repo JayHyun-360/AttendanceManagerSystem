@@ -50,6 +50,7 @@ export default function AdminScannerRoutePage() {
               fineAmount: row.absent_fine || 0,
               status: row.status || "upcoming",
               attendees: 0,
+              mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
               highlightUrl:
                 row.image_url && !row.image_url.startsWith("blob:")
                   ? row.image_url

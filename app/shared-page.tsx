@@ -5193,8 +5193,6 @@ export function DashboardPage({
 export function EventsPage({
   onNav,
 
-  onSelectEvent,
-
   user,
 
   showFees,
@@ -5203,8 +5201,6 @@ export function EventsPage({
 }: {
   onNav: (p: Page) => void;
 
-  onSelectEvent: (id: string) => void;
-
   user: User | null;
 
   showFees: boolean;
@@ -5212,6 +5208,8 @@ export function EventsPage({
   events: EventData[];
 }) {
   const [filter, setFilter] = useState("all");
+
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   const items =
     filter === "all" ? events : events.filter((e) => e.status === filter);
@@ -5249,15 +5247,11 @@ export function EventsPage({
           <div
             key={e.id}
             className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden h-full cursor-pointer"
-            onClick={() => {
-              onSelectEvent(e.id);
-
-              onNav("event-detail");
-            }}
+            onClick={() => setSelectedEventId(e.id)}
           >
             <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
               {(() => {
-                const cover = e.highlightUrl ?? e.mediaUrls?.[0];
+                const cover = e.highlightUrl;
 
                 if (!cover) {
                   return (
@@ -5333,6 +5327,18 @@ export function EventsPage({
           </div>
         ))}
       </div>
+      {selectedEventId && (
+        <EventDetailModal
+          event={items.find((event) => event.id === selectedEventId) ?? null}
+          user={user}
+          showFees={showFees}
+          onClose={() => setSelectedEventId(null)}
+          onPrimaryAction={() => {
+            setSelectedEventId(null);
+            onNav("my-qr");
+          }}
+        />
+      )}
     </>
   );
 }
@@ -5535,6 +5541,232 @@ function EventDetailPage({
         </div>
       )}
     </>
+  );
+}
+
+function EventDetailModal({
+  event,
+  user,
+  viewerRole,
+  showFees,
+  onClose,
+  onPrimaryAction,
+}: {
+  event: EventData | null;
+  user: User | null;
+  viewerRole?: Role;
+  showFees: boolean;
+  onClose: () => void;
+  onPrimaryAction: () => void;
+}) {
+  const [lightbox, setLightbox] = useState<string | null>(null);
+
+  if (!event) return null;
+
+  const role = user?.role ?? viewerRole;
+  const canSeeFees = role === "student" && showFees;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-slate-100 bg-white p-6 shadow-xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-slate-50 hover:text-slate-800"
+          aria-label="Close event details"
+        >
+          <Icons.X />
+        </button>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="space-y-5">
+            <div className="aspect-video overflow-hidden rounded-xl bg-slate-50 shadow-sm">
+              {event.highlightUrl ? (
+                <img
+                  src={event.highlightUrl}
+                  alt={event.title}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm font-semibold text-slate-400">
+                  No highlight photo
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-3 pr-10">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">
+                    {event.title}
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    For: {event.program}
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full border border-emerald-100 bg-emerald-50/90 px-3 py-1 text-xs font-semibold text-emerald-700">
+                  {event.status === "active"
+                    ? "Live"
+                    : event.status === "closed"
+                      ? "Closed"
+                      : "Upcoming"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Date
+                  </p>
+                  <p className="mt-1 font-semibold text-slate-700">
+                    {event.date || "TBA"}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Time
+                  </p>
+                  <p className="mt-1 font-semibold text-slate-700">
+                    {event.time || "TBA"}
+                  </p>
+                </div>
+                <div className="col-span-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Location / Workspace
+                  </p>
+                  <p className="mt-1 font-semibold text-slate-700">
+                    {event.location || "TBA"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 rounded-xl border border-slate-100 p-4">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                  Session & fines
+                </p>
+                <p className="text-sm text-slate-600">
+                  {event.multiSession
+                    ? `Morning ${event.morningStart || "TBA"}-${event.morningEnd || "TBA"} · Afternoon ${event.afternoonStart || "TBA"}-${event.afternoonEnd || "TBA"}`
+                    : "Single session"}
+                </p>
+                {(canSeeFees || role === "admin") && event.fineAmount > 0 && (
+                  <p className="text-sm font-semibold text-slate-700">
+                    Absence fine: ₱{event.fineAmount}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                  Description
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  {event.description || "No description provided."}
+                </p>
+              </div>
+
+              {role && event.status === "active" && (
+                <button
+                  type="button"
+                  onClick={onPrimaryAction}
+                  className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+                >
+                  {role === "admin" ? "View attendees" : "Open My QR Code"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-3 flex items-center justify-between pr-10">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                  Secondary gallery
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Photos and event videos
+                </p>
+              </div>
+              <span className="text-xs font-semibold text-slate-400">
+                {event.mediaUrls?.length ?? 0} assets
+              </span>
+            </div>
+            {event.mediaUrls && event.mediaUrls.length > 0 ? (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {event.mediaUrls.map((url, index) =>
+                  /\.mp4($|\?)/i.test(url) ? (
+                    <div
+                      key={url}
+                      className="relative aspect-video overflow-hidden rounded-xl border border-slate-100 bg-slate-900"
+                    >
+                      <video
+                        src={url}
+                        controls
+                        playsInline
+                        className="h-full w-full object-cover"
+                      />
+                      <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-slate-900/70 px-2 py-1 text-[10px] font-semibold text-white">
+                        Video
+                      </span>
+                    </div>
+                  ) : (
+                    <button
+                      key={url}
+                      type="button"
+                      onClick={() => setLightbox(url)}
+                      className="group relative aspect-video overflow-hidden rounded-xl border border-slate-100 bg-slate-50 text-left"
+                    >
+                      <img
+                        src={url}
+                        alt={`Event photo ${index + 1}`}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/0 transition-colors group-hover:bg-slate-950/20">
+                        <span className="rounded-full bg-white/0 px-3 py-2 text-xs font-semibold opacity-0 shadow-sm transition-all group-hover:bg-white/90 group-hover:text-slate-800 group-hover:opacity-100">
+                          View photo
+                        </span>
+                      </span>
+                    </button>
+                  ),
+                )}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-8 text-center text-sm text-slate-400">
+                No secondary gallery assets yet.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/90 p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+            aria-label="Close photo preview"
+          >
+            <Icons.X />
+          </button>
+          <img
+            src={lightbox}
+            alt="Event gallery preview"
+            className="max-h-full max-w-full rounded-xl object-contain shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -6954,6 +7186,8 @@ export function AdminEventsPage({
   const [editEventTab, setEditEventTab] = useState<CreateEventTab>("basic");
 
   const [editId, setEditId] = useState<string | null>(null);
+
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   const [editDraft, setEditDraft] = useState<EventData | null>(null);
 
@@ -8509,26 +8743,15 @@ export function AdminEventsPage({
           <div
             key={e.id}
             className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden h-full"
+            onClick={() => setSelectedEventId(e.id)}
           >
             <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
-              {e.mediaUrls && e.mediaUrls.length > 0 ? (
-                (() => {
-                  const primaryMedia = e.mediaUrls[0];
-
-                  return /\.mp4($|\?)/i.test(primaryMedia) ? (
-                    <video
-                      src={primaryMedia}
-                      controls
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <img
-                      src={primaryMedia}
-                      alt={e.title}
-                      className="w-full h-full object-cover"
-                    />
-                  );
-                })()
+              {e.highlightUrl ? (
+                <img
+                  src={e.highlightUrl}
+                  alt={e.title}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
                   <span className="text-sm font-semibold text-slate-400">
@@ -8557,7 +8780,10 @@ export function AdminEventsPage({
                     2 sessions
                   </span>
                 )}
-                <div className="rounded-full border border-white/30 bg-slate-900/25 p-1 text-white backdrop-blur-sm shadow-sm">
+                <div
+                  className="rounded-full border border-white/30 bg-slate-900/25 p-1 text-white backdrop-blur-sm shadow-sm"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   <DotMenu
                     items={[
                       ...statusOptions(e.status).map((o) => ({
@@ -8628,7 +8854,10 @@ export function AdminEventsPage({
               <div className="pt-3 border-t border-slate-50 flex items-center justify-between gap-2">
                 {e.status === "active" && (
                   <button
-                    onClick={() => onNav("admin-scanner")}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onNav("admin-scanner");
+                    }}
                     className="flex-1 h-9 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700 flex items-center justify-center gap-1.5 shadow-sm"
                   >
                     <Icons.Scan />
@@ -8636,7 +8865,10 @@ export function AdminEventsPage({
                   </button>
                 )}
                 <button
-                  onClick={() => onNav("admin-attendees")}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onNav("admin-attendees");
+                  }}
                   className={`h-9 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1.5 ${
                     e.status === "active" ? "flex-1" : "w-full"
                   }`}
@@ -8650,6 +8882,19 @@ export function AdminEventsPage({
           </div>
         ))}
       </div>
+      {selectedEventId && (
+        <EventDetailModal
+          event={events.find((event) => event.id === selectedEventId) ?? null}
+          user={null}
+          viewerRole="admin"
+          showFees
+          onClose={() => setSelectedEventId(null)}
+          onPrimaryAction={() => {
+            setSelectedEventId(null);
+            onNav("admin-attendees");
+          }}
+        />
+      )}
     </>
   );
 }

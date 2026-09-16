@@ -163,10 +163,7 @@ export default function AdminReportsRoutePage() {
           ),
           status: row.status ?? "upcoming",
           attendees: attendeeIds.size,
-          mediaUrls: [
-            ...(Array.isArray(row.media_urls) ? row.media_urls : []),
-            ...(row.image_url ? [row.image_url] : []),
-          ],
+          mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
           highlightUrl:
             row.image_url && !row.image_url.startsWith("blob:")
               ? row.image_url

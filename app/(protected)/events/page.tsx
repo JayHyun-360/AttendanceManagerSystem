@@ -49,12 +49,7 @@ export default function EventsRoutePage() {
                 row.image_url && !row.image_url.startsWith("blob:")
                   ? row.image_url
                   : undefined,
-              mediaUrls: [
-                ...(Array.isArray(row.media_urls) ? row.media_urls : []),
-                ...(row.image_url && !row.image_url.startsWith("blob:")
-                  ? [row.image_url]
-                  : []),
-              ],
+              mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
             })),
           );
         }
@@ -90,10 +85,6 @@ export default function EventsRoutePage() {
     router.push(page === "dashboard" ? "/dashboard" : "/events");
   };
 
-  const onSelectEvent = (id: string) => {
-    router.push(`/events?eventId=${id}`);
-  };
-
   if (isLoading) {
     return (
       <div className="space-y-3 pt-2">
@@ -111,12 +102,6 @@ export default function EventsRoutePage() {
   }
 
   return (
-    <EventsPage
-      onNav={onNav}
-      onSelectEvent={onSelectEvent}
-      user={user}
-      showFees={showFees}
-      events={events}
-    />
+    <EventsPage onNav={onNav} user={user} showFees={showFees} events={events} />
   );
 }
