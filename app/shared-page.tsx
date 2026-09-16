@@ -9063,9 +9063,9 @@ export function AdminEventsPage({
                 <div className="flex items-center gap-1.5 rounded-full border border-white/30 bg-slate-900/25 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm shadow-sm">
                   <span>{e.date}</span>
                 </div>
-                {e.fineAmount > 0 && (
+                {(e.fineAmount > 0 || (e.lateFine ?? 0) > 0) && (
                   <span className="rounded-full border border-red-200 bg-red-500/90 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm shadow-sm">
-                    ₱{e.fineAmount} fine
+                    Absence ₱{e.fineAmount} · Late ₱{e.lateFine}
                   </span>
                 )}
                 {e.multiSession && (
@@ -10110,11 +10110,12 @@ export function AdminScannerPage({
                         : "Standard scan"}
                     </span>
                   </div>
-                  {selectedEvent.fineAmount > 0 && (
+                  {(selectedEvent.fineAmount > 0 || (selectedEvent.lateFine ?? 0) > 0) && (
                     <div className="flex items-start justify-between gap-4 border-t border-slate-100 pt-3">
-                      <span className="text-slate-400">Late/absence fine</span>
-                      <span className="font-bold text-red-500">
-                        ₱{selectedEvent.fineAmount}
+                      <span className="text-slate-400">Absence / late fine</span>
+                      <span className="text-right font-bold text-red-500">
+                        <span className="block">Absent ₱{selectedEvent.fineAmount}</span>
+                        <span className="block text-xs text-amber-600">Late ₱{selectedEvent.lateFine}</span>
                       </span>
                     </div>
                   )}
@@ -10235,6 +10236,11 @@ export function AdminAttendeesPage({
     ? selectedSession === "afternoon"
       ? selectedEvent.afternoonAbsentFine ?? selectedEvent.absentFine ?? 0
       : selectedEvent.morningAbsentFine ?? selectedEvent.absentFine ?? 0
+    : 0;
+  const sessionLateFine = selectedEvent
+    ? selectedSession === "afternoon"
+      ? selectedEvent.afternoonLateFine ?? selectedEvent.lateFine ?? 0
+      : selectedEvent.morningLateFine ?? selectedEvent.lateFine ?? 0
     : 0;
 
   const confirmed = scans.filter(
@@ -10455,6 +10461,10 @@ export function AdminAttendeesPage({
                 session === "afternoon"
                   ? selectedEvent.afternoonAbsentFine ?? selectedEvent.absentFine ?? 0
                   : selectedEvent.morningAbsentFine ?? selectedEvent.absentFine ?? 0;
+              const lateAmount =
+                session === "afternoon"
+                  ? selectedEvent.afternoonLateFine ?? selectedEvent.lateFine ?? 0
+                  : selectedEvent.morningLateFine ?? selectedEvent.lateFine ?? 0;
               return (
                 <button
                   key={session}
@@ -10462,7 +10472,12 @@ export function AdminAttendeesPage({
                   onClick={() => setSelectedSession(session)}
                   className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${selectedSession === session ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                 >
-                  {session === "morning" ? "Morning" : "Afternoon"} · ₱{amount}
+                  <span className="block">
+                    {session === "morning" ? "Morning" : "Afternoon"}
+                  </span>
+                  <span className="mt-0.5 block text-[10px] font-medium text-slate-400">
+                    Absent ₱{amount} · Late ₱{lateAmount}
+                  </span>
                 </button>
               );
             })}
@@ -10583,6 +10598,11 @@ export function AdminAttendeesPage({
                         <p className="mt-0.5 text-[11px] text-slate-500">
                           {s.id} • {s.program} • {s.sessionLabel ?? "Morning"} • {s.time}
                         </p>
+                        {s.status === "late" && sessionLateFine > 0 && (
+                          <p className="mt-0.5 text-[11px] font-semibold text-amber-600">
+                            Late fee: ₱{sessionLateFine}
+                          </p>
+                        )}
                       </div>
                       <div className="flex shrink-0">
                         <Badge status={s.status} />
@@ -10604,6 +10624,11 @@ export function AdminAttendeesPage({
                     </span>
                     <span className="col-span-2 text-xs text-slate-500">
                       {(s.sessionLabel ?? "morning").replace(/^./, (value) => value.toUpperCase())} · {s.time}
+                      {s.status === "late" && sessionLateFine > 0 && (
+                        <span className="ml-1 font-semibold text-amber-600">
+                          · ₱{sessionLateFine}
+                        </span>
+                      )}
                     </span>
                     <div className="col-span-2 flex justify-end">
                       <Badge status={s.status} />

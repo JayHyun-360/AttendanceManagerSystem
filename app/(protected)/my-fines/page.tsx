@@ -51,7 +51,7 @@ export default function MyFinesRoutePage() {
             supabase
               .from("events")
               .select(
-                "id, title, event_date, status, program, multi_session, absent_fine, morning_absent_fine, afternoon_absent_fine",
+                "id, title, event_date, status, program, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
               ),
           ]);
 
