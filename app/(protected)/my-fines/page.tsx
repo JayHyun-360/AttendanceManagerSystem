@@ -7,6 +7,12 @@ import { MyFinesPage, type FineRecord } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
+import {
+  buildAttendanceSessionRecords,
+  type FineEventLike,
+  type FineRowLike,
+  type FineScanLike,
+} from "@/lib/attendance-fines";
 
 export default function MyFinesRoutePage() {
   const router = useRouter();
@@ -68,88 +74,38 @@ export default function MyFinesRoutePage() {
 
         if (!cancelled) {
           const storedFines = (data ?? []).map((row: any) => ({
-              id: String(row.id),
-              eventId: row.event_id,
-              attendanceScanId: row.attendance_scan_id ?? undefined,
-              sessionLabel: row.session_label ?? undefined,
-              eventTitle: row.events?.title ?? "Event",
-              eventDate: row.events?.event_date ?? "",
-              amount: Number(row.amount || 0),
-              status: row.status || "unpaid",
-            }));
-          const linkedScanIds = new Set(
-            storedFines.map((fine) => fine.attendanceScanId).filter(Boolean),
+            id: String(row.id),
+            eventId: row.event_id,
+            attendanceScanId: row.attendance_scan_id ?? undefined,
+            sessionLabel: row.session_label ?? undefined,
+            eventTitle: row.events?.title ?? "Event",
+            eventDate: row.events?.event_date ?? "",
+            amount: Number(row.amount || 0),
+            status: row.status || "unpaid",
+          }));
+          const records = buildAttendanceSessionRecords(
+            (events ?? []) as FineEventLike[],
+            (scans ?? []) as FineScanLike[],
+            (data ?? []) as FineRowLike[],
+            profile?.program,
           );
-          const recoveredFines = (scans ?? [])
-            .filter(
-              (scan: any) =>
-                !linkedScanIds.has(scan.id) &&
-                (scan.status === "absent" || scan.status === "late"),
-            )
-            .map((scan: any) => {
-              const event = scan.events;
-              const amount =
-                scan.status === "absent"
-                  ? scan.session_label === "afternoon"
-                    ? Number(event?.afternoon_absent_fine ?? event?.absent_fine ?? 0)
-                    : Number(event?.morning_absent_fine ?? event?.absent_fine ?? 0)
-                  : scan.session_label === "afternoon"
-                    ? Number(event?.afternoon_late_fine ?? event?.late_fine ?? 0)
-                    : Number(event?.morning_late_fine ?? event?.late_fine ?? 0);
+          const canonicalFines = records
+            .filter((record) => record.fineAmount > 0)
+            .map((record) => {
+              const event = (events ?? []).find((item: any) => item.id === record.eventId);
               return {
-                id: `recovered-${scan.id}`,
-                eventId: scan.event_id,
-                attendanceScanId: scan.id,
+                id: record.fineId ?? `inferred-${record.key}`,
+                eventId: record.eventId,
+                attendanceScanId: record.scan?.id,
+                sessionLabel: record.sessionLabel,
                 eventTitle: event?.title ?? "Event",
                 eventDate: event?.event_date ?? "",
-                amount,
+                amount: record.fineAmount,
                 status: "unpaid" as const,
               };
-            })
-            .filter((fine) => fine.amount > 0);
-          const scannedSessionKeys = new Set(
-            (scans ?? []).map((scan: any) => `${scan.event_id}:${scan.session_label}`),
-          );
-          const linkedFineKeys = new Set(
-            storedFines
-              .filter((fine) => fine.eventId && fine.sessionLabel)
-              .map((fine) => `${fine.eventId}:${fine.sessionLabel}`),
-          );
-          const todayKey = new Date().toISOString().slice(0, 10);
-          const inferredFines = (events ?? []).flatMap((event: any) => {
-            if (
-              event.event_date > todayKey ||
-              event.status === "upcoming" ||
-              (event.program &&
-                event.program !== "All Programs" &&
-                event.program !== profile?.program)
-            ) {
-              return [];
-            }
-            const sessions: ("morning" | "afternoon")[] = event.multi_session
-              ? ["morning", "afternoon"]
-              : ["morning"];
-            return sessions.flatMap((sessionLabel) => {
-              const key = `${event.id}:${sessionLabel}`;
-              if (scannedSessionKeys.has(key) || linkedFineKeys.has(key)) return [];
-              const amount =
-                sessionLabel === "afternoon"
-                  ? Number(event.afternoon_absent_fine ?? event.absent_fine ?? 0)
-                  : Number(event.morning_absent_fine ?? event.absent_fine ?? 0);
-              return amount > 0
-                ? [{
-                    id: `inferred-${event.id}-${sessionLabel}`,
-                    eventId: event.id,
-                    sessionLabel,
-                    eventTitle: event.title ?? "Event",
-                    eventDate: event.event_date ?? "",
-                    amount,
-                    status: "unpaid" as const,
-                  }]
-                : [];
             });
-          });
-          setFines([...storedFines, ...recoveredFines, ...inferredFines]);
+          const historicalFines = storedFines.filter((fine) => fine.status !== "unpaid");
+          setFines([...canonicalFines, ...historicalFines]);
         }
       } catch (caughtError) {
         console.error(caughtError);

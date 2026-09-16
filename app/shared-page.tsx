@@ -175,6 +175,11 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
 import { recordAttendance } from "@/lib/attendance";
+import {
+  buildAttendanceSessionRecords,
+  type FineEventLike,
+  type FineScanLike,
+} from "@/lib/attendance-fines";
 
 /*
 import { deleteImages, uploadImage } from "@/lib/uploadImage";
@@ -876,7 +881,7 @@ interface ScanRecord {
   section: string;
   photoUrl?: string;
   time: string;
-  status: "present" | "confirmed" | "late" | "duplicate";
+  status: "present" | "confirmed" | "late" | "absent" | "duplicate";
   sessionLabel?: "morning" | "afternoon";
   action?: "time_in" | "time_out" | "time_out_rejected" | "duplicate";
   dbId: string | number;
@@ -10182,7 +10187,9 @@ export function AdminAttendeesPage({
 
   onDeleteAttendance?: (dbId: string | number) => Promise<boolean>;
 }) {
+  const ALL_EVENTS_ID = "__all_events__";
   const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "");
+  const [studentSearch, setStudentSearch] = useState("");
 
   const [scanState, setScanState] = useState<Record<string, ScanRecord[]>>(
     initialScanState ?? {},
@@ -10205,8 +10212,10 @@ export function AdminAttendeesPage({
     }
   }, [events, selectedEventId]);
 
-  const selectedEvent =
-    events.find((e) => e.id === selectedEventId) ?? events[0] ?? null;
+  const allEventsSelected = selectedEventId === ALL_EVENTS_ID;
+  const selectedEvent = allEventsSelected
+    ? null
+    : events.find((e) => e.id === selectedEventId) ?? events[0] ?? null;
 
   useEffect(() => {
     setSelectedSession("morning");
@@ -10240,6 +10249,51 @@ export function AdminAttendeesPage({
       student.program === selectedEvent.program,
   );
   const absentees = eligibleStudents.filter((s) => !attendedIds.has(s.id));
+
+  const matchedStudent = students.find((student) => {
+    const query = studentSearch.trim().toLowerCase();
+    if (!query) return false;
+    return [student.name, student.id, student.program, student.section]
+      .filter(Boolean)
+      .some((value) => value.toLowerCase().includes(query));
+  });
+  const allEventRows = matchedStudent
+    ? buildAttendanceSessionRecords(
+        events.map((event) => ({
+          id: event.id,
+          event_date: event.date,
+          program: event.program,
+          status: event.status,
+          multi_session: event.multiSession,
+          absent_fine: event.absentFine,
+          late_fine: event.lateFine,
+          morning_absent_fine: event.morningAbsentFine,
+          morning_late_fine: event.morningLateFine,
+          afternoon_absent_fine: event.afternoonAbsentFine,
+          afternoon_late_fine: event.afternoonLateFine,
+        })) as FineEventLike[],
+        Object.entries(scanState).flatMap(([eventId, records]) =>
+          records
+            .filter((scan) => scan.id === matchedStudent.id)
+            .map((scan) => ({
+              id: String(scan.dbId),
+              event_id: eventId,
+              session_label: scan.sessionLabel,
+              status: scan.status,
+              scan_in_at: scan.time,
+            })),
+        ) as FineScanLike[],
+        [],
+        matchedStudent.program,
+      ).map((record) => {
+        const event = events.find((item) => item.id === record.eventId);
+        return {
+          ...record,
+          eventTitle: event?.title ?? "Event",
+          eventDate: event?.date ?? "",
+        };
+      })
+    : [];
 
   const deleteRecord = async (dbId: string | number) => {
     if (onDeleteAttendance && !(await onDeleteAttendance(dbId))) {
@@ -10333,7 +10387,7 @@ export function AdminAttendeesPage({
           Event
         </label>
         <select
-          value={selectedEventId}
+          value={allEventsSelected ? "" : selectedEventId}
           onChange={(e) => {
             setSelectedEventId(e.target.value);
 
@@ -10347,6 +10401,27 @@ export function AdminAttendeesPage({
             </option>
           ))}
         </select>
+        <label className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-600">
+          <input
+            type="checkbox"
+            checked={allEventsSelected}
+            onChange={(event) => {
+              setSelectedEventId(event.target.checked ? ALL_EVENTS_ID : events[0]?.id ?? "");
+              setTab("present");
+            }}
+            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+          />
+          View All Events
+        </label>
+        <label className="mt-4 block text-[11px] font-bold uppercase tracking-widest text-slate-400">
+          Search student
+          <input
+            value={studentSearch}
+            onChange={(event) => setStudentSearch(event.target.value)}
+            placeholder="Name, student ID, program, or section"
+            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium normal-case tracking-normal text-slate-900 outline-none focus:border-emerald-500"
+          />
+        </label>
       </div>
       <p className="text-xs text-slate-400 font-medium mb-4">
         {selectedEvent
@@ -10402,7 +10477,55 @@ export function AdminAttendeesPage({
           )}
         </button>
       </div>
-      {!selectedEvent ? (
+      {allEventsSelected ? (
+        <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+          {!studentSearch.trim() ? (
+            <p className="py-8 text-center text-sm text-slate-400">
+              Search for a student to view attendance across all events.
+            </p>
+          ) : !matchedStudent ? (
+            <p className="py-8 text-center text-sm text-slate-400">
+              No student matched “{studentSearch}”.
+            </p>
+          ) : (
+            <>
+              <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div>
+                  <p className="text-sm font-bold text-slate-900">{matchedStudent.name}</p>
+                  <p className="text-xs text-slate-500">{matchedStudent.id} · {matchedStudent.program}</p>
+                </div>
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                  {allEventRows.filter((row) => row.status === "present" || row.status === "late").length}/{allEventRows.length} recorded
+                </span>
+              </div>
+              {allEventRows.length === 0 ? (
+                <p className="py-8 text-center text-sm text-slate-400">No completed applicable events.</p>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {allEventRows.map((row) => (
+                    <div key={row.key} className="flex items-center justify-between gap-3 py-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-900">{row.eventTitle}</p>
+                        <p className="text-xs text-slate-500">
+                          {row.eventDate} · {row.sessionLabel === "morning" ? "Morning" : "Afternoon"}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className={`text-xs font-bold ${row.status === "present" ? "text-emerald-600" : row.status === "late" ? "text-amber-600" : row.status === "absent" || row.status === "no_record" ? "text-red-600" : "text-slate-500"}`}>
+                          {row.status === "no_record" ? "Absent" : row.status}
+                        </p>
+                        {row.fineAmount > 0 && (
+                          <p className="text-xs font-semibold text-red-600">₱{row.fineAmount}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      ) : !selectedEvent ? (
         <div className="bg-white border border-slate-100 rounded-xl px-5 py-10 text-center">
           <p className="text-slate-400 text-sm font-medium">
             No events available yet.

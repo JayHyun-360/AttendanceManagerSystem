@@ -121,10 +121,6 @@ export default function AdminAttendeesRoutePage() {
           const seenStudents = new Set<string>();
 
           for (const row of attendanceResult.data) {
-            if (row.status !== "present" && row.status !== "late") {
-              continue;
-            }
-
             const eventId = String(row.event_id);
             const studentKey = `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`;
             if (seenStudents.has(studentKey)) {
@@ -155,7 +151,14 @@ export default function AdminAttendeesRoutePage() {
                     minute: "2-digit",
                   })
                 : "",
-              status: row.status === "late" ? "late" : "present",
+              status:
+                row.status === "late"
+                  ? "late"
+                  : row.status === "absent"
+                    ? "absent"
+                    : row.status === "duplicate"
+                      ? "duplicate"
+                      : "present",
               sessionLabel: row.session_label === "afternoon" ? "afternoon" : "morning",
               dbId: String(row.id),
             });
