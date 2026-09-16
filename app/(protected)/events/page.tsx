@@ -22,7 +22,9 @@ export default function EventsRoutePage() {
         const [{ data, error }, { data: scans, error: scansError }] =
           await Promise.all([
             supabase.from("events").select("*").order("event_date", { ascending: false }),
-            supabase.from("attendance_scans").select("event_id, student_id, status"),
+            supabase
+              .from("attendance_scans")
+              .select("event_id, student_id, status, scan_in_at"),
           ]);
 
         if (error) {
@@ -54,7 +56,8 @@ export default function EventsRoutePage() {
                   .filter(
                     (scan: any) =>
                       scan.event_id === row.id &&
-                      (scan.status === "present" || scan.status === "late"),
+                      (scan.status === "present" || scan.status === "late") &&
+                      !!scan.scan_in_at,
                   )
                   .map((scan: any) => scan.student_id),
               ).size,

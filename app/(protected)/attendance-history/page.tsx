@@ -19,12 +19,14 @@ export default function AttendanceHistoryRoutePage() {
   const [fines, setFines] = useState<FineRecord[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadData() {
       try {
+        setLoadError(null);
         if (!authUserId) {
           return;
         }
@@ -59,6 +61,13 @@ export default function AttendanceHistoryRoutePage() {
 
         if (attendanceResult.error) {
           console.error(attendanceResult.error);
+        }
+
+        const queryError =
+          finesResult.error || excuseResult.error || attendanceResult.error;
+        if (queryError) {
+          setLoadError("Your attendance records could not be loaded.");
+          return;
         }
 
         if (cancelled) {
@@ -162,9 +171,13 @@ export default function AttendanceHistoryRoutePage() {
     const { error } = await supabase.from("excuse_requests").insert({
       student_id: authUserId,
       event_id: record.eventId,
+      attendance_scan_id: record.id,
       fine_id:
         fines.find(
-          (fine) => fine.eventId === record.eventId && fine.status === "unpaid",
+          (fine) =>
+            (fine.attendanceScanId === record.id ||
+              fine.eventId === record.eventId) &&
+            fine.status === "unpaid",
         )?.id ?? null,
       reason: record.reason,
       status: "pending",
@@ -187,6 +200,21 @@ export default function AttendanceHistoryRoutePage() {
         {[0, 1, 2].map((item) => (
           <Skeleton key={item} className="h-20 w-full rounded-xl" />
         ))}
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="rounded-xl border border-red-100 bg-red-50 px-5 py-10 text-center">
+        <p className="text-sm font-semibold text-red-800">{loadError}</p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
+        >
+          Try again
+        </button>
       </div>
     );
   }

@@ -19,6 +19,17 @@ export default function OnboardingRoute() {
         return;
       }
 
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("role, photo_url")
+        .eq("id", uid)
+        .maybeSingle();
+
+      if (existingProfile?.role === "admin") {
+        router.replace("/admin-dashboard");
+        return;
+      }
+
       const googleAvatarUrl =
         (session?.user?.user_metadata?.avatar_url as string | undefined) ??
         (session?.user?.user_metadata?.picture as string | undefined) ??
@@ -36,8 +47,8 @@ export default function OnboardingRoute() {
         section: d.section.trim(),
         phone: d.phone.trim(),
         contact_email: d.contactEmail.trim(),
-        role: "student",
-        photo_url: googleAvatarUrl || null,
+        role: existingProfile?.role ?? "student",
+        photo_url: existingProfile?.photo_url ?? googleAvatarUrl ?? null,
         id_photo_url: d.idPhotoUrl ?? null,
       };
 

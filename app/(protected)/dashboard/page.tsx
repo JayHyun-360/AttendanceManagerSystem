@@ -38,6 +38,7 @@ export default function DashboardRoute() {
         const { data, error } = await supabase
           .from("announcements")
           .select("*")
+          .eq("target_role", "student")
           .order("created_at", { ascending: false })
           .limit(2);
 
@@ -136,10 +137,18 @@ export default function DashboardRoute() {
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        const todayKey = [
+          today.getFullYear(),
+          String(today.getMonth() + 1).padStart(2, "0"),
+          String(today.getDate()).padStart(2, "0"),
+        ].join("-");
 
         const completedEventIds = new Set(
           eventRows
-            .filter((row: any) => row.event_date <= new Date().toISOString().slice(0, 10))
+            .filter(
+              (row: any) =>
+                row.event_date <= todayKey && row.status !== "upcoming",
+            )
             .map((row: any) => row.id),
         );
         const completedEventRows = eventRows.filter((row: any) =>
@@ -161,9 +170,7 @@ export default function DashboardRoute() {
         ).length;
 
         const upcomingCount = eventRows.filter((row: any) => {
-          const rowDate = new Date(row.event_date);
-          rowDate.setHours(0, 0, 0, 0);
-          return rowDate >= today;
+          return row.event_date >= todayKey && row.status !== "closed";
         }).length;
 
         setEvents(eventRows);
@@ -261,10 +268,17 @@ export default function DashboardRoute() {
   }
 
   const nextEvent: EventData | undefined = (() => {
+      const today = new Date();
+      const todayKey = [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, "0"),
+        String(today.getDate()).padStart(2, "0"),
+      ].join("-");
       const row = events.find((event: any) => {
-      const date = new Date(event.event_date);
-      return date >= new Date(new Date().setHours(0, 0, 0, 0));
-    });
+        return event.event_date >= todayKey &&
+        event.status !== "closed" &&
+        event.status !== "cancelled";
+      });
 
     if (!row) {
       return undefined;

@@ -835,6 +835,7 @@ export interface User {
   photoUrl?: string;
   coverPhotoUrl?: string;
   idPhotoUrl?: string;
+  qrVersion?: number;
 }
 
 export interface EventData {
@@ -2753,17 +2754,19 @@ export function AdesseMark({ className = "w-7 h-7" }: { className?: string }) {
 
 export function StudentQR({
   studentId,
+  qrVersion = 1,
 
   size,
 }: {
   studentId: string;
+  qrVersion?: number;
 
   size: number;
 }) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    QRCode.toDataURL(`ADESSE:${studentId}`, {
+    QRCode.toDataURL(`ADESSE:${studentId}:v${qrVersion}`, {
       width: size * 2,
 
       margin: 1,
@@ -2776,7 +2779,7 @@ export function StudentQR({
       .then(setDataUrl)
 
       .catch(() => setDataUrl(null));
-  }, [studentId, size]);
+  }, [qrVersion, studentId, size]);
 
   if (!dataUrl)
     return (
@@ -4990,7 +4993,7 @@ export function DashboardPage({
 }) {
   const unpaidFines = fines.filter((f) => f.status === "unpaid");
 
-  const total = unpaidFines.reduce((s, f) => s + f.amount, 0);
+  const total = unpaidFines.reduce((s, f) => s + Number(f.amount || 0), 0);
 
   const latestAnnouncements = announcements.slice(0, 2);
 
@@ -5016,7 +5019,12 @@ export function DashboardPage({
     <>
       <div className="mb-7">
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">
-          Aug 22, 2026 · Friday
+          {new Date().toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            weekday: "long",
+          })}
         </p>
         <h1 className="text-2xl font-bold text-slate-900">
           Good morning, {user.firstName || "there"}.
@@ -5880,7 +5888,9 @@ export function MyQRPage({
 
     ctx.fill();
 
-    const qrDataUrl = await QRCode.toDataURL(`ADESSE:${user.studentId}`, {
+    const qrDataUrl = await QRCode.toDataURL(
+      `ADESSE:${user.studentId}:v${qrVersion}`,
+      {
       width: size,
 
       margin: 0,
@@ -5888,7 +5898,8 @@ export function MyQRPage({
       color: { dark: "#111827", light: "#ffffff" },
 
       errorCorrectionLevel: "H",
-    });
+      },
+    );
 
     const img = new Image();
 
@@ -5967,7 +5978,11 @@ export function MyQRPage({
             </div>
           )}
           <div className="flex justify-center mb-5">
-            <StudentQR studentId={user.studentId} size={192} />
+            <StudentQR
+              studentId={user.studentId}
+              qrVersion={qrVersion}
+              size={192}
+            />
           </div>
           <div className="border-t border-slate-100 pt-4">
             <p className="font-bold text-slate-900">{name || "Your name"}</p>
@@ -6262,19 +6277,32 @@ export function AttendanceHistoryPage({
       <BackButton onClick={onBack} label="Back to Home" />
       <PageHeader title="My Attendance" subtitle="AY 2026-2027, 1st Semester" />
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
-        {attendanceRecords.map((r, i) => {
+        {attendanceRecords.length === 0 ? (
+          <div className="px-5 py-12 text-center">
+            <p className="text-sm font-semibold text-slate-900">
+              No attendance records yet
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              Your event attendance will appear here after a session is recorded.
+            </p>
+          </div>
+        ) : attendanceRecords.map((r, i) => {
           const req = excuseRequests.find(
             (x) =>
               (x.eventId && x.eventId === r.eventId) || x.event === r.event,
           );
 
           const eff =
-            req?.status === "approved" ? "excused" : req ? "pending" : r.status;
+            req?.status === "approved"
+              ? "excused"
+              : req?.status === "pending"
+                ? "pending"
+                : r.status;
 
           const fine = fines.find(
             (f) =>
               f.attendanceScanId === r.id ||
-              (f.eventId === r.eventId && f.status === "unpaid"),
+              f.eventId === r.eventId,
           );
 
           return (
@@ -6313,7 +6341,7 @@ export function AttendanceHistoryPage({
                   {r.date}
                   {r.time !== "—" ? ` · ${r.time}` : ""}
                 </p>
-                {showFees && fine && eff === "absent" && (
+                {showFees && fine && (eff === "absent" || eff === "late") && (
                   <p className="text-xs text-red-500 font-semibold mt-0.5">
                     Fee: ₱{fine.amount}
                   </p>
@@ -6521,7 +6549,7 @@ export function ProfilePage({
 }: {
   user: User;
 
-  onSave: (u: User) => void;
+  onSave: (u: User) => Promise<boolean>;
 
   onBack: () => void;
 
@@ -6644,10 +6672,10 @@ export function ProfilePage({
                 Discard
               </button>
               <button
-                onClick={() => {
-                  onSave({ ...user, ...draft });
-
-                  setEditing(false);
+                onClick={async () => {
+                  if (await onSave({ ...user, ...draft })) {
+                    setEditing(false);
+                  }
                 }}
                 disabled={saving}
                 className="h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
@@ -9184,7 +9212,9 @@ function CameraScanner({
     setScanError(null);
 
     try {
-      const studentId = raw.startsWith("ADESSE:") ? raw.slice(6).trim() : "";
+      const qrMatch = raw.match(/^ADESSE:([^:]+)(?::v(\d+))?$/i);
+      const studentId = qrMatch?.[1]?.trim() ?? "";
+      const qrVersion = qrMatch?.[2] ? Number(qrMatch[2]) : null;
 
       if (!studentId || !scannerId) {
         throw new Error("This QR code is not a valid Adesse student code.");
@@ -9213,7 +9243,9 @@ function CameraScanner({
 
         .from("profiles")
 
-        .select("id, student_id, first_name, surname, program, section")
+        .select(
+          "id, student_id, qr_version, first_name, surname, program, section",
+        )
 
         .eq("student_id", studentId)
 
@@ -9225,6 +9257,13 @@ function CameraScanner({
         throw new Error(
           "Student profile not found. Ask the student to renew their QR code.",
         );
+      }
+
+      if (
+        qrVersion !== null &&
+        qrVersion !== Number(profile.qr_version ?? 1)
+      ) {
+        throw new Error("This QR code has expired. Ask the student to renew it.");
       }
 
       const now = new Date();

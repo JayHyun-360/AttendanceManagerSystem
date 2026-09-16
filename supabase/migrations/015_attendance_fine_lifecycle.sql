@@ -95,6 +95,10 @@ begin
         where id = existing_fine_id
           and status <> 'paid';
       end if;
+    elsif existing_fine_id is not null then
+      delete from public.fines
+      where id = existing_fine_id
+        and status = 'unpaid';
     end if;
   elsif existing_fine_id is not null then
     delete from public.fines

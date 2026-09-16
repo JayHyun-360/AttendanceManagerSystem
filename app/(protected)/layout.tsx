@@ -178,6 +178,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           photoUrl: profile.photo_url ?? googleAvatarUrl ?? undefined,
           coverPhotoUrl: profile.cover_photo_url ?? undefined,
           idPhotoUrl: profile.id_photo_url ?? undefined,
+          qrVersion: Number(profile.qr_version ?? 1),
         };
 
         if (!cancelled) {
@@ -252,6 +253,9 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
         pathname.startsWith("/admin-") || pathname === "/admin-dashboard";
       const isStudentRoute =
         pathname === "/dashboard" ||
+        pathname === "/onboarding" ||
+        pathname === "/events" ||
+        pathname === "/announcements" ||
         pathname === "/my-qr" ||
         pathname === "/my-fines" ||
         pathname === "/attendance-history";

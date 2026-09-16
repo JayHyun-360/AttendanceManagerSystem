@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { useRouter } from "next/navigation";
 
@@ -29,7 +30,7 @@ export default function ProfileRoutePage() {
 
   const handleSave = async (nextUser: User) => {
     if (!authUserId || !user) {
-      return;
+      return false;
     }
 
     setSaving(true);
@@ -45,7 +46,11 @@ export default function ProfileRoutePage() {
 
         surname: nextUser.surname,
 
-        student_id: nextUser.studentId,
+        student_id: nextUser.studentId.trim(),
+        qr_version:
+          nextUser.studentId.trim() !== user.studentId.trim()
+            ? (user.qrVersion ?? 1) + 1
+            : (user.qrVersion ?? 1),
 
         program: nextUser.program,
 
@@ -79,8 +84,8 @@ export default function ProfileRoutePage() {
 
     if (error) {
       console.error(error);
-
-      return;
+      toast.error(error.message || "Could not save your profile.");
+      return false;
     }
 
     const nextMediaUrls = [
@@ -108,6 +113,8 @@ export default function ProfileRoutePage() {
       );
 
     setUser(nextUser);
+    toast.success("Profile saved successfully.");
+    return true;
   };
 
   if (!user) {

@@ -15,7 +15,7 @@ export default function MyQRRoutePage() {
   return (
     <MyQRPage
       user={user}
-      qrVersion={1}
+      qrVersion={user.qrVersion ?? 1}
       onBack={() => router.push("/dashboard")}
     />
   );
