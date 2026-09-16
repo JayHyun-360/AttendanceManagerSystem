@@ -92,7 +92,11 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           if (!cancelled) {
             setHasSession(false);
           }
-          router.replace("/login");
+
+          if (pathname !== "/events") {
+            router.replace("/login");
+          }
+
           return;
         }
 
@@ -122,7 +126,10 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           null;
 
         if (!profile) {
-          router.push("/onboarding");
+          if (pathname !== "/events") {
+            router.push("/onboarding");
+          }
+
           return;
         }
 
@@ -150,7 +157,10 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
               !profile.section));
 
         if (profileIsIncomplete) {
-          router.push("/onboarding");
+          if (pathname !== "/events") {
+            router.push("/onboarding");
+          }
+
           return;
         }
 
@@ -186,7 +196,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [pathname, router]);
 
   useEffect(() => {
     let cancelled = false;

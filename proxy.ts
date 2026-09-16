@@ -25,9 +25,14 @@ const protectedRoutePrefixes = [
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  const requiresAuth = protectedRoutePrefixes.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
+  const isPublicEventsRoute =
+    pathname === "/events" || pathname.startsWith("/events/");
+
+  const requiresAuth =
+    !isPublicEventsRoute &&
+    protectedRoutePrefixes.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    );
 
   if (!requiresAuth) {
     return NextResponse.next();
