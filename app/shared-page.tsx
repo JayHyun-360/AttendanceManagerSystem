@@ -874,7 +874,7 @@ interface ScanRecord {
   section: string;
   photoUrl?: string;
   time: string;
-  status: "confirmed" | "late" | "duplicate";
+  status: "present" | "confirmed" | "late" | "duplicate";
   action?: "time_in" | "time_out" | "time_out_rejected" | "duplicate";
   dbId: string | number;
 }
@@ -9499,7 +9499,10 @@ export function AdminAttendeesPage({
 
   const scans = selectedEvent ? (scanState[selectedEvent.id] ?? []) : [];
 
-  const confirmed = scans.filter((s) => s.status === "confirmed");
+  const confirmed = scans.filter(
+    (s) =>
+      s.status === "present" || s.status === "confirmed" || s.status === "late",
+  );
 
   const duplicates = scans.filter((s) => s.status === "duplicate");
 

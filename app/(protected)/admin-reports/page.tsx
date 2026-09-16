@@ -45,7 +45,7 @@ export default function AdminReportsRoutePage() {
             .order("event_date", { ascending: false }),
           supabase.from("profiles").select("id, role, program"),
           supabase
-            .from("attendance_logs")
+            .from("attendance_scans")
             .select("event_id, student_id, status"),
           supabase.from("fines").select("amount, status"),
         ]);
@@ -130,7 +130,11 @@ export default function AdminReportsRoutePage() {
         const attendeeIds = new Set<string>();
 
         for (const scan of attendanceRows) {
-          if (scan.event_id === eventId && scan.student_id) {
+          if (
+            scan.event_id === eventId &&
+            scan.student_id &&
+            (scan.status === "present" || scan.status === "late")
+          ) {
             attendeeIds.add(scan.student_id);
           }
         }
@@ -218,11 +222,14 @@ export default function AdminReportsRoutePage() {
         void loadReports();
       }
     });
-    const attendanceChannel = subscribeToTableChanges("attendance_logs", () => {
-      if (!cancelled) {
-        void loadReports();
-      }
-    });
+    const attendanceChannel = subscribeToTableChanges(
+      "attendance_scans",
+      () => {
+        if (!cancelled) {
+          void loadReports();
+        }
+      },
+    );
     const finesChannel = subscribeToTableChanges("fines", () => {
       if (!cancelled) {
         void loadReports();

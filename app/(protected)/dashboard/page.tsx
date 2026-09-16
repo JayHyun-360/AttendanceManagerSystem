@@ -104,7 +104,7 @@ export default function DashboardRoute() {
             .select("*")
             .order("event_date", { ascending: true }),
           supabase
-            .from("attendance_logs")
+            .from("attendance_scans")
             .select("status")
             .eq("student_id", authUserId),
           supabase
@@ -185,11 +185,14 @@ export default function DashboardRoute() {
         void loadDashboardFines();
       }
     });
-    const attendanceChannel = subscribeToTableChanges("attendance_logs", () => {
-      if (!cancelled) {
-        void loadDashboardFines();
-      }
-    });
+    const attendanceChannel = subscribeToTableChanges(
+      "attendance_scans",
+      () => {
+        if (!cancelled) {
+          void loadDashboardFines();
+        }
+      },
+    );
     const eventsChannel = subscribeToTableChanges("events", () => {
       if (!cancelled) {
         void loadDashboardFines();

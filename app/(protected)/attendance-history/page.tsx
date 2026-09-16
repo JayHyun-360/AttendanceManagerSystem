@@ -42,10 +42,10 @@ export default function AttendanceHistoryRoutePage() {
               .eq("student_id", authUserId)
               .order("created_at", { ascending: false }),
             supabase
-              .from("attendance_logs")
+              .from("attendance_scans")
               .select("*, events(title, event_date, start_time, end_time)")
               .eq("student_id", authUserId)
-              .order("scanned_at", { ascending: false }),
+              .order("scan_in_at", { ascending: false }),
           ],
         );
 
@@ -103,10 +103,12 @@ export default function AttendanceHistoryRoutePage() {
             eventId: row.event_id,
             event: row.events?.title ?? "Event",
             date: row.events?.event_date ?? "",
-            time:
-              row.events?.start_time && row.events?.end_time
-                ? `${row.events.start_time}–${row.events.end_time}`
-                : "—",
+            time: row.scan_in_at
+              ? new Date(row.scan_in_at).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "—",
             status: row.status || "present",
           })),
         );
@@ -131,11 +133,14 @@ export default function AttendanceHistoryRoutePage() {
         void loadData();
       }
     });
-    const attendanceChannel = subscribeToTableChanges("attendance_logs", () => {
-      if (!cancelled) {
-        void loadData();
-      }
-    });
+    const attendanceChannel = subscribeToTableChanges(
+      "attendance_scans",
+      () => {
+        if (!cancelled) {
+          void loadData();
+        }
+      },
+    );
 
     return () => {
       cancelled = true;

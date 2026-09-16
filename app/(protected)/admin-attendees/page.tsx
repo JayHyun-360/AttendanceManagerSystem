@@ -99,20 +99,34 @@ export default function AdminAttendeesRoutePage() {
         );
 
         const attendanceResult = await supabase
-          .from("attendance_logs")
+          .from("attendance_scans")
           .select(
-            "*, student_profile:profiles!attendance_logs_student_id_fkey(student_id, first_name, surname, program, section, photo_url)",
+            "id, event_id, student_id, session_label, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(student_id, first_name, surname, program, section, photo_url)",
           )
-          .order("scanned_at", { ascending: false });
+          .order("scan_in_at", { ascending: false });
 
         if (!attendanceResult.error && attendanceResult.data) {
           const byEvent: Record<string, any[]> = {};
+          const seenStudents = new Set<string>();
 
           for (const row of attendanceResult.data) {
+            if (row.status !== "present" && row.status !== "late") {
+              continue;
+            }
+
             const eventId = String(row.event_id);
+            const studentKey = `${eventId}:${row.student_id}`;
+            if (seenStudents.has(studentKey)) {
+              continue;
+            }
+            seenStudents.add(studentKey);
+
+            const profile = Array.isArray(row.student_profile)
+              ? row.student_profile[0]
+              : row.student_profile;
             const studentName =
-              `${row.student_profile?.first_name ?? ""} ${row.student_profile?.surname ?? ""}`.trim();
-            const studentId = row.student_profile?.student_id || row.student_id;
+              `${profile?.first_name ?? ""} ${profile?.surname ?? ""}`.trim();
+            const studentId = profile?.student_id || row.student_id;
 
             if (!byEvent[eventId]) {
               byEvent[eventId] = [];
@@ -121,14 +135,16 @@ export default function AdminAttendeesRoutePage() {
             byEvent[eventId].push({
               name: studentName || "Student",
               id: studentId || row.student_id,
-              program: row.student_profile?.program || "",
-              section: row.student_profile?.section || "",
-              photoUrl: row.student_profile?.photo_url || undefined,
-              time: new Date(row.scanned_at).toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-              status: "confirmed",
+              program: profile?.program || "",
+              section: profile?.section || "",
+              photoUrl: profile?.photo_url || undefined,
+              time: row.scan_in_at
+                ? new Date(row.scan_in_at).toLocaleTimeString("en-US", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "",
+              status: row.status === "late" ? "late" : "present",
               dbId: String(row.id),
             });
           }
@@ -156,11 +172,14 @@ export default function AdminAttendeesRoutePage() {
         void loadData();
       }
     });
-    const attendanceChannel = subscribeToTableChanges("attendance_logs", () => {
-      if (!cancelled) {
-        void loadData();
-      }
-    });
+    const attendanceChannel = subscribeToTableChanges(
+      "attendance_scans",
+      () => {
+        if (!cancelled) {
+          void loadData();
+        }
+      },
+    );
 
     return () => {
       cancelled = true;
@@ -199,7 +218,7 @@ export default function AdminAttendeesRoutePage() {
 
   const deleteAttendance = async (dbId: string | number) => {
     const { error } = await supabase
-      .from("attendance_logs")
+      .from("attendance_scans")
       .delete()
       .eq("id", String(dbId));
 

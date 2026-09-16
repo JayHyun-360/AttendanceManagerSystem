@@ -48,11 +48,11 @@ export default function AdminDashboardRoute() {
               .order("event_date", { ascending: true }),
             supabase.from("profiles").select("id").eq("role", "student"),
             supabase
-              .from("attendance_logs")
+              .from("attendance_scans")
               .select(
-                "*, student_profile:profiles!attendance_logs_student_id_fkey(first_name, surname, student_id, program, section), events(title)",
+                "id, event_id, student_id, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(first_name, surname, student_id, program, section), events(title)",
               )
-              .order("scanned_at", { ascending: false })
+              .order("scan_in_at", { ascending: false })
               .limit(5),
           ]);
 
@@ -91,31 +91,38 @@ export default function AdminDashboardRoute() {
         }).length;
 
         const scannedToday = (scansResult.data ?? []).filter((row: any) => {
-          if (!row.scanned_at) {
+          if (
+            (row.status !== "present" && row.status !== "late") ||
+            !row.scan_in_at
+          ) {
             return false;
           }
 
-          const scannedAt = new Date(row.scanned_at);
+          const scannedAt = new Date(row.scan_in_at);
           return scannedAt >= today;
         }).length;
 
         const duplicates = 0;
 
-        const recent = (scansResult.data ?? []).map((row: any) => ({
-          name:
-            `${row.student_profile?.first_name ?? ""} ${row.student_profile?.surname ?? ""}`.trim() ||
-            "Student",
-          id: row.student_profile?.student_id || row.student_id,
-          program: row.student_profile?.program || "",
-          section: row.student_profile?.section || "",
-          time: row.scanned_at
-            ? new Date(row.scanned_at).toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "",
-          status: "confirmed",
-        }));
+        const recent = (scansResult.data ?? [])
+          .filter(
+            (row: any) => row.status === "present" || row.status === "late",
+          )
+          .map((row: any) => ({
+            name:
+              `${row.student_profile?.first_name ?? ""} ${row.student_profile?.surname ?? ""}`.trim() ||
+              "Student",
+            id: row.student_profile?.student_id || row.student_id,
+            program: row.student_profile?.program || "",
+            section: row.student_profile?.section || "",
+            time: row.scan_in_at
+              ? new Date(row.scan_in_at).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "",
+            status: "confirmed",
+          }));
 
         setRequests(excuseResult.data ?? []);
         setStats({
@@ -156,11 +163,14 @@ export default function AdminDashboardRoute() {
         void loadAdminDashboardRequests();
       }
     });
-    const attendanceChannel = subscribeToTableChanges("attendance_logs", () => {
-      if (!cancelled) {
-        void loadAdminDashboardRequests();
-      }
-    });
+    const attendanceChannel = subscribeToTableChanges(
+      "attendance_scans",
+      () => {
+        if (!cancelled) {
+          void loadAdminDashboardRequests();
+        }
+      },
+    );
 
     return () => {
       cancelled = true;
