@@ -39,7 +39,7 @@ export default function AnnouncementsRoutePage() {
                 day: "numeric",
                 year: "numeric",
               }),
-              author: row.posted_by ? "Admin" : "TapIn",
+              author: row.posted_by ? "Admin" : "Adesse",
               badge: row.target_role === "admin" ? "Admin" : "General",
               photoUrl: row.media_url ?? "",
             })),

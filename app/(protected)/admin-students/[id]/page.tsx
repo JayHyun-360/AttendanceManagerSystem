@@ -626,7 +626,7 @@ export default function StudentDetailRoutePage() {
               {[
                 ["Email", student.email || "Not provided"],
                 ["Phone", student.phone || "Not provided"],
-                ["Joined TapIn", student.joinedDate],
+                ["Joined Adesse", student.joinedDate],
               ].map(([label, value]) => (
                 <div
                   key={label}

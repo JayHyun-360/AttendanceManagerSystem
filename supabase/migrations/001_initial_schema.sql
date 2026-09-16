@@ -1,4 +1,4 @@
--- TapIn: AI-Assisted Attendance & Fee System
+-- Adesse: AI-Assisted Attendance & Fee System
 -- Initial Supabase PostgreSQL schema and storage policy script
 
 create extension if not exists pgcrypto;
@@ -82,7 +82,7 @@ create table if not exists public.announcements (
 
 create table if not exists public.system_settings (
   id int primary key default 1,
-  system_name text default 'TapIn',
+  system_name text default 'Adesse',
   qr_expiration_minutes int default 5,
   updated_at timestamptz default now()
 );
@@ -266,7 +266,7 @@ create policy settings_update_admin
   using (public.is_admin());
 
 insert into public.system_settings (id, system_name, qr_expiration_minutes)
-values (1, 'TapIn', 5)
+values (1, 'Adesse', 5)
 on conflict (id) do nothing;
 
 create policy storage_avatars_authenticated_upload

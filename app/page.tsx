@@ -13,7 +13,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
   requirePhotoId: false,
   academicYear: "2026-2027",
   semester: "1st Semester",
-  institution: "TapIn",
+  institution: "Adesse",
   heroImageUrls: [],
   carouselSlides: [],
 };

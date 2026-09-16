@@ -323,7 +323,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
       <div className="min-h-screen bg-[#f8faf9] flex items-center justify-center">
         <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
           <span className="h-4 w-4 rounded-full border-2 border-slate-200 border-t-green-600 animate-spin" />
-          Loading TapIn...
+          Loading Adesse...
         </div>
       </div>
     );
@@ -338,7 +338,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#f8faf9]/85 backdrop-blur-[1px]">
             <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
               <span className="h-4 w-4 rounded-full border-2 border-slate-200 border-t-green-600 animate-spin" />
-              Loading TapIn...
+              Loading Adesse...
             </div>
           </div>
         )}

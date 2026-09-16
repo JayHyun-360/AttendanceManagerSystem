@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
-import tapInLogoSrc from "@/imports/Free_Simple_Modern_Design_Studio_Logo-1.png";
+import adesseLogoSrc from "@/imports/Free_Simple_Modern_Design_Studio_Logo-1.png";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Page =
@@ -130,7 +130,7 @@ function fullName(u: Pick<User, "firstName" | "middleInitial" | "surname">) {
 const INITIAL_EVENTS: EventData[] = [
   {
     id: "1",
-    title: "TapIn Foundation Day Celebration",
+    title: "Adesse Foundation Day Celebration",
     date: "Aug 29, 2026",
     time: "8:00 AM – 5:00 PM",
     location: "Main Gymnasium",
@@ -323,7 +323,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "2nd Year",
     section: "IT-2A",
     phone: "09171234567",
-    email: "mls.santos@tapin.edu",
+    email: "mls.santos@adesse.edu",
     joinedDate: "Aug 12, 2026",
   },
   {
@@ -333,7 +333,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "1st Year",
     section: "CS-1B",
     phone: "09281234568",
-    email: "jc.delacruz@tapin.edu",
+    email: "jc.delacruz@adesse.edu",
     joinedDate: "Aug 13, 2026",
   },
   {
@@ -343,7 +343,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "3rd Year",
     section: "IT-3A",
     phone: "09391234569",
-    email: "am.reyes@tapin.edu",
+    email: "am.reyes@adesse.edu",
     joinedDate: "Aug 10, 2026",
   },
   {
@@ -353,7 +353,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "2nd Year",
     section: "CS-2A",
     phone: "09501234570",
-    email: "cm.mendoza@tapin.edu",
+    email: "cm.mendoza@adesse.edu",
     joinedDate: "Aug 14, 2026",
   },
   {
@@ -363,7 +363,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "2nd Year",
     section: "IT-2B",
     phone: "09611234571",
-    email: "jr.flores@tapin.edu",
+    email: "jr.flores@adesse.edu",
     joinedDate: "Aug 11, 2026",
   },
   {
@@ -373,7 +373,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "1st Year",
     section: "BA-1A",
     phone: "09721234572",
-    email: "ra.lim@tapin.edu",
+    email: "ra.lim@adesse.edu",
     joinedDate: "Aug 15, 2026",
   },
   {
@@ -383,7 +383,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "3rd Year",
     section: "IT-3B",
     phone: "09831234573",
-    email: "pn.torres@tapin.edu",
+    email: "pn.torres@adesse.edu",
     joinedDate: "Aug 10, 2026",
   },
   {
@@ -393,7 +393,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "1st Year",
     section: "CS-1A",
     phone: "09941234574",
-    email: "ej.bautista@tapin.edu",
+    email: "ej.bautista@adesse.edu",
     joinedDate: "Aug 16, 2026",
   },
   {
@@ -403,7 +403,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "2nd Year",
     section: "BA-2A",
     phone: "09051234575",
-    email: "f.dizon@tapin.edu",
+    email: "f.dizon@adesse.edu",
     joinedDate: "Aug 12, 2026",
   },
   {
@@ -413,7 +413,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "1st Year",
     section: "IT-1B",
     phone: "09161234576",
-    email: "kr.castillo@tapin.edu",
+    email: "kr.castillo@adesse.edu",
     joinedDate: "Aug 17, 2026",
   },
 ];
@@ -1188,12 +1188,12 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── TapIn Logomark ───────────────────────────────────────────────────────────
-function TapInMark({ className = "w-7 h-7" }: { className?: string }) {
+// ─── Adesse Logomark ───────────────────────────────────────────────────────────
+function AdesseMark({ className = "w-7 h-7" }: { className?: string }) {
   return (
     <img
-      src={tapInLogoSrc}
-      alt="TapIn"
+      src={adesseLogoSrc}
+      alt="Adesse"
       className={`${className} shrink-0 rounded-lg object-cover`}
     />
   );
@@ -1203,7 +1203,7 @@ function TapInMark({ className = "w-7 h-7" }: { className?: string }) {
 function StudentQR({ studentId, size }: { studentId: string; size: number }) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   useEffect(() => {
-    QRCode.toDataURL(`TAPIN:${studentId}`, {
+    QRCode.toDataURL(`ADESSE:${studentId}`, {
       width: size * 2,
       margin: 1,
       color: { dark: "#111827", light: "#ffffff" },
@@ -1268,10 +1268,10 @@ function TopBar({
             className="flex items-center gap-2.5 min-w-0"
             onClick={() => onNav(dest)}
           >
-            <TapInMark className="w-8 h-8 shrink-0" />
+            <AdesseMark className="w-8 h-8 shrink-0" />
             <div className="flex flex-col leading-none min-w-0">
               <span className="text-[15px] font-bold text-slate-900 tracking-tight">
-                TapIn
+                Adesse
               </span>
               <span className="text-[10px] text-slate-400 font-medium hidden sm:block leading-tight truncate">
                 {isMod ? "Moderator Portal" : "Student Attendance"}
@@ -1343,7 +1343,7 @@ function TopBar({
                             Send helpful feedback
                           </p>
                           <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                            Help us improve TapIn for everyone
+                            Help us improve Adesse for everyone
                           </p>
                         </div>
                       </button>
@@ -1449,9 +1449,9 @@ function Sidebar({
       {/* Mobile header inside drawer */}
       <div className="flex items-center justify-between px-4 h-[52px] border-b border-slate-100 lg:hidden shrink-0">
         <div className="flex items-center gap-2.5">
-          <TapInMark />
+          <AdesseMark />
           <span className="text-sm font-bold text-slate-900 tracking-tight">
-            TapIn
+            Adesse
           </span>
         </div>
         <button
@@ -1800,12 +1800,12 @@ function LandingPage({
           <div
             className={`flex items-center gap-3 mb-4 ${hasHero ? "" : "justify-center"}`}
           >
-            <TapInMark className="w-14 h-14" />
+            <AdesseMark className="w-14 h-14" />
           </div>
           <h1
             className={`text-5xl font-extrabold tracking-tight leading-tight mb-2 ${hasHero ? "text-white" : "text-slate-900"}`}
           >
-            TapIn
+            Adesse
           </h1>
           <p
             className={`text-base font-semibold mb-6 ${hasHero ? "text-white/70" : "text-slate-400"}`}
@@ -1912,10 +1912,10 @@ function LoginPage({
           <>
             <div className="text-center mb-8">
               <div className="flex justify-center mb-4">
-                <TapInMark className="w-12 h-12" />
+                <AdesseMark className="w-12 h-12" />
               </div>
               <h1 className="text-2xl font-bold text-slate-900 mb-1">
-                Welcome to TapIn
+                Welcome to Adesse
               </h1>
               <p className="text-xs text-slate-400 font-medium">
                 Student Event Attendance &amp; Fee Tracking System
@@ -1983,7 +1983,7 @@ function LoginPage({
           <>
             <div className="text-center mb-8">
               <div className="flex justify-center mb-4">
-                <TapInMark className="w-12 h-12" />
+                <AdesseMark className="w-12 h-12" />
               </div>
               <h1 className="text-2xl font-bold text-slate-900 mb-1">
                 {role === "student" ? "Student login" : "Admin login"}
@@ -2286,7 +2286,7 @@ function OnboardingPage({ onComplete }: { onComplete: (d: OBForm) => void }) {
                 <div className="h-52 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500 leading-relaxed space-y-3">
                   <p className="font-semibold text-slate-700">Terms of Use</p>
                   <p>
-                    By creating an account on TapIn, you agree to use this
+                    By creating an account on Adesse, you agree to use this
                     system solely for legitimate attendance tracking purposes.
                     You must not share your QR code with others or attempt to
                     record attendance on behalf of another student. Any misuse
@@ -2294,7 +2294,7 @@ function OnboardingPage({ onComplete }: { onComplete: (d: OBForm) => void }) {
                   </p>
                   <p className="font-semibold text-slate-700">Privacy Policy</p>
                   <p>
-                    TapIn collects your name, student ID, contact information,
+                    Adesse collects your name, student ID, contact information,
                     and attendance records to facilitate event attendance and
                     fee management within your institution. Your data is stored
                     securely and is accessible only to authorized moderators and
@@ -2602,7 +2602,7 @@ function StudentProfileModal({
               {[
                 { l: "Phone", v: student.phone },
                 { l: "Email", v: student.email },
-                { l: "Joined TapIn", v: student.joinedDate },
+                { l: "Joined Adesse", v: student.joinedDate },
               ].map((f, i, arr) => (
                 <div
                   key={f.l}
@@ -3185,7 +3185,7 @@ function MyQRPage({
     ctx.beginPath();
     ctx.roundRect(0, 0, W, size + pad * 2 + footH, 16);
     ctx.fill();
-    const qrDataUrl = await QRCode.toDataURL(`TAPIN:${user.studentId}`, {
+    const qrDataUrl = await QRCode.toDataURL(`ADESSE:${user.studentId}`, {
       width: size,
       margin: 0,
       color: { dark: "#111827", light: "#ffffff" },
@@ -3217,12 +3217,12 @@ function MyQRPage({
     ctx.fillStyle = "#16a34a";
     ctx.font = "bold 10px sans-serif";
     ctx.fillText(
-      "TapIn · Student Attendance & Fee Tracking System",
+      "Adesse · Student Attendance & Fee Tracking System",
       W / 2,
       size + pad + 66,
     );
     const a = document.createElement("a");
-    a.download = `tapin-qr-${user.studentId}-v${qrVersion}.png`;
+    a.download = `adesse-qr-${user.studentId}-v${qrVersion}.png`;
     a.href = canvas.toDataURL("image/png");
     a.click();
   };
@@ -3880,7 +3880,7 @@ function AdminDashboard({
           { l: "Duplicates", v: "1", sub: "Rejected", c: "text-red-500" },
           { l: "Active events", v: "1", sub: "Live now", c: "text-sky-600" },
           {
-            l: "Students on TapIn",
+            l: "Students on Adesse",
             v: String(ALL_STUDENTS.length),
             sub: "Registered",
             c: "text-slate-700",
@@ -5095,7 +5095,7 @@ function CameraScanner({
   const resolveQr = (raw: string) => {
     if (scannedRef.current) return;
     scannedRef.current = true;
-    const id = raw.startsWith("TAPIN:") ? raw.slice(6) : raw;
+    const id = raw.startsWith("ADESSE:") ? raw.slice(6) : raw;
     const existing = eventScans.find((s) => s.id === id);
     const time = new Date().toLocaleTimeString("en-US", {
       hour: "2-digit",
@@ -5807,7 +5807,7 @@ function AdminStudentsPage() {
     <PageShell>
       <PageHeader
         title="Students"
-        subtitle={`${ALL_STUDENTS.length} students registered on TapIn`}
+        subtitle={`${ALL_STUDENTS.length} students registered on Adesse`}
       />
       <div className="relative mb-5">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
@@ -6364,7 +6364,7 @@ function AdminReportsPage() {
     ctx.fillStyle = "#fff";
     ctx.font = "bold 18px system-ui, sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText("TapIn — Attendance & Fees Report", pad, 38);
+    ctx.fillText("Adesse — Attendance & Fees Report", pad, 38);
     ctx.font = "12px system-ui, sans-serif";
     ctx.textAlign = "right";
     ctx.fillText(`AY 2026-2027 · 1st Semester`, W - pad, 38);
@@ -6515,7 +6515,7 @@ function AdminReportsPage() {
     ctx.font = "10px system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(
-      "TapIn · Student Event Attendance & Fee Tracking System",
+      "Adesse · Student Event Attendance & Fee Tracking System",
       W / 2,
       y + 18,
     );
@@ -6526,7 +6526,7 @@ function AdminReportsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `tapin-report-${new Date().toISOString().slice(0, 10)}.png`;
+      a.download = `adesse-report-${new Date().toISOString().slice(0, 10)}.png`;
       a.click();
       URL.revokeObjectURL(url);
     }, "image/png");
@@ -7002,7 +7002,7 @@ function AdminSettingsPage({
       </p>
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
         {[
-          { l: "System name", v: "TapIn" },
+          { l: "System name", v: "Adesse" },
           { l: "Version", v: "1.0.0" },
           { l: "Environment", v: "Production" },
         ].map((r, i, arr) => (
@@ -7026,7 +7026,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
   requirePhotoId: false,
   academicYear: "2026-2027",
   semester: "1st Semester",
-  institution: "TapIn",
+  institution: "Adesse",
   heroImageUrls: [],
   carouselSlides: [],
 };
@@ -7099,7 +7099,7 @@ export default function App() {
         yearLevel: "",
         section: "",
         phone: "09171234567",
-        contactEmail: "moderator@tapin.edu",
+        contactEmail: "moderator@adesse.edu",
         role: "admin",
       });
       setPage("admin-dashboard");
@@ -7115,7 +7115,7 @@ export default function App() {
       yearLevel: d.yearLevel || "2nd Year",
       section: d.section || "IT-2A",
       phone: d.phone || "09XX XXX XXXX",
-      contactEmail: d.contactEmail || "mls.santos@tapin.edu",
+      contactEmail: d.contactEmail || "mls.santos@adesse.edu",
       role: "student",
       idPhotoUrl: d.idPhotoUrl,
     });

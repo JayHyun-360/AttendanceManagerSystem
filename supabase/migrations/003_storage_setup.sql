@@ -1,4 +1,4 @@
--- TapIn: storage bucket setup for public images
+-- Adesse: storage bucket setup for public images
 
 insert into storage.buckets (id, name, public)
 values ('public-images', 'public-images', true)

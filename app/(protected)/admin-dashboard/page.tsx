@@ -20,7 +20,7 @@ export default function AdminDashboardRoute() {
   });
   const [recentScans, setRecentScans] = useState<any[]>([]);
   const [featuredEventTitle, setFeaturedEventTitle] =
-    useState<string>("TapIn overview");
+    useState<string>("Adesse overview");
   const [featuredEventStatus, setFeaturedEventStatus] = useState<
     "active" | "upcoming" | "closed"
   >("upcoming");
@@ -133,7 +133,7 @@ export default function AdminDashboardRoute() {
           students: profileResult.data?.length ?? 0,
         });
         setRecentScans(recent);
-        setFeaturedEventTitle(featuredRow?.title || "TapIn overview");
+        setFeaturedEventTitle(featuredRow?.title || "Adesse overview");
         setFeaturedEventStatus(
           (featuredRow?.status as "active" | "upcoming" | "closed") ??
             "upcoming",

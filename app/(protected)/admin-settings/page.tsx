@@ -21,7 +21,7 @@ const defaultSettings: SystemSettings = {
 
   semester: "1st Semester",
 
-  institution: "TapIn University",
+  institution: "Adesse University",
 
   heroImageUrls: [],
 
