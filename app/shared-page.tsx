@@ -6015,6 +6015,22 @@ export function AnnouncementsPage({
 
   announcements: typeof INITIAL_ANNOUNCEMENTS;
 }) {
+  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<
+    string | null
+  >(null);
+
+  if (selectedAnnouncementId) {
+    return (
+      <AnnouncementDetailPageView
+        announcement={
+          announcements.find((item) => item.id === selectedAnnouncementId) ??
+          null
+        }
+        onBack={() => setSelectedAnnouncementId(null)}
+      />
+    );
+  }
+
   return (
     <>
       <BackButton onClick={onBack} label="Back" />
@@ -6024,6 +6040,7 @@ export function AnnouncementsPage({
           <div
             key={a.id}
             className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden h-full"
+            onClick={() => setSelectedAnnouncementId(a.id)}
           >
             <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
               {a.photoUrl ? (
@@ -6075,6 +6092,130 @@ export function AnnouncementsPage({
         ))}
       </div>
     </>
+  );
+}
+
+function AnnouncementDetailPageView({
+  announcement,
+  onBack,
+  onEdit,
+  onDelete,
+}: {
+  announcement: (typeof INITIAL_ANNOUNCEMENTS)[0] | null;
+  onBack: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  if (!announcement) return null;
+
+  return (
+    <div className="min-h-screen bg-slate-50/60">
+      <div className="mx-auto max-w-5xl px-2.5 pb-12 pt-2 md:p-6">
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900 md:mb-6"
+        >
+          <Icons.ChevronLeft />
+          Back to Announcements
+        </button>
+
+        <article className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+          {announcement.photoUrl ? (
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(true)}
+              className="group block aspect-video w-full overflow-hidden bg-slate-50"
+              aria-label="View announcement image"
+            >
+              <img
+                src={announcement.photoUrl}
+                alt={announcement.title}
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+              />
+            </button>
+          ) : (
+            <div className="flex aspect-video w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-sm font-semibold text-slate-400">
+              No image
+            </div>
+          )}
+
+          <div className="space-y-5 p-5 md:p-8">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="space-y-2">
+                <span className="inline-flex rounded-full border border-emerald-100 bg-emerald-50/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
+                  {announcement.badge}
+                </span>
+                <h1 className="text-2xl font-bold leading-tight text-slate-900 md:text-3xl">
+                  {announcement.title}
+                </h1>
+              </div>
+              <span className="text-xs font-semibold text-slate-400">
+                {announcement.date}
+              </span>
+            </div>
+
+            <div className="border-t border-slate-100 pt-5">
+              <p className="whitespace-pre-wrap text-sm leading-7 text-slate-600 md:text-base">
+                {announcement.body}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5">
+              <p className="text-xs text-slate-400">
+                Posted by {announcement.author}
+              </p>
+              {(onEdit || onDelete) && (
+                <div className="flex gap-2">
+                  {onEdit && (
+                    <button
+                      type="button"
+                      onClick={onEdit}
+                      className="h-9 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      type="button"
+                      onClick={onDelete}
+                      className="h-9 rounded-xl bg-red-50 px-3 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </article>
+      </div>
+
+      {lightboxOpen && announcement.photoUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 p-4"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(false)}
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+            aria-label="Close announcement image preview"
+          >
+            <Icons.X />
+          </button>
+          <img
+            src={announcement.photoUrl}
+            alt={`${announcement.title} preview`}
+            className="max-h-full max-w-full rounded-xl object-contain shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -10541,6 +10682,10 @@ export function AdminAnnouncementsPage({
 
   const [isPublishing, setIsPublishing] = useState(false);
 
+  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<
+    string | null
+  >(null);
+
   const [editDraft, setEditDraft] = useState<
     (typeof INITIAL_ANNOUNCEMENTS)[0] | null
   >(null);
@@ -10746,6 +10891,30 @@ export function AdminAnnouncementsPage({
 
     setPosts((p) => p.filter((a) => a.id !== id));
   };
+
+  if (selectedAnnouncementId) {
+    return (
+      <AnnouncementDetailPageView
+        announcement={
+          posts.find((post) => post.id === selectedAnnouncementId) ?? null
+        }
+        onBack={() => setSelectedAnnouncementId(null)}
+        onEdit={() => {
+          const post = posts.find((item) => item.id === selectedAnnouncementId);
+
+          if (post) startEdit(post);
+
+          setSelectedAnnouncementId(null);
+        }}
+        onDelete={() => {
+          const id = selectedAnnouncementId;
+
+          setSelectedAnnouncementId(null);
+          void deletePost(id);
+        }}
+      />
+    );
+  }
 
   return (
     <>
@@ -11072,6 +11241,7 @@ export function AdminAnnouncementsPage({
           <div
             key={a.id}
             className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden h-full"
+            onClick={() => setSelectedAnnouncementId(a.id)}
           >
             <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
               {a.photoUrl ? (
@@ -11100,7 +11270,10 @@ export function AdminAnnouncementsPage({
                 <span className="rounded-full border border-white/30 bg-slate-900/25 px-2 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur-sm">
                   {a.date}
                 </span>
-                <div className="rounded-full border border-white/30 bg-slate-900/25 p-1 text-white shadow-sm backdrop-blur-sm">
+                <div
+                  className="rounded-full border border-white/30 bg-slate-900/25 p-1 text-white shadow-sm backdrop-blur-sm"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   <DotMenu
                     items={[
                       {
