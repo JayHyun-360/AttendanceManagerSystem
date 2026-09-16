@@ -872,6 +872,10 @@ export interface EventData {
   afternoonAbsentFine?: number;
   afternoonLateFine?: number;
   version?: number;
+  reportAttendedSessions?: number;
+  reportAbsentSessions?: number;
+  reportLateSessions?: number;
+  reportFineTotal?: number;
 }
 
 interface ScanRecord {
@@ -12067,6 +12071,12 @@ export function AdminReportsPage({
       total: number;
 
       rate: number;
+
+      absent?: number;
+
+      late?: number;
+
+      fineTotal?: number;
     }>;
 
     feeSummary?: Array<{
@@ -12333,7 +12343,7 @@ export function AdminReportsPage({
 
       { t: "Date", x: W - pad - 200 },
 
-      { t: "Fee", x: W - pad - 100, align: "right" },
+      { t: "Absent / Late", x: W - pad - 100, align: "right" },
 
       { t: "Attended", x: W - pad - 8, align: "right" },
     ]);
@@ -12349,7 +12359,7 @@ export function AdminReportsPage({
 
           { t: e.date, x: W - pad - 200 },
 
-          { t: `₱${e.fineAmount}`, x: W - pad - 100, align: "right" },
+          { t: `₱${e.fineAmount} / ₱${e.lateFine ?? 0}`, x: W - pad - 100, align: "right" },
 
           {
             t: e.attendees.toString(),
@@ -12455,6 +12465,10 @@ export function AdminReportsPage({
               <p className="text-[11px] text-slate-400 font-semibold">
                 {r.rate}% attendance rate
               </p>
+              <p className="mt-1 text-[11px] font-semibold text-slate-500">
+                Absent {r.absent ?? 0} · Late {r.late ?? 0}
+                {(r.fineTotal ?? 0) > 0 && ` · Fees ₱${r.fineTotal}`}
+              </p>
             </div>
           );
         })}
@@ -12487,7 +12501,10 @@ export function AdminReportsPage({
             <div>
               <p className="text-sm font-semibold text-slate-900">{e.title}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {e.date} · ₱{e.fineAmount} fee
+                {e.date} · Absent ₱{e.fineAmount} · Late ₱{e.lateFine ?? 0}
+              </p>
+              <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                Attended {e.reportAttendedSessions ?? e.attendees} · Absent {e.reportAbsentSessions ?? 0} · Late {e.reportLateSessions ?? 0}
               </p>
             </div>
             <div className="text-right">

@@ -7,6 +7,12 @@ import { AdminReportsPage, type EventData } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
+import {
+  buildAttendanceSessionRecords,
+  type FineEventLike,
+  type FineRowLike,
+  type FineScanLike,
+} from "@/lib/attendance-fines";
 
 type ReportPayload = {
   events: EventData[];
@@ -15,6 +21,9 @@ type ReportPayload = {
     present: number;
     total: number;
     rate: number;
+    absent: number;
+    late: number;
+    fineTotal: number;
   }>;
   feeSummary: Array<{
     label: string;
@@ -46,8 +55,10 @@ export default function AdminReportsRoutePage() {
           supabase.from("profiles").select("id, role, program"),
           supabase
             .from("attendance_scans")
-            .select("event_id, student_id, session_label, status, scan_in_at"),
-          supabase.from("fines").select("amount, status"),
+            .select("id, event_id, student_id, session_label, status, scan_in_at"),
+          supabase
+            .from("fines")
+            .select("id, student_id, event_id, attendance_scan_id, session_label, amount, status"),
         ]);
 
       if (eventsResult.error) {
@@ -75,82 +86,64 @@ export default function AdminReportsRoutePage() {
       const attendanceRows = attendanceResult.data ?? [];
       const fineRows = finesResult.data ?? [];
 
-      const profileMap = new Map<string, string>();
-      for (const row of profileRows) {
-        if (row.role === "student") {
-          profileMap.set(row.id, row.program || "Unassigned");
-        }
+      const studentRows = profileRows.filter((row: any) => row.role === "student");
+      const recordsByStudent = new Map<string, ReturnType<typeof buildAttendanceSessionRecords>>();
+      for (const student of studentRows) {
+        recordsByStudent.set(
+          student.id,
+          buildAttendanceSessionRecords(
+            eventRows as FineEventLike[],
+            attendanceRows.filter((scan: any) => scan.student_id === student.id) as FineScanLike[],
+            fineRows.filter((fine: any) => fine.student_id === student.id) as FineRowLike[],
+            student.program,
+          ),
+        );
       }
 
-      const totalByProgram = new Map<string, number>();
-      const presentByProgram = new Map<string, number>();
-      const completedEvents = eventRows.filter(
-        (event: any) => event.event_date <= new Date().toISOString().slice(0, 10),
-      );
-
-      for (const event of completedEvents) {
-        const sessionCount = event.multi_session ? 2 : 1;
-        for (const row of profileRows) {
-          if (row.role !== "student") continue;
-          const program = row.program || "Unassigned";
-          const eligible =
-            !event.program ||
-            event.program === "All Programs" ||
-            event.program === program;
-          if (!eligible) continue;
-          totalByProgram.set(
-            program,
-            (totalByProgram.get(program) ?? 0) + sessionCount,
-          );
+      const programTotals = new Map<string, { total: number; present: number; absent: number; late: number; fineTotal: number }>();
+      for (const student of studentRows) {
+        const program = student.program || "Unassigned";
+        const stats = programTotals.get(program) ?? { total: 0, present: 0, absent: 0, late: 0, fineTotal: 0 };
+        for (const record of recordsByStudent.get(student.id) ?? []) {
+          stats.total += 1;
+          if (record.status === "present" && !!record.scan?.scan_in_at) stats.present += 1;
+          if (record.status === "late" && !!record.scan?.scan_in_at) {
+            stats.present += 1;
+            stats.late += 1;
+          }
+          if (record.status === "absent" || record.status === "no_record") stats.absent += 1;
+          stats.fineTotal += record.fineAmount;
         }
+        programTotals.set(program, stats);
       }
 
-      for (const row of attendanceRows) {
-        const program = profileMap.get(row.student_id);
-        const event = completedEvents.find((item: any) => item.id === row.event_id);
-        if (!program || !event) continue;
-        const eligible =
-          !event.program ||
-          event.program === "All Programs" ||
-          event.program === program;
-        if (
-          eligible &&
-          (row.status === "present" || row.status === "late") &&
-          row.scan_in_at
-        ) {
-          presentByProgram.set(
-            program,
-            (presentByProgram.get(program) ?? 0) + 1,
-          );
-        }
-      }
-
-      const programStats = Array.from(totalByProgram.entries())
-        .map(([label, total]) => {
-          const presentCount = presentByProgram.get(label) ?? 0;
-          return {
-            label,
-            present: presentCount,
-            total,
-            rate: total > 0 ? Math.round((presentCount / total) * 100) : 0,
-          };
-        })
+      const programStats = Array.from(programTotals.entries())
+        .map(([label, stats]) => ({
+          label,
+          present: stats.present,
+          total: stats.total,
+          rate: stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0,
+          absent: stats.absent,
+          late: stats.late,
+          fineTotal: stats.fineTotal,
+        }))
         .sort((a, b) => b.total - a.total);
 
       const eventData: EventData[] = eventRows.map((row: any) => {
         const eventId = String(row.id);
-        const attendeeIds = new Set<string>();
-
-        for (const scan of attendanceRows) {
-          if (
-            scan.event_id === eventId &&
-            scan.student_id &&
-            (scan.status === "present" || scan.status === "late")
-          ) {
-            attendeeIds.add(scan.student_id);
-          }
-        }
-
+        const eventRecords = studentRows.flatMap((student: any) =>
+          (recordsByStudent.get(student.id) ?? []).filter((record) => record.eventId === eventId),
+        );
+        const attendeeIds = new Set(
+          attendanceRows
+            .filter(
+              (scan: any) =>
+                scan.event_id === eventId &&
+                (scan.status === "present" || scan.status === "late") &&
+                !!scan.scan_in_at,
+            )
+            .map((scan: any) => scan.student_id),
+        );
         const eventDate = row.event_date ? new Date(row.event_date) : null;
 
         return {
@@ -178,8 +171,22 @@ export default function AdminReportsRoutePage() {
                   Number(row.afternoon_absent_fine ?? 0)
                 : row.absent_fine ?? 0),
           ),
+          absentFine: Number(row.absent_fine ?? 0),
+          lateFine: Number(row.late_fine ?? 0),
+          morningAbsentFine: Number(row.morning_absent_fine ?? row.absent_fine ?? 0),
+          morningLateFine: Number(row.morning_late_fine ?? row.late_fine ?? 0),
+          afternoonAbsentFine: Number(row.afternoon_absent_fine ?? row.absent_fine ?? 0),
+          afternoonLateFine: Number(row.afternoon_late_fine ?? row.late_fine ?? 0),
           status: row.status ?? "upcoming",
           attendees: attendeeIds.size,
+          reportAttendedSessions: eventRecords.filter((record) =>
+            (record.status === "present" || record.status === "late") && !!record.scan?.scan_in_at,
+          ).length,
+          reportAbsentSessions: eventRecords.filter((record) =>
+            record.status === "absent" || record.status === "no_record",
+          ).length,
+          reportLateSessions: eventRecords.filter((record) => record.status === "late").length,
+          reportFineTotal: eventRecords.reduce((total, record) => total + record.fineAmount, 0),
           mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
           highlightUrl:
             row.image_url && !row.image_url.startsWith("blob:")
