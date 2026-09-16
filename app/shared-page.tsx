@@ -5575,9 +5575,9 @@ function EventDetailPageView({
   if (isLoading || !event) {
     return (
       <div className="min-h-screen bg-slate-50/60">
-        <div className="mx-auto max-w-7xl p-6">
+        <div className="mx-auto max-w-7xl px-2.5 pb-12 pt-2 md:p-6">
           <Skeleton className="mb-6 h-5 w-32" />
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+          <div className="grid grid-cols-1 gap-5 md:gap-8 lg:grid-cols-12">
             <div className="space-y-5 lg:col-span-7">
               <Skeleton className="aspect-video w-full rounded-2xl" />
               <Skeleton className="h-80 w-full rounded-2xl" />
@@ -5604,17 +5604,17 @@ function EventDetailPageView({
 
   return (
     <div className="min-h-screen bg-slate-50/60">
-      <div className="mx-auto max-w-7xl p-6">
+      <div className="mx-auto max-w-7xl px-2.5 pb-12 pt-2 md:p-6">
         <button
           type="button"
           onClick={onClose}
-          className="mb-6 flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900"
+          className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900 md:mb-6"
         >
           <Icons.ChevronLeft />
           Back to Events
         </button>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-5 md:gap-8 lg:grid-cols-12">
           <div className="space-y-5 lg:col-span-7 lg:sticky lg:top-6 lg:self-start">
             <div className="aspect-video overflow-hidden rounded-2xl bg-slate-50 shadow-sm">
               {event.highlightUrl ? (
@@ -5630,7 +5630,7 @@ function EventDetailPageView({
               )}
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
               <div className="flex items-start justify-between gap-3 pr-10">
                 <div>
                   <h2 className="text-xl font-bold text-slate-900">
@@ -5713,7 +5713,7 @@ function EventDetailPageView({
             </div>
           </div>
 
-          <div className="max-h-[calc(100vh-120px)] overflow-y-auto pr-2 custom-scrollbar lg:col-span-5">
+          <div className="lg:col-span-5 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:pr-2">
             <div className="mb-3 flex items-center justify-between pr-10">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
@@ -5728,7 +5728,7 @@ function EventDetailPageView({
               </span>
             </div>
             {event.mediaUrls && event.mediaUrls.length > 0 ? (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {event.mediaUrls.map((url, index) =>
                   /\.mp4($|\?)/i.test(url) ? (
                     <div
