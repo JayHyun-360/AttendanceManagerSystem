@@ -52,8 +52,7 @@ export default function AdminDashboardRoute() {
               .select(
                 "id, event_id, student_id, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(first_name, surname, student_id, program, section, photo_url), events(title)",
               )
-              .order("scan_in_at", { ascending: false })
-              .limit(5),
+              .order("scan_in_at", { ascending: false }),
           ]);
 
         if (excuseResult.error) {

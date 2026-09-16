@@ -116,7 +116,7 @@ export default function AdminAttendeesRoutePage() {
             }
 
             const eventId = String(row.event_id);
-            const studentKey = `${eventId}:${row.student_id}`;
+            const studentKey = `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`;
             if (seenStudents.has(studentKey)) {
               continue;
             }

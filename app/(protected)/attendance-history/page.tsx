@@ -38,7 +38,7 @@ export default function AttendanceHistoryRoutePage() {
               .order("created_at", { ascending: false }),
             supabase
               .from("excuse_requests")
-              .select("*")
+              .select("*, events(title)")
               .eq("student_id", authUserId)
               .order("created_at", { ascending: false }),
             supabase
@@ -69,6 +69,7 @@ export default function AttendanceHistoryRoutePage() {
           (finesResult.data ?? []).map((row: any) => ({
             id: String(row.id),
             eventId: row.event_id,
+            attendanceScanId: row.attendance_scan_id ?? undefined,
             eventTitle: row.events?.title ?? "Event",
             eventDate: row.events?.event_date ?? "",
             amount: Number(row.amount || 0),
@@ -81,7 +82,9 @@ export default function AttendanceHistoryRoutePage() {
             id: String(row.id),
             studentName: "You",
             studentId: authUserId,
-            event: row.fine_id ? "Attendance event" : "Excuse request",
+            event: row.events?.title ?? "Attendance event",
+            eventId: row.event_id ?? undefined,
+            fineId: row.fine_id ?? undefined,
             date: row.created_at,
             reason: row.reason,
             proofName: row.document_url ? "Supporting document" : null,
@@ -102,6 +105,7 @@ export default function AttendanceHistoryRoutePage() {
             id: String(row.id ?? index),
             eventId: row.event_id,
             event: row.events?.title ?? "Event",
+            sessionLabel: row.session_label,
             date: row.events?.event_date ?? "",
             time: row.scan_in_at
               ? new Date(row.scan_in_at).toLocaleTimeString("en-US", {
@@ -157,6 +161,11 @@ export default function AttendanceHistoryRoutePage() {
 
     const { error } = await supabase.from("excuse_requests").insert({
       student_id: authUserId,
+      event_id: record.eventId,
+      fine_id:
+        fines.find(
+          (fine) => fine.eventId === record.eventId && fine.status === "unpaid",
+        )?.id ?? null,
       reason: record.reason,
       status: "pending",
       document_url: record.proofName,

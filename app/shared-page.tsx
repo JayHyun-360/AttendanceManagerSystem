@@ -886,6 +886,8 @@ export interface ExcuseRequest {
   studentId: string;
   photoUrl?: string;
   event: string;
+  eventId?: string;
+  fineId?: string;
   date: string;
   reason: string;
   proofName: string | null;
@@ -896,6 +898,7 @@ export interface ExcuseRequest {
 export interface FineRecord {
   id: string;
   eventId: string;
+  attendanceScanId?: string;
   eventTitle: string;
   eventDate: string;
   amount: number;
@@ -2126,6 +2129,12 @@ function Badge({ status }: { status: string }) {
       cls: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200",
 
       label: "Present",
+    },
+
+    late: {
+      cls: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
+
+      label: "Late",
     },
 
     absent: {
@@ -6254,12 +6263,19 @@ export function AttendanceHistoryPage({
       <PageHeader title="My Attendance" subtitle="AY 2026-2027, 1st Semester" />
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
         {attendanceRecords.map((r, i) => {
-          const req = excuseRequests.find((x) => x.event === r.event);
+          const req = excuseRequests.find(
+            (x) =>
+              (x.eventId && x.eventId === r.eventId) || x.event === r.event,
+          );
 
           const eff =
             req?.status === "approved" ? "excused" : req ? "pending" : r.status;
 
-          const fine = fines.find((f) => f.eventId === r.eventId);
+          const fine = fines.find(
+            (f) =>
+              f.attendanceScanId === r.id ||
+              (f.eventId === r.eventId && f.status === "unpaid"),
+          );
 
           return (
             <div
@@ -6272,7 +6288,7 @@ export function AttendanceHistoryPage({
             >
               <div
                 className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                  eff === "present"
+                    eff === "present" || eff === "late"
                     ? "bg-emerald-50 text-emerald-500"
                     : eff === "absent"
                       ? "bg-red-50 text-red-400"
@@ -6281,7 +6297,7 @@ export function AttendanceHistoryPage({
                         : "bg-amber-50 text-amber-500"
                 }`}
               >
-                {eff === "present" ? (
+                {eff === "present" || eff === "late" ? (
                   <Icons.Check />
                 ) : eff === "excused" ? (
                   <Icons.CheckCircle />
@@ -6406,7 +6422,7 @@ export function MyFinesPage({
         title="My Fines"
         subtitle="Outstanding fees from missed events."
       />
-      {fines.length === 0 ? (
+      {unpaid.length === 0 ? (
         <div className="bg-white border border-slate-100 rounded-xl px-5 py-12 text-center">
           <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mx-auto mb-3 text-emerald-500">
             <Icons.Check />
@@ -7605,24 +7621,24 @@ export function AdminEventsPage({
 
         afternoon_late_cutoff: draft.afternoonLateCutoff || null,
 
-        absent_fine: parseInt(draft.absentFine) || 0,
+        absent_fine: Number(draft.absentFine) || 0,
 
-        late_fine: parseInt(draft.lateFine) || 0,
+        late_fine: Number(draft.lateFine) || 0,
 
         morning_absent_fine: draft.multiSession
-          ? parseInt(draft.morningAbsentFine) || 0
+          ? Number(draft.morningAbsentFine) || 0
           : null,
 
         morning_late_fine: draft.multiSession
-          ? parseInt(draft.morningLateFine) || 0
+          ? Number(draft.morningLateFine) || 0
           : null,
 
         afternoon_absent_fine: draft.multiSession
-          ? parseInt(draft.afternoonAbsentFine) || 0
+          ? Number(draft.afternoonAbsentFine) || 0
           : null,
 
         afternoon_late_fine: draft.multiSession
-          ? parseInt(draft.afternoonLateFine) || 0
+          ? Number(draft.afternoonLateFine) || 0
           : null,
       };
 
@@ -10149,7 +10165,13 @@ export function AdminAttendeesPage({
 
   const attendedIds = new Set(confirmed.map((s) => s.id));
 
-  const absentees = students.filter((s) => !attendedIds.has(s.id));
+  const eligibleStudents = students.filter(
+    (student) =>
+      !selectedEvent?.program ||
+      selectedEvent.program === "All Programs" ||
+      student.program === selectedEvent.program,
+  );
+  const absentees = eligibleStudents.filter((s) => !attendedIds.has(s.id));
 
   const deleteRecord = async (dbId: string | number) => {
     if (onDeleteAttendance && !(await onDeleteAttendance(dbId))) {

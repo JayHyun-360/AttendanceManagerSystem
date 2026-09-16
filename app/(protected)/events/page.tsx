@@ -19,15 +19,17 @@ export default function EventsRoutePage() {
 
     async function loadEvents() {
       try {
-        const { data, error } = await supabase
-          .from("events")
-          .select("*")
-          .order("event_date", { ascending: false });
+        const [{ data, error }, { data: scans, error: scansError }] =
+          await Promise.all([
+            supabase.from("events").select("*").order("event_date", { ascending: false }),
+            supabase.from("attendance_scans").select("event_id, student_id, status"),
+          ]);
 
         if (error) {
           console.error(error);
           return;
         }
+        if (scansError) console.error(scansError);
 
         if (!cancelled) {
           setEvents(
@@ -42,9 +44,20 @@ export default function EventsRoutePage() {
               location: row.location,
               description: row.description,
               program: row.program || "All Programs",
-              fineAmount: row.absent_fine || 0,
+              fineAmount: row.multi_session
+                ? Number(row.morning_absent_fine ?? 0) +
+                  Number(row.afternoon_absent_fine ?? 0)
+                : Number(row.absent_fine ?? 0),
               status: row.status || "upcoming",
-              attendees: 0,
+              attendees: new Set(
+                (scans ?? [])
+                  .filter(
+                    (scan: any) =>
+                      scan.event_id === row.id &&
+                      (scan.status === "present" || scan.status === "late"),
+                  )
+                  .map((scan: any) => scan.student_id),
+              ).size,
               highlightUrl:
                 row.image_url && !row.image_url.startsWith("blob:")
                   ? row.image_url
@@ -69,10 +82,14 @@ export default function EventsRoutePage() {
         void loadEvents();
       }
     });
+    const attendanceChannel = subscribeToTableChanges("attendance_scans", () => {
+      if (!cancelled) void loadEvents();
+    });
 
     return () => {
       cancelled = true;
       void eventsChannel.unsubscribe();
+      void attendanceChannel.unsubscribe();
     };
   }, []);
 

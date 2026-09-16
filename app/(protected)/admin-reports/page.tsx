@@ -46,7 +46,7 @@ export default function AdminReportsRoutePage() {
           supabase.from("profiles").select("id, role, program"),
           supabase
             .from("attendance_scans")
-            .select("event_id, student_id, status"),
+            .select("event_id, student_id, session_label, status, scan_in_at"),
           supabase.from("fines").select("amount, status"),
         ]);
 
@@ -83,44 +83,56 @@ export default function AdminReportsRoutePage() {
       }
 
       const totalByProgram = new Map<string, number>();
-      const presentByProgram = new Map<string, Set<string>>();
+      const presentByProgram = new Map<string, number>();
+      const completedEvents = eventRows.filter(
+        (event: any) => event.event_date <= new Date().toISOString().slice(0, 10),
+      );
 
-      for (const row of profileRows) {
-        if (row.role !== "student") {
-          continue;
+      for (const event of completedEvents) {
+        const sessionCount = event.multi_session ? 2 : 1;
+        for (const row of profileRows) {
+          if (row.role !== "student") continue;
+          const program = row.program || "Unassigned";
+          const eligible =
+            !event.program ||
+            event.program === "All Programs" ||
+            event.program === program;
+          if (!eligible) continue;
+          totalByProgram.set(
+            program,
+            (totalByProgram.get(program) ?? 0) + sessionCount,
+          );
         }
-
-        const program = row.program || "Unassigned";
-        totalByProgram.set(program, (totalByProgram.get(program) ?? 0) + 1);
-        presentByProgram.set(program, new Set<string>());
       }
 
       for (const row of attendanceRows) {
-        const studentId = row.student_id;
-        if (!studentId) {
-          continue;
+        const program = profileMap.get(row.student_id);
+        const event = completedEvents.find((item: any) => item.id === row.event_id);
+        if (!program || !event) continue;
+        const eligible =
+          !event.program ||
+          event.program === "All Programs" ||
+          event.program === program;
+        if (
+          eligible &&
+          (row.status === "present" || row.status === "late") &&
+          row.scan_in_at
+        ) {
+          presentByProgram.set(
+            program,
+            (presentByProgram.get(program) ?? 0) + 1,
+          );
         }
-
-        const program = profileMap.get(studentId);
-        if (!program) {
-          continue;
-        }
-
-        const presentSet = presentByProgram.get(program) ?? new Set<string>();
-        if (row.status === "present" || row.status === "late") {
-          presentSet.add(studentId);
-        }
-        presentByProgram.set(program, presentSet);
       }
 
       const programStats = Array.from(totalByProgram.entries())
         .map(([label, total]) => {
-          const presentSet = presentByProgram.get(label) ?? new Set<string>();
+          const presentCount = presentByProgram.get(label) ?? 0;
           return {
             label,
-            present: presentSet.size,
+            present: presentCount,
             total,
-            rate: total > 0 ? Math.round((presentSet.size / total) * 100) : 0,
+            rate: total > 0 ? Math.round((presentCount / total) * 100) : 0,
           };
         })
         .sort((a, b) => b.total - a.total);
@@ -159,7 +171,12 @@ export default function AdminReportsRoutePage() {
           description: row.description ?? "",
           program: row.program ?? "All Programs",
           fineAmount: Number(
-            row.absent_fine ?? row.fine_amount ?? row.fineAmount ?? 0,
+            row.fine_amount ??
+              row.fineAmount ??
+              (row.multi_session
+                ? Number(row.morning_absent_fine ?? 0) +
+                  Number(row.afternoon_absent_fine ?? 0)
+                : row.absent_fine ?? 0),
           ),
           status: row.status ?? "upcoming",
           attendees: attendeeIds.size,
@@ -176,7 +193,7 @@ export default function AdminReportsRoutePage() {
         0,
       );
       const collectedFees = fineRows
-        .filter((row: any) => row.status === "paid" || row.status === "excused")
+        .filter((row: any) => row.status === "paid")
         .reduce((sum, row: any) => sum + Number(row.amount ?? 0), 0);
       const pendingFees = fineRows
         .filter((row: any) => row.status === "unpaid")

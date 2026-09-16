@@ -67,7 +67,7 @@ export async function recordAttendance({
         .from("attendance_scans")
         .update({
           scan_in_at: status === "absent" ? null : now.toISOString(),
-          ...(status === "absent" ? { scan_out_at: null } : {}),
+          scan_out_at: null,
           status,
           method,
           scanned_by: scannedBy,
@@ -88,7 +88,7 @@ export async function recordAttendance({
               ? "absent"
               : "confirmed",
         recordId: existing.id,
-        scannedAt: existing.scan_in_at ?? now,
+        scannedAt: status === "absent" ? now : now.toISOString(),
       };
     }
 

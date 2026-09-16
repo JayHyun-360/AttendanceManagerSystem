@@ -24,14 +24,17 @@ export default function AdminEventsRoutePage() {
           return;
         }
 
-        const { data: rows, error } = await supabase
-          .from("events")
-          .select("*")
-          .order("event_date", { ascending: false });
+        const [{ data: rows, error }, { data: scans, error: scansError }] =
+          await Promise.all([
+            supabase.from("events").select("*").order("event_date", { ascending: false }),
+            supabase.from("attendance_scans").select("event_id, student_id, status"),
+          ]);
 
         if (error) {
           console.error(error);
-        } else if (!cancelled) {
+        }
+        if (scansError) console.error(scansError);
+        if (!error && !cancelled) {
           const mapped: EventData[] = (rows ?? []).map((row: any) => ({
             id: row.id,
             title: row.title,
@@ -43,9 +46,20 @@ export default function AdminEventsRoutePage() {
             location: row.location,
             description: row.description,
             program: row.program || "All Programs",
-            fineAmount: row.absent_fine || 0,
+            fineAmount: row.multi_session
+              ? Number(row.morning_absent_fine ?? 0) +
+                Number(row.afternoon_absent_fine ?? 0)
+              : Number(row.absent_fine ?? 0),
             status: (row.status as any) || "upcoming",
-            attendees: 0,
+            attendees: new Set(
+              (scans ?? [])
+                .filter(
+                  (scan: any) =>
+                    scan.event_id === row.id &&
+                    (scan.status === "present" || scan.status === "late"),
+                )
+                .map((scan: any) => scan.student_id),
+            ).size,
             version: row.version || 1,
             mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
             highlightUrl:
@@ -86,10 +100,14 @@ export default function AdminEventsRoutePage() {
         void loadAdminEvents();
       }
     });
+    const attendanceChannel = subscribeToTableChanges("attendance_scans", () => {
+      if (!cancelled) void loadAdminEvents();
+    });
 
     return () => {
       cancelled = true;
       void eventsChannel.unsubscribe();
+      void attendanceChannel.unsubscribe();
     };
   }, [router, user]);
 

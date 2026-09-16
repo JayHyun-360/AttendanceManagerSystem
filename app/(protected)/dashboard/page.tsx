@@ -105,7 +105,7 @@ export default function DashboardRoute() {
             .order("event_date", { ascending: true }),
           supabase
             .from("attendance_scans")
-            .select("status")
+            .select("event_id, session_label, status, scan_in_at")
             .eq("student_id", authUserId),
           supabase
             .from("fines")
@@ -137,8 +137,27 @@ export default function DashboardRoute() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        const completedEventIds = new Set(
+          eventRows
+            .filter((row: any) => row.event_date <= new Date().toISOString().slice(0, 10))
+            .map((row: any) => row.id),
+        );
+        const completedEventRows = eventRows.filter((row: any) =>
+          completedEventIds.has(row.id),
+        );
+        const totalSessions = completedEventRows.reduce(
+          (total: number, row: any) => total + (row.multi_session ? 2 : 1),
+          0,
+        );
         const presentCount = attendanceRows.filter(
-          (row: any) => row.status === "present" || row.status === "late",
+          (row: any) =>
+            completedEventIds.has(row.event_id) &&
+            (row.status === "present" || row.status === "late") &&
+            !!row.scan_in_at,
+        ).length;
+        const absentCount = attendanceRows.filter(
+          (row: any) =>
+            completedEventIds.has(row.event_id) && row.status === "absent",
         ).length;
 
         const upcomingCount = eventRows.filter((row: any) => {
@@ -147,27 +166,15 @@ export default function DashboardRoute() {
           return rowDate >= today;
         }).length;
 
-        const unpaidFineCount = fineRows.filter(
-          (row: any) => row.status === "unpaid",
-        ).length;
-
         setEvents(eventRows);
         setFines(fineRows);
         setAttendanceStats({
           present: presentCount,
-          absent: unpaidFineCount,
+          absent: Math.max(absentCount, totalSessions - presentCount),
           upcoming: upcomingCount,
-          rate:
-            presentCount > 0 || unpaidFineCount > 0
-              ? Math.min(
-                  100,
-                  Math.round(
-                    (presentCount /
-                      Math.max(1, presentCount + unpaidFineCount)) *
-                      100,
-                  ),
-                )
-              : 0,
+          rate: totalSessions > 0
+            ? Math.round((presentCount / totalSessions) * 100)
+            : 0,
         });
       } catch (caughtError) {
         console.error(caughtError);
@@ -254,7 +261,7 @@ export default function DashboardRoute() {
   }
 
   const nextEvent: EventData | undefined = (() => {
-    const row = events.find((event: any) => {
+      const row = events.find((event: any) => {
       const date = new Date(event.event_date);
       return date >= new Date(new Date().setHours(0, 0, 0, 0));
     });
@@ -282,7 +289,14 @@ export default function DashboardRoute() {
       attendees: Number(row.attendees ?? 0),
       description: row.description ?? "",
       program: row.program ?? "",
-      fineAmount: Number(row.fine_amount ?? row.fineAmount ?? 0),
+      fineAmount: Number(
+        row.fine_amount ??
+          row.fineAmount ??
+          (row.multi_session
+            ? Number(row.morning_absent_fine ?? 0) +
+              Number(row.afternoon_absent_fine ?? 0)
+            : row.absent_fine ?? 0),
+      ),
       mediaUrls: Array.isArray(row.mediaUrls)
         ? row.mediaUrls
         : Array.isArray(row.media_urls)
