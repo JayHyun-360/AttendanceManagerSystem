@@ -2183,7 +2183,7 @@ function LandingPage({
           className={`relative w-full mx-auto px-3.5 flex flex-col md:max-w-6xl md:px-6 ${hasHero ? "items-start text-left pt-6 pb-6 md:pt-10 md:pb-12" : "items-center text-center pt-6 pb-6 md:pt-10 md:pb-12"}`}
         >
           <div
-            className={`inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full mb-8 ${hasHero ? "text-emerald-200 bg-white/10 border border-white/25 backdrop-blur-sm" : "text-emerald-700 bg-emerald-50 border border-emerald-200"}`}
+            className={`inline-flex items-center gap-2 text-[11px] font-bold tracking-[0.08em] uppercase px-3.5 py-2 rounded-full mb-8 ${hasHero ? "text-emerald-100 bg-white/10 border border-white/25 backdrop-blur-sm shadow-sm" : "text-emerald-700 bg-emerald-50 border border-emerald-200"}`}
           >
             <span
               className="w-1.5 h-1.5 bg-emerald-400 rounded-full"
@@ -2192,22 +2192,22 @@ function LandingPage({
             AY 2026-2027 · 1st Semester
           </div>
           <div
-            className={`flex items-center gap-3 mb-4 ${hasHero ? "" : "justify-center"}`}
+            className={`flex items-center gap-3 mb-5 ${hasHero ? "" : "justify-center"}`}
           >
             <AdesseMark className="w-14 h-14" />
           </div>
           <h1
-            className={`text-5xl font-extrabold tracking-tight leading-tight mb-2 ${hasHero ? "text-white" : "text-slate-900"}`}
+            className={`adesse-display text-6xl md:text-7xl leading-[0.95] mb-3 ${hasHero ? "text-white" : "text-slate-900"}`}
           >
             Adesse
           </h1>
           <p
-            className={`text-base font-semibold mb-6 ${hasHero ? "text-white/70" : "text-slate-400"}`}
+            className={`text-[11px] font-bold uppercase tracking-[0.16em] mb-7 ${hasHero ? "text-white/75" : "text-slate-400"}`}
           >
             Student Event Attendance &amp; Fee Tracking System
           </p>
           <p
-            className={`text-lg mb-10 leading-relaxed ${hasHero ? "text-white/80 max-w-md" : "text-slate-500 max-w-lg"}`}
+            className={`text-[17px] mb-10 leading-[1.8] ${hasHero ? "text-white/80 max-w-md" : "text-slate-500 max-w-lg"}`}
           >
             One QR code per student. Real-time attendance logging. Automatic fee
             tracking.
@@ -2230,13 +2230,13 @@ function LandingPage({
                   onNav("login");
                 }
               }}
-              className="h-11 px-6 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-px"
+              className="h-12 px-7 bg-emerald-500 hover:bg-emerald-400 text-white text-[13px] font-bold rounded-full transition-all shadow-[0_10px_25px_rgba(16,185,129,.22)] hover:shadow-[0_14px_30px_rgba(16,185,129,.3)] hover:-translate-y-0.5"
             >
               {user ? "Go to Dashboard" : "Get Started"}
             </button>
             <button
               onClick={() => onNav("events")}
-              className={`h-11 px-6 text-sm font-semibold rounded-xl transition-all ${hasHero ? "bg-white/15 text-white border border-white/30 hover:bg-white/25 backdrop-blur-sm" : "border border-slate-200 text-slate-700 hover:bg-slate-50"}`}
+              className={`h-12 px-7 text-[13px] font-bold rounded-full transition-all ${hasHero ? "bg-white/10 text-white border border-white/35 hover:bg-white/20 backdrop-blur-sm" : "border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"}`}
             >
               Browse Events
             </button>
@@ -2266,15 +2266,15 @@ function LandingPage({
           ].map((f) => (
             <div
               key={f.t}
-              className="bg-white border border-slate-100 rounded-2xl p-3.5 hover:border-slate-200 hover:shadow-sm transition-all md:p-6"
+              className="bg-white/90 border border-slate-100/90 rounded-[1.4rem] p-4 hover:border-emerald-100 hover:shadow-[0_16px_40px_rgba(15,23,42,.07)] hover:-translate-y-0.5 transition-all md:p-6"
             >
-              <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-4">
+              <div className="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-5 ring-1 ring-emerald-100/70">
                 <f.I />
               </div>
-              <h3 className="font-semibold text-slate-900 text-sm mb-1.5">
+              <h3 className="font-bold text-slate-900 text-[13px] tracking-tight mb-2">
                 {f.t}
               </h3>
-              <p className="text-sm text-slate-500 leading-relaxed">{f.d}</p>
+              <p className="text-[13px] text-slate-500 leading-[1.75]">{f.d}</p>
             </div>
           ))}
         </div>
