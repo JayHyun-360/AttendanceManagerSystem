@@ -912,6 +912,7 @@ export interface FineRecord {
   eventId: string;
   attendanceScanId?: string;
   sessionLabel?: "morning" | "afternoon";
+  reason?: string;
   eventTitle: string;
   eventDate: string;
   amount: number;
@@ -2214,6 +2215,12 @@ function Badge({ status }: { status: string }) {
       cls: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200",
 
       label: "Paid",
+    },
+
+    cleared: {
+      cls: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+
+      label: "Cleared",
     },
   };
 
@@ -6524,6 +6531,8 @@ export function MyFinesPage({
                   </p>
                   <p className="text-xs text-slate-400 mt-0.5">
                     {fine.eventDate}
+                    {fine.sessionLabel && ` · ${fine.sessionLabel === "afternoon" ? "Afternoon" : "Morning"}`}
+                    {fine.reason && ` · ${fine.reason}`}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
@@ -6538,7 +6547,7 @@ export function MyFinesPage({
                   >
                     ₱{fine.amount}
                   </p>
-                  <Badge status={fine.status} />
+                  <Badge status={fine.status === "paid" ? "cleared" : fine.status} />
                 </div>
               </div>
             ))}

@@ -93,6 +93,7 @@ export default function AttendanceHistoryRoutePage() {
             eventTitle: row.events?.title ?? "Event",
             eventDate: row.events?.event_date ?? "",
             amount: Number(row.amount || 0),
+            reason: row.reason ?? undefined,
             status: row.status || "unpaid",
           }));
 
@@ -185,6 +186,7 @@ export default function AttendanceHistoryRoutePage() {
               eventTitle: event?.title ?? "Event",
               eventDate: event?.event_date ?? "",
               amount: record.fineAmount,
+              reason: record.status === "late" ? "Late attendance" : "Absent attendance",
               status: "unpaid" as const,
             };
           });

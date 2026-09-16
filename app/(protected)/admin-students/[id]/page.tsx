@@ -5,7 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader, ProfileIcon, StudentQR } from "../../../shared-page";
+import {
+  PageHeader,
+  ProfileIcon,
+  StudentQR,
+  type FineRecord,
+} from "../../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { recordAttendance, type AttendanceStatus } from "@/lib/attendance";
 import { useProtectedUser } from "../../layout";
@@ -122,6 +127,9 @@ export default function StudentDetailRoutePage() {
     fineBalance: 0,
   });
   const [metricsRefreshKey, setMetricsRefreshKey] = useState(0);
+  const [studentFines, setStudentFines] = useState<FineRecord[]>([]);
+  const [selectedFineIds, setSelectedFineIds] = useState<string[]>([]);
+  const [isClearingFines, setIsClearingFines] = useState(false);
 
   useEffect(() => {
     if (!routeId) return;
@@ -193,7 +201,7 @@ export default function StudentDetailRoutePage() {
         supabase
           .from("events")
           .select(
-            "id, event_date, program, status, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+            "id, title, event_date, program, status, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
           ),
         supabase
           .from("attendance_scans")
@@ -224,6 +232,27 @@ export default function StudentDetailRoutePage() {
           !!record.scan?.scan_in_at,
       ).length;
       const fineBalance = totalUnpaidFine(records);
+      const fineRows = finesResult.data ?? [];
+      const fineById = new Map(fineRows.map((fine: any) => [String(fine.id), fine]));
+      setStudentFines(
+        records
+          .filter((record) => record.fineId)
+          .map((record) => {
+            const fine = fineById.get(String(record.fineId));
+            const event = (eventsResult.data ?? []).find((item: any) => item.id === record.eventId);
+            return {
+              id: String(record.fineId),
+              eventId: record.eventId,
+              attendanceScanId: record.scan?.id,
+              sessionLabel: record.sessionLabel,
+              eventTitle: event?.title ?? "Event",
+              eventDate: event?.event_date ?? "",
+              amount: Number(fine?.amount ?? record.fineAmount ?? 0),
+              status: fine?.status ?? record.fineStatus ?? "unpaid",
+            };
+          }),
+      );
+      setSelectedFineIds([]);
 
       setMetrics({
         attendanceRate:
@@ -387,6 +416,38 @@ export default function StudentDetailRoutePage() {
     setMetricsRefreshKey((current) => current + 1);
   };
 
+  const clearFineIds = async (fineIds: string[]) => {
+    const ids = Array.from(new Set(fineIds)).filter(Boolean);
+    if (!ids.length) {
+      toast.error("Select at least one pending fine.");
+      return;
+    }
+    setIsClearingFines(true);
+    const { error } = await supabase
+      .from("fines")
+      .update({ status: "paid" })
+      .in("id", ids)
+      .eq("student_id", routeId)
+      .eq("status", "unpaid");
+    setIsClearingFines(false);
+    if (error) {
+      console.error(error);
+      toast.error("Could not clear the selected fines.");
+      return;
+    }
+    toast.success(`${ids.length} fine${ids.length === 1 ? "" : "s"} cleared.`);
+    setMetricsRefreshKey((current) => current + 1);
+  };
+
+  const pendingFines = studentFines.filter((fine) => fine.status === "unpaid");
+  const toggleFine = (fineId: string) => {
+    setSelectedFineIds((current) =>
+      current.includes(fineId)
+        ? current.filter((id) => id !== fineId)
+        : [...current, fineId],
+    );
+  };
+
   const badges = useMemo(
     () =>
       [student?.program, student?.yearLevel, student?.section].filter(Boolean),
@@ -504,6 +565,38 @@ export default function StudentDetailRoutePage() {
                   <p className="text-xs text-slate-500">{label}</p>
                 </div>
               ))}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-base font-semibold text-slate-900">Fine clearance</p>
+                <p className="mt-1 text-sm text-slate-500">Clear selected fines when this student completes clearance payment.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" disabled={isClearingFines || selectedFineIds.length === 0} onClick={() => void clearFineIds(selectedFineIds)} className="h-9 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">Clear selected</button>
+                <button type="button" disabled={isClearingFines || pendingFines.length === 0} onClick={() => void clearFineIds(pendingFines.map((fine) => fine.id))} className="h-9 rounded-lg border border-emerald-200 px-3 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50">Clear all</button>
+              </div>
+            </div>
+            <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">
+              {studentFines.length === 0 ? (
+                <p className="px-4 py-6 text-center text-sm text-slate-400">No persistent fine records yet. Run the clearance SQL migration to persist inferred absences.</p>
+              ) : (
+                studentFines.map((fine) => {
+                  const cleared = fine.status !== "unpaid";
+                  return (
+                    <div key={fine.id} className={`flex items-center gap-3 px-4 py-3 ${cleared ? "opacity-60" : ""}`}>
+                      <input type="checkbox" checked={selectedFineIds.includes(fine.id)} disabled={cleared || isClearingFines} onChange={() => toggleFine(fine.id)} className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                      <div className="min-w-0 flex-1">
+                        <p className={`truncate text-sm font-semibold text-slate-900 ${cleared ? "line-through" : ""}`}>{fine.eventTitle}</p>
+                        <p className="text-xs text-slate-500">{fine.eventDate} · {fine.sessionLabel === "afternoon" ? "Afternoon" : "Morning"} · ₱{fine.amount}</p>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${cleared ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>{cleared ? "Cleared" : "Pending"}</span>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </section>
 
