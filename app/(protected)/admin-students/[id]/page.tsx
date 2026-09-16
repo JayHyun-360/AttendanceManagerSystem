@@ -189,7 +189,7 @@ export default function StudentDetailRoutePage() {
         supabase
           .from("events")
           .select(
-            "id, event_date, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+            "id, event_date, program, status, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
           ),
         supabase
           .from("attendance_scans")
@@ -197,7 +197,7 @@ export default function StudentDetailRoutePage() {
           .eq("student_id", routeId),
         supabase
           .from("fines")
-          .select("id, attendance_scan_id, amount, status")
+          .select("id, attendance_scan_id, event_id, session_label, amount, status")
           .eq("student_id", routeId),
       ]);
 
@@ -242,12 +242,62 @@ export default function StudentDetailRoutePage() {
       const eventById = new Map(
         (eventsResult.data ?? []).map((event) => [event.id, event]),
       );
-      const missingFineTotal = (scansResult.data ?? []).reduce((total, scan) => {
+      const scanBySession = new Map(
+        (scansResult.data ?? []).map((scan) => [
+          `${scan.event_id}:${scan.session_label}`,
+          scan,
+        ]),
+      );
+      const fineBySession = new Set(
+        (finesResult.data ?? [])
+          .filter((fine) => fine.event_id && fine.session_label)
+          .map((fine) => `${fine.event_id}:${fine.session_label}`),
+      );
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const applicableEvents = (eventsResult.data ?? []).filter(
+        (event) =>
+          event.event_date <= todayKey &&
+          event.status !== "upcoming" &&
+          (!event.program ||
+            event.program === "All Programs" ||
+            event.program === student?.program),
+      );
+      const missingFineTotal = applicableEvents.reduce((total, event) => {
+        const sessions = event.multi_session
+          ? (["morning", "afternoon"] as const)
+          : (["morning"] as const);
+        return total + sessions.reduce((sessionTotal, sessionLabel) => {
+          const key = `${event.id}:${sessionLabel}`;
+          const scan = scanBySession.get(key);
+          if (fineBySession.has(key)) return sessionTotal;
+          if (!scan) {
+            return sessionTotal + Number(event.morning_absent_fine ?? event.absent_fine ?? 0);
+          }
+          if (
+            (scan.status !== "absent" && scan.status !== "late") ||
+            (scan.status === "late" && !scan.scan_in_at) ||
+            linkedFineScanIds.has(scan.id)
+          ) {
+            return sessionTotal;
+          }
+          const amount =
+            scan.status === "absent"
+              ? sessionLabel === "afternoon"
+                ? Number(event.afternoon_absent_fine ?? event.absent_fine ?? 0)
+                : Number(event.morning_absent_fine ?? event.absent_fine ?? 0)
+              : sessionLabel === "afternoon"
+                ? Number(event.afternoon_late_fine ?? event.late_fine ?? 0)
+                : Number(event.morning_late_fine ?? event.late_fine ?? 0);
+          return sessionTotal + amount;
+        }, 0);
+      }, 0);
+      const scanFineTotal = (scansResult.data ?? []).reduce((total, scan) => {
         if (
-          !completedEventIds.has(scan.event_id) ||
+          !applicableEvents.some((event) => event.id === scan.event_id) ||
           (scan.status !== "absent" && scan.status !== "late") ||
           (scan.status === "late" && !scan.scan_in_at) ||
-          linkedFineScanIds.has(scan.id)
+          linkedFineScanIds.has(scan.id) ||
+          fineBySession.has(`${scan.event_id}:${scan.session_label}`)
         ) {
           return total;
         }
@@ -263,7 +313,7 @@ export default function StudentDetailRoutePage() {
               : Number(event.morning_late_fine ?? event.late_fine ?? 0);
         return total + amount;
       }, 0);
-      const fineBalance = actualUnpaidTotal + missingFineTotal;
+      const fineBalance = actualUnpaidTotal + missingFineTotal + scanFineTotal;
 
       setMetrics({
         attendanceRate:
@@ -280,7 +330,7 @@ export default function StudentDetailRoutePage() {
     return () => {
       cancelled = true;
     };
-  }, [metricsRefreshKey, routeId, user?.role]);
+  }, [metricsRefreshKey, routeId, student?.program, user?.role]);
 
   useEffect(() => {
     let cancelled = false;

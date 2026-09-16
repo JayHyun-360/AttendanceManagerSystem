@@ -23,7 +23,12 @@ export default function MyFinesRoutePage() {
           return;
         }
 
-        const [{ data, error }, { data: scans, error: scansError }] =
+        const [
+          { data, error },
+          { data: scans, error: scansError },
+          { data: profile, error: profileError },
+          { data: events, error: eventsError },
+        ] =
           await Promise.all([
             supabase
               .from("fines")
@@ -36,6 +41,12 @@ export default function MyFinesRoutePage() {
                 "id, event_id, session_label, status, scan_in_at, events(title, event_date, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine)",
               )
               .eq("student_id", authUserId),
+            supabase.from("profiles").select("program").eq("id", authUserId).single(),
+            supabase
+              .from("events")
+              .select(
+                "id, title, event_date, status, program, multi_session, absent_fine, morning_absent_fine, afternoon_absent_fine",
+              ),
           ]);
 
         if (error) {
@@ -46,12 +57,21 @@ export default function MyFinesRoutePage() {
           console.error(scansError);
           return;
         }
+        if (profileError) {
+          console.error(profileError);
+          return;
+        }
+        if (eventsError) {
+          console.error(eventsError);
+          return;
+        }
 
         if (!cancelled) {
           const storedFines = (data ?? []).map((row: any) => ({
               id: String(row.id),
               eventId: row.event_id,
               attendanceScanId: row.attendance_scan_id ?? undefined,
+              sessionLabel: row.session_label ?? undefined,
               eventTitle: row.events?.title ?? "Event",
               eventDate: row.events?.event_date ?? "",
               amount: Number(row.amount || 0),
@@ -87,7 +107,49 @@ export default function MyFinesRoutePage() {
               };
             })
             .filter((fine) => fine.amount > 0);
-          setFines([...storedFines, ...recoveredFines]);
+          const scannedSessionKeys = new Set(
+            (scans ?? []).map((scan: any) => `${scan.event_id}:${scan.session_label}`),
+          );
+          const linkedFineKeys = new Set(
+            storedFines
+              .filter((fine) => fine.eventId && fine.sessionLabel)
+              .map((fine) => `${fine.eventId}:${fine.sessionLabel}`),
+          );
+          const todayKey = new Date().toISOString().slice(0, 10);
+          const inferredFines = (events ?? []).flatMap((event: any) => {
+            if (
+              event.event_date > todayKey ||
+              event.status === "upcoming" ||
+              (event.program &&
+                event.program !== "All Programs" &&
+                event.program !== profile?.program)
+            ) {
+              return [];
+            }
+            const sessions = event.multi_session
+              ? ["morning", "afternoon"]
+              : ["morning"];
+            return sessions.flatMap((sessionLabel) => {
+              const key = `${event.id}:${sessionLabel}`;
+              if (scannedSessionKeys.has(key) || linkedFineKeys.has(key)) return [];
+              const amount =
+                sessionLabel === "afternoon"
+                  ? Number(event.afternoon_absent_fine ?? event.absent_fine ?? 0)
+                  : Number(event.morning_absent_fine ?? event.absent_fine ?? 0);
+              return amount > 0
+                ? [{
+                    id: `inferred-${event.id}-${sessionLabel}`,
+                    eventId: event.id,
+                    sessionLabel,
+                    eventTitle: event.title ?? "Event",
+                    eventDate: event.event_date ?? "",
+                    amount,
+                    status: "unpaid" as const,
+                  }]
+                : [];
+            });
+          });
+          setFines([...storedFines, ...recoveredFines, ...inferredFines]);
         }
       } catch (caughtError) {
         console.error(caughtError);

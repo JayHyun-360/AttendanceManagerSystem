@@ -900,6 +900,7 @@ export interface FineRecord {
   id: string;
   eventId: string;
   attendanceScanId?: string;
+  sessionLabel?: string;
   eventTitle: string;
   eventDate: string;
   amount: number;
