@@ -1,38 +1,38 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
 
-import { ProfilePage, type User } from "../../shared-page"
+import { ProfilePage, type User } from "../../shared-page";
 
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase";
 
-import { deleteImages } from "@/lib/uploadImage"
+import { deleteImages } from "@/lib/uploadImage";
 
-import { useProtectedUser } from "../layout"
+import { useProtectedUser } from "../layout";
 
 export default function ProfileRoutePage() {
-  const router = useRouter()
+  const router = useRouter();
 
-  const { user, authUserId, setUser } = useProtectedUser()
+  const { user, authUserId, setUser } = useProtectedUser();
 
-  const [saving, setSaving] = useState(false)
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!user) {
-      return
+      return;
     }
 
-    setUser((current) => current ?? user)
-  }, [user, setUser])
+    setUser((current) => current ?? user);
+  }, [user, setUser]);
 
   const handleSave = async (nextUser: User) => {
     if (!authUserId || !user) {
-      return
+      return;
     }
 
-    setSaving(true)
+    setSaving(true);
 
     const { error } = await supabase
 
@@ -62,33 +62,42 @@ export default function ProfileRoutePage() {
             ? nextUser.photoUrl
             : null,
 
+        cover_photo_url:
+          nextUser.coverPhotoUrl && !nextUser.coverPhotoUrl.startsWith("blob:")
+            ? nextUser.coverPhotoUrl
+            : null,
+
         id_photo_url:
           nextUser.idPhotoUrl && !nextUser.idPhotoUrl.startsWith("blob:")
             ? nextUser.idPhotoUrl
             : null,
       })
 
-      .eq("id", authUserId)
+      .eq("id", authUserId);
 
-    setSaving(false)
+    setSaving(false);
 
     if (error) {
-      console.error(error)
+      console.error(error);
 
-      return
+      return;
     }
 
-    const nextMediaUrls = [nextUser.photoUrl, nextUser.idPhotoUrl].filter(
-      (url): url is string => !!url && !url.startsWith("blob:"),
-    )
+    const nextMediaUrls = [
+      nextUser.photoUrl,
+      nextUser.coverPhotoUrl,
+      nextUser.idPhotoUrl,
+    ].filter((url): url is string => !!url && !url.startsWith("blob:"));
 
-    const previousMediaUrls = [user.photoUrl, user.idPhotoUrl].filter(
-      (url): url is string => !!url && !url.startsWith("blob:"),
-    )
+    const previousMediaUrls = [
+      user.photoUrl,
+      user.coverPhotoUrl,
+      user.idPhotoUrl,
+    ].filter((url): url is string => !!url && !url.startsWith("blob:"));
 
     const cleanupResults = await deleteImages(
       previousMediaUrls.filter((url) => !nextMediaUrls.includes(url)),
-    )
+    );
 
     cleanupResults
 
@@ -96,13 +105,13 @@ export default function ProfileRoutePage() {
 
       .forEach((result) =>
         console.error("Failed to delete profile media", result.error),
-      )
+      );
 
-    setUser(nextUser)
-  }
+    setUser(nextUser);
+  };
 
   if (!user) {
-    return null
+    return null;
   }
 
   return (
@@ -114,5 +123,5 @@ export default function ProfileRoutePage() {
       }
       saving={saving}
     />
-  )
+  );
 }

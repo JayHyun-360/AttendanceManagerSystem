@@ -166,6 +166,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           contactEmail: profile.contact_email ?? profile.email ?? "",
           role: profile.role ?? "student",
           photoUrl: profile.photo_url ?? googleAvatarUrl ?? undefined,
+          coverPhotoUrl: profile.cover_photo_url ?? undefined,
           idPhotoUrl: profile.id_photo_url ?? undefined,
         };
 

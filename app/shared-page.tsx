@@ -619,6 +619,7 @@ import { Skeleton } from "@/components/ui/skeleton";
                     contactEmail: string;
                     role: Role;
                     photoUrl?: string;
+                    coverPhotoUrl?: string;
                     idPhotoUrl?: string;
                   }
 
@@ -832,6 +833,7 @@ export interface User {
   contactEmail: string;
   role: Role;
   photoUrl?: string;
+  coverPhotoUrl?: string;
   idPhotoUrl?: string;
 }
 
@@ -6010,9 +6012,15 @@ export function ProfilePage({
     "idle" | "uploading" | "error"
   >("idle");
 
+  const [coverPhotoUploadState, setCoverPhotoUploadState] = useState<
+    "idle" | "uploading" | "error"
+  >("idle");
+
   const [draft, setDraft] = useState({ ...user });
 
   const photoRef = useRef<HTMLInputElement>(null);
+
+  const coverPhotoRef = useRef<HTMLInputElement>(null);
 
   const setF =
     (k: keyof User) =>
@@ -6047,10 +6055,42 @@ export function ProfilePage({
     setDraft((d) => ({ ...d, photoUrl: result.url }));
   };
 
+  const handleCoverPhotoChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (draft.coverPhotoUrl && draft.coverPhotoUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(draft.coverPhotoUrl);
+    }
+
+    setCoverPhotoUploadState("uploading");
+
+    const result = await uploadImage(file);
+
+    if ("error" in result) {
+      setCoverPhotoUploadState("error");
+
+      toast.error(result.error);
+
+      return;
+    }
+
+    setCoverPhotoUploadState("idle");
+
+    setDraft((d) => ({ ...d, coverPhotoUrl: result.url }));
+  };
+
   useEffect(() => {
     return () => {
       if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
         URL.revokeObjectURL(draft.photoUrl);
+      }
+
+      if (draft.coverPhotoUrl && draft.coverPhotoUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(draft.coverPhotoUrl);
       }
     };
   }, []);
@@ -6108,9 +6148,50 @@ export function ProfilePage({
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 lg:grid-cols-[1.05fr_1.4fr]">
         <aside className="space-y-6">
           <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-            <div className="relative h-36 w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-slate-100 via-emerald-50 to-slate-200 md:h-40">
-              <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full bg-white/50 blur-3xl" />
-              <div className="absolute bottom-0 left-1/3 h-24 w-56 rounded-full bg-emerald-100/40 blur-3xl" />
+            <div className="relative h-36 w-full overflow-hidden rounded-t-2xl md:h-40">
+              {(editing ? draft.coverPhotoUrl : user.coverPhotoUrl) ? (
+                <img
+                  src={editing ? draft.coverPhotoUrl : user.coverPhotoUrl}
+                  alt="Profile cover"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-100 via-emerald-50 to-slate-200" />
+                  <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full bg-white/50 blur-3xl" />
+                  <div className="absolute bottom-0 left-1/3 h-24 w-56 rounded-full bg-emerald-100/40 blur-3xl" />
+                </>
+              )}
+              {editing && (
+                <div className="absolute right-3 top-3 flex gap-2">
+                  <input
+                    ref={coverPhotoRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleCoverPhotoChange}
+                  />
+                  <button
+                    onClick={() => coverPhotoRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1.5 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-white"
+                  >
+                    <Icons.Camera />
+                    {coverPhotoUploadState === "uploading"
+                      ? "Uploading..."
+                      : "Change cover"}
+                  </button>
+                  {(draft.coverPhotoUrl || user.coverPhotoUrl) && (
+                    <button
+                      onClick={() =>
+                        setDraft((d) => ({ ...d, coverPhotoUrl: undefined }))
+                      }
+                      className="rounded-full bg-slate-900/80 px-2.5 py-1.5 text-[10px] font-semibold text-white shadow-sm transition hover:bg-slate-900"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             <div className="relative px-5 pb-5 md:px-6">
               <div className="relative z-10 -mt-10 ml-6">

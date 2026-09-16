@@ -44,6 +44,7 @@ export interface User {
   contactEmail: string;
   role: Role;
   photoUrl?: string;
+  coverPhotoUrl?: string;
   idPhotoUrl?: string;
 }
 
