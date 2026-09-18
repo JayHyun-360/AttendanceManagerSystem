@@ -347,7 +347,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           </div>
         )}
         <TopBar user={user} onNav={onNav} onMenuOpen={() => setOpen(true)} />
-        <div className="flex min-h-0 w-full md:h-[calc(100vh-56px)]">
+        <div className="w-full md:flex md:min-h-0 md:h-[calc(100vh-56px)]">
           <Sidebar
             page={page}
             user={user}
@@ -358,7 +358,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           />
           <main
             id="protected-main-content"
-            className="w-full min-w-0 flex-1 min-h-0 overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
+            className="w-full min-w-0 md:min-h-0 md:flex-1 md:overflow-x-hidden md:overflow-y-auto md:overscroll-contain md:[scrollbar-gutter:stable]"
           >
             <PageShell>{children}</PageShell>
           </main>
