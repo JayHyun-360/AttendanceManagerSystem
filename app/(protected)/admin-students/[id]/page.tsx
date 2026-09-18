@@ -53,6 +53,7 @@ interface ExistingAttendance {
   scan_in_at: string | null;
   scan_out_at: string | null;
   method: "qr_scan" | "manual";
+  scanned_by: string | null;
 }
 
 interface StudentMetrics {
@@ -209,7 +210,9 @@ export default function StudentDetailRoutePage() {
           .eq("student_id", routeId),
         supabase
           .from("fines")
-          .select("id, attendance_scan_id, event_id, session_label, amount, status")
+          .select(
+            "id, attendance_scan_id, event_id, session_label, amount, status",
+          )
           .eq("student_id", routeId),
       ]);
 
@@ -233,13 +236,17 @@ export default function StudentDetailRoutePage() {
       ).length;
       const fineBalance = totalUnpaidFine(records);
       const fineRows = finesResult.data ?? [];
-      const fineById = new Map(fineRows.map((fine: any) => [String(fine.id), fine]));
+      const fineById = new Map(
+        fineRows.map((fine: any) => [String(fine.id), fine]),
+      );
       setStudentFines(
         records
           .filter((record) => record.fineId)
           .map((record) => {
             const fine = fineById.get(String(record.fineId));
-            const event = (eventsResult.data ?? []).find((item: any) => item.id === record.eventId);
+            const event = (eventsResult.data ?? []).find(
+              (item: any) => item.id === record.eventId,
+            );
             return {
               id: String(record.fineId),
               eventId: record.eventId,
@@ -336,7 +343,9 @@ export default function StudentDetailRoutePage() {
     async function loadExistingAttendance() {
       const { data, error } = await supabase
         .from("attendance_scans")
-        .select("id, status, session_label, scan_in_at, scan_out_at, method")
+        .select(
+          "id, status, session_label, scan_in_at, scan_out_at, method, scanned_by",
+        )
         .eq("event_id", selectedEventId)
         .eq("student_id", routeId)
         .eq("session_label", sessionLabel)
@@ -364,13 +373,19 @@ export default function StudentDetailRoutePage() {
     suggestedSession(selectedEvent) !== null &&
     suggestedSession(selectedEvent) !== sessionLabel;
 
+  const isInferredAbsence =
+    existingAttendance?.status === "absent" &&
+    !existingAttendance.scan_in_at &&
+    !existingAttendance.scan_out_at &&
+    !existingAttendance.scanned_by;
+
   const markAttendance = async (overwrite = false) => {
     if (!routeId || !authUserId || !selectedEventId || !selectedEvent) {
       toast.error("Select an event before marking attendance.");
       return;
     }
 
-    if (existingAttendance && !overwrite) {
+    if (existingAttendance && !isInferredAbsence && !overwrite) {
       toast.error("Choose Overwrite or Cancel for the existing record.");
       return;
     }
@@ -385,7 +400,7 @@ export default function StudentDetailRoutePage() {
       strictSession: false,
       canTimeOut: false,
       method: "manual",
-      overwrite,
+      overwrite: overwrite || isInferredAbsence,
     });
 
     setIsSavingAttendance(false);
@@ -407,7 +422,9 @@ export default function StudentDetailRoutePage() {
     setExistingAttendance(null);
     const { data } = await supabase
       .from("attendance_scans")
-      .select("id, status, session_label, scan_in_at, scan_out_at, method")
+      .select(
+        "id, status, session_label, scan_in_at, scan_out_at, method, scanned_by",
+      )
       .eq("event_id", selectedEventId)
       .eq("student_id", routeId)
       .eq("session_label", sessionLabel)
@@ -571,28 +588,75 @@ export default function StudentDetailRoutePage() {
           <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-base font-semibold text-slate-900">Fine clearance</p>
-                <p className="mt-1 text-sm text-slate-500">Clear selected fines when this student completes clearance payment.</p>
+                <p className="text-base font-semibold text-slate-900">
+                  Fine clearance
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Clear selected fines when this student completes clearance
+                  payment.
+                </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button type="button" disabled={isClearingFines || selectedFineIds.length === 0} onClick={() => void clearFineIds(selectedFineIds)} className="h-9 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">Clear selected</button>
-                <button type="button" disabled={isClearingFines || pendingFines.length === 0} onClick={() => void clearFineIds(pendingFines.map((fine) => fine.id))} className="h-9 rounded-lg border border-emerald-200 px-3 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50">Clear all</button>
+                <button
+                  type="button"
+                  disabled={isClearingFines || selectedFineIds.length === 0}
+                  onClick={() => void clearFineIds(selectedFineIds)}
+                  className="h-9 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Clear selected
+                </button>
+                <button
+                  type="button"
+                  disabled={isClearingFines || pendingFines.length === 0}
+                  onClick={() =>
+                    void clearFineIds(pendingFines.map((fine) => fine.id))
+                  }
+                  className="h-9 rounded-lg border border-emerald-200 px-3 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Clear all
+                </button>
               </div>
             </div>
             <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">
               {studentFines.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-slate-400">No persistent fine records yet. Run the clearance SQL migration to persist inferred absences.</p>
+                <p className="px-4 py-6 text-center text-sm text-slate-400">
+                  No persistent fine records yet. Run the clearance SQL
+                  migration to persist inferred absences.
+                </p>
               ) : (
                 studentFines.map((fine) => {
                   const cleared = fine.status !== "unpaid";
                   return (
-                    <div key={fine.id} className={`flex items-center gap-3 px-4 py-3 ${cleared ? "opacity-60" : ""}`}>
-                      <input type="checkbox" checked={selectedFineIds.includes(fine.id)} disabled={cleared || isClearingFines} onChange={() => toggleFine(fine.id)} className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                    <div
+                      key={fine.id}
+                      className={`flex items-center gap-3 px-4 py-3 ${cleared ? "opacity-60" : ""}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedFineIds.includes(fine.id)}
+                        disabled={cleared || isClearingFines}
+                        onChange={() => toggleFine(fine.id)}
+                        className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      />
                       <div className="min-w-0 flex-1">
-                        <p className={`truncate text-sm font-semibold text-slate-900 ${cleared ? "line-through" : ""}`}>{fine.eventTitle}</p>
-                        <p className="text-xs text-slate-500">{fine.eventDate} · {fine.sessionLabel === "afternoon" ? "Afternoon" : "Morning"} · ₱{fine.amount}</p>
+                        <p
+                          className={`truncate text-sm font-semibold text-slate-900 ${cleared ? "line-through" : ""}`}
+                        >
+                          {fine.eventTitle}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {fine.eventDate} ·{" "}
+                          {fine.sessionLabel === "afternoon"
+                            ? "Afternoon"
+                            : "Morning"}{" "}
+                          · ₱{fine.amount}
+                        </p>
                       </div>
-                      <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${cleared ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>{cleared ? "Cleared" : "Pending"}</span>
+                      <span
+                        className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${cleared ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}
+                      >
+                        {cleared ? "Cleared" : "Pending"}
+                      </span>
                     </div>
                   );
                 })
@@ -682,7 +746,7 @@ export default function StudentDetailRoutePage() {
                 <p className="mt-4 text-sm text-slate-500">
                   Checking existing attendance...
                 </p>
-              ) : existingAttendance ? (
+              ) : existingAttendance && !isInferredAbsence ? (
                 <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-800">
                   <p className="text-sm font-semibold text-amber-900">
                     Attendance already exists for this event and session.
@@ -732,7 +796,7 @@ export default function StudentDetailRoutePage() {
                 View Attendance History
               </summary>
               <div className="mt-3 max-h-48 overflow-y-auto border-t border-slate-200 pt-3 text-xs text-slate-500">
-                {existingAttendance ? (
+                {existingAttendance && !isInferredAbsence ? (
                   <div className="grid grid-cols-2 gap-3">
                     <span>Status: {existingAttendance.status}</span>
                     <span>Method: {existingAttendance.method}</span>
