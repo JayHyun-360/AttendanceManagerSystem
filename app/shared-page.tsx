@@ -750,6 +750,79 @@ function toMinutes(value?: string | null) {
   return hour * 60 + minute;
 }
 
+function addMinutesToTime(value: string | null | undefined, minutes: number) {
+  const current = toMinutes(value);
+  if (current === null) return null;
+
+  const next = current + minutes;
+  if (next >= 24 * 60) return null;
+
+  return `${String(Math.floor(next / 60)).padStart(2, "0")}:${String(
+    next % 60,
+  ).padStart(2, "0")}`;
+}
+
+function normalizeTimeValue(value: unknown) {
+  return typeof value === "string" ? value.slice(0, 5) : "";
+}
+
+function SessionExtensionControls({
+  label,
+  end,
+  disabled,
+  onRequest,
+}: {
+  label: string;
+  end?: string | null;
+  disabled?: boolean;
+  onRequest: (minutes: number) => void;
+}) {
+  const [minutes, setMinutes] = useState(5);
+
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-xs font-semibold text-amber-900">
+            Extend {label} session
+          </p>
+          <p className="mt-0.5 text-[10px] text-amber-700">
+            The new end time becomes the late cutoff.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={minutes}
+            disabled={disabled || !end}
+            onChange={(event) => setMinutes(Number(event.target.value))}
+            className="h-9 rounded-lg border border-amber-200 bg-white px-2 text-xs font-semibold text-amber-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label={`${label} extension length`}
+          >
+            {[5, 10, 15, 20, 25, 30].map((option) => (
+              <option key={option} value={option}>
+                +{option} min
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={disabled || !end}
+            onClick={() => onRequest(minutes)}
+            className="h-9 rounded-lg bg-amber-600 px-3 text-xs font-semibold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Extend session
+          </button>
+        </div>
+      </div>
+      {!end && (
+        <p className="mt-2 text-[10px] text-red-700">
+          Add a session end time before extending this session.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function getEventSessionMeta(event: EventData | null | undefined) {
   if (!event) {
     return {
@@ -7397,6 +7470,13 @@ interface NewEventDraft {
 
 type CreateEventTab = "basic" | "session" | "fines" | "media";
 
+type PendingSessionExtension = {
+  sessionLabel: "morning" | "afternoon";
+  minutes: number;
+  oldEnd: string;
+  newEnd: string;
+};
+
 export function AdminEventsPage({
   onNav,
 
@@ -7491,6 +7571,11 @@ export function AdminEventsPage({
   });
 
   const [showSensitiveWarning, setShowSensitiveWarning] = useState(false);
+
+  const [pendingSessionExtension, setPendingSessionExtension] =
+    useState<PendingSessionExtension | null>(null);
+
+  const [isExtendingSession, setIsExtendingSession] = useState(false);
 
   const [eventHasScans, setEventHasScans] = useState(false);
 
@@ -7945,6 +8030,90 @@ export function AdminEventsPage({
         String(editOriginal.afternoonLateFine ?? 0);
 
     return eventFieldChanged || fineChanged;
+  };
+
+  const requestSessionExtension = (
+    sessionLabel: "morning" | "afternoon",
+    minutes: number,
+  ) => {
+    if (!editDraft) return;
+
+    const oldEnd =
+      sessionLabel === "morning"
+        ? editDraft.morningEnd
+        : editDraft.afternoonEnd;
+    const newEnd = addMinutesToTime(oldEnd, minutes);
+
+    if (!oldEnd || !newEnd) {
+      toast.error("This session cannot be extended beyond midnight.");
+      return;
+    }
+
+    setPendingSessionExtension({
+      sessionLabel,
+      minutes,
+      oldEnd: normalizeTimeValue(oldEnd),
+      newEnd,
+    });
+  };
+
+  const extendSession = async () => {
+    if (!editDraft || !pendingSessionExtension || isExtendingSession) return;
+
+    setIsExtendingSession(true);
+
+    const { data, error } = await supabase.rpc("extend_event_session", {
+      p_event_id: editDraft.id,
+      p_session_label: pendingSessionExtension.sessionLabel,
+      p_extension_minutes: pendingSessionExtension.minutes,
+    });
+
+    if (error) {
+      console.error(error);
+      toast.error(`Could not extend session: ${error.message}`);
+      setIsExtendingSession(false);
+      return;
+    }
+
+    const result = Array.isArray(data) ? data[0] : data;
+    const newEnd = normalizeTimeValue(result?.new_end_time);
+    const upgradedCount = Number(result?.upgraded_count ?? 0);
+
+    if (!newEnd) {
+      toast.error("The extension completed without returning a new end time.");
+      setIsExtendingSession(false);
+      return;
+    }
+
+    const nextDraft: EventData = {
+      ...editDraft,
+      version: (editDraft.version ?? 1) + 1,
+    };
+
+    if (pendingSessionExtension.sessionLabel === "morning") {
+      nextDraft.morningEnd = newEnd;
+      nextDraft.morningLateCutoff = newEnd;
+      if (!nextDraft.multiSession) {
+        const start = nextDraft.time.split(/[–-]/)[0]?.trim();
+        nextDraft.time = start ? `${start}–${newEnd}` : newEnd;
+      }
+    } else {
+      nextDraft.afternoonEnd = newEnd;
+      nextDraft.afternoonLateCutoff = newEnd;
+    }
+
+    setEditDraft(nextDraft);
+    setEditOriginal(nextDraft);
+    setEvents((current) =>
+      current.map((event) => (event.id === nextDraft.id ? nextDraft : event)),
+    );
+    setPendingSessionExtension(null);
+    setIsExtendingSession(false);
+    toast.success(
+      `Session extended to ${newEnd}. ${upgradedCount} late ${
+        upgradedCount === 1 ? "record was" : "records were"
+      } upgraded to present.`,
+    );
   };
 
   const commitSave = async () => {
@@ -8898,6 +9067,14 @@ export function AdminEventsPage({
                     }
                     label="Strict attendance (require time-out scan)"
                   />
+                  <SessionExtensionControls
+                    label="Morning"
+                    end={editDraft.morningEnd}
+                    disabled={isExtendingSession}
+                    onRequest={(minutes) =>
+                      requestSessionExtension("morning", minutes)
+                    }
+                  />
                 </div>
               ) : (
                 <div className="space-y-2.5">
@@ -8925,6 +9102,14 @@ export function AdminEventsPage({
                       )
                     }
                   />
+                  <SessionExtensionControls
+                    label="Morning"
+                    end={editDraft.morningEnd}
+                    disabled={isExtendingSession}
+                    onRequest={(minutes) =>
+                      requestSessionExtension("morning", minutes)
+                    }
+                  />
                   <SessionFields
                     prefix="ea"
                     label="Afternoon"
@@ -8947,6 +9132,14 @@ export function AdminEventsPage({
                       setEditDraft((d) =>
                         d ? { ...d, strictAfternoon: !d.strictAfternoon } : d,
                       )
+                    }
+                  />
+                  <SessionExtensionControls
+                    label="Afternoon"
+                    end={editDraft.afternoonEnd}
+                    disabled={isExtendingSession}
+                    onRequest={(minutes) =>
+                      requestSessionExtension("afternoon", minutes)
                     }
                   />
                 </div>
@@ -9047,6 +9240,49 @@ export function AdminEventsPage({
               </div>
             </>
           )}
+        </FormModal>
+      )}
+
+      {pendingSessionExtension && editDraft && (
+        <FormModal
+          title="Confirm session extension"
+          onClose={() => {
+            if (!isExtendingSession) setPendingSessionExtension(null);
+          }}
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={() => void extendSession()}
+                disabled={isExtendingSession}
+                className="flex-1 h-10 rounded-lg bg-amber-600 text-sm font-semibold text-white shadow-sm hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isExtendingSession ? "Extending..." : "Confirm extension"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingSessionExtension(null)}
+                disabled={isExtendingSession}
+                className="h-10 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </>
+          }
+        >
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-sm font-semibold text-amber-950">
+              Extend the {pendingSessionExtension.sessionLabel} session by {" "}
+              {pendingSessionExtension.minutes} minutes?
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-amber-900">
+              Extending this session will move the late cutoff from{" "}
+              <strong>{pendingSessionExtension.oldEnd}</strong> to{" "}
+              <strong>{pendingSessionExtension.newEnd}</strong> and
+              retroactively upgrade eligible Late students to Present. This
+              action cannot be undone automatically.
+            </p>
+          </div>
         </FormModal>
       )}
 
