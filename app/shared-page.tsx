@@ -668,6 +668,7 @@ import { Skeleton } from "@/components/ui/skeleton";
                     photoUrl?: string;
                     time: string;
                     status: "confirmed" | "late" | "duplicate";
+                    sanctioned?: boolean;
                     action?: "time_in" | "time_out" | "time_out_rejected" | "duplicate";
                     dbId: string | number;
                   }
@@ -961,12 +962,12 @@ interface ScanRecord {
   photoUrl?: string;
   time: string;
   status: "present" | "confirmed" | "late" | "absent" | "duplicate";
+  sanctioned?: boolean;
   sessionLabel?: "morning" | "afternoon";
   action?: "time_in" | "time_out" | "time_out_rejected" | "duplicate";
   dbId: string | number;
   fineStatus?: "unpaid" | "paid" | "excused";
   fineAmount?: number;
-  sanctioned?: boolean;
 }
 
 export interface ExcuseRequest {
@@ -2083,6 +2084,8 @@ function Toggle({
   on: boolean;
 
   onToggle: () => void;
+
+  disabled?: boolean;
 
   label: string;
 
@@ -7205,6 +7208,8 @@ export function AdminDashboard({
     time: string;
 
     status: "confirmed" | "duplicate";
+
+    sanctioned?: boolean;
   }>;
 
   featuredEventTitle?: string;
