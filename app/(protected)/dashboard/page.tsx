@@ -321,6 +321,7 @@ export default function DashboardRoute() {
           ? row.image_url
           : undefined,
       multiSession: Boolean(row.multiSession ?? row.multi_session),
+      sanctionsEnabled: Boolean(row.sanctionsEnabled ?? row.sanctions_enabled),
       strictMorning: Boolean(row.strictMorning ?? row.strict_morning),
       strictAfternoon: Boolean(row.strictAfternoon ?? row.strict_afternoon),
       morningStart: row.morningStart ?? row.morning_start ?? undefined,

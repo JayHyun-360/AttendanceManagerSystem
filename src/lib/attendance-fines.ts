@@ -7,6 +7,7 @@ export interface FineEventLike {
   program?: string | null;
   status?: string | null;
   multi_session?: boolean | null;
+  sanctions_enabled?: boolean | null;
   absent_fine?: number | null;
   late_fine?: number | null;
   morning_absent_fine?: number | null;
@@ -41,6 +42,22 @@ export interface AttendanceSessionRecord {
   fineId?: string;
   fineAmount: number;
   fineStatus?: FineRowLike["status"];
+  sanctioned: boolean;
+  displayLabel: string;
+}
+
+export function getAttendanceDisplayState(
+  status: AttendanceStatus | "no_record",
+  sanctionsEnabled = false,
+): { sanctioned: boolean; label: string } {
+  const sanctioned =
+    sanctionsEnabled && (status === "late" || status === "absent");
+  const label = status === "no_record"
+    ? "No record"
+    : status === "confirmed"
+      ? "Present"
+      : status.charAt(0).toUpperCase() + status.slice(1);
+  return { sanctioned, label: sanctioned ? `Sanctioned — ${label}` : label };
 }
 
 export function eventSessions(event: FineEventLike): SessionLabel[] {
@@ -93,6 +110,10 @@ export function buildAttendanceSessionRecords(
       const scan = scanByKey.get(key);
       const linkedFine = (scan && fineByScan.get(scan.id)) ?? fineByKey.get(key);
       const status = scan?.status ?? "no_record";
+      const display = getAttendanceDisplayState(
+        status,
+        !!event.sanctions_enabled,
+      );
       const countedFine = linkedFine
         ? linkedFine.status === "unpaid"
           ? Number(linkedFine.amount ?? 0)
@@ -107,6 +128,8 @@ export function buildAttendanceSessionRecords(
         fineId: linkedFine?.id,
         fineAmount: countedFine,
         fineStatus: linkedFine?.status,
+        sanctioned: display.sanctioned,
+        displayLabel: display.label,
       };
     }),
   );

@@ -11,6 +11,8 @@ import { supabase } from "@/lib/supabase"
 import { deleteImages } from "@/lib/uploadImage"
 
 const defaultSettings: SystemSettings = {
+  finesEnabled: false,
+
   showFees: true,
 
   allowExcuseRequests: true,
@@ -34,6 +36,8 @@ const stripBlobUrls = (value?: string) =>
 const normalizeSettings = (
   rawSettings?: Partial<SystemSettings> | null,
 ): SystemSettings => ({
+  finesEnabled: rawSettings?.finesEnabled ?? defaultSettings.finesEnabled,
+
   showFees: rawSettings?.showFees ?? defaultSettings.showFees,
 
   allowExcuseRequests:

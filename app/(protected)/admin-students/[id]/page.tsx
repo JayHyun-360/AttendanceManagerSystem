@@ -40,6 +40,7 @@ interface AttendanceEvent {
   title: string;
   date: string;
   multiSession: boolean;
+  sanctionsEnabled: boolean;
   morningStart?: string | null;
   morningEnd?: string | null;
   afternoonStart?: string | null;
@@ -202,7 +203,7 @@ export default function StudentDetailRoutePage() {
         supabase
           .from("events")
           .select(
-            "id, title, event_date, program, status, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+            "id, title, event_date, program, status, multi_session, sanctions_enabled, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
           ),
         supabase
           .from("attendance_scans")
@@ -285,7 +286,7 @@ export default function StudentDetailRoutePage() {
       const { data, error } = await supabase
         .from("events")
         .select(
-          "id, title, event_date, multi_session, morning_start, morning_end, afternoon_start, afternoon_end",
+          "id, title, event_date, multi_session, sanctions_enabled, morning_start, morning_end, afternoon_start, afternoon_end",
         )
         .order("event_date", { ascending: false });
 
@@ -300,6 +301,7 @@ export default function StudentDetailRoutePage() {
           title: event.title,
           date: event.event_date,
           multiSession: Boolean(event.multi_session),
+          sanctionsEnabled: Boolean(event.sanctions_enabled),
           morningStart: event.morning_start,
           morningEnd: event.morning_end,
           afternoonStart: event.afternoon_start,

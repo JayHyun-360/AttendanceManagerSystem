@@ -70,6 +70,7 @@ export default function AdminEventsRoutePage() {
                 ? row.image_url
                 : undefined,
             multiSession: row.multi_session || false,
+            sanctionsEnabled: row.sanctions_enabled || false,
             strictMorning: row.strict_morning || false,
             strictAfternoon: row.strict_afternoon || false,
             morningStart: row.morning_start,

@@ -215,10 +215,12 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
       if (!cancelled) {
         const savedSettings = data?.settings as
-          | { showFees?: boolean }
+          | { finesEnabled?: boolean; showFees?: boolean }
           | null
           | undefined;
-        setShowFees(savedSettings?.showFees ?? false);
+        setShowFees(
+          savedSettings?.finesEnabled === true && savedSettings.showFees === true,
+        );
         setSettingsReady(true);
       }
     }

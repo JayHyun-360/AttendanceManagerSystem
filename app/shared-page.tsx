@@ -931,6 +931,7 @@ export interface EventData {
   mediaUrls?: string[];
   highlightUrl?: string;
   multiSession?: boolean;
+  sanctionsEnabled?: boolean;
   strictMorning?: boolean;
   strictAfternoon?: boolean;
   morningStart?: string;
@@ -965,6 +966,7 @@ interface ScanRecord {
   dbId: string | number;
   fineStatus?: "unpaid" | "paid" | "excused";
   fineAmount?: number;
+  sanctioned?: boolean;
 }
 
 export interface ExcuseRequest {
@@ -2072,6 +2074,8 @@ function Toggle({
 
   onToggle,
 
+  disabled = false,
+
   label,
 
   desc,
@@ -2094,9 +2098,10 @@ function Toggle({
       </div>
       <button
         onClick={onToggle}
+        disabled={disabled}
         role="switch"
         aria-checked={on}
-        className={`relative w-11 h-6 rounded-full transition-all duration-200 shrink-0 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+        className={`relative w-11 h-6 rounded-full transition-all duration-200 shrink-0 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
           on
             ? "bg-emerald-500 focus:ring-emerald-500"
             : "bg-slate-200 focus:ring-slate-400"
@@ -2193,7 +2198,13 @@ function FieldTextarea({
   );
 }
 
-function Badge({ status }: { status: string }) {
+function Badge({
+  status,
+  sanctioned = false,
+}: {
+  status: string;
+  sanctioned?: boolean;
+}) {
   const cfg: Record<string, { cls: string; label: string; dot?: boolean }> = {
     active: {
       cls: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200",
@@ -2306,6 +2317,9 @@ function Badge({ status }: { status: string }) {
     label: status,
   };
 
+  const sanctionedStatus =
+    sanctioned && (status === "late" || status === "absent");
+
   return (
     <span
       className={`inline-flex w-fit items-center gap-1.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${c.cls}`}
@@ -2316,7 +2330,7 @@ function Badge({ status }: { status: string }) {
           style={{ animation: "pulse 2s infinite" }}
         />
       )}
-      {c.label}
+      {sanctionedStatus ? `Sanctioned — ${c.label}` : c.label}
     </span>
   );
 }
@@ -7410,7 +7424,7 @@ export function AdminDashboard({
             <span className="text-[11px] text-slate-400 shrink-0">
               {s.time}
             </span>
-            <Badge status={s.status} />
+            <Badge status={s.status} sanctioned={s.sanctioned} />
           </div>
         ))}
       </div>
@@ -8192,6 +8206,8 @@ export function AdminEventsPage({
         status: editDraft.status,
 
         multi_session: editDraft.multiSession,
+
+        sanctions_enabled: !!editDraft.sanctionsEnabled,
 
         strict_morning: editDraft.strictMorning,
 
@@ -9035,6 +9051,22 @@ export function AdminEventsPage({
                     attendance.
                   </p>
                 )}
+              </div>
+
+              <div className="border border-amber-100 bg-amber-50/40 rounded-xl px-3">
+                <InlineToggle
+                  on={!!editDraft.sanctionsEnabled}
+                  onToggle={() =>
+                    setEditDraft((d) =>
+                      d ? { ...d, sanctionsEnabled: !d.sanctionsEnabled } : d,
+                    )
+                  }
+                  label="Enable sanctions for this event"
+                />
+                <p className="pb-2 text-[10px] text-slate-500">
+                  Independent of monetary fines. Late or absent students will
+                  receive a Sanctioned badge in attendance views.
+                </p>
               </div>
 
               {!editDraft.multiSession ? (
@@ -10407,7 +10439,7 @@ export function AdminScannerPage({
                       {s.id} · {s.time}
                     </p>
                   </div>
-                  <Badge status={s.status} />
+                  <Badge status={s.status} sanctioned={s.sanctioned} />
                 </div>
               ))
             ) : (
@@ -10882,7 +10914,7 @@ export function AdminAttendeesPage({
                         )}
                       </div>
                       <div className="flex shrink-0">
-                        <Badge status={s.status} />
+                        <Badge status={s.status} sanctioned={s.sanctioned} />
                       </div>
                     </div>
                   </div>
@@ -10908,7 +10940,7 @@ export function AdminAttendeesPage({
                       )}
                     </span>
                     <div className="col-span-2 flex justify-end">
-                      <Badge status={s.status} />
+                      <Badge status={s.status} sanctioned={s.sanctioned} />
                     </div>
                   </div>
                 </div>
@@ -10940,7 +10972,7 @@ export function AdminAttendeesPage({
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge status={s.status} />
+                          <Badge status={s.status} sanctioned={s.sanctioned} />
                           <button
                             onClick={() => void deleteRecord(s.dbId)}
                             className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
@@ -10960,7 +10992,7 @@ export function AdminAttendeesPage({
                           {s.id} · scanned {s.time}
                         </p>
                       </div>
-                      <Badge status={s.status} />
+                      <Badge status={s.status} sanctioned={s.sanctioned} />
                       <button
                         onClick={() => void deleteRecord(s.dbId)}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
@@ -12806,6 +12838,8 @@ export interface CarouselSlide {
 }
 
 export interface SystemSettings {
+  finesEnabled: boolean;
+
   showFees: boolean;
 
   allowExcuseRequests: boolean;
@@ -12962,7 +12996,9 @@ export function AdminSettingsPage({
   const update = (patch: Partial<SystemSettings>) =>
     onSave({ ...settings, ...patch });
 
-  const toggle = (k: "showFees" | "allowExcuseRequests" | "requirePhotoId") =>
+  const toggle = (
+    k: "finesEnabled" | "showFees" | "allowExcuseRequests" | "requirePhotoId",
+  ) =>
     onSave({ ...settings, [k]: !settings[k] });
 
   const heroRef = useRef<HTMLInputElement>(null);
@@ -13024,36 +13060,43 @@ export function AdminSettingsPage({
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
         <div className="px-5 divide-y divide-slate-50">
           <Toggle
-            on={settings.showFees}
+            on={settings.finesEnabled}
+            onToggle={() => toggle("finesEnabled")}
+            label="Enable monetary fines"
+            desc="When disabled, new late and absent attendance records will not create monetary fines. Existing fine records are preserved."
+          />
+          <Toggle
+            on={settings.finesEnabled && settings.showFees}
             onToggle={() => toggle("showFees")}
+            disabled={!settings.finesEnabled}
             label="Show fees to students"
             desc="Enable during fee-paying week so students can see absence fine amounts across events, attendance history, and their Fines page."
           />
         </div>
         <div
           className={`mx-5 mb-4 rounded-lg px-3.5 py-2.5 flex items-center gap-2.5 transition-colors ${
-            settings.showFees
+            settings.finesEnabled && settings.showFees
               ? "bg-emerald-50 border border-emerald-200"
               : "bg-slate-50 border border-slate-200"
           }`}
         >
           <span
             className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-              settings.showFees ? "bg-emerald-500" : "bg-slate-400"
+              settings.finesEnabled && settings.showFees ? "bg-emerald-500" : "bg-slate-400"
             }`}
-            style={settings.showFees ? { animation: "pulse 2s infinite" } : {}}
+            style={settings.finesEnabled && settings.showFees ? { animation: "pulse 2s infinite" } : {}}
           />
           <p
             className={`text-xs font-medium leading-relaxed ${
-              settings.showFees ? "text-emerald-700" : "text-slate-500"
+              settings.finesEnabled && settings.showFees ? "text-emerald-700" : "text-slate-500"
             }`}
           >
             Fees are{" "}
             <span className="font-bold">
-              {settings.showFees ? "visible" : "hidden"}
+              {settings.finesEnabled && settings.showFees ? "visible" : "hidden"}
             </span>{" "}
             to students
-            {!settings.showFees && " — enable when the payment period opens"}
+            {!(settings.finesEnabled && settings.showFees) && " — enable fines and fee visibility when the payment period opens"}
           </p>
         </div>
       </div>
