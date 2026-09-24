@@ -5148,7 +5148,7 @@ export function DashboardPage({
 
   return (
     <>
-      <div className="mb-7">
+      <div className="mb-5 md:mb-7">
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">
           {new Date().toLocaleDateString("en-US", {
             month: "short",
@@ -5162,7 +5162,7 @@ export function DashboardPage({
         </h1>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 mb-5 sm:grid-cols-3">
+      <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:mb-5 md:gap-3">
         <motion.div
           className="bg-white border border-slate-100 rounded-xl px-4 py-4"
           initial={{ opacity: 0, y: 8 }}
@@ -5178,7 +5178,7 @@ export function DashboardPage({
         </motion.div>
 
         <motion.div
-          className="bg-white border border-slate-100 rounded-xl px-4 py-4"
+          className="rounded-xl border border-slate-100 bg-white px-3 py-3 md:px-4 md:py-4"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, delay: 0.08 }}
@@ -5192,7 +5192,7 @@ export function DashboardPage({
         </motion.div>
 
         <motion.div
-          className="bg-white border border-slate-100 rounded-xl px-4 py-4"
+          className="rounded-xl border border-slate-100 bg-white px-3 py-3 md:px-4 md:py-4"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, delay: 0.14 }}
@@ -5207,20 +5207,20 @@ export function DashboardPage({
       </div>
 
       <motion.div
-        className="bg-white border border-slate-100 rounded-xl px-4 py-3 mb-5"
+        className="mb-4 rounded-xl border border-slate-100 bg-white px-3 py-2.5 md:mb-5 md:px-4 md:py-3"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.28, delay: 0.2 }}
       >
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+        <div className="flex items-center justify-between md:block">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
             Attendance rate
           </span>
           <span className="text-[11px] font-semibold text-emerald-600">
             {statValues.rate}%
           </span>
         </div>
-        <div className="h-24">
+        <div className="h-16 md:h-24">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -5245,7 +5245,7 @@ export function DashboardPage({
       {showFees && unpaidFines.length > 0 && (
         <button
           onClick={() => onNav("my-fines")}
-          className="w-full bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between mb-5 hover:bg-red-100 transition-all group"
+          className="mb-4 flex w-full items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 transition-all group hover:bg-red-100 md:mb-5"
         >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center text-red-500 shrink-0">
@@ -5281,7 +5281,7 @@ export function DashboardPage({
       <motion.button
         type="button"
         onClick={() => onNav("my-qr")}
-        className="w-full bg-white border border-slate-100 rounded-xl px-5 py-4 flex items-center justify-between hover:border-slate-200 hover:shadow-sm transition-all mb-5 group"
+        className="mb-4 flex w-full items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-3.5 transition-all group hover:border-slate-200 hover:shadow-sm md:mb-5 md:px-5 md:py-4"
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
       >
@@ -5382,7 +5382,7 @@ export function EventsPage({
   return (
     <>
       <PageHeader title="Events" subtitle="AY 2026-2027, 1st Semester" />
-      <div className="flex gap-2 sm:gap-2 mb-5 overflow-x-auto pb-1 -mx-1 px-1">
+      <div className="mb-4 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 md:mb-5">
         {[
           { k: "all", l: "All" },
 
@@ -5395,7 +5395,7 @@ export function EventsPage({
           <button
             key={f.k}
             onClick={() => setFilter(f.k)}
-            className={`shrink-0 h-8 px-3.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`h-10 shrink-0 rounded-lg px-3.5 text-xs font-semibold transition-all md:h-8 ${
               filter === f.k
                 ? "bg-slate-900 text-white"
                 : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300"
@@ -5405,7 +5405,7 @@ export function EventsPage({
           </button>
         ))}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
         {items.map((e) => (
           <div
             key={e.id}
@@ -5462,7 +5462,7 @@ export function EventsPage({
               </div>
             </div>
 
-            <div className="p-5 flex flex-col flex-1 justify-between gap-3">
+            <div className="flex flex-1 flex-col justify-between gap-3 p-4 md:p-5">
               <div className="space-y-2">
                 <h3 className="font-bold text-slate-900 text-base line-clamp-1">
                   {e.title}
@@ -6409,7 +6409,7 @@ export function AttendanceHistoryPage({
       <PageHeader title="My Attendance" subtitle="AY 2026-2027, 1st Semester" />
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
         {attendanceRecords.length === 0 ? (
-          <div className="px-5 py-12 text-center">
+          <div className="px-5 py-8 text-center md:py-12">
             <p className="text-sm font-semibold text-slate-900">
               No attendance records yet
             </p>
@@ -6493,7 +6493,7 @@ export function AttendanceHistoryPage({
               ) : eff === "absent" && !String(r.id).startsWith("inferred-") ? (
                 <button
                   onClick={() => setModal(r)}
-                  className="shrink-0 h-8 px-3 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-semibold rounded-lg flex items-center gap-1.5"
+                  className="h-10 shrink-0 rounded-lg bg-slate-900 px-3 text-[11px] font-semibold text-white transition-colors hover:bg-slate-800 md:h-8"
                 >
                   <Icons.Send />
                   Excuse
@@ -6570,7 +6570,7 @@ export function MyFinesPage({
       <>
         <BackButton onClick={onBack} label="Back to Home" />
         <PageHeader title="My Fines" />
-        <div className="bg-white border border-slate-100 rounded-xl px-5 py-12 text-center">
+        <div className="rounded-xl border border-slate-100 bg-white px-5 py-8 text-center md:py-12">
           <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3 text-slate-400">
             <Icons.Peso />
           </div>
@@ -6594,7 +6594,7 @@ export function MyFinesPage({
         subtitle="Outstanding fees from missed events."
       />
       {unpaid.length === 0 ? (
-        <div className="bg-white border border-slate-100 rounded-xl px-5 py-12 text-center">
+        <div className="rounded-xl border border-slate-100 bg-white px-5 py-8 text-center md:py-12">
           <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mx-auto mb-3 text-emerald-500">
             <Icons.Check />
           </div>
@@ -7315,7 +7315,7 @@ export function AdminDashboard({
           {currentStatusMeta.label}
         </span>
       </div>
-      <div className="grid w-full grid-cols-1 gap-4 mb-5 md:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-4 grid w-full grid-cols-2 gap-2.5 md:mb-5 md:grid-cols-2 md:gap-4 lg:grid-cols-4">
         {[
           {
             l: "Scanned today",
@@ -7359,7 +7359,7 @@ export function AdminDashboard({
         ].map((s) => (
           <div
             key={s.l}
-            className="bg-white border border-slate-100 rounded-xl px-4 py-4"
+            className="rounded-xl border border-slate-100 bg-white px-3 py-3 md:px-4 md:py-4"
           >
             <p className={`text-2xl font-bold ${s.c}`}>{s.v}</p>
             <p className="text-xs font-semibold text-slate-600 mt-1">{s.l}</p>
@@ -7370,7 +7370,7 @@ export function AdminDashboard({
       <div className="grid grid-cols-1 gap-3 mb-5 sm:grid-cols-2">
         <button
           onClick={() => onNav("admin-scanner")}
-          className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl p-5 text-left transition-all shadow-sm hover:shadow-md"
+          className="rounded-xl bg-emerald-500 p-4 text-left text-white shadow-sm transition-all hover:bg-emerald-600 hover:shadow-md md:p-5"
         >
           <Icons.Scan />
           <p className="font-semibold text-sm mt-3 mb-0.5">Open Scanner</p>
@@ -7378,7 +7378,7 @@ export function AdminDashboard({
         </button>
         <button
           onClick={() => onNav("admin-excuse-requests")}
-          className={`border rounded-xl p-5 text-left transition-all relative ${
+          className={`relative rounded-xl border p-4 text-left transition-all md:p-5 ${
             pending > 0
               ? "bg-amber-50 border-amber-200"
               : "bg-white border-slate-100"
