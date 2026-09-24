@@ -2988,8 +2988,8 @@ export function TopBar({
             onClick={() => go(dest)}
           >
             <AdesseMark className="w-8 h-8 shrink-0" />
-            <div className="-ml-1 flex min-w-0 flex-col leading-none">
-              <span className="adesse-display text-[17px] text-slate-900 leading-none">
+            <div className="flex min-w-0 flex-col leading-none">
+              <span className="-ml-1 adesse-display text-[17px] text-slate-900 leading-none">
                 Adesse
               </span>
               <span className="text-[10px] text-slate-400 font-medium hidden sm:block leading-tight truncate">
