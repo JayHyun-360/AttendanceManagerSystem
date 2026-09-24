@@ -7476,6 +7476,8 @@ interface NewEventDraft {
 
   multiSession: boolean;
 
+  sanctionsEnabled: boolean;
+
   strictMorning: boolean;
 
   strictAfternoon: boolean;
@@ -7549,6 +7551,8 @@ export function AdminEventsPage({
     videos: [],
 
     multiSession: false,
+
+    sanctionsEnabled: false,
 
     strictMorning: false,
 
@@ -7789,6 +7793,8 @@ export function AdminEventsPage({
 
         multi_session: draft.multiSession,
 
+        sanctions_enabled: draft.sanctionsEnabled,
+
         strict_morning: draft.strictMorning,
 
         strict_afternoon: draft.strictAfternoon,
@@ -7913,6 +7919,8 @@ export function AdminEventsPage({
           highlightUrl: persistedHighlightUrl || undefined,
 
           multiSession: draft.multiSession,
+
+          sanctionsEnabled: Boolean(row.sanctions_enabled),
 
           strictMorning: draft.strictMorning,
 
@@ -8665,6 +8673,18 @@ export function AdminEventsPage({
           {}
           {activeTab === "session" && (
             <>
+              <div className="border border-amber-100 bg-amber-50/40 rounded-xl px-3">
+                <InlineToggle
+                  on={draft.sanctionsEnabled}
+                  onToggle={toggleD("sanctionsEnabled")}
+                  label="Enable sanctions for this event"
+                />
+                <p className="pb-2 text-[10px] text-slate-500">
+                  Independent of monetary fines. Late or absent students will
+                  receive a Sanctioned badge in attendance views.
+                </p>
+              </div>
+
               <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
                 <div className="flex items-center justify-between py-2.5">
                   <div>
