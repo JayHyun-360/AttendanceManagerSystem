@@ -1120,6 +1120,7 @@ function FineFields({
   multi,
   values,
   onChange,
+  enabled = true,
 }: {
   multi: boolean;
   values: {
@@ -1131,7 +1132,10 @@ function FineFields({
     afternoonLateFine: string;
   };
   onChange: (k: string, v: string) => void;
+  enabled?: boolean;
 }) {
+  if (!enabled) return null;
+
   return (
     <div className="space-y-2.5">
       <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block">
@@ -4910,10 +4914,12 @@ export function AdminEventsPage({
   onNav,
   events,
   setEvents,
+  showFees = false,
 }: {
   onNav: (p: Page) => void;
   events: EventData[];
   setEvents: React.Dispatch<React.SetStateAction<EventData[]>>;
+  showFees?: boolean;
 }) {
   const EMPTY_DRAFT: NewEventDraft = {
     title: "",
@@ -5055,19 +5061,27 @@ export function AdminEventsPage({
         afternoon_start: draft.afternoonStart || null,
         afternoon_end: draft.afternoonEnd || null,
         afternoon_late_cutoff: draft.afternoonLateCutoff || null,
-        absent_fine: parseInt(draft.absentFine) || 0,
-        late_fine: parseInt(draft.lateFine) || 0,
+        absent_fine: showFees ? parseInt(draft.absentFine) || 0 : 0,
+        late_fine: showFees ? parseInt(draft.lateFine) || 0 : 0,
         morning_absent_fine: draft.multiSession
-          ? parseInt(draft.morningAbsentFine) || 0
+          ? showFees
+            ? parseInt(draft.morningAbsentFine) || 0
+            : 0
           : null,
         morning_late_fine: draft.multiSession
-          ? parseInt(draft.morningLateFine) || 0
+          ? showFees
+            ? parseInt(draft.morningLateFine) || 0
+            : 0
           : null,
         afternoon_absent_fine: draft.multiSession
-          ? parseInt(draft.afternoonAbsentFine) || 0
+          ? showFees
+            ? parseInt(draft.afternoonAbsentFine) || 0
+            : 0
           : null,
         afternoon_late_fine: draft.multiSession
-          ? parseInt(draft.afternoonLateFine) || 0
+          ? showFees
+            ? parseInt(draft.afternoonLateFine) || 0
+            : 0
           : null,
       };
 
@@ -5099,10 +5113,12 @@ export function AdminEventsPage({
           status: (row.status as any) || "upcoming",
           attendees: 0,
           version: 1,
-          fineAmount: draft.multiSession
-            ? (parseInt(draft.morningAbsentFine) || 0) +
-              (parseInt(draft.afternoonAbsentFine) || 0)
-            : parseInt(draft.absentFine) || 0,
+          fineAmount: showFees
+            ? draft.multiSession
+              ? (parseInt(draft.morningAbsentFine) || 0) +
+                (parseInt(draft.afternoonAbsentFine) || 0)
+              : parseInt(draft.absentFine) || 0
+            : 0,
           mediaUrls: [
             ...(persistedHighlightUrl ? [persistedHighlightUrl] : []),
             ...photoUrls,
@@ -5118,12 +5134,18 @@ export function AdminEventsPage({
           afternoonStart: draft.afternoonStart,
           afternoonEnd: draft.afternoonEnd,
           afternoonLateCutoff: draft.afternoonLateCutoff,
-          absentFine: parseInt(draft.absentFine) || 0,
-          lateFine: parseInt(draft.lateFine) || 0,
-          morningAbsentFine: parseInt(draft.morningAbsentFine) || 0,
-          morningLateFine: parseInt(draft.morningLateFine) || 0,
-          afternoonAbsentFine: parseInt(draft.afternoonAbsentFine) || 0,
-          afternoonLateFine: parseInt(draft.afternoonLateFine) || 0,
+          absentFine: showFees ? parseInt(draft.absentFine) || 0 : 0,
+          lateFine: showFees ? parseInt(draft.lateFine) || 0 : 0,
+          morningAbsentFine: showFees
+            ? parseInt(draft.morningAbsentFine) || 0
+            : 0,
+          morningLateFine: showFees ? parseInt(draft.morningLateFine) || 0 : 0,
+          afternoonAbsentFine: showFees
+            ? parseInt(draft.afternoonAbsentFine) || 0
+            : 0,
+          afternoonLateFine: showFees
+            ? parseInt(draft.afternoonLateFine) || 0
+            : 0,
         };
 
         setEvents((ev) => [newEvent, ...ev]);
@@ -5236,6 +5258,24 @@ export function AdminEventsPage({
         return;
       }
 
+      const savedFineValues = showFees
+        ? {
+            absent: Number(editFineValues.absentFine) || 0,
+            late: Number(editFineValues.lateFine) || 0,
+            morningAbsent: Number(editFineValues.morningAbsentFine) || 0,
+            morningLate: Number(editFineValues.morningLateFine) || 0,
+            afternoonAbsent: Number(editFineValues.afternoonAbsentFine) || 0,
+            afternoonLate: Number(editFineValues.afternoonLateFine) || 0,
+          }
+        : {
+            absent: editOriginal?.absentFine ?? editOriginal?.fineAmount ?? 0,
+            late: editOriginal?.lateFine ?? 0,
+            morningAbsent: editOriginal?.morningAbsentFine ?? 0,
+            morningLate: editOriginal?.morningLateFine ?? 0,
+            afternoonAbsent: editOriginal?.afternoonAbsentFine ?? 0,
+            afternoonLate: editOriginal?.afternoonLateFine ?? 0,
+          };
+
       // Map to database snake_case
       const payload = {
         title: editDraft.title,
@@ -5256,12 +5296,12 @@ export function AdminEventsPage({
         afternoon_start: editDraft.afternoonStart || null,
         afternoon_end: editDraft.afternoonEnd || null,
         afternoon_late_cutoff: editDraft.afternoonLateCutoff || null,
-        absent_fine: Number(editFineValues.absentFine) || 0,
-        late_fine: Number(editFineValues.lateFine) || 0,
-        morning_absent_fine: Number(editFineValues.morningAbsentFine) || 0,
-        morning_late_fine: Number(editFineValues.morningLateFine) || 0,
-        afternoon_absent_fine: Number(editFineValues.afternoonAbsentFine) || 0,
-        afternoon_late_fine: Number(editFineValues.afternoonLateFine) || 0,
+        absent_fine: savedFineValues.absent,
+        late_fine: savedFineValues.late,
+        morning_absent_fine: savedFineValues.morningAbsent,
+        morning_late_fine: savedFineValues.morningLate,
+        afternoon_absent_fine: savedFineValues.afternoonAbsent,
+        afternoon_late_fine: savedFineValues.afternoonLate,
         version: (editOriginal?.version ?? 1) + 1,
       };
 
@@ -5282,15 +5322,14 @@ export function AdminEventsPage({
         mediaUrls: persistedHighlightUrl ? [persistedHighlightUrl] : [],
         version: (editOriginal?.version ?? 1) + 1,
         fineAmount: editDraft.multiSession
-          ? (Number(editFineValues.morningAbsentFine) || 0) +
-            (Number(editFineValues.afternoonAbsentFine) || 0)
-          : Number(editFineValues.absentFine) || 0,
-        absentFine: Number(editFineValues.absentFine) || 0,
-        lateFine: Number(editFineValues.lateFine) || 0,
-        morningAbsentFine: Number(editFineValues.morningAbsentFine) || 0,
-        morningLateFine: Number(editFineValues.morningLateFine) || 0,
-        afternoonAbsentFine: Number(editFineValues.afternoonAbsentFine) || 0,
-        afternoonLateFine: Number(editFineValues.afternoonLateFine) || 0,
+          ? savedFineValues.morningAbsent + savedFineValues.afternoonAbsent
+          : savedFineValues.absent,
+        absentFine: savedFineValues.absent,
+        lateFine: savedFineValues.late,
+        morningAbsentFine: savedFineValues.morningAbsent,
+        morningLateFine: savedFineValues.morningLate,
+        afternoonAbsentFine: savedFineValues.afternoonAbsent,
+        afternoonLateFine: savedFineValues.afternoonLate,
       };
 
       setEvents((ev) => ev.map((e) => (e.id === saved.id ? saved : e)));
@@ -5531,6 +5570,7 @@ export function AdminEventsPage({
           <FineFields
             multi={draft.multiSession}
             values={draft}
+            enabled={showFees}
             onChange={(k, v) => setDraft((d) => ({ ...d, [k]: v }))}
           />
 
@@ -5895,6 +5935,7 @@ export function AdminEventsPage({
           <FineFields
             multi={!!editDraft.multiSession}
             values={editFineValues}
+            enabled={showFees}
             onChange={(key, value) =>
               setEditFineValues((current) => ({
                 ...current,
@@ -7568,7 +7609,7 @@ export function AdminSettingsPage({
             on={settings.showFees}
             onToggle={() => toggle("showFees")}
             label="Show fees to students"
-            desc="Enable during fee-paying week so students can see absence fine amounts across events, attendance history, and their Fines page."
+            desc="When enabled, students can see fine amounts and admins can set fines while creating or editing events."
           />
         </div>
         <div
