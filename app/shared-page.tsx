@@ -2538,6 +2538,20 @@ function FineFields({
   );
 }
 
+function UnavailableFinesNotice() {
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-5 text-center">
+      <p className="text-sm font-semibold text-amber-900">
+        Fines are currently unavailable
+      </p>
+      <p className="mt-1 text-xs leading-relaxed text-amber-800">
+        Enable monetary fines in Management &amp; Settings to configure
+        attendance fine rules for this event.
+      </p>
+    </div>
+  );
+}
+
 function Avatar({
   name,
 
@@ -8554,9 +8568,7 @@ export function AdminEventsPage({
                 <button
                   key={value}
                   type="button"
-                  disabled={value === "fines" && !finesEnabled}
                   onClick={() => {
-                    if (value === "fines" && !finesEnabled) return;
                     setActiveTab(value as CreateEventTab);
                   }}
                   className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
@@ -8740,14 +8752,17 @@ export function AdminEventsPage({
             </>
           )}
 
-          {finesEnabled && activeTab === "fines" && (
-            <FineFields
-              multi={draft.multiSession}
-              values={draft}
-              enabled={finesEnabled}
-              onChange={(k, v) => setDraft((d) => ({ ...d, [k]: v }))}
-            />
-          )}
+          {activeTab === "fines" &&
+            (finesEnabled ? (
+              <FineFields
+                multi={draft.multiSession}
+                values={draft}
+                enabled={finesEnabled}
+                onChange={(k, v) => setDraft((d) => ({ ...d, [k]: v }))}
+              />
+            ) : (
+              <UnavailableFinesNotice />
+            ))}
 
           {}
           {activeTab === "media" && (
@@ -8934,9 +8949,7 @@ export function AdminEventsPage({
                 <button
                   key={value}
                   type="button"
-                  disabled={value === "fines" && !finesEnabled}
                   onClick={() => {
-                    if (value === "fines" && !finesEnabled) return;
                     setEditEventTab(value as CreateEventTab);
                   }}
                   className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
@@ -9232,20 +9245,23 @@ export function AdminEventsPage({
             </>
           )}
 
-          {finesEnabled && editEventTab === "fines" && (
-            <FineFields
-              multi={!!editDraft.multiSession}
-              values={editFineValues}
-              enabled={finesEnabled}
-              onChange={(key, value) =>
-                setEditFineValues((current) => ({
-                  ...current,
+          {editEventTab === "fines" &&
+            (finesEnabled ? (
+              <FineFields
+                multi={!!editDraft.multiSession}
+                values={editFineValues}
+                enabled={finesEnabled}
+                onChange={(key, value) =>
+                  setEditFineValues((current) => ({
+                    ...current,
 
-                  [key]: value,
-                }))
-              }
-            />
-          )}
+                    [key]: value,
+                  }))
+                }
+              />
+            ) : (
+              <UnavailableFinesNotice />
+            ))}
 
           {editEventTab === "media" && (
             <>
