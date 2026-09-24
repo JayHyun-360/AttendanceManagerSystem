@@ -12,6 +12,7 @@ export default function AdminEventsRoutePage() {
   const router = useRouter();
   const { user } = useProtectedUser();
   const [events, setEvents] = useState<EventData[]>([]);
+  const [finesEnabled, setFinesEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -24,18 +25,33 @@ export default function AdminEventsRoutePage() {
           return;
         }
 
-        const [{ data: rows, error }, { data: scans, error: scansError }] =
+        const [
+          { data: rows, error },
+          { data: scans, error: scansError },
+          { data: settingsRow, error: settingsError },
+        ] =
           await Promise.all([
             supabase.from("events").select("*").order("event_date", { ascending: false }),
             supabase
               .from("attendance_scans")
               .select("event_id, student_id, status, scan_in_at"),
+            supabase
+              .from("system_settings")
+              .select("settings")
+              .eq("id", 1)
+              .maybeSingle(),
           ]);
 
         if (error) {
           console.error(error);
         }
         if (scansError) console.error(scansError);
+        if (settingsError) console.error(settingsError);
+        if (!settingsError && !cancelled) {
+          setFinesEnabled(
+            Boolean((settingsRow?.settings as { finesEnabled?: boolean } | null)?.finesEnabled),
+          );
+        }
         if (!error && !cancelled) {
           const mapped: EventData[] = (rows ?? []).map((row: any) => ({
             id: row.id,
@@ -160,6 +176,11 @@ export default function AdminEventsRoutePage() {
   }
 
   return (
-    <AdminEventsPage onNav={onNav} events={events} setEvents={setEvents} />
+    <AdminEventsPage
+      onNav={onNav}
+      events={events}
+      setEvents={setEvents}
+      finesEnabled={finesEnabled}
+    />
   );
 }

@@ -2453,6 +2453,7 @@ function FineFields({
   values,
 
   onChange,
+  enabled = true,
 }: {
   multi: boolean;
 
@@ -2471,7 +2472,10 @@ function FineFields({
   };
 
   onChange: (k: string, v: string) => void;
+  enabled?: boolean;
 }) {
+  if (!enabled) return null;
+
   return (
     <div className="space-y-2.5">
       <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block">
@@ -7502,12 +7506,14 @@ export function AdminEventsPage({
   events,
 
   setEvents,
+  finesEnabled = false,
 }: {
   onNav: (p: Page) => void;
 
   events: EventData[];
 
   setEvents: React.Dispatch<React.SetStateAction<EventData[]>>;
+  finesEnabled?: boolean;
 }) {
   const EMPTY_DRAFT: NewEventDraft = {
     title: "",
@@ -7789,24 +7795,32 @@ export function AdminEventsPage({
 
         afternoon_late_cutoff: draft.afternoonLateCutoff || null,
 
-        absent_fine: Number(draft.absentFine) || 0,
+        absent_fine: finesEnabled ? Number(draft.absentFine) || 0 : 0,
 
-        late_fine: Number(draft.lateFine) || 0,
+        late_fine: finesEnabled ? Number(draft.lateFine) || 0 : 0,
 
         morning_absent_fine: draft.multiSession
-          ? Number(draft.morningAbsentFine) || 0
+          ? finesEnabled
+            ? Number(draft.morningAbsentFine) || 0
+            : 0
           : null,
 
         morning_late_fine: draft.multiSession
-          ? Number(draft.morningLateFine) || 0
+          ? finesEnabled
+            ? Number(draft.morningLateFine) || 0
+            : 0
           : null,
 
         afternoon_absent_fine: draft.multiSession
-          ? Number(draft.afternoonAbsentFine) || 0
+          ? finesEnabled
+            ? Number(draft.afternoonAbsentFine) || 0
+            : 0
           : null,
 
         afternoon_late_fine: draft.multiSession
-          ? Number(draft.afternoonLateFine) || 0
+          ? finesEnabled
+            ? Number(draft.afternoonLateFine) || 0
+            : 0
           : null,
       };
 
@@ -7867,10 +7881,12 @@ export function AdminEventsPage({
 
           version: 1,
 
-          fineAmount: draft.multiSession
-            ? (parseInt(draft.morningAbsentFine) || 0) +
-              (parseInt(draft.afternoonAbsentFine) || 0)
-            : parseInt(draft.absentFine) || 0,
+          fineAmount: finesEnabled
+            ? draft.multiSession
+              ? (parseInt(draft.morningAbsentFine) || 0) +
+                (parseInt(draft.afternoonAbsentFine) || 0)
+              : parseInt(draft.absentFine) || 0
+            : 0,
 
           mediaUrls: [
             ...(persistedHighlightUrl ? [persistedHighlightUrl] : []),
@@ -7900,17 +7916,23 @@ export function AdminEventsPage({
 
           afternoonLateCutoff: draft.afternoonLateCutoff,
 
-          absentFine: parseInt(draft.absentFine) || 0,
+          absentFine: finesEnabled ? parseInt(draft.absentFine) || 0 : 0,
 
-          lateFine: parseInt(draft.lateFine) || 0,
+          lateFine: finesEnabled ? parseInt(draft.lateFine) || 0 : 0,
 
-          morningAbsentFine: parseInt(draft.morningAbsentFine) || 0,
+          morningAbsentFine: finesEnabled
+            ? parseInt(draft.morningAbsentFine) || 0
+            : 0,
 
-          morningLateFine: parseInt(draft.morningLateFine) || 0,
+          morningLateFine: finesEnabled ? parseInt(draft.morningLateFine) || 0 : 0,
 
-          afternoonAbsentFine: parseInt(draft.afternoonAbsentFine) || 0,
+          afternoonAbsentFine: finesEnabled
+            ? parseInt(draft.afternoonAbsentFine) || 0
+            : 0,
 
-          afternoonLateFine: parseInt(draft.afternoonLateFine) || 0,
+          afternoonLateFine: finesEnabled
+            ? parseInt(draft.afternoonLateFine) || 0
+            : 0,
         };
 
         setEvents((ev) => [newEvent, ...ev]);
@@ -8189,6 +8211,24 @@ export function AdminEventsPage({
         return;
       }
 
+      const savedFineValues = finesEnabled
+        ? {
+            absent: Number(editFineValues.absentFine) || 0,
+            late: Number(editFineValues.lateFine) || 0,
+            morningAbsent: Number(editFineValues.morningAbsentFine) || 0,
+            morningLate: Number(editFineValues.morningLateFine) || 0,
+            afternoonAbsent: Number(editFineValues.afternoonAbsentFine) || 0,
+            afternoonLate: Number(editFineValues.afternoonLateFine) || 0,
+          }
+        : {
+            absent: editOriginal?.absentFine ?? editOriginal?.fineAmount ?? 0,
+            late: editOriginal?.lateFine ?? 0,
+            morningAbsent: editOriginal?.morningAbsentFine ?? 0,
+            morningLate: editOriginal?.morningLateFine ?? 0,
+            afternoonAbsent: editOriginal?.afternoonAbsentFine ?? 0,
+            afternoonLate: editOriginal?.afternoonLateFine ?? 0,
+          };
+
       const payload = {
         title: editDraft.title,
 
@@ -8234,17 +8274,17 @@ export function AdminEventsPage({
 
         afternoon_late_cutoff: editDraft.afternoonLateCutoff || null,
 
-        absent_fine: Number(editFineValues.absentFine) || 0,
+        absent_fine: savedFineValues.absent,
 
-        late_fine: Number(editFineValues.lateFine) || 0,
+        late_fine: savedFineValues.late,
 
-        morning_absent_fine: Number(editFineValues.morningAbsentFine) || 0,
+        morning_absent_fine: savedFineValues.morningAbsent,
 
-        morning_late_fine: Number(editFineValues.morningLateFine) || 0,
+        morning_late_fine: savedFineValues.morningLate,
 
-        afternoon_absent_fine: Number(editFineValues.afternoonAbsentFine) || 0,
+        afternoon_absent_fine: savedFineValues.afternoonAbsent,
 
-        afternoon_late_fine: Number(editFineValues.afternoonLateFine) || 0,
+        afternoon_late_fine: savedFineValues.afternoonLate,
 
         version: (editOriginal?.version ?? 1) + 1,
       };
@@ -8286,21 +8326,20 @@ export function AdminEventsPage({
         version: (editOriginal?.version ?? 1) + 1,
 
         fineAmount: editDraft.multiSession
-          ? (Number(editFineValues.morningAbsentFine) || 0) +
-            (Number(editFineValues.afternoonAbsentFine) || 0)
-          : Number(editFineValues.absentFine) || 0,
+          ? savedFineValues.morningAbsent + savedFineValues.afternoonAbsent
+          : savedFineValues.absent,
 
-        absentFine: Number(editFineValues.absentFine) || 0,
+        absentFine: savedFineValues.absent,
 
-        lateFine: Number(editFineValues.lateFine) || 0,
+        lateFine: savedFineValues.late,
 
-        morningAbsentFine: Number(editFineValues.morningAbsentFine) || 0,
+        morningAbsentFine: savedFineValues.morningAbsent,
 
-        morningLateFine: Number(editFineValues.morningLateFine) || 0,
+        morningLateFine: savedFineValues.morningLate,
 
-        afternoonAbsentFine: Number(editFineValues.afternoonAbsentFine) || 0,
+        afternoonAbsentFine: savedFineValues.afternoonAbsent,
 
-        afternoonLateFine: Number(editFineValues.afternoonLateFine) || 0,
+        afternoonLateFine: savedFineValues.afternoonLate,
       };
 
       setEvents((ev) => ev.map((e) => (e.id === saved.id ? saved : e)));
@@ -8515,7 +8554,11 @@ export function AdminEventsPage({
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setActiveTab(value as CreateEventTab)}
+                  disabled={value === "fines" && !finesEnabled}
+                  onClick={() => {
+                    if (value === "fines" && !finesEnabled) return;
+                    setActiveTab(value as CreateEventTab);
+                  }}
                   className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
                     activeTab === value
                       ? "bg-white text-emerald-600 shadow-sm ring-1 ring-slate-200"
@@ -8697,10 +8740,11 @@ export function AdminEventsPage({
             </>
           )}
 
-          {activeTab === "fines" && (
+          {finesEnabled && activeTab === "fines" && (
             <FineFields
               multi={draft.multiSession}
               values={draft}
+              enabled={finesEnabled}
               onChange={(k, v) => setDraft((d) => ({ ...d, [k]: v }))}
             />
           )}
@@ -8890,7 +8934,11 @@ export function AdminEventsPage({
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setEditEventTab(value as CreateEventTab)}
+                  disabled={value === "fines" && !finesEnabled}
+                  onClick={() => {
+                    if (value === "fines" && !finesEnabled) return;
+                    setEditEventTab(value as CreateEventTab);
+                  }}
                   className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
                     editEventTab === value
                       ? "bg-white text-emerald-600 shadow-sm ring-1 ring-slate-200"
@@ -9184,10 +9232,11 @@ export function AdminEventsPage({
             </>
           )}
 
-          {editEventTab === "fines" && (
+          {finesEnabled && editEventTab === "fines" && (
             <FineFields
               multi={!!editDraft.multiSession}
               values={editFineValues}
+              enabled={finesEnabled}
               onChange={(key, value) =>
                 setEditFineValues((current) => ({
                   ...current,
