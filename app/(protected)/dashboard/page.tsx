@@ -226,22 +226,84 @@ export default function DashboardRoute() {
   function DashboardPageSkeleton() {
     return (
       <div className="space-y-5">
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-8 w-56" />
+        <div className="mb-5 space-y-2 md:mb-7">
+          <Skeleton className="h-3.5 w-32 rounded-md" />
+          <Skeleton className="h-8 w-56 rounded-md" />
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {[0, 1, 2].map((item) => (
-            <Skeleton key={item} className="h-20 rounded-xl" />
+            <div
+              key={item}
+              className="rounded-xl border border-slate-100 bg-white px-4 py-4"
+            >
+              <Skeleton className="h-8 w-12 rounded-md" />
+              <Skeleton className="mt-2 h-3 w-16 rounded-md" />
+            </div>
           ))}
         </div>
 
-        <Skeleton className="h-32 w-full rounded-xl" />
+        <div className="mb-5 rounded-xl border border-slate-100 bg-white px-4 py-3">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-3 w-32 rounded-md" />
+            <Skeleton className="h-3 w-10 rounded-md" />
+          </div>
+          <div className="flex h-24 items-center justify-center">
+            <Skeleton className="h-[68px] w-[68px] rounded-full" />
+          </div>
+        </div>
 
-        <div className="space-y-2">
+        <div className="flex w-full items-center justify-between rounded-xl border border-amber-100 bg-amber-50/60 p-4">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-9 w-9 rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-3.5 w-44 rounded-md" />
+              <Skeleton className="h-3 w-24 rounded-md" />
+            </div>
+          </div>
+          <Skeleton className="h-4 w-4 rounded-md" />
+        </div>
+
+        <div className="overflow-hidden rounded-xl border border-slate-100 bg-white">
+          <Skeleton className="h-32 w-full rounded-none" />
+          <div className="space-y-3 p-4 md:p-5">
+            <Skeleton className="h-4 w-2/3 rounded-md" />
+            <Skeleton className="h-3 w-1/2 rounded-md" />
+            <div className="space-y-2 border-t border-slate-100 pt-3">
+              <Skeleton className="h-3 w-32 rounded-md" />
+              <Skeleton className="h-3 w-28 rounded-md" />
+              <Skeleton className="h-3 w-36 rounded-md" />
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-4 flex w-full items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-3.5 md:mb-5 md:px-5 md:py-4">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10 rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-3.5 w-24 rounded-md" />
+              <Skeleton className="h-3 w-48 rounded-md" />
+            </div>
+          </div>
+          <Skeleton className="h-4 w-4 rounded-md" />
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-4 w-40 rounded-md" />
+            <Skeleton className="h-3 w-14 rounded-md" />
+          </div>
           {[0, 1].map((item) => (
-            <Skeleton key={item} className="h-16 w-full rounded-xl" />
+            <div
+              key={item}
+              className="rounded-xl border border-slate-100 bg-white px-4 py-3.5"
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <Skeleton className="h-4 w-16 rounded-full" />
+                <Skeleton className="h-3 w-20 rounded-md" />
+              </div>
+              <Skeleton className="h-4 w-3/4 rounded-md" />
+            </div>
           ))}
         </div>
       </div>

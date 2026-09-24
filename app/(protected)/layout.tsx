@@ -83,11 +83,9 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const [hasSession, setHasSession] = useState(false);
 	  const [settingsReady, setSettingsReady] = useState(false);
 	  const [showFees, setShowFees] = useState(false);
-	  const [hydratedPathname, setHydratedPathname] = useState<string | null>(null);
 
 	  useEffect(() => {
 	    let cancelled = false;
-	    setHydratedPathname(null);
 
 	    async function hydrateSession() {
       try {
@@ -105,9 +103,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
             setHasSession(false);
           }
 
-          if (pathname !== "/events") {
-            router.replace("/login");
-          }
+	          router.replace("/login");
 
           return;
         }
@@ -137,12 +133,10 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           (session.user.user_metadata?.image_url as string | undefined) ??
           null;
 
-        if (!profile) {
-          if (pathname !== "/events") {
-            router.push("/onboarding");
-          }
+	        if (!profile) {
+	          router.push("/onboarding");
 
-          return;
+	          return;
         }
 
         if (!profile.photo_url && googleAvatarUrl) {
@@ -167,10 +161,8 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
               !profile.program ||
               !profile.year_level));
 
-        if (profileIsIncomplete) {
-          if (pathname !== "/events") {
-            router.push("/onboarding");
-          }
+	        if (profileIsIncomplete) {
+	          router.push("/onboarding");
 
           return;
         }
@@ -194,7 +186,6 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
 	        if (!cancelled) {
 	          setUser(hydratedUser);
-	          setHydratedPathname(pathname);
 	        }
       } catch (caught) {
         console.error(caught);
@@ -209,7 +200,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [pathname, router]);
+	  }, [router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -289,7 +280,6 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 	    setSessionReady(false);
 	    setSettingsReady(false);
 	    setShowFees(false);
-	    setHydratedPathname(null);
 	    setPage("landing");
     setOpen(false);
   };
@@ -336,11 +326,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     setOpen(false);
   };
 
-	  const showGlobalLoading =
-	    !sessionReady ||
-	    !settingsReady ||
-	    hydratedPathname !== pathname ||
-	    !user;
+	  const showGlobalLoading = !sessionReady || !settingsReady || !user;
 
   if (showGlobalLoading) {
     return (

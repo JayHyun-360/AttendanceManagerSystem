@@ -1,11 +1,13 @@
 import * as React from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export function Skeleton({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <div
       {...props}
@@ -14,15 +16,17 @@ export function Skeleton({
         className,
       )}
     >
-      <motion.div
-        className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/70 to-transparent"
-        animate={{ x: ["-120%", "220%"] }}
-        transition={{
-          duration: 1.5,
-          repeat: Number.POSITIVE_INFINITY,
-          ease: "linear",
-        }}
-      />
+      {!prefersReducedMotion && (
+        <motion.div
+          className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/70 to-transparent"
+          animate={{ x: ["-120%", "220%"] }}
+          transition={{
+            duration: 1.05,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "linear",
+          }}
+        />
+      )}
     </div>
   );
 }
