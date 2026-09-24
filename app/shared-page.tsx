@@ -2968,7 +2968,7 @@ export function TopBar({
       style={{ boxShadow: "0 1px 3px rgba(0,0,0,.04)" }}
     >
       <div
-        className="flex items-center justify-between px-4 lg:px-5 gap-3"
+        className="flex items-center justify-start px-4 lg:px-5 gap-3"
         style={{ height: "56px" }}
       >
         {}
@@ -2992,14 +2992,14 @@ export function TopBar({
                 Adesse
               </span>
               <span className="text-[10px] text-slate-400 font-medium hidden sm:block leading-tight truncate">
-                {isMod ? "Moderator Portal" : "Student Attendance"}
+                {isMod ? "Administrator Portal" : "Student Attendance"}
               </span>
             </div>
           </button>
         </div>
 
         {}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="ml-auto flex items-center gap-1 shrink-0">
           {user ? (
             <>
               <button
@@ -8673,18 +8673,6 @@ export function AdminEventsPage({
           {}
           {activeTab === "session" && (
             <>
-              <div className="border border-amber-100 bg-amber-50/40 rounded-xl px-3">
-                <InlineToggle
-                  on={draft.sanctionsEnabled}
-                  onToggle={toggleD("sanctionsEnabled")}
-                  label="Enable sanctions for this event"
-                />
-                <p className="pb-2 text-[10px] text-slate-500">
-                  Independent of monetary fines. Late or absent students will
-                  receive a Sanctioned badge in attendance views.
-                </p>
-              </div>
-
               <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
                 <div className="flex items-center justify-between py-2.5">
                   <div>
@@ -8710,6 +8698,18 @@ export function AdminEventsPage({
                     />
                   </button>
                 </div>
+              </div>
+
+              <div className="border border-amber-100 bg-amber-50/40 rounded-xl px-3">
+                <InlineToggle
+                  on={draft.sanctionsEnabled}
+                  onToggle={toggleD("sanctionsEnabled")}
+                  label="Enable sanctions for this event"
+                />
+                <p className="pb-2 text-[10px] text-slate-500">
+                  Independent of monetary fines. Late or absent students will
+                  receive a Sanctioned badge in attendance views.
+                </p>
               </div>
 
               {}
