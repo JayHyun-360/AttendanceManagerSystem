@@ -1,4 +1,4 @@
-# figma-make-app
+# Attendance Manager System
 
 Next.js App Router project with Supabase-backed Google OAuth and profile onboarding.
 

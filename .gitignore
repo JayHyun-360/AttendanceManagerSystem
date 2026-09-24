@@ -2,6 +2,7 @@
 out/
 build/
 node_modules/
+.pnpm-store/
 dist/
 .cache/
 .env*
