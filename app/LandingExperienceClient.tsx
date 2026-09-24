@@ -2833,8 +2833,8 @@ export function OnboardingPage({
             )}
             {step === 3 && (
               <FieldInput
-                label="Student ID (7 digits, starts with 244...)"
-                placeholder="e.g. 2440001"
+                label="Student ID (7 digits)"
+                placeholder="e.g. 1234567"
                 value={f.studentId}
                 onChange={set("studentId")}
               />

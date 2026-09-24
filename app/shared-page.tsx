@@ -4484,8 +4484,8 @@ export function OnboardingPage({
             )}
             {step === 3 && (
               <FieldInput
-                label="Student ID (7 digits, starts with 244...)"
-                placeholder="e.g. 2440001"
+                label="Student ID (7 digits)"
+                placeholder="e.g. 1234567"
                 value={f.studentId}
                 onChange={set("studentId")}
               />
@@ -5446,14 +5446,14 @@ export function EventsPage({
                 <Badge status={e.status} />
               </div>
 
-              <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+              <div className="absolute top-3 right-3 z-10 flex max-w-[78%] flex-wrap items-start justify-end gap-1.5">
                 {e.attendees > 0 && (
-                  <span className="rounded-full border border-white/30 bg-slate-900/25 px-2 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur-sm">
+                  <span className="whitespace-nowrap rounded-full border border-white/30 bg-slate-900/25 px-2 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur-sm">
                     {e.attendees} attended
                   </span>
                 )}
                 {canSeeFees && e.fineAmount > 0 && (
-                  <span className="rounded-full border border-red-200 bg-red-500/90 px-2 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur-sm">
+                  <span className="whitespace-nowrap rounded-full border border-red-200 bg-red-500/90 px-2 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur-sm">
                     ₱{e.fineAmount} fine
                   </span>
                 )}
@@ -9437,17 +9437,17 @@ export function AdminEventsPage({
                 <Badge status={e.status} />
               </div>
 
-              <div className="absolute top-3 right-3 z-10 flex items-center gap-2 max-w-[72%] justify-end">
-                <div className="flex items-center gap-1.5 rounded-full border border-white/30 bg-slate-900/25 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm shadow-sm">
+              <div className="absolute top-3 right-3 z-10 flex max-w-[78%] flex-wrap items-start justify-end gap-1.5">
+                <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/30 bg-slate-900/25 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm shadow-sm">
                   <span>{e.date}</span>
                 </div>
                 {(e.fineAmount > 0 || (e.lateFine ?? 0) > 0) && (
-                  <span className="rounded-full border border-red-200 bg-red-500/90 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm shadow-sm">
+                  <span className="shrink-0 whitespace-nowrap rounded-full border border-red-200 bg-red-500/90 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm shadow-sm">
                     Absence ₱{e.fineAmount} · Late ₱{e.lateFine}
                   </span>
                 )}
                 {e.multiSession && (
-                  <span className="rounded-full border border-violet-200 bg-violet-500/90 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm shadow-sm">
+                  <span className="shrink-0 whitespace-nowrap rounded-full border border-violet-200 bg-violet-500/90 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm shadow-sm">
                     2 sessions
                   </span>
                 )}
