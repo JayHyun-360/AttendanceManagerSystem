@@ -5162,7 +5162,7 @@ export function DashboardPage({
         </h1>
       </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:mb-5 md:gap-3">
+      <div className="grid grid-cols-1 gap-3 mb-5 sm:grid-cols-3">
         <motion.div
           className="bg-white border border-slate-100 rounded-xl px-4 py-4"
           initial={{ opacity: 0, y: 8 }}
@@ -5178,7 +5178,7 @@ export function DashboardPage({
         </motion.div>
 
         <motion.div
-          className="rounded-xl border border-slate-100 bg-white px-3 py-3 md:px-4 md:py-4"
+          className="bg-white border border-slate-100 rounded-xl px-4 py-4"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, delay: 0.08 }}
@@ -5192,7 +5192,7 @@ export function DashboardPage({
         </motion.div>
 
         <motion.div
-          className="rounded-xl border border-slate-100 bg-white px-3 py-3 md:px-4 md:py-4"
+          className="bg-white border border-slate-100 rounded-xl px-4 py-4"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, delay: 0.14 }}
@@ -5207,20 +5207,20 @@ export function DashboardPage({
       </div>
 
       <motion.div
-        className="mb-4 rounded-xl border border-slate-100 bg-white px-3 py-2.5 md:mb-5 md:px-4 md:py-3"
+        className="bg-white border border-slate-100 rounded-xl px-4 py-3 mb-5"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.28, delay: 0.2 }}
       >
-        <div className="flex items-center justify-between md:block">
-          <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
             Attendance rate
           </span>
           <span className="text-[11px] font-semibold text-emerald-600">
             {statValues.rate}%
           </span>
         </div>
-        <div className="h-16 md:h-24">
+        <div className="h-24">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -6493,10 +6493,12 @@ export function AttendanceHistoryPage({
               ) : eff === "absent" && !String(r.id).startsWith("inferred-") ? (
                 <button
                   onClick={() => setModal(r)}
-                  className="h-10 shrink-0 rounded-lg bg-slate-900 px-3 text-[11px] font-semibold text-white transition-colors hover:bg-slate-800 md:h-8"
+                  className="h-10 shrink-0 rounded-lg bg-slate-900 px-3.5 text-[11px] font-semibold leading-none text-white transition-colors hover:bg-slate-800 md:h-8"
                 >
-                  <Icons.Send />
-                  Excuse
+                  <span className="flex items-center justify-center gap-1.5 whitespace-nowrap">
+                    <Icons.Send />
+                    <span>Excuse</span>
+                  </span>
                 </button>
               ) : (
                 <Badge status={eff} />
