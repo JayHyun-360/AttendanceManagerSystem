@@ -2217,7 +2217,7 @@ function LandingPage({
             tracking.
           </p>
           <div
-            className={`flex items-center gap-3 ${hasHero ? "" : "justify-center"}`}
+            className={`mt-3 flex items-center gap-3 md:mt-6 ${hasHero ? "" : "justify-center"}`}
           >
             <button
               onClick={() => {

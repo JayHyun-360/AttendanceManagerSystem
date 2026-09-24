@@ -2984,7 +2984,7 @@ export function TopBar({
             </button>
           )}
           <button
-            className="flex items-center gap-1.5 min-w-0"
+            className="flex items-center gap-1 min-w-0"
             onClick={() => go(dest)}
           >
             <AdesseMark className="w-8 h-8 shrink-0" />
@@ -3774,7 +3774,7 @@ function LandingPage({
             tracking.
           </p>
           <div
-            className={`flex items-center gap-3 ${
+            className={`mt-3 flex items-center gap-3 md:mt-6 ${
               hasHero ? "" : "justify-center"
             }`}
           >
