@@ -8106,7 +8106,7 @@ export default function LandingExperienceClient({
     };
   }, []);
 
-  const handleLandingNav = (page: Page) => {
+	  const handleLandingNav = (page: Page) => {
     const routeFromPage: Record<Page, string> = {
       landing: "/",
       login: "/login",
@@ -8124,7 +8124,8 @@ export default function LandingExperienceClient({
       "admin-scanner": "/admin-scanner",
       "admin-attendees": "/admin-attendees",
       "admin-students": "/admin-students",
-      "admin-announcements": "/admin-announcements",
+	      "admin-announcements": "/admin-announcements",
+	      "dev-notes": "/dev-notes",
       "admin-reports": "/admin-reports",
       "admin-excuse-requests": "/admin-excuse-requests",
       "admin-settings": "/admin-settings",

@@ -1762,14 +1762,22 @@ const Icons = {
     </svg>
   ),
 
-  Bell: () => (
-    <svg viewBox="0 0 24 24" className={ic} {...sv}>
-      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 01-3.46 0" />
-    </svg>
-  ),
+	  Bell: () => (
+	    <svg viewBox="0 0 24 24" className={ic} {...sv}>
+	      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+	      <path d="M13.73 21a2 2 0 01-3.46 0" />
+	    </svg>
+	  ),
 
-  QrCode: () => (
+	  Code: () => (
+	    <svg viewBox="0 0 24 24" className={ic} {...sv}>
+	      <polyline points="16 18 22 12 16 6" />
+	      <polyline points="8 6 2 12 8 18" />
+	      <line x1="14" y1="4" x2="10" y2="20" />
+	    </svg>
+	  ),
+
+	  QrCode: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <rect x="3" y="3" width="7" height="7" rx="1" />
       <rect x="14" y="3" width="7" height="7" rx="1" />
@@ -3166,11 +3174,13 @@ export function Sidebar({
 
         { p: "admin-attendees" as Page, l: "Attendees", I: Icons.Users },
 
-        { p: "admin-students" as Page, l: "Students", I: Icons.User },
+	        { p: "admin-students" as Page, l: "Students", I: Icons.User },
 
-        { p: "admin-announcements" as Page, l: "Announcements", I: Icons.Bell },
+	        { p: "admin-announcements" as Page, l: "Announcements", I: Icons.Bell },
 
-        {
+	        { p: "dev-notes" as Page, l: "Dev Notes", I: Icons.Code },
+
+	        {
           p: "admin-excuse-requests" as Page,
 
           l: "Excuse Requests",
@@ -3187,11 +3197,13 @@ export function Sidebar({
 
         { p: "events" as Page, l: "Events", I: Icons.Calendar },
 
-        { p: "my-qr" as Page, l: "My QR Code", I: Icons.QrCode },
+	        { p: "my-qr" as Page, l: "My QR Code", I: Icons.QrCode },
 
-        { p: "announcements" as Page, l: "Announcements", I: Icons.Bell },
+	        { p: "announcements" as Page, l: "Announcements", I: Icons.Bell },
 
-        {
+	        { p: "dev-notes" as Page, l: "Dev Notes", I: Icons.Code },
+
+	        {
           p: "attendance-history" as Page,
 
           l: "Attendance",
@@ -3221,6 +3233,7 @@ export function Sidebar({
 
     announcements: "/announcements",
 
+    "dev-notes": "/dev-notes",
     "attendance-history": "/attendance-history",
 
     "my-fines": "/my-fines",
@@ -3246,7 +3259,7 @@ export function Sidebar({
     "admin-settings": "/admin-settings",
   };
 
-  const handleNav = (p: Page) => {
+	  const handleNav = (p: Page) => {
     const target = routeFromPage[p] ?? "/dashboard";
 
     router.push(target);
@@ -13832,7 +13845,9 @@ export default function LandingExperienceClient({
 
       "event-detail": "/events",
 
-      announcements: "/announcements",
+	    announcements: "/announcements",
+
+	    "dev-notes": "/dev-notes",
 
       "attendance-history": "/attendance-history",
 
@@ -13850,7 +13865,8 @@ export default function LandingExperienceClient({
 
       "admin-students": "/admin-students",
 
-      "admin-announcements": "/admin-announcements",
+	    "admin-announcements": "/admin-announcements",
+
 
       "admin-reports": "/admin-reports",
 

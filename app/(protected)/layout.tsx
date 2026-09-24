@@ -4,8 +4,9 @@ import {
   createContext,
   useContext,
   useEffect,
-  useState,
-  type Dispatch,
+	useState,
+	type ComponentProps,
+	type Dispatch,
   type ReactNode,
   type SetStateAction,
 } from "react";
@@ -18,6 +19,7 @@ import {
   type Page,
   type User,
 } from "../shared-page";
+import { DevNotesProvider, useDevNotes } from "../DevNotesPage";
 import { supabase } from "@/lib/supabase";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -38,7 +40,14 @@ export function useProtectedUser() {
   if (!value) {
     throw new Error("useProtectedUser must be used inside ProtectedLayout");
   }
-  return value;
+	return value;
+}
+
+type ProtectedSidebarProps = ComponentProps<typeof Sidebar>;
+
+function ProtectedSidebar(props: ProtectedSidebarProps) {
+  const { unreadCount } = useDevNotes();
+  return <Sidebar {...props} badges={{ "dev-notes": unreadCount }} />;
 }
 
 const pathToPage: Partial<Record<string, Page>> = {
@@ -46,9 +55,10 @@ const pathToPage: Partial<Record<string, Page>> = {
   "/admin-dashboard": "admin-dashboard",
   "/onboarding": "onboarding",
   "/events": "events",
-  "/my-qr": "my-qr",
-  "/announcements": "announcements",
-  "/attendance-history": "attendance-history",
+	  "/my-qr": "my-qr",
+	  "/announcements": "announcements",
+	  "/dev-notes": "dev-notes",
+	  "/attendance-history": "attendance-history",
   "/my-fines": "my-fines",
   "/profile": "profile",
   "/admin-events": "admin-events",
@@ -71,13 +81,15 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const [hasSession, setHasSession] = useState(false);
-  const [settingsReady, setSettingsReady] = useState(false);
-  const [showFees, setShowFees] = useState(false);
+	  const [settingsReady, setSettingsReady] = useState(false);
+	  const [showFees, setShowFees] = useState(false);
+	  const [hydratedPathname, setHydratedPathname] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+	  useEffect(() => {
+	    let cancelled = false;
+	    setHydratedPathname(null);
 
-    async function hydrateSession() {
+	    async function hydrateSession() {
       try {
         const {
           data: { session },
@@ -180,9 +192,10 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           qrVersion: Number(profile.qr_version ?? 1),
         };
 
-        if (!cancelled) {
-          setUser(hydratedUser);
-        }
+	        if (!cancelled) {
+	          setUser(hydratedUser);
+	          setHydratedPathname(pathname);
+	        }
       } catch (caught) {
         console.error(caught);
       } finally {
@@ -273,10 +286,11 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     setUser(null);
     setAuthUserId(null);
     setHasSession(false);
-    setSessionReady(false);
-    setSettingsReady(false);
-    setShowFees(false);
-    setPage("landing");
+	    setSessionReady(false);
+	    setSettingsReady(false);
+	    setShowFees(false);
+	    setHydratedPathname(null);
+	    setPage("landing");
     setOpen(false);
   };
 
@@ -298,11 +312,12 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
       login: "/login",
       onboarding: "/onboarding",
       dashboard: "/dashboard",
-      "my-qr": "/my-qr",
-      events: "/events",
-      "event-detail": "/events",
-      announcements: "/announcements",
-      "attendance-history": "/attendance-history",
+	      "my-qr": "/my-qr",
+	      events: "/events",
+	      "event-detail": "/events",
+	      announcements: "/announcements",
+	      "dev-notes": "/dev-notes",
+	      "attendance-history": "/attendance-history",
       "my-fines": "/my-fines",
       profile: "/profile",
       "admin-dashboard": "/admin-dashboard",
@@ -321,7 +336,11 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     setOpen(false);
   };
 
-  const showGlobalLoading = (!sessionReady || !settingsReady) && !user;
+	  const showGlobalLoading =
+	    !sessionReady ||
+	    !settingsReady ||
+	    hydratedPathname !== pathname ||
+	    !user;
 
   if (showGlobalLoading) {
     return (
@@ -335,10 +354,11 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ProtectedUserContext.Provider
-      value={{ user, setUser, authUserId, setAuthUserId, showFees }}
-    >
-      <div className="w-full min-h-screen m-0 p-0 bg-white md:h-screen md:overflow-hidden md:bg-[#f8faf9] md:relative">
+	    <ProtectedUserContext.Provider
+	      value={{ user, setUser, authUserId, setAuthUserId, showFees }}
+	    >
+	      <DevNotesProvider>
+	      <div className="w-full min-h-screen m-0 p-0 bg-white md:h-screen md:overflow-hidden md:bg-[#f8faf9] md:relative">
         {showGlobalLoading && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#f8faf9]/85 backdrop-blur-[1px]">
             <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
@@ -349,7 +369,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
         )}
         <TopBar user={user} onNav={onNav} onMenuOpen={() => setOpen(true)} />
         <div className="w-full md:flex md:min-h-0 md:h-[calc(100vh-56px)]">
-          <Sidebar
+	          <ProtectedSidebar
             page={page}
             user={user}
             open={open}
@@ -364,8 +384,9 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
             <PageShell>{children}</PageShell>
           </main>
         </div>
-        {toastMessage && <Toast message={toastMessage} variant="success" />}
-      </div>
-    </ProtectedUserContext.Provider>
+	        {toastMessage && <Toast message={toastMessage} variant="success" />}
+	      </div>
+	      </DevNotesProvider>
+	    </ProtectedUserContext.Provider>
   );
 }
