@@ -2123,12 +2123,14 @@ function Toggle({
 
 function FieldInput({
   label,
+  required,
 
   error,
 
   ...p
 }: {
   label: string;
+  required?: boolean;
 
   error?: string;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
@@ -2136,8 +2138,10 @@ function FieldInput({
     <div className="flex flex-col gap-1.5">
       <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
         {label}
+        {required && <span className="ml-1 text-emerald-500">*</span>}
       </label>
       <input
+        required={required}
         className="h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium placeholder:text-slate-300 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all"
         {...p}
       />
@@ -2148,6 +2152,7 @@ function FieldInput({
 
 function FieldSelect({
   label,
+  required,
 
   children,
 
@@ -2156,6 +2161,7 @@ function FieldSelect({
   ...p
 }: {
   label: string;
+  required?: boolean;
 
   children: React.ReactNode;
 
@@ -2165,8 +2171,10 @@ function FieldSelect({
     <div className="flex flex-col gap-1.5">
       <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
         {label}
+        {required && <span className="ml-1 text-emerald-500">*</span>}
       </label>
       <select
+        required={required}
         className="h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all appearance-none"
         {...p}
       >
@@ -4363,7 +4371,7 @@ export function OnboardingPage({
 
     { t: "Contact information", d: "Used for important notices and updates." },
 
-    { t: "Student ID", d: "Your 7-digit school-issued ID number." },
+    { t: "Student ID", d: "Your school-issued ID number (7 or more digits)." },
 
     {
       t: "Enrollment details",
@@ -4386,7 +4394,12 @@ export function OnboardingPage({
     }
 
     if (step === 2) {
-      return f.phone.trim().length > 0 && f.contactEmail.trim().length > 0;
+      const phone = f.phone.replace(/[^\d+]/g, "");
+      const email = f.contactEmail.trim();
+      return (
+        /^(?:09\d{9}|\+639\d{9})$/.test(phone) &&
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      );
     }
 
     if (step === 3) {
@@ -4443,6 +4456,7 @@ export function OnboardingPage({
                   <div className="col-span-2">
                     <FieldInput
                       label="First Name"
+                      required
                       placeholder="e.g. Maria Luisa"
                       value={f.firstName}
                       onChange={set("firstName")}
@@ -4458,6 +4472,7 @@ export function OnboardingPage({
                 </div>
                 <FieldInput
                   label="Surname"
+                  required
                   placeholder="e.g. Santos"
                   value={f.surname}
                   onChange={set("surname")}
@@ -4468,6 +4483,7 @@ export function OnboardingPage({
               <>
                 <FieldInput
                   label="Phone"
+                  required
                   type="tel"
                   placeholder="e.g. 09XX XXX XXXX"
                   value={f.phone}
@@ -4475,6 +4491,7 @@ export function OnboardingPage({
                 />
                 <FieldInput
                   label="Email"
+                  required
                   type="email"
                   placeholder="e.g. student@email.com"
                   value={f.contactEmail}
@@ -4484,7 +4501,11 @@ export function OnboardingPage({
             )}
             {step === 3 && (
               <FieldInput
-                label="Student ID (7 digits)"
+                label="Student ID (7 or more digits)"
+                required
+                pattern="\d{7,}"
+                minLength={7}
+                inputMode="numeric"
                 placeholder="e.g. 1234567"
                 value={f.studentId}
                 onChange={set("studentId")}
@@ -4494,6 +4515,7 @@ export function OnboardingPage({
               <>
                 <FieldSelect
                   label="Program"
+                  required
                   value={f.program}
                   onChange={set("program")}
                 >
@@ -4506,6 +4528,7 @@ export function OnboardingPage({
                 </FieldSelect>
                 <FieldSelect
                   label="Year Level"
+                  required
                   value={f.yearLevel}
                   onChange={set("yearLevel")}
                 >

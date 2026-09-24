@@ -36,6 +36,28 @@ export default function OnboardingRoute() {
         (session?.user?.user_metadata?.image_url as string | undefined) ??
         null;
 
+      const normalizedPhone = d.phone.replace(/[^\d+]/g, "");
+      const validPhone = /^(?:09\d{9}|\+639\d{9})$/.test(normalizedPhone);
+      const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        d.contactEmail.trim(),
+      );
+      const validStudentId = /^\d{7,}$/.test(d.studentId.trim());
+      const validProfile =
+        d.firstName.trim() &&
+        d.surname.trim() &&
+        validPhone &&
+        validEmail &&
+        validStudentId &&
+        d.program.trim() &&
+        d.yearLevel.trim() &&
+        d.idPhotoUrl &&
+        d.agreedToTerms === true;
+
+      if (!validProfile) {
+        console.error("Rejected incomplete or invalid onboarding profile");
+        return;
+      }
+
       const payload = {
         id: uid,
         first_name: d.firstName.trim(),
