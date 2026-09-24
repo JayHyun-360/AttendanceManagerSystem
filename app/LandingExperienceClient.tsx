@@ -2339,8 +2339,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
       (profile.role !== "admin" &&
         (!profile.student_id ||
           !profile.program ||
-          !profile.year_level ||
-          !profile.section));
+          !profile.year_level));
 
     if (incomplete) {
       router.push("/onboarding?freshLogin=1");
@@ -2752,8 +2751,7 @@ export function OnboardingPage({
     if (step === 4) {
       return (
         f.program.trim().length > 0 &&
-        f.yearLevel.trim().length > 0 &&
-        f.section.trim().length > 0
+        f.yearLevel.trim().length > 0
       );
     }
     if (step === 5) {
@@ -2866,9 +2864,9 @@ export function OnboardingPage({
                   <option>3rd Year</option>
                   <option>4th Year</option>
                 </FieldSelect>
-                <FieldInput
-                  label="Section"
-                  placeholder="e.g. IT-2A"
+                  <FieldInput
+                    label="Section (optional)"
+                    placeholder="e.g. IT-2A"
                   value={f.section}
                   onChange={set("section")}
                 />
@@ -4674,7 +4672,7 @@ export function ProfilePage({
                     <option>4th Year</option>
                   </FieldSelect>
                   <FieldInput
-                    label="Section"
+                    label="Section (optional)"
                     placeholder="e.g. IT-2A"
                     value={draft.section}
                     onChange={setF("section")}
@@ -8045,8 +8043,7 @@ export default function LandingExperienceClient({
           !!profile.surname &&
           !!profile.student_id &&
           !!profile.program &&
-          !!profile.year_level &&
-          !!profile.section;
+          !!profile.year_level;
 
         if (!profileIsComplete) {
           if (!cancelled) {

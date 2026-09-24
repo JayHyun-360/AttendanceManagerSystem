@@ -153,8 +153,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           (profile.role !== "admin" &&
             (!profile.student_id ||
               !profile.program ||
-              !profile.year_level ||
-              !profile.section));
+              !profile.year_level));
 
         if (profileIsIncomplete) {
           if (pathname !== "/events") {

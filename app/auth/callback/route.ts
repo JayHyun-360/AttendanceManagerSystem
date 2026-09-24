@@ -64,8 +64,7 @@ export async function GET(request: NextRequest) {
     (profile.role !== "admin" &&
       (!profile.student_id ||
         !profile.program ||
-        !profile.year_level ||
-        !profile.section));
+        !profile.year_level));
 
   if (incomplete) {
     redirectResponse.headers.set(
