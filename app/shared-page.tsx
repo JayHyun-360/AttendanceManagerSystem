@@ -952,6 +952,7 @@ export interface EventData {
   reportAbsentSessions?: number;
   reportLateSessions?: number;
   reportFineTotal?: number;
+  reportSanctionedSessions?: number;
 }
 
 interface ScanRecord {
@@ -12456,11 +12457,15 @@ export function AdminReportsPage({
   events = [],
 
   reportData,
+  period = { dateFrom: "", dateTo: "" },
+  onPeriodChange,
 }: {
   events?: EventData[];
 
   reportData?: {
     events?: EventData[];
+
+    periodLabel?: string;
 
     programStats?: Array<{
       label: string;
@@ -12476,6 +12481,7 @@ export function AdminReportsPage({
       late?: number;
 
       fineTotal?: number;
+      sanctioned?: number;
     }>;
 
     feeSummary?: Array<{
@@ -12486,6 +12492,8 @@ export function AdminReportsPage({
       color: string;
     }>;
   };
+  period?: { dateFrom: string; dateTo: string };
+  onPeriodChange?: (period: { dateFrom: string; dateTo: string }) => void;
 }) {
   const liveEvents = reportData?.events ?? events ?? [];
 
@@ -12494,6 +12502,13 @@ export function AdminReportsPage({
   const fees = reportData?.feeSummary ?? [];
 
   const eventRows = liveEvents.filter((e) => e.status !== "upcoming");
+
+  const totalSanctioned = programRows.reduce(
+    (total, row) => total + (row.sanctioned ?? 0),
+    0,
+  );
+
+  const printReport = () => window.print();
 
   const exportPDF = () => {
     const W = 794,
@@ -12816,18 +12831,69 @@ export function AdminReportsPage({
     <>
       <PageHeader
         title="Reports"
-        subtitle="AY 2026-2027, 1st Semester"
+        subtitle={reportData?.periodLabel ?? "All recorded events"}
         action={
           <button
-            onClick={exportPDF}
+            onClick={printReport}
             className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 flex items-center gap-1.5"
           >
             <Icons.Download />
-            Export PDF
+            Print / save PDF
           </button>
         }
       />
+      <div className="bg-white border border-slate-100 rounded-xl px-4 py-3 mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-bold text-slate-800">Report period</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            Filter attendance, fees, and sanctions by event date.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="text-[10px] font-semibold text-slate-500">
+            From
+            <input
+              type="date"
+              value={period.dateFrom}
+              onChange={(event) =>
+                onPeriodChange?.({ ...period, dateFrom: event.target.value })
+              }
+              className="mt-1 block h-9 rounded-lg border border-slate-200 px-2 text-xs text-slate-700"
+            />
+          </label>
+          <label className="text-[10px] font-semibold text-slate-500">
+            To
+            <input
+              type="date"
+              value={period.dateTo}
+              onChange={(event) =>
+                onPeriodChange?.({ ...period, dateTo: event.target.value })
+              }
+              className="mt-1 block h-9 rounded-lg border border-slate-200 px-2 text-xs text-slate-700"
+            />
+          </label>
+          {(period.dateFrom || period.dateTo) && (
+            <button
+              type="button"
+              onClick={() => onPeriodChange?.({ dateFrom: "", dateTo: "" })}
+              className="h-9 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
       <SectionLabel>Attendance by program</SectionLabel>
+      {programRows.length === 0 && (
+        <div className="bg-white border border-dashed border-slate-200 rounded-xl px-5 py-8 mb-6 text-center">
+          <p className="text-sm font-semibold text-slate-700">
+            No attendance data for this reporting period.
+          </p>
+          <p className="text-xs text-slate-400 mt-1">
+            Try clearing the dates or record attendance for a completed event.
+          </p>
+        </div>
+      )}
       <div className="grid md:grid-cols-2 gap-3 mb-6">
         {programRows.map((r, index) => {
           const colors = [
@@ -12865,15 +12931,37 @@ export function AdminReportsPage({
                 {r.rate}% attendance rate
               </p>
               <p className="mt-1 text-[11px] font-semibold text-slate-500">
-                Absent {r.absent ?? 0} · Late {r.late ?? 0}
-                {(r.fineTotal ?? 0) > 0 && ` · Fees ₱${r.fineTotal}`}
+                Present/late {r.present} · Absent {r.absent ?? 0} · Late {r.late ?? 0}
+                {(r.fineTotal ?? 0) > 0 && ` · Fees assessed ₱${r.fineTotal}`}
+                {(r.sanctioned ?? 0) > 0 && ` · Sanctioned ${r.sanctioned}`}
               </p>
             </div>
           );
         })}
       </div>
+      <SectionLabel>Sanctions overview</SectionLabel>
+      <div className="bg-white border border-slate-100 rounded-xl px-5 py-4 mb-6">
+        <p className="text-xl font-bold text-amber-600">{totalSanctioned}</p>
+        <p className="text-[11px] text-slate-400 font-semibold mt-1">
+          Sanctioned late or absent sessions
+        </p>
+        <p className="text-[11px] text-slate-500 mt-2">
+          Sanctions are independent of monetary fines and apply only to events
+          where an administrator enabled sanctions.
+        </p>
+      </div>
       <SectionLabel>Fees summary</SectionLabel>
-      <div className="grid grid-cols-1 gap-3 mb-6 sm:grid-cols-2 lg:grid-cols-3">
+      {fees.length === 0 && (
+        <div className="bg-white border border-dashed border-slate-200 rounded-xl px-5 py-8 mb-6 text-center">
+          <p className="text-sm font-semibold text-slate-700">
+            No fees have been assessed.
+          </p>
+          <p className="text-xs text-slate-400 mt-1">
+            Monetary fines may be disabled or no qualifying records exist.
+          </p>
+        </div>
+      )}
+      <div className="grid grid-cols-1 gap-3 mb-6 sm:grid-cols-2 lg:grid-cols-4">
         {fees.map((s, i) => (
           <div
             key={s.label}
@@ -12890,7 +12978,16 @@ export function AdminReportsPage({
       </div>
       <SectionLabel>By event</SectionLabel>
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
-        {eventRows.map((e, i, arr) => (
+        {eventRows.length === 0 ? (
+          <div className="px-5 py-8 text-center">
+            <p className="text-sm font-semibold text-slate-700">
+              No completed or active events to report.
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Upcoming events are excluded until attendance can be evaluated.
+            </p>
+          </div>
+        ) : eventRows.map((e, i, arr) => (
           <div
             key={e.id}
             className={`flex items-center justify-between px-5 py-4 ${
@@ -12900,10 +12997,11 @@ export function AdminReportsPage({
             <div>
               <p className="text-sm font-semibold text-slate-900">{e.title}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {e.date} · Absent ₱{e.fineAmount} · Late ₱{e.lateFine ?? 0}
+                {e.date} · Fine rates: Absent ₱{e.fineAmount} · Late ₱{e.lateFine ?? 0}
               </p>
               <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
-                Attended {e.reportAttendedSessions ?? e.attendees} · Absent {e.reportAbsentSessions ?? 0} · Late {e.reportLateSessions ?? 0}
+                Fees assessed ₱{e.reportFineTotal ?? 0} · 
+                Students attended {e.attendees} · Sessions: Present/late {e.reportAttendedSessions ?? e.attendees} · Absent {e.reportAbsentSessions ?? 0} · Late {e.reportLateSessions ?? 0} · Sanctioned {e.reportSanctionedSessions ?? 0}
               </p>
             </div>
             <div className="text-right">
@@ -12915,6 +13013,11 @@ export function AdminReportsPage({
           </div>
         ))}
       </div>
+      <p className="mt-3 text-[11px] text-slate-400">
+        Attendance rate counts present and late sessions as attended. “Students
+        attended” is a unique-student count; session metrics may be higher for
+        multi-session events.
+      </p>
     </>
   );
 }

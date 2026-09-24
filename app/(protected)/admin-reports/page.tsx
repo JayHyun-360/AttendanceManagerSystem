@@ -16,6 +16,7 @@ import {
 
 type ReportPayload = {
   events: EventData[];
+  periodLabel: string;
   programStats: Array<{
     label: string;
     present: number;
@@ -24,6 +25,7 @@ type ReportPayload = {
     absent: number;
     late: number;
     fineTotal: number;
+    sanctioned: number;
   }>;
   feeSummary: Array<{
     label: string;
@@ -36,6 +38,8 @@ export default function AdminReportsRoutePage() {
   const router = useRouter();
   const { user } = useProtectedUser();
   const [reportData, setReportData] = useState<ReportPayload | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -81,7 +85,11 @@ export default function AdminReportsRoutePage() {
         return;
       }
 
-      const eventRows = eventsResult.data ?? [];
+      const allEventRows = eventsResult.data ?? [];
+      const eventRows = allEventRows.filter((row: any) =>
+        (!dateFrom || row.event_date >= dateFrom) &&
+        (!dateTo || row.event_date <= dateTo),
+      );
       const profileRows = profilesResult.data ?? [];
       const attendanceRows = attendanceResult.data ?? [];
       const fineRows = finesResult.data ?? [];
@@ -100,10 +108,10 @@ export default function AdminReportsRoutePage() {
         );
       }
 
-      const programTotals = new Map<string, { total: number; present: number; absent: number; late: number; fineTotal: number }>();
+      const programTotals = new Map<string, { total: number; present: number; absent: number; late: number; fineTotal: number; sanctioned: number }>();
       for (const student of studentRows) {
         const program = student.program || "Unassigned";
-        const stats = programTotals.get(program) ?? { total: 0, present: 0, absent: 0, late: 0, fineTotal: 0 };
+        const stats = programTotals.get(program) ?? { total: 0, present: 0, absent: 0, late: 0, fineTotal: 0, sanctioned: 0 };
         for (const record of recordsByStudent.get(student.id) ?? []) {
           stats.total += 1;
           if (record.status === "present" && !!record.scan?.scan_in_at) stats.present += 1;
@@ -113,6 +121,7 @@ export default function AdminReportsRoutePage() {
           }
           if (record.status === "absent" || record.status === "no_record") stats.absent += 1;
           stats.fineTotal += record.fineAmount;
+          if (record.sanctioned) stats.sanctioned += 1;
         }
         programTotals.set(program, stats);
       }
@@ -126,6 +135,7 @@ export default function AdminReportsRoutePage() {
           absent: stats.absent,
           late: stats.late,
           fineTotal: stats.fineTotal,
+          sanctioned: stats.sanctioned,
         }))
         .sort((a, b) => b.total - a.total);
 
@@ -187,6 +197,7 @@ export default function AdminReportsRoutePage() {
           ).length,
           reportLateSessions: eventRecords.filter((record) => record.status === "late").length,
           reportFineTotal: eventRecords.reduce((total, record) => total + record.fineAmount, 0),
+          reportSanctionedSessions: eventRecords.filter((record) => record.sanctioned).length,
           mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
           highlightUrl:
             row.image_url && !row.image_url.startsWith("blob:")
@@ -195,24 +206,32 @@ export default function AdminReportsRoutePage() {
         };
       });
 
-      const totalFeesIssued = fineRows.reduce(
+      const scopedEventIds = new Set(eventRows.map((row: any) => String(row.id)));
+      const scopedFineRows = fineRows.filter((row: any) => scopedEventIds.has(String(row.event_id)));
+      const totalFeesIssued = scopedFineRows.reduce(
         (sum, row: any) => sum + Number(row.amount ?? 0),
         0,
       );
-      const collectedFees = fineRows
+      const collectedFees = scopedFineRows
         .filter((row: any) => row.status === "paid")
         .reduce((sum, row: any) => sum + Number(row.amount ?? 0), 0);
-      const pendingFees = fineRows
+      const pendingFees = scopedFineRows
         .filter((row: any) => row.status === "unpaid")
+        .reduce((sum, row: any) => sum + Number(row.amount ?? 0), 0);
+      const excusedFees = scopedFineRows
+        .filter((row: any) => row.status === "excused")
         .reduce((sum, row: any) => sum + Number(row.amount ?? 0), 0);
 
       if (!cancelled) {
         setReportData({
           events: eventData,
+          periodLabel: dateFrom || dateTo
+            ? `${dateFrom || "Beginning"} – ${dateTo || "Today"}`
+            : "All recorded events",
           programStats,
-          feeSummary: [
+          feeSummary: scopedFineRows.length === 0 ? [] : [
             {
-              label: "Total fees issued",
+              label: "Total assessed",
               value: `₱${totalFeesIssued.toLocaleString()}`,
               color: "text-red-600",
             },
@@ -222,9 +241,14 @@ export default function AdminReportsRoutePage() {
               color: "text-emerald-500",
             },
             {
-              label: "Pending",
+              label: "Outstanding",
               value: `₱${pendingFees.toLocaleString()}`,
               color: "text-amber-600",
+            },
+            {
+              label: "Waived / excused",
+              value: `₱${excusedFees.toLocaleString()}`,
+              color: "text-violet-600",
             },
           ],
         });
@@ -264,7 +288,7 @@ export default function AdminReportsRoutePage() {
       void attendanceChannel.unsubscribe();
       void finesChannel.unsubscribe();
     };
-  }, [router, user]);
+  }, [dateFrom, dateTo, router, user]);
 
   if (!reportData) {
     return (
@@ -285,6 +309,14 @@ export default function AdminReportsRoutePage() {
   }
 
   return (
-    <AdminReportsPage events={reportData.events} reportData={reportData} />
+    <AdminReportsPage
+      events={reportData.events}
+      reportData={reportData}
+      period={{ dateFrom, dateTo }}
+      onPeriodChange={(next) => {
+        setDateFrom(next.dateFrom);
+        setDateTo(next.dateTo);
+      }}
+    />
   );
 }
