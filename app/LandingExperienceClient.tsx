@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { uploadImage } from "@/lib/uploadImage";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatTimeRange12Hour } from "@/lib/time";
 
 const adesseLogoSrc = "/adesse-logo.svg";
 const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
@@ -3805,7 +3806,7 @@ export function EventsPage({
               </span>
               <span className="flex items-center gap-1.5">
                 <Icons.Clock />
-                {e.time}
+                {formatTimeRange12Hour(e.time) || "TBA"}
               </span>
               <span className="flex items-center gap-1.5">
                 <Icons.MapPin />
@@ -6131,20 +6132,20 @@ export function AdminEventsPage({
                     <span className="flex items-center gap-1.5">
                       <Icons.Clock />
                       {e.morningStart && e.morningEnd
-                        ? `${e.morningStart}–${e.morningEnd}`
+                        ? formatTimeRange12Hour(`${e.morningStart}–${e.morningEnd}`)
                         : "Morning TBA"}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Icons.Clock />
                       {e.afternoonStart && e.afternoonEnd
-                        ? `${e.afternoonStart}–${e.afternoonEnd}`
+                        ? formatTimeRange12Hour(`${e.afternoonStart}–${e.afternoonEnd}`)
                         : "Afternoon TBA"}
                     </span>
                   </>
                 ) : (
                   <span className="flex items-center gap-1.5">
                     <Icons.Clock />
-                    {e.time || "TBA"}
+                    {formatTimeRange12Hour(e.time) || "TBA"}
                   </span>
                 )}
               </div>
@@ -6290,7 +6291,7 @@ export function AdminAttendeesPage({
       </div>
       <p className="text-xs text-slate-400 font-medium mb-4">
         {selectedEvent
-          ? `${selectedEvent.location} · ${selectedEvent.time}`
+          ? `${selectedEvent.location} · ${formatTimeRange12Hour(selectedEvent.time) || "TBA"}`
           : "No event selected"}
       </p>
       <div className="flex gap-1 mb-5 bg-slate-100 p-1 rounded-xl">

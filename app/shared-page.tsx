@@ -181,6 +181,7 @@ import {
   type FineRowLike,
   type FineScanLike,
 } from "@/lib/attendance-fines";
+import { formatTime12Hour, formatTimeRange12Hour } from "@/lib/time";
 
 /*
 import { deleteImages, uploadImage } from "@/lib/uploadImage";
@@ -5519,7 +5520,7 @@ export function EventsPage({
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Icons.Clock />
-                  {e.time}
+                  {formatTimeRange12Hour(e.time) || "TBA"}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Icons.MapPin />
@@ -5878,7 +5879,7 @@ function EventDetailPageView({
                     Time
                   </p>
                   <p className="mt-1 font-semibold text-slate-700">
-                    {event.time || "TBA"}
+                    {formatTimeRange12Hour(event.time) || "TBA"}
                   </p>
                 </div>
                 <div className="col-span-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
@@ -5897,7 +5898,7 @@ function EventDetailPageView({
                 </p>
                 <p className="text-sm text-slate-600">
                   {event.multiSession
-                    ? `Morning ${event.morningStart || "TBA"}-${event.morningEnd || "TBA"} · Afternoon ${event.afternoonStart || "TBA"}-${event.afternoonEnd || "TBA"}`
+                    ? `Morning ${formatTime12Hour(event.morningStart) || "TBA"} – ${formatTime12Hour(event.morningEnd) || "TBA"} · Afternoon ${formatTime12Hour(event.afternoonStart) || "TBA"} – ${formatTime12Hour(event.afternoonEnd) || "TBA"}`
                     : "Single session"}
                 </p>
                 {(canSeeFees || role === "admin") && event.fineAmount > 0 && (
@@ -9561,20 +9562,20 @@ export function AdminEventsPage({
                       <span className="flex items-center gap-1.5">
                         <Icons.Clock />
                         {e.morningStart && e.morningEnd
-                          ? `${e.morningStart}–${e.morningEnd}`
+                          ? formatTimeRange12Hour(`${e.morningStart}–${e.morningEnd}`)
                           : "Morning TBA"}
                       </span>
                       <span className="flex items-center gap-1.5">
                         <Icons.Clock />
                         {e.afternoonStart && e.afternoonEnd
-                          ? `${e.afternoonStart}–${e.afternoonEnd}`
+                          ? formatTimeRange12Hour(`${e.afternoonStart}–${e.afternoonEnd}`)
                           : "Afternoon TBA"}
                       </span>
                     </>
                   ) : (
                     <span className="flex items-center gap-1.5">
                       <Icons.Clock />
-                      {e.time || "TBA"}
+                      {formatTimeRange12Hour(e.time) || "TBA"}
                     </span>
                   )}
                 </div>
@@ -10535,7 +10536,7 @@ export function AdminScannerPage({
                   <div className="flex items-start justify-between gap-4">
                     <span className="text-slate-400">Schedule</span>
                     <span className="font-semibold text-slate-700 text-right">
-                      {selectedEvent.time}
+                      {formatTimeRange12Hour(selectedEvent.time) || "TBA"}
                     </span>
                   </div>
                   <div className="flex items-start justify-between gap-4">
@@ -10944,7 +10945,7 @@ export function AdminAttendeesPage({
       </div>
       <p className="text-xs text-slate-400 font-medium mb-4">
         {selectedEvent
-          ? `${selectedEvent.location} · ${selectedEvent.time}`
+          ? `${selectedEvent.location} · ${formatTimeRange12Hour(selectedEvent.time) || "TBA"}`
           : "No event selected"}
       </p>
       {selectedEvent && (
@@ -13178,7 +13179,7 @@ export function AdminReportsPage({
             <div>
               <p className="text-sm font-semibold text-slate-900">{e.title}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {e.date} · Fine rates: Absent ₱{e.fineAmount} · Late ₱{e.lateFine ?? 0}
+                {e.date} · {formatTimeRange12Hour(e.time) || "Time TBA"} · Fine rates: Absent ₱{e.fineAmount} · Late ₱{e.lateFine ?? 0}
               </p>
               <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
                 Fees assessed ₱{e.reportFineTotal ?? 0} · 
