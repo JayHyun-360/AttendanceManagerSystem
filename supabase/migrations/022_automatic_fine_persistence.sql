@@ -5,6 +5,28 @@
 
 begin;
 
+-- Attendance is evaluated in the school's local timezone. A session with no
+-- configured end time is considered finished only on the following local day;
+-- this prevents a same-day event from being marked absent prematurely.
+create or replace function public.event_session_has_ended(
+  p_event_date date,
+  p_session_end time
+)
+returns boolean
+language sql
+stable
+set search_path = public
+as $$
+  select
+    p_event_date < timezone('Asia/Manila', now())::date
+    or (
+      p_session_end is not null
+      and ((p_event_date + p_session_end) at time zone 'Asia/Manila') <= now()
+    );
+$$;
+
+revoke all on function public.event_session_has_ended(date, time) from public;
+
 create or replace function public.materialize_student_inferred_absences(
   p_student_id uuid
 )
@@ -49,9 +71,18 @@ begin
     null
   from public.events e
   cross join lateral (
-    values ('morning'::text), ('afternoon'::text)
-  ) as sessions(session_label)
-  where e.event_date <= current_date
+    values
+      (
+        'morning'::text,
+        case
+          when coalesce(e.multi_session, false)
+            then e.morning_end
+          else coalesce(e.morning_end, e.end_time)
+        end
+      ),
+      ('afternoon'::text, e.afternoon_end)
+  ) as sessions(session_label, session_end)
+  where public.event_session_has_ended(e.event_date, sessions.session_end)
     and coalesce(e.status, '') <> 'upcoming'
     and (
       (coalesce(e.multi_session, false) = false and sessions.session_label = 'morning')
@@ -130,7 +161,6 @@ begin
   where id = p_event_id;
 
   if not found
-     or v_event.event_date > current_date
      or coalesce(v_event.status, '') = 'upcoming' then
     return 0;
   end if;
@@ -152,10 +182,20 @@ begin
     null
   from public.profiles p
   cross join lateral (
-    values ('morning'::text), ('afternoon'::text)
-  ) as sessions(session_label)
+    values
+      (
+        'morning'::text,
+        case
+          when coalesce(v_event.multi_session, false)
+            then v_event.morning_end
+          else coalesce(v_event.morning_end, v_event.end_time)
+        end
+      ),
+      ('afternoon'::text, v_event.afternoon_end)
+  ) as sessions(session_label, session_end)
   where p.role = 'student'
     and nullif(trim(coalesce(p.program, '')), '') is not null
+    and public.event_session_has_ended(v_event.event_date, sessions.session_end)
     and (
       v_event.program is null
       or v_event.program = 'All Programs'
@@ -193,7 +233,10 @@ begin
   elsif old.status is distinct from new.status
      or old.event_date is distinct from new.event_date
      or old.program is distinct from new.program
-     or old.multi_session is distinct from new.multi_session then
+     or old.multi_session is distinct from new.multi_session
+     or old.morning_end is distinct from new.morning_end
+     or old.afternoon_end is distinct from new.afternoon_end
+     or old.end_time is distinct from new.end_time then
     perform public.materialize_event_inferred_absences(new.id);
   end if;
 
@@ -205,13 +248,54 @@ drop trigger if exists events_materialize_inferred_absences
   on public.events;
 
 create trigger events_materialize_inferred_absences
-after insert or update of status, event_date, program, multi_session
+after insert or update of status, event_date, program, multi_session,
+  morning_end, afternoon_end, end_time
 on public.events
 for each row
 execute function public.materialize_event_absences_after_change();
 
--- Repair current students and already-finished events once. All inserts are
--- conflict-safe, so rerunning this migration is safe.
+-- Remove only automatically inferred absent rows that were created before the
+-- session ended. Manual attendance rows and any row with paid/excused history
+-- are preserved. This repairs the old event-date-only behavior safely.
+do $$
+declare
+  early_scan record;
+begin
+  for early_scan in
+    select s.id
+    from public.attendance_scans s
+    join public.events e on e.id = s.event_id
+    cross join lateral (
+      select case
+        when s.session_label = 'afternoon' then e.afternoon_end
+        when coalesce(e.multi_session, false) then e.morning_end
+        else coalesce(e.morning_end, e.end_time)
+      end as session_end
+    ) session_meta
+    where s.status = 'absent'
+      and s.scan_in_at is null
+      and s.scanned_by is null
+      and s.method is null
+      and not public.event_session_has_ended(e.event_date, session_meta.session_end)
+      and not exists (
+        select 1
+        from public.fines f
+        where f.attendance_scan_id = s.id
+          and f.status in ('paid', 'excused')
+      )
+  loop
+    delete from public.fines
+    where attendance_scan_id = early_scan.id
+      and status = 'unpaid';
+
+    delete from public.attendance_scans
+    where id = early_scan.id;
+  end loop;
+end;
+$$;
+
+-- Repair current students and already-finished event sessions once. All
+-- inserts are conflict-safe, so rerunning this migration is safe.
 do $$
 declare
   student_row record;
@@ -229,8 +313,7 @@ begin
   for event_row in
     select id
     from public.events
-    where event_date <= current_date
-      and coalesce(status, '') <> 'upcoming'
+    where coalesce(status, '') <> 'upcoming'
   loop
     perform public.materialize_event_inferred_absences(event_row.id);
   end loop;

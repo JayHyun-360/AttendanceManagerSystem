@@ -16,7 +16,6 @@ import { recordAttendance, type AttendanceStatus } from "@/lib/attendance";
 import { useProtectedUser } from "../../layout";
 import {
   buildAttendanceSessionRecords,
-  totalUnpaidFine,
 } from "@/lib/attendance-fines";
 
 interface StudentDetail {
@@ -129,6 +128,7 @@ export default function StudentDetailRoutePage() {
     fineBalance: 0,
   });
   const [metricsRefreshKey, setMetricsRefreshKey] = useState(0);
+  const [finesEnabled, setFinesEnabled] = useState(false);
   const [studentFines, setStudentFines] = useState<FineRecord[]>([]);
   const [selectedFineIds, setSelectedFineIds] = useState<string[]>([]);
   const [isClearingFines, setIsClearingFines] = useState(false);
@@ -237,38 +237,39 @@ export default function StudentDetailRoutePage() {
         new Date().toISOString().slice(0, 10),
         Boolean((settingsResult.data?.settings as { finesEnabled?: boolean } | null)?.finesEnabled),
       );
+      const finesEnabled = Boolean(
+        (settingsResult.data?.settings as { finesEnabled?: boolean } | null)
+          ?.finesEnabled,
+      );
+      setFinesEnabled(finesEnabled);
       const totalSessions = records.length;
       const attendedSessions = records.filter(
         (record) =>
           (record.status === "present" || record.status === "late") &&
           !!record.scan?.scan_in_at,
       ).length;
-      const fineBalance = totalUnpaidFine(
-        records.filter((record) => record.fineId),
-      );
       const fineRows = finesResult.data ?? [];
-      const fineById = new Map(
-        fineRows.map((fine: any) => [String(fine.id), fine]),
+      const fineBalance = fineRows.reduce(
+        (total: number, fine: any) =>
+          fine.status === "unpaid" ? total + Number(fine.amount ?? 0) : total,
+        0,
       );
       setStudentFines(
-        records
-          .filter((record) => record.fineId)
-          .map((record) => {
-            const fine = fineById.get(String(record.fineId));
-            const event = (eventsResult.data ?? []).find(
-              (item: any) => item.id === record.eventId,
-            );
-            return {
-              id: String(record.fineId),
-              eventId: record.eventId,
-              attendanceScanId: record.scan?.id,
-              sessionLabel: record.sessionLabel,
-              eventTitle: event?.title ?? "Event",
-              eventDate: event?.event_date ?? "",
-              amount: Number(fine?.amount ?? record.fineAmount ?? 0),
-              status: fine?.status ?? record.fineStatus ?? "unpaid",
-            };
-          }),
+        fineRows.map((fine: any) => {
+          const event = (eventsResult.data ?? []).find(
+            (item: any) => item.id === fine.event_id,
+          );
+          return {
+            id: String(fine.id),
+            eventId: String(fine.event_id ?? ""),
+            attendanceScanId: fine.attendance_scan_id ?? undefined,
+            sessionLabel: fine.session_label ?? undefined,
+            eventTitle: event?.title ?? "Event",
+            eventDate: event?.event_date ?? "",
+            amount: Number(fine.amount ?? 0),
+            status: fine.status ?? "unpaid",
+          };
+        }),
       );
       setSelectedFineIds([]);
 
@@ -605,7 +606,6 @@ export default function StudentDetailRoutePage() {
             </div>
           </section>
 
-          {studentFines.length > 0 && (
           <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -639,7 +639,14 @@ export default function StudentDetailRoutePage() {
               </div>
             </div>
             <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">
-              {studentFines.map((fine) => {
+              {studentFines.length === 0 ? (
+                <p className="px-4 py-6 text-center text-sm text-slate-400">
+                  {finesEnabled
+                    ? "No persistent monetary fine records for this student."
+                    : "Monetary fines are currently disabled. Existing persistent records would still appear here."}
+                </p>
+              ) : (
+                studentFines.map((fine) => {
                   const cleared = fine.status !== "unpaid";
                   return (
                     <div
@@ -674,11 +681,10 @@ export default function StudentDetailRoutePage() {
                       </span>
                     </div>
                   );
-                })}
+                })
+              )}
             </div>
           </section>
-
-          )}
 
           {studentFines.length === 0 && selectedEvent?.sanctionsEnabled && (
             <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm md:p-6">
