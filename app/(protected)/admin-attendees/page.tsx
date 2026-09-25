@@ -31,7 +31,7 @@ export default function AdminAttendeesRoutePage() {
           return;
         }
 
-        const [eventsResult, studentsResult] = await Promise.all([
+        const [eventsResult, studentsResult, settingsResult] = await Promise.all([
           supabase
             .from("events")
             .select("*")
@@ -41,6 +41,11 @@ export default function AdminAttendeesRoutePage() {
             .select("*")
             .eq("role", "student")
             .order("surname", { ascending: true }),
+          supabase
+            .from("system_settings")
+            .select("settings")
+            .eq("id", 1)
+            .maybeSingle(),
         ]);
 
         if (eventsResult.error) {
@@ -50,6 +55,14 @@ export default function AdminAttendeesRoutePage() {
         if (studentsResult.error) {
           console.error(studentsResult.error);
         }
+        if (settingsResult.error) {
+          console.error(settingsResult.error);
+        }
+
+        const finesEnabled = Boolean(
+          (settingsResult.data?.settings as { finesEnabled?: boolean } | null)
+            ?.finesEnabled,
+        );
 
         if (cancelled) {
           return;
@@ -66,10 +79,12 @@ export default function AdminAttendeesRoutePage() {
           location: row.location,
           description: row.description,
           program: row.program || "All Programs",
-          fineAmount: row.multi_session
+          fineAmount: finesEnabled && row.multi_session
             ? Number(row.morning_absent_fine ?? 0) +
               Number(row.afternoon_absent_fine ?? 0)
-            : Number(row.absent_fine ?? 0),
+            : finesEnabled
+              ? Number(row.absent_fine ?? 0)
+              : 0,
           status: row.status || "upcoming",
           attendees: 0,
           mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
@@ -79,12 +94,12 @@ export default function AdminAttendeesRoutePage() {
               : undefined,
           multiSession: Boolean(row.multi_session),
           sanctionsEnabled: Boolean(row.sanctions_enabled),
-          absentFine: Number(row.absent_fine ?? 0),
-          lateFine: Number(row.late_fine ?? 0),
-          morningAbsentFine: Number(row.morning_absent_fine ?? row.absent_fine ?? 0),
-          morningLateFine: Number(row.morning_late_fine ?? row.late_fine ?? 0),
-          afternoonAbsentFine: Number(row.afternoon_absent_fine ?? row.absent_fine ?? 0),
-          afternoonLateFine: Number(row.afternoon_late_fine ?? row.late_fine ?? 0),
+          absentFine: finesEnabled ? Number(row.absent_fine ?? 0) : 0,
+          lateFine: finesEnabled ? Number(row.late_fine ?? 0) : 0,
+          morningAbsentFine: finesEnabled ? Number(row.morning_absent_fine ?? row.absent_fine ?? 0) : 0,
+          morningLateFine: finesEnabled ? Number(row.morning_late_fine ?? row.late_fine ?? 0) : 0,
+          afternoonAbsentFine: finesEnabled ? Number(row.afternoon_absent_fine ?? row.absent_fine ?? 0) : 0,
+          afternoonLateFine: finesEnabled ? Number(row.afternoon_late_fine ?? row.late_fine ?? 0) : 0,
         }));
 
         setEvents(mappedEvents);

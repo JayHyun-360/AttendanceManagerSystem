@@ -199,7 +199,7 @@ export default function StudentDetailRoutePage() {
     let cancelled = false;
 
     async function loadStudentMetrics() {
-      const [eventsResult, scansResult, finesResult] = await Promise.all([
+      const [eventsResult, scansResult, finesResult, settingsResult] = await Promise.all([
         supabase
           .from("events")
           .select(
@@ -215,11 +215,17 @@ export default function StudentDetailRoutePage() {
             "id, attendance_scan_id, event_id, session_label, amount, status",
           )
           .eq("student_id", routeId),
+        supabase
+          .from("system_settings")
+          .select("settings")
+          .eq("id", 1)
+          .maybeSingle(),
       ]);
 
       if (eventsResult.error) console.error(eventsResult.error);
       if (scansResult.error) console.error(scansResult.error);
       if (finesResult.error) console.error(finesResult.error);
+      if (settingsResult.error) console.error(settingsResult.error);
 
       if (cancelled) return;
 
@@ -228,6 +234,8 @@ export default function StudentDetailRoutePage() {
         scansResult.data ?? [],
         finesResult.data ?? [],
         student?.program,
+        new Date().toISOString().slice(0, 10),
+        Boolean((settingsResult.data?.settings as { finesEnabled?: boolean } | null)?.finesEnabled),
       );
       const totalSessions = records.length;
       const attendedSessions = records.filter(
@@ -235,7 +243,9 @@ export default function StudentDetailRoutePage() {
           (record.status === "present" || record.status === "late") &&
           !!record.scan?.scan_in_at,
       ).length;
-      const fineBalance = totalUnpaidFine(records);
+      const fineBalance = totalUnpaidFine(
+        records.filter((record) => record.fineId),
+      );
       const fineRows = finesResult.data ?? [];
       const fineById = new Map(
         fineRows.map((fine: any) => [String(fine.id), fine]),
@@ -622,8 +632,7 @@ export default function StudentDetailRoutePage() {
             <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">
               {studentFines.length === 0 ? (
                 <p className="px-4 py-6 text-center text-sm text-slate-400">
-                  No persistent fine records yet. Run the clearance SQL
-                  migration to persist inferred absences.
+                  No persistent fine records for this student.
                 </p>
               ) : (
                 studentFines.map((fine) => {

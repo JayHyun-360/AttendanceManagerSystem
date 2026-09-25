@@ -34,6 +34,7 @@ export default function MyFinesRoutePage() {
           { data: scans, error: scansError },
           { data: profile, error: profileError },
           { data: events, error: eventsError },
+          { data: settings, error: settingsError },
         ] =
           await Promise.all([
             supabase
@@ -53,6 +54,11 @@ export default function MyFinesRoutePage() {
               .select(
                 "id, title, event_date, status, program, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
               ),
+            supabase
+              .from("system_settings")
+              .select("settings")
+              .eq("id", 1)
+              .maybeSingle(),
           ]);
 
         if (error) {
@@ -69,6 +75,10 @@ export default function MyFinesRoutePage() {
         }
         if (eventsError) {
           console.error(eventsError);
+          return;
+        }
+        if (settingsError) {
+          console.error(settingsError);
           return;
         }
 
@@ -89,9 +99,11 @@ export default function MyFinesRoutePage() {
             (scans ?? []) as FineScanLike[],
             (data ?? []) as FineRowLike[],
             profile?.program,
+            new Date().toISOString().slice(0, 10),
+            Boolean((settings?.settings as { finesEnabled?: boolean } | null)?.finesEnabled),
           );
           const canonicalFines = records
-            .filter((record) => record.fineAmount > 0)
+            .filter((record) => record.fineId && record.fineAmount > 0)
             .map((record) => {
               const event = (events ?? []).find((item: any) => item.id === record.eventId);
               return {

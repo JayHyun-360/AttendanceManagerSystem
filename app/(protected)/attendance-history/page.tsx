@@ -37,7 +37,7 @@ export default function AttendanceHistoryRoutePage() {
           return;
         }
 
-        const [finesResult, excuseResult, attendanceResult, profileResult, eventsResult] = await Promise.all([
+        const [finesResult, excuseResult, attendanceResult, profileResult, eventsResult, settingsResult] = await Promise.all([
             supabase
               .from("fines")
               .select("*")
@@ -57,6 +57,11 @@ export default function AttendanceHistoryRoutePage() {
             supabase
               .from("events")
               .select("id, title, event_date, status, program, multi_session, start_time, end_time, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine"),
+            supabase
+              .from("system_settings")
+              .select("settings")
+              .eq("id", 1)
+              .maybeSingle(),
           ],
         );
 
@@ -73,9 +78,10 @@ export default function AttendanceHistoryRoutePage() {
         }
         if (profileResult.error) console.error(profileResult.error);
         if (eventsResult.error) console.error(eventsResult.error);
+        if (settingsResult.error) console.error(settingsResult.error);
 
         const queryError =
-          finesResult.error || excuseResult.error || attendanceResult.error || profileResult.error || eventsResult.error;
+          finesResult.error || excuseResult.error || attendanceResult.error || profileResult.error || eventsResult.error || settingsResult.error;
         if (queryError) {
           setLoadError("Your attendance records could not be loaded.");
           return;
@@ -171,9 +177,11 @@ export default function AttendanceHistoryRoutePage() {
           (attendanceResult.data ?? []) as FineScanLike[],
           (finesResult.data ?? []) as FineRowLike[],
           profileResult.data?.program,
+          new Date().toISOString().slice(0, 10),
+          Boolean((settingsResult.data?.settings as { finesEnabled?: boolean } | null)?.finesEnabled),
         );
         const canonicalFines = records
-          .filter((record) => record.fineAmount > 0)
+          .filter((record) => record.fineId && record.fineAmount > 0)
           .map((record) => {
             const event = (eventsResult.data ?? []).find(
               (item: any) => item.id === record.eventId,

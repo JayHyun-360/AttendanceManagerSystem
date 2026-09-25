@@ -87,6 +87,7 @@ export function buildAttendanceSessionRecords(
   fines: FineRowLike[],
   studentProgram?: string | null,
   today = new Date().toISOString().slice(0, 10),
+  finesEnabled = false,
 ): AttendanceSessionRecord[] {
   const applicableEvents = events.filter(
     (event) =>
@@ -118,7 +119,9 @@ export function buildAttendanceSessionRecords(
         ? linkedFine.status === "unpaid"
           ? Number(linkedFine.amount ?? 0)
           : 0
-        : sessionFineAmount(event, sessionLabel, status);
+        : finesEnabled
+          ? sessionFineAmount(event, sessionLabel, status)
+          : 0;
       return {
         key,
         eventId: event.id,

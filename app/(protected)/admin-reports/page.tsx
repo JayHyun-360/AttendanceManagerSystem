@@ -50,7 +50,7 @@ export default function AdminReportsRoutePage() {
         return;
       }
 
-      const [eventsResult, profilesResult, attendanceResult, finesResult] =
+      const [eventsResult, profilesResult, attendanceResult, finesResult, settingsResult] =
         await Promise.all([
           supabase
             .from("events")
@@ -63,6 +63,11 @@ export default function AdminReportsRoutePage() {
           supabase
             .from("fines")
             .select("id, student_id, event_id, attendance_scan_id, session_label, amount, status"),
+          supabase
+            .from("system_settings")
+            .select("settings")
+            .eq("id", 1)
+            .maybeSingle(),
         ]);
 
       if (eventsResult.error) {
@@ -80,6 +85,9 @@ export default function AdminReportsRoutePage() {
       if (finesResult.error) {
         console.error(finesResult.error);
       }
+      if (settingsResult.error) {
+        console.error(settingsResult.error);
+      }
 
       if (cancelled) {
         return;
@@ -90,9 +98,14 @@ export default function AdminReportsRoutePage() {
         (!dateFrom || row.event_date >= dateFrom) &&
         (!dateTo || row.event_date <= dateTo),
       );
+      const scopedEventIds = new Set(eventRows.map((row: any) => String(row.id)));
       const profileRows = profilesResult.data ?? [];
       const attendanceRows = attendanceResult.data ?? [];
       const fineRows = finesResult.data ?? [];
+      const finesEnabled = Boolean(
+        (settingsResult.data?.settings as { finesEnabled?: boolean } | null)
+          ?.finesEnabled,
+      );
 
       const studentRows = profileRows.filter((row: any) => row.role === "student");
       const recordsByStudent = new Map<string, ReturnType<typeof buildAttendanceSessionRecords>>();
@@ -104,6 +117,8 @@ export default function AdminReportsRoutePage() {
             attendanceRows.filter((scan: any) => scan.student_id === student.id) as FineScanLike[],
             fineRows.filter((fine: any) => fine.student_id === student.id) as FineRowLike[],
             student.program,
+            new Date().toISOString().slice(0, 10),
+            finesEnabled,
           ),
         );
       }
@@ -120,9 +135,15 @@ export default function AdminReportsRoutePage() {
             stats.late += 1;
           }
           if (record.status === "absent" || record.status === "no_record") stats.absent += 1;
-          stats.fineTotal += record.fineAmount;
           if (record.sanctioned) stats.sanctioned += 1;
         }
+        stats.fineTotal += fineRows
+          .filter(
+            (fine: any) =>
+              fine.student_id === student.id &&
+              scopedEventIds.has(String(fine.event_id)),
+          )
+          .reduce((sum: number, fine: any) => sum + Number(fine.amount ?? 0), 0);
         programTotals.set(program, stats);
       }
 
@@ -196,7 +217,9 @@ export default function AdminReportsRoutePage() {
             record.status === "absent" || record.status === "no_record",
           ).length,
           reportLateSessions: eventRecords.filter((record) => record.status === "late").length,
-          reportFineTotal: eventRecords.reduce((total, record) => total + record.fineAmount, 0),
+          reportFineTotal: fineRows
+            .filter((fine: any) => String(fine.event_id) === eventId)
+            .reduce((total: number, fine: any) => total + Number(fine.amount ?? 0), 0),
           reportSanctionedSessions: eventRecords.filter((record) => record.sanctioned).length,
           mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
           highlightUrl:
@@ -206,7 +229,6 @@ export default function AdminReportsRoutePage() {
         };
       });
 
-      const scopedEventIds = new Set(eventRows.map((row: any) => String(row.id)));
       const scopedFineRows = fineRows.filter((row: any) => scopedEventIds.has(String(row.event_id)));
       const totalFeesIssued = scopedFineRows.reduce(
         (sum, row: any) => sum + Number(row.amount ?? 0),
