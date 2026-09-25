@@ -2340,18 +2340,23 @@ function Badge({
 
   const sanctionedStatus =
     sanctioned && (status === "late" || status === "absent");
+  const badgeClass = sanctionedStatus
+    ? "bg-violet-50 text-violet-700 ring-1 ring-violet-200"
+    : c.cls;
 
   return (
     <span
-      className={`inline-flex w-fit items-center gap-1.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${c.cls}`}
+      className={`inline-flex w-fit items-center gap-1.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${badgeClass}`}
+      title={sanctionedStatus ? `Sanctioned — ${c.label} attendance` : c.label}
     >
+      {sanctionedStatus && <Icons.Shield />}
       {c.dot && (
         <span
           className="w-1.5 h-1.5 rounded-full bg-emerald-500"
           style={{ animation: "pulse 2s infinite" }}
         />
       )}
-      {sanctionedStatus ? `Sanctioned — ${c.label}` : c.label}
+      {sanctionedStatus ? `Sanctioned · ${c.label}` : c.label}
     </span>
   );
 }
@@ -8738,15 +8743,23 @@ export function AdminEventsPage({
                 </div>
               </div>
 
-              <div className="border border-amber-100 bg-amber-50/40 rounded-xl px-3">
+              <div className="border border-violet-100 bg-violet-50/50 rounded-xl px-3">
+                <div className="flex items-center gap-2 pt-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
+                    <Icons.Shield />
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold text-violet-900">Disciplinary sanctions</p>
+                    <p className="text-[10px] text-violet-700/70">Independent from monetary fines</p>
+                  </div>
+                </div>
                 <InlineToggle
                   on={draft.sanctionsEnabled}
                   onToggle={toggleD("sanctionsEnabled")}
-                  label="Enable sanctions for this event"
+                  label="Enable for this event"
                 />
                 <p className="pb-2 text-[10px] text-slate-500">
-                  Independent of monetary fines. Late or absent students will
-                  receive a Sanctioned badge in attendance views.
+                  Late and absent students receive a sanction indicator in attendance views.
                 </p>
               </div>
 
@@ -9177,7 +9190,16 @@ export function AdminEventsPage({
                 )}
               </div>
 
-              <div className="border border-amber-100 bg-amber-50/40 rounded-xl px-3">
+              <div className="border border-violet-100 bg-violet-50/50 rounded-xl px-3">
+                <div className="flex items-center gap-2 pt-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
+                    <Icons.Shield />
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold text-violet-900">Disciplinary sanctions</p>
+                    <p className="text-[10px] text-violet-700/70">Independent from monetary fines</p>
+                  </div>
+                </div>
                 <InlineToggle
                   on={!!editDraft.sanctionsEnabled}
                   onToggle={() =>
@@ -9185,11 +9207,10 @@ export function AdminEventsPage({
                       d ? { ...d, sanctionsEnabled: !d.sanctionsEnabled } : d,
                     )
                   }
-                  label="Enable sanctions for this event"
+                  label="Enable for this event"
                 />
                 <p className="pb-2 text-[10px] text-slate-500">
-                  Independent of monetary fines. Late or absent students will
-                  receive a Sanctioned badge in attendance views.
+                  Late and absent students receive a sanction indicator in attendance views.
                 </p>
               </div>
 
@@ -10926,6 +10947,20 @@ export function AdminAttendeesPage({
           ? `${selectedEvent.location} · ${selectedEvent.time}`
           : "No event selected"}
       </p>
+      {selectedEvent && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-100 bg-white px-4 py-3">
+          <span className="mr-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            Event policy
+          </span>
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ${selectedEvent.sanctionsEnabled ? "bg-violet-50 text-violet-700 ring-violet-200" : "bg-slate-50 text-slate-500 ring-slate-200"}`}>
+            <Icons.Shield />
+            {selectedEvent.sanctionsEnabled ? "Sanctions enabled" : "Sanctions disabled"}
+          </span>
+          <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ${monetaryPolicyActive ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-slate-50 text-slate-500 ring-slate-200"}`}>
+            {monetaryPolicyActive ? "Monetary fines enabled" : "Monetary fines disabled"}
+          </span>
+        </div>
+      )}
       {selectedEvent?.multiSession && (
         <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50 p-1.5">
           <div className="grid grid-cols-2 gap-1">
@@ -12610,6 +12645,8 @@ export function AdminReportsPage({
 
       fineTotal?: number;
       sanctioned?: number;
+      sanctionedLate?: number;
+      sanctionedAbsent?: number;
     }>;
 
     feeSummary?: Array<{
@@ -12633,6 +12670,14 @@ export function AdminReportsPage({
 
   const totalSanctioned = programRows.reduce(
     (total, row) => total + (row.sanctioned ?? 0),
+    0,
+  );
+  const totalSanctionedLate = programRows.reduce(
+    (total, row) => total + (row.sanctionedLate ?? 0),
+    0,
+  );
+  const totalSanctionedAbsent = programRows.reduce(
+    (total, row) => total + (row.sanctionedAbsent ?? 0),
     0,
   );
 
@@ -13068,14 +13113,22 @@ export function AdminReportsPage({
         })}
       </div>
       <SectionLabel>Sanctions overview</SectionLabel>
-      <div className="bg-white border border-slate-100 rounded-xl px-5 py-4 mb-6">
-        <p className="text-xl font-bold text-amber-600">{totalSanctioned}</p>
-        <p className="text-[11px] text-slate-400 font-semibold mt-1">
-          Sanctioned late or absent sessions
-        </p>
-        <p className="text-[11px] text-slate-500 mt-2">
-          Sanctions are independent of monetary fines and apply only to events
-          where an administrator enabled sanctions.
+      <div className="mb-6 rounded-xl border border-violet-100 bg-violet-50/50 px-5 py-4">
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            [totalSanctioned, "Total sanctioned"],
+            [totalSanctionedLate, "Sanctioned late"],
+            [totalSanctionedAbsent, "Sanctioned absent"],
+          ].map(([value, label]) => (
+            <div key={label}>
+              <p className="text-xl font-bold text-violet-700">{value}</p>
+              <p className="mt-1 text-[11px] font-semibold text-violet-700/70">{label}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-[11px] text-violet-800/70">
+          Counts represent sanctioned attendance sessions, not unique students.
+          Sanctions are independent of monetary fines.
         </p>
       </div>
       <SectionLabel>Fees summary</SectionLabel>

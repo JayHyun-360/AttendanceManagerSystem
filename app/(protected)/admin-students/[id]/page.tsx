@@ -686,14 +686,17 @@ export default function StudentDetailRoutePage() {
             </div>
           </section>
 
-          {studentFines.length === 0 && selectedEvent?.sanctionsEnabled && (
-            <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm md:p-6">
-              <p className="text-base font-semibold text-amber-900">Sanction status</p>
-              <p className="mt-1 text-sm text-amber-800">No monetary fine records exist for this student. Sanctions are managed independently.</p>
-              <div className="mt-4 rounded-xl border border-amber-200 bg-white px-4 py-3">
+          {selectedEvent?.sanctionsEnabled && sanctionStatus && (
+            <section className="rounded-2xl border border-violet-200 bg-violet-50 p-5 shadow-sm md:p-6">
+              <div>
+                  <p className="text-base font-semibold text-violet-950">Sanction status</p>
+                  <p className="mt-1 text-sm font-bold text-violet-800">{sanctionStatus}</p>
+                  <p className="mt-1 text-xs text-violet-700/80">This disciplinary outcome is independent of monetary fines.</p>
+              </div>
+              <div className="mt-4 rounded-xl border border-violet-200 bg-white px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Selected event</p>
                 <p className="mt-1 text-sm font-bold text-slate-900">{selectedEvent.title}</p>
-                <p className="mt-1 text-sm font-semibold text-amber-800">{sanctionStatus ?? "No Sanction"}</p>
+                {studentFines.length === 0 && <p className="mt-1 text-xs text-slate-500">No persistent monetary fine records for this student.</p>}
               </div>
             </section>
           )}
@@ -773,14 +776,6 @@ export default function StudentDetailRoutePage() {
                     The selected session does not match the event session
                     suggested by the current time. You can continue manually.
                   </p>
-                </div>
-              )}
-
-              {sanctionStatus && (
-                <div className={`mt-4 rounded-xl border p-4 ${sanctionStatus === "No Sanction" ? "border-slate-200 bg-slate-50 text-slate-700" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
-                  <p className="text-xs font-semibold uppercase tracking-[0.1em]">Sanction status</p>
-                  <p className="mt-1 text-sm font-bold">{sanctionStatus}</p>
-                  <p className="mt-1 text-xs opacity-80">This status is independent of monetary fines.</p>
                 </div>
               )}
 

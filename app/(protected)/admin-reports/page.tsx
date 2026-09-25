@@ -26,6 +26,8 @@ type ReportPayload = {
     late: number;
     fineTotal: number;
     sanctioned: number;
+    sanctionedLate: number;
+    sanctionedAbsent: number;
   }>;
   feeSummary: Array<{
     label: string;
@@ -123,10 +125,10 @@ export default function AdminReportsRoutePage() {
         );
       }
 
-      const programTotals = new Map<string, { total: number; present: number; absent: number; late: number; fineTotal: number; sanctioned: number }>();
+      const programTotals = new Map<string, { total: number; present: number; absent: number; late: number; fineTotal: number; sanctioned: number; sanctionedLate: number; sanctionedAbsent: number }>();
       for (const student of studentRows) {
         const program = student.program || "Unassigned";
-        const stats = programTotals.get(program) ?? { total: 0, present: 0, absent: 0, late: 0, fineTotal: 0, sanctioned: 0 };
+        const stats = programTotals.get(program) ?? { total: 0, present: 0, absent: 0, late: 0, fineTotal: 0, sanctioned: 0, sanctionedLate: 0, sanctionedAbsent: 0 };
         for (const record of recordsByStudent.get(student.id) ?? []) {
           stats.total += 1;
           if (record.status === "present" && !!record.scan?.scan_in_at) stats.present += 1;
@@ -135,7 +137,11 @@ export default function AdminReportsRoutePage() {
             stats.late += 1;
           }
           if (record.status === "absent" || record.status === "no_record") stats.absent += 1;
-          if (record.sanctioned) stats.sanctioned += 1;
+          if (record.sanctioned) {
+            stats.sanctioned += 1;
+            if (record.status === "late") stats.sanctionedLate += 1;
+            if (record.status === "absent") stats.sanctionedAbsent += 1;
+          }
         }
         stats.fineTotal += fineRows
           .filter(
@@ -157,6 +163,8 @@ export default function AdminReportsRoutePage() {
           late: stats.late,
           fineTotal: stats.fineTotal,
           sanctioned: stats.sanctioned,
+          sanctionedLate: stats.sanctionedLate,
+          sanctionedAbsent: stats.sanctionedAbsent,
         }))
         .sort((a, b) => b.total - a.total);
 
