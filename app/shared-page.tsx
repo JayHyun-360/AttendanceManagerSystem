@@ -670,7 +670,12 @@ import { Skeleton } from "@/components/ui/skeleton";
                     time: string;
                     status: "confirmed" | "late" | "duplicate";
                     sanctioned?: boolean;
-                    action?: "time_in" | "time_out" | "time_out_rejected" | "duplicate";
+                    action?:
+                      | "time_in"
+                      | "time_out"
+                      | "time_out_rejected"
+                      | "event_not_active"
+                      | "duplicate";
                     dbId: string | number;
                   }
 
@@ -967,7 +972,12 @@ interface ScanRecord {
   status: "present" | "confirmed" | "late" | "absent" | "duplicate";
   sanctioned?: boolean;
   sessionLabel?: "morning" | "afternoon";
-  action?: "time_in" | "time_out" | "time_out_rejected" | "duplicate";
+  action?:
+    | "time_in"
+    | "time_out"
+    | "time_out_rejected"
+    | "event_not_active"
+    | "duplicate";
   dbId: string | number;
   fineStatus?: "unpaid" | "paid" | "excused";
   fineAmount?: number;
@@ -10148,7 +10158,9 @@ function CameraScanner({
                   ? "Time-in Recorded — Late"
                   : result.action === "time_in"
                     ? "Time-in Recorded"
-                    : result.action === "time_out_rejected"
+                    : result.action === "event_not_active"
+                      ? "Rejected: Event is not active."
+                      : result.action === "time_out_rejected"
                       ? "Rejected: QR already scanned, wait for time-out."
                       : result.action === "time_out"
                         ? "Time-out Recorded"

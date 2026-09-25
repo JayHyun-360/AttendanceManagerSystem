@@ -13,11 +13,15 @@ export type AttendanceRecordResult =
     }
   | {
       outcome: "duplicate" | "rejected";
-      action: "duplicate" | "time_out_rejected";
+      action: "duplicate" | "time_out_rejected" | "event_not_active";
       status: "duplicate";
       recordId: string | number;
       scannedAt: Date | string;
-      reason: "existing" | "unique_violation" | "session_not_ended";
+      reason:
+        | "existing"
+        | "unique_violation"
+        | "session_not_ended"
+        | "event_not_active";
     }
   | {
       outcome: "error";
@@ -50,6 +54,27 @@ export async function recordAttendance({
   now = new Date(),
 }: RecordAttendanceInput): Promise<AttendanceRecordResult> {
   try {
+    const { data: event, error: eventError } = await supabase
+      .from("events")
+      .select("status")
+      .eq("id", eventId)
+      .maybeSingle();
+
+    if (eventError) {
+      return { outcome: "error", error: eventError };
+    }
+
+    if (!event || event.status !== "active") {
+      return {
+        outcome: "rejected",
+        action: "event_not_active",
+        status: "duplicate",
+        recordId: "",
+        scannedAt: now,
+        reason: "event_not_active",
+      };
+    }
+
     const { data: existing, error: existingError } = await supabase
       .from("attendance_scans")
       .select("id, session_label, scan_in_at, scan_out_at, status")
