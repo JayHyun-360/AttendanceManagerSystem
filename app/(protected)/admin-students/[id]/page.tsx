@@ -44,6 +44,7 @@ interface AttendanceEvent {
   morningEnd?: string | null;
   afternoonStart?: string | null;
   afternoonEnd?: string | null;
+  endTime?: string | null;
 }
 
 interface ExistingAttendance {
@@ -102,6 +103,24 @@ function suggestedSession(event: AttendanceEvent) {
   }
 
   return null;
+}
+
+function sessionHasEnded(
+  event: AttendanceEvent,
+  session: "morning" | "afternoon",
+) {
+  const eventDate = new Date(`${event.date}T00:00:00`);
+  const now = new Date();
+  const eventDay = eventDate.toISOString().slice(0, 10);
+  const today = now.toISOString().slice(0, 10);
+  if (eventDay < today) return true;
+  if (eventDay > today) return false;
+  const end =
+    session === "afternoon"
+      ? event.afternoonEnd
+      : event.morningEnd ?? event.endTime;
+  const endMinutes = toMinutes(end);
+  return endMinutes !== null && now.getHours() * 60 + now.getMinutes() >= endMinutes;
 }
 
 export default function StudentDetailRoutePage() {
@@ -297,7 +316,7 @@ export default function StudentDetailRoutePage() {
       const { data, error } = await supabase
         .from("events")
         .select(
-          "id, title, event_date, multi_session, sanctions_enabled, morning_start, morning_end, afternoon_start, afternoon_end",
+          "id, title, event_date, multi_session, sanctions_enabled, end_time, morning_start, morning_end, afternoon_start, afternoon_end",
         )
         .order("event_date", { ascending: false });
 
@@ -317,6 +336,7 @@ export default function StudentDetailRoutePage() {
           morningEnd: event.morning_end,
           afternoonStart: event.afternoon_start,
           afternoonEnd: event.afternoon_end,
+          endTime: event.end_time,
         }));
         setEvents(nextEvents);
         setSelectedEventId((current) => current || nextEvents[0]?.id || "");
@@ -343,7 +363,10 @@ export default function StudentDetailRoutePage() {
     if (!selectedEvent.multiSession) {
       setSessionLabel("morning");
     } else {
-      setSessionLabel(suggestedSession(selectedEvent) ?? "morning");
+      setSessionLabel(
+        suggestedSession(selectedEvent) ??
+          (sessionHasEnded(selectedEvent, "afternoon") ? "afternoon" : "morning"),
+      );
     }
   }, [selectedEvent]);
 
@@ -392,13 +415,16 @@ export default function StudentDetailRoutePage() {
     !existingAttendance.scan_out_at &&
     !existingAttendance.scanned_by;
   const sanctionStatus =
-    selectedEvent?.sanctionsEnabled && existingAttendance?.status === "late"
-      ? "Sanctioned — Late"
-      : selectedEvent?.sanctionsEnabled && existingAttendance?.status === "absent"
-        ? "Sanctioned — Absent"
-        : selectedEvent?.sanctionsEnabled
+    !selectedEvent?.sanctionsEnabled || isCheckingAttendance
+      ? null
+      : existingAttendance?.status === "late" ||
+          existingAttendance?.status === "absent" ||
+          (!existingAttendance && sessionHasEnded(selectedEvent, sessionLabel))
+        ? "Sanctioned"
+        : existingAttendance?.status === "present" ||
+            existingAttendance?.status === "confirmed"
           ? "No Sanction"
-          : null;
+          : "Awaiting attendance";
 
   const markAttendance = async (overwrite = false) => {
     if (!routeId || !authUserId || !selectedEventId || !selectedEvent) {
