@@ -106,6 +106,7 @@ export default function AdminAttendeesRoutePage() {
 
         setStudents(
           (studentsResult.data ?? []).map((row: any) => ({
+            profileId: row.id,
             name:
               `${row.first_name ?? ""} ${row.surname ?? ""}`.trim() ||
               row.email ||
@@ -165,6 +166,7 @@ export default function AdminAttendeesRoutePage() {
             }
 
             byEvent[eventId].push({
+              profileId: String(row.student_id),
               name: studentName || "Student",
               id: studentId || row.student_id,
               program: profile?.program || "",

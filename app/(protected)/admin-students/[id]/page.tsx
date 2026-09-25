@@ -390,6 +390,14 @@ export default function StudentDetailRoutePage() {
     !existingAttendance.scan_in_at &&
     !existingAttendance.scan_out_at &&
     !existingAttendance.scanned_by;
+  const sanctionStatus =
+    selectedEvent?.sanctionsEnabled && existingAttendance?.status === "late"
+      ? "Sanctioned — Late"
+      : selectedEvent?.sanctionsEnabled && existingAttendance?.status === "absent"
+        ? "Sanctioned — Absent"
+        : selectedEvent?.sanctionsEnabled
+          ? "No Sanction"
+          : null;
 
   const markAttendance = async (overwrite = false) => {
     if (!routeId || !authUserId || !selectedEventId || !selectedEvent) {
@@ -597,6 +605,7 @@ export default function StudentDetailRoutePage() {
             </div>
           </section>
 
+          {studentFines.length > 0 && (
           <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -630,12 +639,7 @@ export default function StudentDetailRoutePage() {
               </div>
             </div>
             <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">
-              {studentFines.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-slate-400">
-                  No persistent fine records for this student.
-                </p>
-              ) : (
-                studentFines.map((fine) => {
+              {studentFines.map((fine) => {
                   const cleared = fine.status !== "unpaid";
                   return (
                     <div
@@ -670,10 +674,23 @@ export default function StudentDetailRoutePage() {
                       </span>
                     </div>
                   );
-                })
-              )}
+                })}
             </div>
           </section>
+
+          )}
+
+          {studentFines.length === 0 && selectedEvent?.sanctionsEnabled && (
+            <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm md:p-6">
+              <p className="text-base font-semibold text-amber-900">Sanction status</p>
+              <p className="mt-1 text-sm text-amber-800">No monetary fine records exist for this student. Sanctions are managed independently.</p>
+              <div className="mt-4 rounded-xl border border-amber-200 bg-white px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Selected event</p>
+                <p className="mt-1 text-sm font-bold text-slate-900">{selectedEvent.title}</p>
+                <p className="mt-1 text-sm font-semibold text-amber-800">{sanctionStatus ?? "No Sanction"}</p>
+              </div>
+            </section>
+          )}
 
           <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
             <div className="mb-5">
@@ -750,6 +767,14 @@ export default function StudentDetailRoutePage() {
                     The selected session does not match the event session
                     suggested by the current time. You can continue manually.
                   </p>
+                </div>
+              )}
+
+              {sanctionStatus && (
+                <div className={`mt-4 rounded-xl border p-4 ${sanctionStatus === "No Sanction" ? "border-slate-200 bg-slate-50 text-slate-700" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+                  <p className="text-xs font-semibold uppercase tracking-[0.1em]">Sanction status</p>
+                  <p className="mt-1 text-sm font-bold">{sanctionStatus}</p>
+                  <p className="mt-1 text-xs opacity-80">This status is independent of monetary fines.</p>
                 </div>
               )}
 

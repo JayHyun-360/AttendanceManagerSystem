@@ -956,6 +956,7 @@ export interface EventData {
 }
 
 interface ScanRecord {
+  profileId?: string;
   name: string;
   id: string;
   program: string;
@@ -10614,7 +10615,7 @@ export function AdminAttendeesPage({
     initialScanState ?? {},
   );
 
-  const [tab, setTab] = useState<"present" | "absent">("present");
+  const [tab, setTab] = useState<"present" | "late" | "absent" | "duplicates">("present");
   const [selectedSession, setSelectedSession] = useState<
     "morning" | "afternoon"
   >("morning");
@@ -10668,14 +10669,17 @@ export function AdminAttendeesPage({
       : selectedEvent.morningLateFine ?? selectedEvent.lateFine ?? 0
     : 0;
 
-  const confirmed = scans.filter(
-    (s) =>
-      s.status === "present" || s.status === "confirmed" || s.status === "late",
+  const presentScans = scans.filter(
+    (s) => s.status === "present" || s.status === "confirmed",
   );
+  const lateScans = scans.filter((s) => s.status === "late");
+  const absentScans = scans.filter((s) => s.status === "absent");
 
   const duplicates = scans.filter((s) => s.status === "duplicate");
 
-  const attendedIds = new Set(confirmed.map((s) => s.id));
+  const presentIds = new Set(
+    [...presentScans, ...lateScans].map((s) => s.profileId ?? s.id),
+  );
 
   const eligibleStudents = students.filter(
     (student) =>
@@ -10691,22 +10695,58 @@ export function AdminAttendeesPage({
           .some((value) => value.toLowerCase().includes(searchQuery)),
       )
     : eligibleStudents;
-  const absentees = visibleStudents.filter((s) => !attendedIds.has(s.id));
-  const absentFineForStudent = (studentId: string) => {
-    const absentScan = scans.find((scan) => scan.id === studentId && scan.status === "absent");
+  const visibleScans = (records: ScanRecord[]) =>
+    searchQuery
+      ? records.filter((scan) =>
+          [scan.name, scan.id, scan.program, scan.section]
+            .filter(Boolean)
+            .some((value) => value.toLowerCase().includes(searchQuery)),
+        )
+      : records;
+  const absentScanByProfileId = new Map(
+    absentScans.map((scan) => [scan.profileId ?? scan.id, scan]),
+  );
+  const absentees: ScanRecord[] = visibleStudents
+    .filter((student) => !presentIds.has(student.profileId ?? student.id))
+    .map((student) =>
+      absentScanByProfileId.get(student.profileId ?? student.id) ?? {
+        profileId: student.profileId,
+        name: student.name,
+        id: student.id,
+        program: student.program,
+        section: student.section,
+        photoUrl: student.photoUrl,
+        time: "",
+        status: "absent" as const,
+        sanctioned: Boolean(selectedEvent?.sanctionsEnabled),
+        sessionLabel: selectedSession,
+        dbId: `inferred-${selectedEvent?.id ?? "event"}-${student.profileId ?? student.id}`,
+      },
+    );
+  const absentFineForStudent = (profileId: string) => {
+    const absentScan = absentScanByProfileId.get(profileId);
     return fineForScan(absentScan);
   };
-  const isAbsentCleared = (studentId: string) => {
-    const status = absentFineForStudent(studentId)?.status;
+  const isAbsentCleared = (profileId: string) => {
+    const status = absentFineForStudent(profileId)?.status;
     return status === "paid" || status === "excused";
   };
-  const visibleConfirmed = searchQuery
-    ? confirmed.filter((scan) =>
+  const visiblePresent = visibleScans(presentScans);
+  const visibleLate = visibleScans(lateScans);
+  const visibleAbsent = searchQuery
+    ? absentees.filter((scan) =>
         [scan.name, scan.id, scan.program, scan.section]
           .filter(Boolean)
           .some((value) => value.toLowerCase().includes(searchQuery)),
       )
-    : confirmed;
+    : absentees;
+  const monetaryPolicyActive = sessionFine > 0 || sessionLateFine > 0;
+  const policyColumn = monetaryPolicyActive
+    ? "Fee"
+    : selectedEvent?.sanctionsEnabled
+      ? "Sanction"
+      : null;
+  const visibleCurrentScans = tab === "late" ? visibleLate : visiblePresent;
 
   const matchedStudent = students.find((student) => {
     if (!searchQuery) return false;
@@ -10926,7 +10966,17 @@ export function AdminAttendeesPage({
               : "text-slate-500 hover:text-slate-700"
           }`}
         >
-          Present ({visibleConfirmed.length})
+          Present ({visiblePresent.length})
+        </button>
+        <button
+          onClick={() => setTab("late")}
+          className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${
+            tab === "late"
+              ? "bg-white shadow-sm text-slate-900"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Late ({visibleLate.length})
         </button>
         <button
           onClick={() => setTab("absent")}
@@ -10936,12 +10986,22 @@ export function AdminAttendeesPage({
               : "text-slate-500 hover:text-slate-700"
           }`}
         >
-          Absent ({absentees.length})
-          {selectedEvent && sessionFine > 0 && (
+          Absent ({visibleAbsent.length})
+          {monetaryPolicyActive && selectedEvent && sessionFine > 0 && (
             <span className="text-red-500 ml-1">
               · ₱{sessionFine}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setTab("duplicates")}
+          className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${
+            tab === "duplicates"
+              ? "bg-white shadow-sm text-slate-900"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Duplicates ({duplicates.length})
         </button>
       </div>
       {allEventsSelected ? (
@@ -11001,9 +11061,9 @@ export function AdminAttendeesPage({
             No events available yet.
           </p>
         </div>
-      ) : tab === "present" ? (
+      ) : tab === "present" || tab === "late" ? (
         <>
-          {visibleConfirmed.length === 0 ? (
+          {visibleCurrentScans.length === 0 ? (
             <div className="w-full bg-white border border-slate-100 rounded-xl px-3.5 py-10 text-center md:px-6">
               <p className="text-slate-400 text-sm font-medium">
                 No scans recorded for this event yet.
@@ -11017,11 +11077,11 @@ export function AdminAttendeesPage({
                 <span className="col-span-2">Time</span>
                 <span className="col-span-2 text-right">Status</span>
               </div>
-              {visibleConfirmed.map((s, i) => (
+              {visibleCurrentScans.map((s, i) => (
                 <div
                   key={s.dbId}
                   className={`${
-                    i < visibleConfirmed.length - 1 ? "border-b border-slate-50" : ""
+                    i < visibleCurrentScans.length - 1 ? "border-b border-slate-50" : ""
                   }`}
                 >
                   <div className="block w-full px-3.5 py-3 md:hidden">
@@ -11074,7 +11134,7 @@ export function AdminAttendeesPage({
               ))}
             </div>
           )}
-          {duplicates.length > 0 && (
+          {tab === "present" && duplicates.length > 0 && (
             <>
               <SectionLabel>Duplicate scans — tap trash to remove</SectionLabel>
               <div className="w-full overflow-hidden rounded-xl border border-red-100 bg-white">
@@ -11133,9 +11193,30 @@ export function AdminAttendeesPage({
             </>
           )}
         </>
+      ) : tab === "duplicates" ? (
+        <div className="w-full overflow-hidden rounded-xl border border-red-100 bg-white">
+          {duplicates.length === 0 ? (
+            <p className="px-5 py-10 text-center text-sm text-slate-400">No duplicate scans.</p>
+          ) : duplicates.map((s, i) => (
+            <div key={s.dbId} className={`flex items-center gap-3 px-5 py-3.5 ${i < duplicates.length - 1 ? "border-b border-slate-50" : ""}`}>
+              <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-slate-900">{s.name}</p>
+                <p className="text-[11px] text-slate-400">{s.id} · scanned {s.time}</p>
+              </div>
+              <Badge status={s.status} sanctioned={s.sanctioned} />
+              <button
+                onClick={() => void deleteRecord(s.dbId)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+              >
+                <Icons.Trash />
+              </button>
+            </div>
+          ))}
+        </div>
       ) : (
         <>
-          {sessionFine > 0 && (
+          {monetaryPolicyActive && sessionFine > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
               <Icons.AlertCircle />
               <p className="text-sm text-red-700">
@@ -11144,7 +11225,7 @@ export function AdminAttendeesPage({
               </p>
             </div>
           )}
-          {absentees.length === 0 ? (
+          {visibleAbsent.length === 0 ? (
             <div className="w-full bg-white border border-slate-100 rounded-xl px-3.5 py-10 text-center md:px-6">
               <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center mx-auto mb-3 text-emerald-500">
                 <Icons.CheckCircle />
@@ -11161,37 +11242,44 @@ export function AdminAttendeesPage({
               <div className="hidden md:grid px-5 py-3 bg-slate-50 border-b border-slate-100 grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 <span className="col-span-5">Student</span>
                 <span className="col-span-4">Program</span>
-                <span className="col-span-3 text-right">Fee</span>
+                {policyColumn && <span className="col-span-3 text-right">{policyColumn}</span>}
               </div>
-              {absentees.map((s, i) => (
+              {visibleAbsent.map((s, i) => {
+                const profileId = s.profileId ?? s.id;
+                const fine = fineForScan(s)?.amount ?? sessionFine;
+                const cleared = isAbsentCleared(profileId);
+                return (
                 <div
-                  key={s.id}
-                  className={`${isAbsentCleared(s.id) ? "opacity-60" : ""} ${
-                    i < absentees.length - 1 ? "border-b border-slate-50" : ""
+                  key={s.profileId ?? s.id}
+                  className={`${cleared ? "opacity-60" : ""} ${
+                    i < visibleAbsent.length - 1 ? "border-b border-slate-50" : ""
                   }`}
                 >
                   <div className="block w-full px-3.5 py-3 md:hidden">
                     <div className="flex items-center justify-between gap-3">
                       <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
                       <div className="min-w-0 flex-1">
-                        <p className={`truncate text-sm font-semibold text-slate-900 ${isAbsentCleared(s.id) ? "line-through" : ""}`}>
+                        <p className={`truncate text-sm font-semibold text-slate-900 ${cleared ? "line-through" : ""}`}>
                           {s.name}
                         </p>
                         <p className="mt-0.5 text-[11px] text-slate-500">
                           {s.id} • {s.program} • {s.section}
                         </p>
                       </div>
-                      <div className="shrink-0 text-right">
-                        {isAbsentCleared(s.id) ? (
+                      {policyColumn && <div className="shrink-0 text-right">
+                        {cleared ? (
                           <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">Cleared</span>
-                        ) : sessionFine > 0 ? (
-                          <span className="text-sm font-bold text-red-600">
-                            ₱{sessionFine}
-                          </span>
+                        ) : monetaryPolicyActive ? (
+                          <>
+                            <span className="text-sm font-bold text-red-600">₱{fine}</span>
+                            {s.sanctioned && <Badge status="absent" sanctioned />}
+                          </>
+                        ) : selectedEvent?.sanctionsEnabled ? (
+                          <Badge status="absent" sanctioned />
                         ) : (
                           <span className="text-xs text-slate-400">—</span>
                         )}
-                      </div>
+                      </div>}
                     </div>
                   </div>
                   <div className="hidden md:grid px-5 py-3.5 md:grid-cols-12 md:items-center">
@@ -11207,20 +11295,24 @@ export function AdminAttendeesPage({
                     <span className="col-span-4 text-xs text-slate-500">
                       {s.program} · {s.section}
                     </span>
-                    <div className="col-span-3 flex justify-end">
-                      {isAbsentCleared(s.id) ? (
+                    {policyColumn && <div className="col-span-3 flex justify-end">
+                      {cleared ? (
                         <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">Cleared</span>
-                      ) : sessionFine > 0 ? (
-                        <span className="text-sm font-bold text-red-600">
-                          ₱{sessionFine}
-                        </span>
+                      ) : monetaryPolicyActive ? (
+                        <>
+                          <span className="text-sm font-bold text-red-600">₱{fine}</span>
+                          {s.sanctioned && <Badge status="absent" sanctioned />}
+                        </>
+                      ) : selectedEvent?.sanctionsEnabled ? (
+                        <Badge status="absent" sanctioned />
                       ) : (
                         <span className="text-xs text-slate-400">—</span>
                       )}
-                    </div>
+                    </div>}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
