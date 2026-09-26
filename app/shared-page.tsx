@@ -7699,10 +7699,12 @@ function DraggableEventCard({
   event,
   onClick,
   children,
+  dragDisabled,
 }: {
   event: EventData;
   onClick: () => void;
   children: React.ReactNode;
+  dragDisabled: boolean;
 }) {
   const {
     attributes,
@@ -7710,7 +7712,7 @@ function DraggableEventCard({
     setActivatorNodeRef,
     setNodeRef,
     isDragging,
-  } = useDraggable({ id: event.id });
+  } = useDraggable({ id: event.id, disabled: dragDisabled });
 
   return (
     <motion.div
@@ -7721,16 +7723,18 @@ function DraggableEventCard({
       onClick={onClick}
     >
       {children}
-      <div
-        ref={setActivatorNodeRef}
-        {...listeners}
-        {...attributes}
-        role="button"
-        aria-label={`Drag ${event.title} to archive`}
-        title="Drag to archive"
-        onClick={(clickEvent) => clickEvent.stopPropagation()}
-        className="absolute left-20 right-28 top-0 z-20 h-16 cursor-grab rounded-t-2xl border-0 bg-transparent outline-none focus:border-0 focus:outline-none focus:ring-0 focus-visible:border-0 focus-visible:outline-none focus-visible:ring-0 active:cursor-grabbing"
-      />
+      {!dragDisabled && (
+        <div
+          ref={setActivatorNodeRef}
+          {...listeners}
+          {...attributes}
+          role="button"
+          aria-label={`Drag ${event.title} to archive`}
+          title="Drag to archive"
+          onClick={(clickEvent) => clickEvent.stopPropagation()}
+          className="absolute left-20 right-28 top-0 z-20 h-16 cursor-grab rounded-t-2xl border-0 bg-transparent outline-none focus:border-0 focus:outline-none focus:ring-0 focus-visible:border-0 focus-visible:outline-none focus-visible:ring-0 active:cursor-grabbing"
+        />
+      )}
     </motion.div>
   );
 }
@@ -7949,6 +7953,17 @@ export function AdminEventsPage({
     useState<EventData | null>(null);
 
   const [isPermanentlyDeleting, setIsPermanentlyDeleting] = useState(false);
+
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const updateViewport = () => setIsMobileViewport(mediaQuery.matches);
+
+    updateViewport();
+    mediaQuery.addEventListener("change", updateViewport);
+    return () => mediaQuery.removeEventListener("change", updateViewport);
+  }, []);
 
   const [editDraft, setEditDraft] = useState<EventData | null>(null);
 
@@ -9058,7 +9073,7 @@ export function AdminEventsPage({
 
   return (
     <DndContext
-      sensors={sensors}
+      sensors={isMobileViewport ? [] : sensors}
       collisionDetection={rectIntersection}
       onDragStart={handleDragStart}
       onDragCancel={handleDragCancel}
@@ -9975,6 +9990,7 @@ export function AdminEventsPage({
           <DraggableEventCard
             key={e.id}
             event={e}
+            dragDisabled={isMobileViewport}
             onClick={() => setSelectedEventId(e.id)}
           >
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden h-full">
