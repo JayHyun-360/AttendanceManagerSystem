@@ -7651,9 +7651,11 @@ const ARCHIVE_DROP_ZONE_ID = "archive";
 function ArchiveDropZone({
   active,
   onClick,
+  archived,
 }: {
   active: boolean;
   onClick: () => void;
+  archived: boolean;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: ARCHIVE_DROP_ZONE_ID });
   const highlighted = active && isOver;
@@ -7662,13 +7664,17 @@ function ArchiveDropZone({
     <div
       ref={setNodeRef}
       role="button"
-      aria-label="Archive event drop zone"
+      aria-label={archived ? "Back to active events" : "Archive event drop zone"}
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") onClick();
       }}
-      title="View archived events or drop an event here to archive it"
+      title={
+        archived
+          ? "Back to active events"
+          : "View archived events or drop an event here to archive it"
+      }
       className={`flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-all ${
         highlighted
           ? "border-amber-300 bg-amber-50 text-amber-700 shadow-sm ring-2 ring-amber-100"
@@ -7677,8 +7683,14 @@ function ArchiveDropZone({
             : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
       }`}
     >
-      <Archive className={`h-4 w-4 ${highlighted ? "animate-pulse" : ""}`} />
-      <span>{highlighted ? "Release to archive" : "Archive"}</span>
+      {archived ? (
+        <ArrowLeft className="h-4 w-4" />
+      ) : (
+        <Archive className={`h-4 w-4 ${highlighted ? "animate-pulse" : ""}`} />
+      )}
+      <span>
+        {archived ? "Back to events" : highlighted ? "Release to archive" : "Archive"}
+      </span>
     </div>
   );
 }
@@ -7717,7 +7729,7 @@ function DraggableEventCard({
         aria-label={`Drag ${event.title} to archive`}
         title="Drag to archive"
         onClick={(clickEvent) => clickEvent.stopPropagation()}
-        className="absolute left-20 right-28 top-0 z-20 h-16 cursor-grab rounded-t-2xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-inset active:cursor-grabbing"
+        className="absolute left-20 right-28 top-0 z-20 h-16 cursor-grab rounded-t-2xl border-0 bg-transparent outline-none focus:border-0 focus:outline-none focus:ring-0 focus-visible:border-0 focus-visible:outline-none focus-visible:ring-0 active:cursor-grabbing"
       />
     </motion.div>
   );
@@ -9060,9 +9072,14 @@ export function AdminEventsPage({
           <div className="flex items-center gap-2">
             <ArchiveDropZone
               active={eventView === "active" && activeDragId !== null}
+              archived={eventView === "archived"}
               onClick={() => {
-                setEventView("archived");
-                void onLoadArchived();
+                if (eventView === "archived") {
+                  setEventView("active");
+                } else {
+                  setEventView("archived");
+                  void onLoadArchived();
+                }
               }}
             />
             <button
