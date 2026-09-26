@@ -163,7 +163,7 @@ import {
   KeyboardSensor,
   PointerSensor,
   TouchSensor,
-  closestCenter,
+  rectIntersection,
   useDroppable,
   useDraggable,
   useSensor,
@@ -674,6 +674,7 @@ import { Skeleton } from "@/components/ui/skeleton";
                     afternoonAbsentFine?: number;
                     afternoonLateFine?: number;
                     version?: number;
+                    archivedAt?: string;
                   }
 
                   interface ScanRecord {
@@ -969,6 +970,7 @@ export interface EventData {
   afternoonAbsentFine?: number;
   afternoonLateFine?: number;
   version?: number;
+  archivedAt?: string;
   reportAttendedSessions?: number;
   reportAbsentSessions?: number;
   reportLateSessions?: number;
@@ -7739,12 +7741,79 @@ function EventDragPreview({ event }: { event: EventData }) {
   );
 }
 
+function ArchivedEventCard({
+  event,
+  onRestore,
+  onDelete,
+}: {
+  event: EventData;
+  onRestore: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-50 grayscale-[0.35]">
+        {event.highlightUrl ? (
+          <img
+            src={event.highlightUrl}
+            alt={event.title}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+            <span className="text-sm font-semibold text-slate-400">No media</span>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-slate-900/10" />
+        <div className="absolute left-3 top-3">
+          <span className="rounded-full border border-white/40 bg-slate-900/50 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
+            Archived
+          </span>
+        </div>
+      </div>
+      <div className="flex flex-1 flex-col justify-between gap-4 p-5">
+        <div>
+          <h3 className="line-clamp-1 text-base font-bold text-slate-900">
+            {event.title}
+          </h3>
+          <p className="mt-1 text-xs text-slate-500">
+            {event.date} · {event.location || "TBA"}
+          </p>
+          <p className="mt-2 text-[11px] text-slate-400">
+            Archived {event.archivedAt ? format(new Date(event.archivedAt), "MMM d, yyyy") : "recently"}
+          </p>
+        </div>
+        <div className="flex gap-2 border-t border-slate-100 pt-3">
+          <button
+            type="button"
+            onClick={onRestore}
+            className="h-9 flex-1 rounded-lg bg-emerald-500 text-xs font-semibold text-white hover:bg-emerald-600"
+          >
+            Restore
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="h-9 flex-1 rounded-lg border border-red-200 text-xs font-semibold text-red-600 hover:bg-red-50"
+          >
+            Delete permanently
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AdminEventsPage({
   onNav,
 
   events,
 
   setEvents,
+  archivedEvents,
+  setArchivedEvents,
+  onLoadArchived,
+  isArchivedLoading,
   finesEnabled = false,
 }: {
   onNav: (p: Page) => void;
@@ -7752,6 +7821,10 @@ export function AdminEventsPage({
   events: EventData[];
 
   setEvents: React.Dispatch<React.SetStateAction<EventData[]>>;
+  archivedEvents: EventData[];
+  setArchivedEvents: React.Dispatch<React.SetStateAction<EventData[]>>;
+  onLoadArchived: () => Promise<void>;
+  isArchivedLoading: boolean;
   finesEnabled?: boolean;
 }) {
   const EMPTY_DRAFT: NewEventDraft = {
@@ -7817,6 +7890,13 @@ export function AdminEventsPage({
   const [isCreating, setIsCreating] = useState(false);
 
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+
+  const [eventView, setEventView] = useState<"active" | "archived">("active");
+
+  const [pendingPermanentDelete, setPendingPermanentDelete] =
+    useState<EventData | null>(null);
+
+  const [isPermanentlyDeleting, setIsPermanentlyDeleting] = useState(false);
 
   const [editDraft, setEditDraft] = useState<EventData | null>(null);
 
@@ -8715,6 +8795,97 @@ export function AdminEventsPage({
     }
   };
 
+  const restoreEvent = async (id: string) => {
+    const current = archivedEvents.find((event) => event.id === id);
+    if (!current) return;
+
+    const version = current.version ?? 1;
+    setArchivedEvents((items) => items.filter((event) => event.id !== id));
+
+    try {
+      const { data, error } = await supabase
+        .from("events")
+        .update({ archived_at: null, version: version + 1 })
+        .eq("id", id)
+        .eq("version", version)
+        .not("archived_at", "is", null)
+        .select("id")
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) {
+        throw new Error(
+          "This event was changed by another admin. Refresh and try again.",
+        );
+      }
+
+      setEvents((items) => [
+        { ...current, archivedAt: undefined, version: version + 1 },
+        ...items,
+      ]);
+      toast.success("Event restored");
+    } catch (caughtError) {
+      console.error(caughtError);
+      setArchivedEvents((items) => [current, ...items]);
+      toast.error(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "An error occurred while restoring the event",
+      );
+    }
+  };
+
+  const permanentlyDeleteEvent = async () => {
+    if (!pendingPermanentDelete || isPermanentlyDeleting) return;
+
+    const current = pendingPermanentDelete;
+    const version = current.version ?? 1;
+    setIsPermanentlyDeleting(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", current.id)
+        .eq("version", version)
+        .not("archived_at", "is", null)
+        .select("id")
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) {
+        throw new Error(
+          "This event was changed by another admin. Refresh and try again.",
+        );
+      }
+
+      setArchivedEvents((items) =>
+        items.filter((event) => event.id !== current.id),
+      );
+      const mediaUrls = [
+        ...(current.mediaUrls ?? []),
+        ...(current.highlightUrl ? [current.highlightUrl] : []),
+      ];
+      const cleanupResults = await deleteImages(mediaUrls);
+      cleanupResults
+        .filter((result) => !result.success)
+        .forEach((result) =>
+          console.error("Failed to delete event media", result.error),
+        );
+      setPendingPermanentDelete(null);
+      toast.success("Event permanently deleted");
+    } catch (caughtError) {
+      console.error(caughtError);
+      toast.error(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "An error occurred while permanently deleting the event",
+      );
+    } finally {
+      setIsPermanentlyDeleting(false);
+    }
+  };
+
   const handleDragStart = ({ active }: DragStartEvent) => {
     setActiveDragId(String(active.id));
   };
@@ -8836,7 +9007,7 @@ export function AdminEventsPage({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={rectIntersection}
       onDragStart={handleDragStart}
       onDragCancel={handleDragCancel}
       onDragEnd={handleDragEnd}
@@ -8847,7 +9018,9 @@ export function AdminEventsPage({
         subtitle="AY 2026-2027, 1st Semester"
         action={
           <div className="flex items-center gap-2">
-            <ArchiveDropZone active={activeDragId !== null} />
+            <ArchiveDropZone
+              active={eventView === "active" && activeDragId !== null}
+            />
             <button
             onClick={() => {
               setShowForm(true);
@@ -8867,8 +9040,31 @@ export function AdminEventsPage({
         }
       />
 
+      <div className="mb-5 flex w-fit items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
+        {([
+          ["active", `Active Events (${events.length})`],
+          ["archived", `Archived (${archivedEvents.length})`],
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => {
+              setEventView(value);
+              if (value === "archived") void onLoadArchived();
+            }}
+            className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+              eventView === value
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {}
-      {showForm && (
+      {eventView === "active" && showForm && (
         <FormModal
           title="Create New Event"
           sidebar={
@@ -9734,7 +9930,8 @@ export function AdminEventsPage({
         </FormModal>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      {eventView === "active" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {events.map((e) => (
           <DraggableEventCard
             key={e.id}
@@ -9869,10 +10066,75 @@ export function AdminEventsPage({
             </div>
           </DraggableEventCard>
         ))}
-      </div>
+        </div>
+      ) : (
+        <div>
+          {isArchivedLoading ? (
+            <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center text-sm text-slate-400">
+              Loading archived events...
+            </div>
+          ) : archivedEvents.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
+              <p className="text-sm font-semibold text-slate-700">No archived events</p>
+              <p className="mt-1 text-xs text-slate-400">Archived events will appear here.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {archivedEvents.map((event) => (
+                <ArchivedEventCard
+                  key={event.id}
+                  event={event}
+                  onRestore={() => void restoreEvent(event.id)}
+                  onDelete={() => setPendingPermanentDelete(event)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <DragOverlay dropAnimation={null}>
-        {activeDragEvent ? <EventDragPreview event={activeDragEvent} /> : null}
+        {eventView === "active" && activeDragEvent ? (
+          <EventDragPreview event={activeDragEvent} />
+        ) : null}
       </DragOverlay>
+      {pendingPermanentDelete && (
+        <FormModal
+          title="Permanently delete event?"
+          onClose={() => {
+            if (!isPermanentlyDeleting) setPendingPermanentDelete(null);
+          }}
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={() => void permanentlyDeleteEvent()}
+                disabled={isPermanentlyDeleting}
+                className="flex-1 h-10 rounded-lg bg-red-600 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isPermanentlyDeleting ? "Deleting..." : "Delete permanently"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingPermanentDelete(null)}
+                disabled={isPermanentlyDeleting}
+                className="h-10 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </>
+          }
+        >
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+            <p className="text-sm font-semibold text-red-950">
+              Permanently delete “{pendingPermanentDelete.title}”?
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-red-900">
+              This action cannot be undone. The event row and its associated media will be deleted.
+              Attendance history may also be affected by your database foreign-key rules.
+            </p>
+          </div>
+        </FormModal>
+      )}
     </>
     </DndContext>
   );

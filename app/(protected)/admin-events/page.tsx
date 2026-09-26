@@ -8,12 +8,79 @@ import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 
+function mapArchivedEvent(row: any): EventData {
+  return {
+    id: String(row.id),
+    title: row.title,
+    date: row.event_date,
+    time:
+      row.start_time && row.end_time
+        ? `${row.start_time}–${row.end_time}`
+        : "",
+    location: row.location,
+    description: row.description,
+    program: row.program || "All Programs",
+    fineAmount: row.multi_session
+      ? Number(row.morning_absent_fine ?? 0) +
+        Number(row.afternoon_absent_fine ?? 0)
+      : Number(row.absent_fine ?? 0),
+    status: row.status || "upcoming",
+    attendees: 0,
+    version: row.version || 1,
+    archivedAt: row.archived_at ?? undefined,
+    mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
+    highlightUrl:
+      row.image_url && !row.image_url.startsWith("blob:")
+        ? row.image_url
+        : undefined,
+    multiSession: Boolean(row.multi_session),
+    sanctionsEnabled: Boolean(row.sanctions_enabled),
+    strictMorning: Boolean(row.strict_morning),
+    strictAfternoon: Boolean(row.strict_afternoon),
+    morningStart: row.morning_start,
+    morningEnd: row.morning_end,
+    morningLateCutoff: row.morning_late_cutoff,
+    afternoonStart: row.afternoon_start,
+    afternoonEnd: row.afternoon_end,
+    afternoonLateCutoff: row.afternoon_late_cutoff,
+    absentFine: Number(row.absent_fine ?? 0),
+    lateFine: Number(row.late_fine ?? 0),
+    morningAbsentFine: Number(row.morning_absent_fine ?? 0),
+    morningLateFine: Number(row.morning_late_fine ?? 0),
+    afternoonAbsentFine: Number(row.afternoon_absent_fine ?? 0),
+    afternoonLateFine: Number(row.afternoon_late_fine ?? 0),
+  };
+}
+
 export default function AdminEventsRoutePage() {
   const router = useRouter();
   const { user } = useProtectedUser();
   const [events, setEvents] = useState<EventData[]>([]);
+  const [archivedEvents, setArchivedEvents] = useState<EventData[]>([]);
+  const [isArchivedLoading, setIsArchivedLoading] = useState(false);
+  const [archivedLoaded, setArchivedLoaded] = useState(false);
   const [finesEnabled, setFinesEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  async function loadArchivedEvents() {
+    if (!user || user.role !== "admin" || isArchivedLoading) return;
+
+    setIsArchivedLoading(true);
+    const { data, error } = await supabase
+      .from("events")
+      .select("*")
+      .not("archived_at", "is", null)
+      .order("archived_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+    } else {
+      setArchivedEvents((data ?? []).map(mapArchivedEvent));
+      setArchivedLoaded(true);
+    }
+
+    setIsArchivedLoading(false);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -122,6 +189,7 @@ export default function AdminEventsRoutePage() {
     const eventsChannel = subscribeToTableChanges("events", () => {
       if (!cancelled) {
         void loadAdminEvents();
+        if (archivedLoaded) void loadArchivedEvents();
       }
     });
     const attendanceChannel = subscribeToTableChanges("attendance_scans", () => {
@@ -133,7 +201,7 @@ export default function AdminEventsRoutePage() {
       void eventsChannel.unsubscribe();
       void attendanceChannel.unsubscribe();
     };
-  }, [router, user]);
+  }, [router, user, archivedLoaded]);
 
   const onNav = (page: Page) => {
     const paths: Record<Page, string> = {
@@ -184,6 +252,10 @@ export default function AdminEventsRoutePage() {
       onNav={onNav}
       events={events}
       setEvents={setEvents}
+      archivedEvents={archivedEvents}
+      setArchivedEvents={setArchivedEvents}
+      onLoadArchived={loadArchivedEvents}
+      isArchivedLoading={isArchivedLoading}
       finesEnabled={finesEnabled}
     />
   );
