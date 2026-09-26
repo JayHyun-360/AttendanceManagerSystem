@@ -2153,10 +2153,43 @@ function LandingPage({
                   onError={(event) => {
                     event.currentTarget.style.display = "none";
                   }}
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full object-cover ${isDefaultHero ? "opacity-25" : ""}`}
                 />
               </div>
             ))}
+          </div>
+        )}
+        {isDefaultHero && (
+          <div
+            className="pointer-events-none absolute inset-0 overflow-hidden"
+            aria-hidden="true"
+            style={{
+              background:
+                "radial-gradient(circle at 82% 18%, rgba(110,231,183,.36), transparent 23%), radial-gradient(circle at 18% 88%, rgba(45,212,191,.3), transparent 32%), linear-gradient(135deg, rgba(247,255,253,.88) 0%, rgba(233,248,244,.84) 48%, rgba(217,241,235,.86) 100%)",
+            }}
+          >
+            <svg
+              className="absolute -bottom-10 left-0 h-[58%] w-full min-w-[900px]"
+              viewBox="0 0 1440 520"
+              preserveAspectRatio="none"
+              fill="none"
+            >
+              <path
+                d="M-40 330C190 190 330 210 520 350C710 490 820 500 1010 300C1180 120 1310 120 1480 210V560H-40V330Z"
+                fill="rgba(93,202,170,.18)"
+              />
+              <path
+                d="M-40 405C180 270 330 295 525 420C720 545 850 535 1045 350C1225 180 1345 190 1480 270"
+                stroke="rgba(255,255,255,.9)"
+                strokeWidth="5"
+              />
+              <path
+                d="M-40 455C170 340 320 355 510 465C710 580 850 575 1060 410C1230 275 1350 280 1480 340"
+                stroke="rgba(38,166,134,.22)"
+                strokeWidth="2"
+              />
+            </svg>
+            <div className="absolute right-[18%] top-[20%] h-16 w-16 rounded-full bg-white/45 shadow-[0_10px_30px_rgba(16,185,129,.14)] blur-[1px]" />
           </div>
         )}
         {hasHero && (
@@ -2164,7 +2197,7 @@ function LandingPage({
             className="absolute inset-0"
             style={{
               background: isDefaultHero
-                ? "linear-gradient(180deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,.08) 52%, rgba(240,253,250,.58) 100%)"
+                ? "linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 50%, rgba(236,253,245,.18) 100%)"
                 : "linear-gradient(135deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.18) 100%)",
             }}
           />
