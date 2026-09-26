@@ -7648,7 +7648,13 @@ type PendingSessionExtension = {
 
 const ARCHIVE_DROP_ZONE_ID = "archive";
 
-function ArchiveDropZone({ active }: { active: boolean }) {
+function ArchiveDropZone({
+  active,
+  onClick,
+}: {
+  active: boolean;
+  onClick: () => void;
+}) {
   const { isOver, setNodeRef } = useDroppable({ id: ARCHIVE_DROP_ZONE_ID });
   const highlighted = active && isOver;
 
@@ -7657,6 +7663,12 @@ function ArchiveDropZone({ active }: { active: boolean }) {
       ref={setNodeRef}
       role="button"
       aria-label="Archive event drop zone"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") onClick();
+      }}
+      title="View archived events or drop an event here to archive it"
       className={`flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-all ${
         highlighted
           ? "border-amber-300 bg-amber-50 text-amber-700 shadow-sm ring-2 ring-amber-100"
@@ -7800,6 +7812,34 @@ function ArchivedEventCard({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ArchivedEventsSkeleton() {
+  return (
+    <div
+      className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
+      aria-label="Loading archived events"
+      aria-busy="true"
+    >
+      {[0, 1, 2].map((item) => (
+        <div
+          key={item}
+          className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+        >
+          <div className="aspect-[4/3] animate-pulse bg-slate-200" />
+          <div className="space-y-3 p-5">
+            <div className="h-4 w-3/4 animate-pulse rounded-md bg-slate-200" />
+            <div className="h-3 w-2/3 animate-pulse rounded-md bg-slate-100" />
+            <div className="h-3 w-1/2 animate-pulse rounded-md bg-slate-100" />
+            <div className="flex gap-2 border-t border-slate-100 pt-3">
+              <div className="h-9 flex-1 animate-pulse rounded-lg bg-slate-200" />
+              <div className="h-9 flex-1 animate-pulse rounded-lg bg-slate-100" />
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -9020,9 +9060,14 @@ export function AdminEventsPage({
           <div className="flex items-center gap-2">
             <ArchiveDropZone
               active={eventView === "active" && activeDragId !== null}
+              onClick={() => {
+                setEventView("archived");
+                void onLoadArchived();
+              }}
             />
             <button
             onClick={() => {
+              setEventView("active");
               setShowForm(true);
 
               setActiveTab("basic");
@@ -9039,29 +9084,6 @@ export function AdminEventsPage({
           </div>
         }
       />
-
-      <div className="mb-5 flex w-fit items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
-        {([
-          ["active", `Active Events (${events.length})`],
-          ["archived", `Archived (${archivedEvents.length})`],
-        ] as const).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => {
-              setEventView(value);
-              if (value === "archived") void onLoadArchived();
-            }}
-            className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
-              eventView === value
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
 
       {}
       {eventView === "active" && showForm && (
@@ -9987,13 +10009,13 @@ export function AdminEventsPage({
                       },
 
                       {
-                        label: "Delete",
+                        label: "Move to archive",
 
-                        icon: <Icons.Trash />,
+                        icon: <Archive />,
 
                         danger: true,
 
-                        onClick: () => deleteEvent(e.id),
+                        onClick: () => void archiveEvent(e.id),
                       },
                     ]}
                   />
@@ -10070,9 +10092,7 @@ export function AdminEventsPage({
       ) : (
         <div>
           {isArchivedLoading ? (
-            <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center text-sm text-slate-400">
-              Loading archived events...
-            </div>
+            <ArchivedEventsSkeleton />
           ) : archivedEvents.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
               <p className="text-sm font-semibold text-slate-700">No archived events</p>

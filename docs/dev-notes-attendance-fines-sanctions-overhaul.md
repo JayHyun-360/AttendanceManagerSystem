@@ -348,3 +348,7 @@ The resulting system now provides:
 - stable internal profile-based identity matching;
 - policy-aware Fee and Sanction presentation; and
 - adaptive student-profile clearance and sanction interfaces.
+
+## Event Archiving UI Notes
+
+The admin Events page uses the **Archive** control beside **New event** as the archived-events view switch and as the drag-and-drop archive target. Clicking **Archive** lazy-loads archived events and shows the archived card grid. Dragging an active event card archives it only when the card directly overlaps the Archive control; releasing elsewhere returns it to its original position. The archived view uses a three-card shimmer skeleton while the archived query is loading. Archived cards support version-checked **Restore** and confirmation-gated **Delete permanently** actions. The active event menu uses **Move to archive** instead of permanent Delete.
