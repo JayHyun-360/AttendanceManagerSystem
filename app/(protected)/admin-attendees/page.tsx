@@ -11,6 +11,8 @@ import {
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
+import { FeedbackState } from "@/components/ui/feedback";
+import { toast } from "sonner";
 
 export default function AdminAttendeesRoutePage() {
   const router = useRouter();
@@ -20,12 +22,14 @@ export default function AdminAttendeesRoutePage() {
   const [scanState, setScanState] = useState<Record<string, any[]>>({});
   const [fineRows, setFineRows] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadData() {
       try {
+        if (!cancelled) setLoadError(null);
         if (!user || user.role !== "admin") {
           router.push("/dashboard");
           return;
@@ -50,10 +54,12 @@ export default function AdminAttendeesRoutePage() {
 
         if (eventsResult.error) {
           console.error(eventsResult.error);
+          throw new Error("Events could not be loaded.");
         }
 
         if (studentsResult.error) {
           console.error(studentsResult.error);
+          throw new Error("Students could not be loaded.");
         }
         if (settingsResult.error) {
           console.error(settingsResult.error);
@@ -211,6 +217,7 @@ export default function AdminAttendeesRoutePage() {
         }
       } catch (caughtError) {
         console.error(caughtError);
+        if (!cancelled) setLoadError("Attendance data could not be loaded.");
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -288,9 +295,11 @@ export default function AdminAttendeesRoutePage() {
 
     if (error) {
       console.error("Failed to delete attendance record", error);
+      toast.error("Attendance record could not be deleted. Please try again.");
       return false;
     }
 
+    toast.success("Attendance record deleted.");
     return true;
   };
 
@@ -307,6 +316,16 @@ export default function AdminAttendeesRoutePage() {
           <Skeleton key={item} className="h-24 w-full rounded-xl" />
         ))}
       </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <FeedbackState
+        title="Attendance data unavailable"
+        message={loadError}
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 

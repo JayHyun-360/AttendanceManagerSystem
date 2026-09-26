@@ -7,6 +7,7 @@ import { EventsPage, type EventData, type Page } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
+import { FeedbackState } from "@/components/ui/feedback";
 
 function EventsSkeleton() {
   return (
@@ -62,12 +63,14 @@ export default function EventsRoutePage() {
   const { user, showFees } = useProtectedUser();
   const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadEvents() {
       try {
+        if (!cancelled) setLoadError(null);
         const [{ data, error }, { data: scans, error: scansError }] =
           await Promise.all([
             supabase.from("events").select("*").order("event_date", { ascending: false }),
@@ -78,6 +81,7 @@ export default function EventsRoutePage() {
 
         if (error) {
           console.error(error);
+          if (!cancelled) setLoadError("Events could not be loaded.");
           return;
         }
         if (scansError) console.error(scansError);
@@ -120,6 +124,7 @@ export default function EventsRoutePage() {
         }
       } catch (caughtError) {
         console.error(caughtError);
+        if (!cancelled) setLoadError("Events could not be loaded.");
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -156,6 +161,16 @@ export default function EventsRoutePage() {
 
   if (isLoading) {
     return <EventsSkeleton />;
+  }
+
+  if (loadError) {
+    return (
+      <FeedbackState
+        title="Events unavailable"
+        message={loadError}
+        onRetry={() => window.location.reload()}
+      />
+    );
   }
 
   return (

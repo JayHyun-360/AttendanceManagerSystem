@@ -4344,8 +4344,10 @@ export interface OBForm {
 
 export function OnboardingPage({
   onComplete,
+  submitting = false,
 }: {
-  onComplete: (d: OBForm) => void;
+  onComplete: (d: OBForm) => Promise<boolean> | boolean | void;
+  submitting?: boolean;
 }) {
   const [step, setStep] = useState(1);
 
@@ -4762,19 +4764,25 @@ export function OnboardingPage({
               </button>
             )}
             <button
-              disabled={!canContinue()}
-              onClick={() =>
-                step < TOTAL
-                  ? setStep((s) => s + 1)
-                  : onComplete({ ...f, agreedToTerms: agreed })
-              }
+              disabled={!canContinue() || submitting}
+              onClick={async () => {
+                if (step < TOTAL) {
+                  setStep((s) => s + 1);
+                  return;
+                }
+                await onComplete({ ...f, agreedToTerms: agreed });
+              }}
               className={`flex-1 h-10 text-white text-sm font-semibold rounded-lg transition-all shadow-sm ${
                 canContinue()
                   ? "bg-emerald-500 hover:bg-emerald-600"
                   : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
               }`}
             >
-              {step === TOTAL ? "Complete setup" : "Continue"}
+              {submitting
+                ? "Saving..."
+                : step === TOTAL
+                  ? "Complete setup"
+                  : "Continue"}
             </button>
           </div>
         </div>
@@ -4794,11 +4802,13 @@ function ExcuseModal({
 
   onClose: () => void;
 
-  onSubmit: (r: ExcuseRequest) => void;
+  onSubmit: (r: ExcuseRequest) => Promise<boolean> | boolean;
 }) {
   const [reason, setReason] = useState("");
 
   const [file, setFile] = useState<File | null>(null);
+
+  const [submitting, setSubmitting] = useState(false);
 
   const ref = useRef<HTMLInputElement>(null);
 
@@ -4819,7 +4829,8 @@ function ExcuseModal({
             </p>
           </div>
           <button
-            onClick={onClose}
+            onClick={() => !submitting && onClose()}
+            disabled={submitting}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
           >
             <Icons.X />
@@ -4857,6 +4868,7 @@ function ExcuseModal({
             />
             <button
               onClick={() => ref.current?.click()}
+              disabled={submitting}
               className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm font-medium text-slate-400 hover:border-emerald-400 hover:text-emerald-500 transition-all flex items-center justify-center gap-2"
             >
               <Icons.Paperclip />
@@ -4866,16 +4878,19 @@ function ExcuseModal({
         </div>
         <div className="px-5 pb-5 flex gap-2.5">
           <button
-            onClick={onClose}
+            onClick={() => !submitting && onClose()}
+            disabled={submitting}
             className="h-10 px-4 border border-slate-200 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-50"
           >
             Cancel
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
               if (!reason.trim()) return;
 
-              onSubmit({
+              setSubmitting(true);
+              try {
+                const succeeded = await onSubmit({
                 id: Date.now().toString(),
 
                 studentName: "Maria Luisa Santos",
@@ -4893,15 +4908,17 @@ function ExcuseModal({
                 status: "pending",
 
                 submittedDate: "Aug 22, 2026",
-              });
-
-              onClose();
+                });
+                if (succeeded) onClose();
+              } finally {
+                setSubmitting(false);
+              }
             }}
-            disabled={!reason.trim()}
+            disabled={!reason.trim() || submitting}
             className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg disabled:opacity-40 flex items-center justify-center gap-2"
           >
             <Icons.Send />
-            Submit
+            {submitting ? "Submitting..." : "Submit"}
           </button>
         </div>
       </div>
@@ -6444,7 +6461,7 @@ export function AttendanceHistoryPage({
 
   showFees: boolean;
 
-  onSubmitExcuse: (r: ExcuseRequest) => void;
+  onSubmitExcuse: (r: ExcuseRequest) => Promise<boolean> | boolean;
 
   onBack: () => void;
 
@@ -6590,10 +6607,10 @@ export function AttendanceHistoryPage({
         <ExcuseModal
           record={modal}
           onClose={() => setModal(null)}
-          onSubmit={(r) => {
-            onSubmitExcuse(r);
-
-            setModal(null);
+          onSubmit={async (r) => {
+            const succeeded = await onSubmitExcuse(r);
+            if (succeeded) setModal(null);
+            return succeeded;
           }}
         />
       )}
@@ -10650,6 +10667,7 @@ export function AdminAttendeesPage({
   );
 
   const [tab, setTab] = useState<"present" | "late" | "absent" | "duplicates">("present");
+  const [deletingId, setDeletingId] = useState<string | number | null>(null);
   const [selectedSession, setSelectedSession] = useState<
     "morning" | "afternoon"
   >("morning");
@@ -10827,17 +10845,23 @@ export function AdminAttendeesPage({
     : [];
 
   const deleteRecord = async (dbId: string | number) => {
-    if (onDeleteAttendance && !(await onDeleteAttendance(dbId))) {
-      return;
+    if (deletingId !== null) return;
+    if (!window.confirm("Delete this attendance record? This action cannot be undone.")) return;
+    setDeletingId(dbId);
+    try {
+      if (onDeleteAttendance && !(await onDeleteAttendance(dbId))) {
+        return;
+      }
+
+      setScanState((st) => ({
+        ...st,
+        [selectedEventId]: (st[selectedEventId] ?? []).filter(
+          (r) => r.dbId !== dbId,
+        ),
+      }));
+    } finally {
+      setDeletingId(null);
     }
-
-    setScanState((st) => ({
-      ...st,
-
-      [selectedEventId]: (st[selectedEventId] ?? []).filter(
-        (r) => r.dbId !== dbId,
-      ),
-    }));
   };
 
   const exportAttendance = () => {
@@ -11210,6 +11234,8 @@ export function AdminAttendeesPage({
                           <Badge status={s.status} sanctioned={s.sanctioned} />
                           <button
                             onClick={() => void deleteRecord(s.dbId)}
+                            disabled={deletingId === s.dbId}
+                            title="Delete attendance record"
                             className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
                           >
                             <Icons.Trash />
@@ -11230,6 +11256,8 @@ export function AdminAttendeesPage({
                       <Badge status={s.status} sanctioned={s.sanctioned} />
                       <button
                         onClick={() => void deleteRecord(s.dbId)}
+                        disabled={deletingId === s.dbId}
+                        title="Delete attendance record"
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
                       >
                         <Icons.Trash />
@@ -11816,7 +11844,7 @@ export function AdminAnnouncementsPage({
     badge: string;
 
     photoUrl: string | null;
-  }) => Promise<void>;
+  }) => Promise<void | boolean>;
 
   onUpdate?: (payload: {
     id: string;
@@ -11830,9 +11858,9 @@ export function AdminAnnouncementsPage({
     photoUrl: string | null;
 
     previousPhotoUrl?: string;
-  }) => Promise<void>;
+  }) => Promise<void | boolean>;
 
-  onDelete?: (id: string, photoUrl?: string) => Promise<void>;
+  onDelete?: (id: string, photoUrl?: string) => Promise<void | boolean>;
 }) {
   type NewPostTab = "details" | "media";
 
@@ -11846,6 +11874,10 @@ export function AdminAnnouncementsPage({
   const [editId, setEditId] = useState<string | null>(null);
 
   const [isPublishing, setIsPublishing] = useState(false);
+
+  const [isEditing, setIsEditing] = useState(false);
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<
     string | null
@@ -11954,7 +11986,8 @@ export function AdminAnnouncementsPage({
 
     try {
       if (onCreate) {
-        await onCreate(payload);
+        const result = await onCreate(payload);
+        if (result === false) return;
       } else {
         setPosts((p) => [
           {
@@ -12000,7 +12033,9 @@ export function AdminAnnouncementsPage({
   };
 
   const saveEdit = async () => {
-    if (!editDraft) return;
+    if (!editDraft || isEditing) return;
+
+    setIsEditing(true);
 
     const currentPost = posts.find((post) => post.id === editDraft.id);
 
@@ -12018,43 +12053,51 @@ export function AdminAnnouncementsPage({
       previousPhotoUrl: currentPost?.photoUrl || undefined,
     };
 
-    if (onUpdate) {
-      await onUpdate(payload);
-    } else {
-      setPosts((p) =>
-        p.map((a) =>
-          a.id === editDraft.id
-            ? {
-                ...a,
+    try {
+      if (onUpdate) {
+        const result = await onUpdate(payload);
+        if (result === false) return;
+      } else {
+        setPosts((p) =>
+          p.map((a) =>
+            a.id === editDraft.id
+              ? {
+                  ...a,
+                  title: payload.title,
+                  body: payload.body,
+                  badge: payload.badge,
+                  photoUrl: payload.photoUrl ?? "",
+                }
+              : a,
+          ),
+        );
+      }
 
-                title: payload.title,
-
-                body: payload.body,
-
-                badge: payload.badge,
-
-                photoUrl: payload.photoUrl ?? "",
-              }
-            : a,
-        ),
-      );
+      setEditId(null);
+      setEditDraft(null);
+    } finally {
+      setIsEditing(false);
     }
-
-    setEditId(null);
-
-    setEditDraft(null);
   };
 
   const deletePost = async (id: string) => {
-    const currentPost = posts.find((post) => post.id === id);
-
-    if (onDelete) {
-      await onDelete(id, currentPost?.photoUrl || undefined);
-
-      return;
+    if (deletingId) return false;
+    if (!window.confirm("Delete this announcement? This action cannot be undone.")) {
+      return false;
     }
-
-    setPosts((p) => p.filter((a) => a.id !== id));
+    const currentPost = posts.find((post) => post.id === id);
+    setDeletingId(id);
+    try {
+      if (onDelete) {
+        const result = await onDelete(id, currentPost?.photoUrl || undefined);
+        if (result === false) return false;
+      } else {
+        setPosts((p) => p.filter((a) => a.id !== id));
+      }
+      return true;
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (selectedAnnouncementId) {
@@ -12074,8 +12117,9 @@ export function AdminAnnouncementsPage({
         onDelete={() => {
           const id = selectedAnnouncementId;
 
-          setSelectedAnnouncementId(null);
-          void deletePost(id);
+          void deletePost(id).then((succeeded) => {
+            if (succeeded) setSelectedAnnouncementId(null);
+          });
         }}
       />
     );
@@ -12496,11 +12540,12 @@ export function AdminExcuseRequestsPage({
 }: {
   requests: ExcuseRequest[];
 
-  onAction: (id: string, a: "approved" | "denied") => void;
+  onAction: (id: string, a: "approved" | "denied") => Promise<void> | void;
 
   onBack: () => void;
 }) {
   const pending = requests.filter((r) => r.status === "pending");
+  const [actionId, setActionId] = useState<string | null>(null);
 
   const reviewed = requests.filter((r) => r.status !== "pending");
 
@@ -12574,18 +12619,36 @@ export function AdminExcuseRequestsPage({
                 </p>
                 <div className="flex gap-2 pt-4 border-t border-slate-50">
                   <button
-                    onClick={() => onAction(r.id, "approved")}
+                    onClick={async () => {
+                      if (actionId) return;
+                      setActionId(r.id);
+                      try {
+                        await onAction(r.id, "approved");
+                      } finally {
+                        setActionId(null);
+                      }
+                    }}
+                    disabled={actionId === r.id}
                     className="flex-1 h-9 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center justify-center gap-1.5"
                   >
                     <Icons.Check />
-                    Approve &amp; waive fee
+                    {actionId === r.id ? "Updating..." : "Approve & waive fee"}
                   </button>
                   <button
-                    onClick={() => onAction(r.id, "denied")}
+                    onClick={async () => {
+                      if (actionId) return;
+                      setActionId(r.id);
+                      try {
+                        await onAction(r.id, "denied");
+                      } finally {
+                        setActionId(null);
+                      }
+                    }}
+                    disabled={actionId === r.id}
                     className="flex-1 h-9 border border-red-200 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-50 flex items-center justify-center gap-1.5"
                   >
                     <Icons.X />
-                    Deny
+                    {actionId === r.id ? "Updating..." : "Deny"}
                   </button>
                 </div>
               </div>

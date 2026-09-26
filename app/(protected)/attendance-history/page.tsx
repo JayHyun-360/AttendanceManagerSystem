@@ -11,6 +11,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
+import { toast } from "sonner";
 import {
   buildAttendanceSessionRecords,
   type FineEventLike,
@@ -34,6 +35,7 @@ export default function AttendanceHistoryRoutePage() {
       try {
         setLoadError(null);
         if (!authUserId) {
+          setLoadError("Your account session is not ready. Please try again.");
           return;
         }
 
@@ -203,6 +205,7 @@ export default function AttendanceHistoryRoutePage() {
         setAttendanceRecords([...storedAttendance, ...inferredAttendance]);
       } catch (caughtError) {
         console.error(caughtError);
+        if (!cancelled) setLoadError("Your attendance records could not be loaded.");
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -239,9 +242,10 @@ export default function AttendanceHistoryRoutePage() {
     };
   }, [authUserId]);
 
-  const handleSubmitExcuse = async (record: ExcuseRequest) => {
+  const handleSubmitExcuse = async (record: ExcuseRequest): Promise<boolean> => {
     if (!authUserId) {
-      return;
+      toast.error("Your session is not ready. Please try again.");
+      return false;
     }
 
     const { error } = await supabase.from("excuse_requests").insert({
@@ -263,10 +267,13 @@ export default function AttendanceHistoryRoutePage() {
 
     if (error) {
       console.error(error);
-      return;
+      toast.error("Your excuse request could not be submitted. Please try again.");
+      return false;
     }
 
+    toast.success("Excuse request submitted for review.");
     router.refresh();
+    return true;
   };
 
   if (isLoading) {

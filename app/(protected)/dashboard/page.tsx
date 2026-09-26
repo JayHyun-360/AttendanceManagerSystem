@@ -7,6 +7,7 @@ import { DashboardPage, type EventData } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
+import { FeedbackState } from "@/components/ui/feedback";
 
 export default function DashboardRoute() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function DashboardRoute() {
   const [events, setEvents] = useState<any[]>([]);
   const [announcementsReady, setAnnouncementsReady] = useState(false);
   const [finesReady, setFinesReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [attendanceStats, setAttendanceStats] = useState({
     present: 0,
     absent: 0,
@@ -35,6 +37,7 @@ export default function DashboardRoute() {
 
     async function loadDashboardAnnouncements() {
       try {
+        if (!cancelled) setLoadError(null);
         const { data, error } = await supabase
           .from("announcements")
           .select("*")
@@ -44,6 +47,7 @@ export default function DashboardRoute() {
 
         if (error) {
           console.error(error);
+          if (!cancelled) setLoadError("Announcements are temporarily unavailable.");
           return;
         }
 
@@ -66,6 +70,7 @@ export default function DashboardRoute() {
         }
       } catch (caughtError) {
         console.error(caughtError);
+        if (!cancelled) setLoadError("Dashboard data could not be loaded.");
       } finally {
         if (!cancelled) {
           setAnnouncementsReady(true);
@@ -117,14 +122,17 @@ export default function DashboardRoute() {
 
         if (eventsResult.error) {
           console.error(eventsResult.error);
+          if (!cancelled) setLoadError("Dashboard data could not be loaded.");
         }
 
         if (attendanceResult.error) {
           console.error(attendanceResult.error);
+          if (!cancelled) setLoadError("Dashboard data could not be loaded.");
         }
 
         if (fineResult.error) {
           console.error(fineResult.error);
+          if (!cancelled) setLoadError("Dashboard data could not be loaded.");
         }
 
         if (cancelled) {
@@ -185,6 +193,7 @@ export default function DashboardRoute() {
         });
       } catch (caughtError) {
         console.error(caughtError);
+        if (!cancelled) setLoadError("Dashboard data could not be loaded.");
       } finally {
         if (!cancelled) {
           setFinesReady(true);
@@ -327,6 +336,16 @@ export default function DashboardRoute() {
 
   if (!user || isLoading) {
     return <DashboardPageSkeleton />;
+  }
+
+  if (loadError) {
+    return (
+      <FeedbackState
+        title="Dashboard data unavailable"
+        message={loadError}
+        onRetry={() => window.location.reload()}
+      />
+    );
   }
 
   const nextEvent: EventData | undefined = (() => {

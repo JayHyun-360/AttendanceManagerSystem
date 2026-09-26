@@ -184,6 +184,7 @@ export default function AdminSettingsRoutePage() {
     if (error) {
       console.error("Failed to save settings", error)
 
+      setSettings(settings)
       setSaveState("error")
 
       toast.error("Settings save failed.")
@@ -204,13 +205,17 @@ export default function AdminSettingsRoutePage() {
     if (cleanupUrls.length > 0) {
       const cleanupResults = await deleteImages(cleanupUrls)
 
-      cleanupResults
+      const failedCleanup = cleanupResults.filter((result) => !result.success)
 
-        .filter((result) => !result.success)
+      failedCleanup.forEach((result) =>
+        console.error("Failed to delete settings media", result.error),
+      )
 
-        .forEach((result) =>
-          console.error("Failed to delete settings media", result.error),
-        )
+      if (failedCleanup.length > 0) {
+        setSaveState("saved")
+        toast.warning(`Settings saved, but ${failedCleanup.length} media file${failedCleanup.length === 1 ? "" : "s"} could not be cleaned up.`)
+        return
+      }
     }
 
     setSaveState("saved")

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Adesse",
@@ -18,7 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <TooltipProvider>{children}</TooltipProvider>
+        <TooltipProvider>
+          {children}
+          <Toaster />
+        </TooltipProvider>
       </body>
     </html>
   );

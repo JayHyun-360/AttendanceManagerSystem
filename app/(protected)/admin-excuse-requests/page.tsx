@@ -7,6 +7,7 @@ import { AdminExcuseRequestsPage, type ExcuseRequest } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
+import { toast } from "sonner";
 
 export default function AdminExcuseRequestsRoutePage() {
   const router = useRouter();
@@ -89,6 +90,7 @@ export default function AdminExcuseRequestsRoutePage() {
   }, [router, user]);
 
   const handleAction = async (id: string, action: "approved" | "denied") => {
+    if (!window.confirm(action === "approved" ? "Approve this excuse and waive the linked fee?" : "Deny this excuse request?")) return;
     const { error } = await supabase
       .from("excuse_requests")
       .update({ status: action })
@@ -96,6 +98,7 @@ export default function AdminExcuseRequestsRoutePage() {
 
     if (error) {
       console.error(error);
+      toast.error("The request could not be updated. Please try again.");
       return;
     }
 
@@ -104,6 +107,7 @@ export default function AdminExcuseRequestsRoutePage() {
         request.id === id ? { ...request, status: action } : request,
       ),
     );
+    toast.success(action === "approved" ? "Excuse approved and fee waived." : "Excuse request denied.");
   };
 
   if (isLoading) {

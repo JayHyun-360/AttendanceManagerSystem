@@ -21,7 +21,8 @@ import {
 } from "../shared-page";
 import { DevNotesProvider, useDevNotes } from "../DevNotesPage";
 import { supabase } from "@/lib/supabase";
-import { Toaster } from "@/components/ui/sonner";
+import { FeedbackState } from "@/components/ui/feedback";
+import { toast } from "sonner";
 
 type ProtectedUserContextValue = {
   user: User | null;
@@ -78,17 +79,19 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [page, setPage] = useState<Page>("landing");
   const [open, setOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const [hasSession, setHasSession] = useState(false);
 	  const [settingsReady, setSettingsReady] = useState(false);
 	  const [showFees, setShowFees] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
 	  useEffect(() => {
 	    let cancelled = false;
 
 	    async function hydrateSession() {
-      try {
+	      if (!cancelled) setSessionError(null);
+	      try {
         const {
           data: { session },
           error: sessionError,
@@ -96,6 +99,8 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
         if (sessionError) {
           console.error(sessionError);
+	          if (!cancelled) setSessionError("We could not verify your session. Please try again.");
+	          return;
         }
 
         if (!session?.user) {
@@ -189,6 +194,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 	        }
       } catch (caught) {
         console.error(caught);
+			if (!cancelled) setSessionError("We could not load your account. Check your connection and try again.");
       } finally {
         if (!cancelled) {
           setSessionReady(true);
@@ -205,15 +211,19 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
-    async function hydrateSettings() {
-      const { data, error } = await supabase
+	    async function hydrateSettings() {
+	      if (!cancelled) setSettingsError(null);
+	      try {
+	      const { data, error } = await supabase
         .from("system_settings")
         .select("settings")
         .eq("id", 1)
         .maybeSingle();
 
-      if (error) {
-        console.error("Failed to load protected settings", error);
+	      if (error) {
+	        console.error("Failed to load protected settings", error);
+			if (!cancelled) setSettingsError("System settings are temporarily unavailable.");
+			return;
       }
 
       if (!cancelled) {
@@ -224,8 +234,14 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
         setShowFees(
           savedSettings?.finesEnabled === true && savedSettings.showFees === true,
         );
-        setSettingsReady(true);
-      }
+	        setSettingsReady(true);
+	      }
+	      } catch (caught) {
+	        console.error(caught);
+			if (!cancelled) setSettingsError("System settings are temporarily unavailable.");
+	      } finally {
+			if (!cancelled) setSettingsReady(true);
+	      }
     }
 
     void hydrateSettings();
@@ -285,15 +301,17 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   };
 
   const onLogout = async () => {
-    resetProtectedAuthState();
-
+    toast.loading("Signing you out...", { id: "adesse-logout" });
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast.success("You have been signed out.", { id: "adesse-logout" });
+      resetProtectedAuthState();
+		  router.push("/login");
     } catch (caughtError) {
       console.error(caughtError);
+		  toast.error("We could not sign you out. Please try again.", { id: "adesse-logout" });
     }
-
-    router.push("/login");
   };
 
   const onNav = (p: Page) => {
@@ -327,6 +345,20 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   };
 
 	  const showGlobalLoading = !sessionReady || !settingsReady || !user;
+
+	  if (sessionError || settingsError) {
+	    return (
+	      <div className="min-h-screen bg-[#f8faf9] px-4 flex items-center justify-center">
+	        <div className="w-full max-w-md">
+	          <FeedbackState
+	            title={sessionError ? "Account connection interrupted" : "System settings unavailable"}
+	            message={sessionError ?? settingsError ?? "Please try again."}
+	            onRetry={() => window.location.reload()}
+	          />
+	        </div>
+	      </div>
+	    );
+	  }
 
   if (showGlobalLoading) {
     return (
@@ -370,7 +402,6 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
             <PageShell>{children}</PageShell>
           </main>
         </div>
-	        {toastMessage && <Toast message={toastMessage} variant="success" />}
 	      </div>
 	      </DevNotesProvider>
 	    </ProtectedUserContext.Provider>
