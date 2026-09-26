@@ -12,6 +12,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader, PageShell } from "./shared-page";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 export type DevNoteType = "info" | "warning" | "feature";
 
@@ -246,6 +247,9 @@ function DevNotesSkeleton() {
 
 export default function DevNotesPage() {
   const { notes, isLoading, isConnected, markAllRead } = useDevNotes();
+  const [expandedNoteIds, setExpandedNoteIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   useEffect(() => {
     markAllRead();
@@ -307,9 +311,35 @@ export default function DevNotesPage() {
                         {style.label}
                       </span>
                     </div>
-                    <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
+                    <p
+                      className={`mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-600 ${
+                        expandedNoteIds.has(note.id) ? "" : "line-clamp-3"
+                      }`}
+                    >
                       {note.message}
                     </p>
+                    {note.message.length > 180 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedNoteIds((current) => {
+                            const next = new Set(current);
+                            if (next.has(note.id)) next.delete(note.id);
+                            else next.add(note.id);
+                            return next;
+                          })
+                        }
+                        aria-expanded={expandedNoteIds.has(note.id)}
+                        className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 transition-colors hover:text-emerald-700"
+                      >
+                        {expandedNoteIds.has(note.id) ? "Show less" : "See more"}
+                        {expandedNoteIds.has(note.id) ? (
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    )}
                   </article>
                 );
               })}
