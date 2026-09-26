@@ -5,8 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 export const metadata: Metadata = {
   title: "Adesse",
   icons: {
-    icon: "/adesse-logo.png",
-    apple: "/adesse-logo.png",
+    icon: "/adesse-logo.svg",
+    apple: "/adesse-logo.svg",
   },
 };
 
