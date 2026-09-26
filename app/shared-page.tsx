@@ -7051,7 +7051,30 @@ export function ProfilePage({
             </section>
           )}
 
-          <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+          <details className="rounded-2xl border border-slate-100 bg-white shadow-sm md:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between p-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+              Contact &amp; info
+              <ChevronDown className="h-4 w-4" />
+            </summary>
+            <div className="border-t border-slate-100 px-5 pb-5">
+              <div className="mt-1 divide-y divide-slate-100">
+                {[
+                  { label: "Phone", value: profile.phone || "Not provided" },
+                  { label: "Email", value: profile.contactEmail || "Not provided" },
+                ].map((item) => (
+                  <div key={item.label} className="py-3 first:pt-0 last:pb-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      {item.label}
+                    </p>
+                    <p className="mt-1 break-words text-sm font-semibold text-slate-900">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </details>
+          <section className="hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:block md:p-6">
             <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
               Contact & info
             </p>
@@ -7229,7 +7252,25 @@ export function ProfilePage({
           )}
 
           {!isMod && profile.idPhotoUrl && (
-            <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+            <>
+              <details className="rounded-2xl border border-slate-100 bg-white shadow-sm md:hidden">
+                <summary className="flex cursor-pointer list-none items-center justify-between p-5 text-base font-semibold text-slate-900">
+                  <span>School ID</span>
+                  <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Verification
+                    <ChevronDown className="h-4 w-4" />
+                  </span>
+                </summary>
+                <div className="border-t border-slate-100 p-5">
+                  <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-slate-100 bg-slate-50/80">
+                    <img src={profile.idPhotoUrl} alt="School ID" className="h-full w-full object-contain" />
+                  </div>
+                  <p className="mt-3 text-center text-[11px] text-slate-400">
+                    Used for identity verification by moderators
+                  </p>
+                </div>
+              </details>
+              <section className="hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:block md:p-6">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <p className="text-base font-semibold text-slate-900">
                   School ID
@@ -7248,7 +7289,8 @@ export function ProfilePage({
               <p className="mt-3 text-center text-[11px] text-slate-400">
                 Used for identity verification by moderators
               </p>
-            </section>
+              </section>
+            </>
           )}
         </main>
       </div>
@@ -9527,16 +9569,6 @@ export function AdminEventsPage({
                 <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/30 bg-slate-900/25 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm shadow-sm">
                   <span>{e.date}</span>
                 </div>
-                {(e.fineAmount > 0 || (e.lateFine ?? 0) > 0) && (
-                  <span className="shrink-0 whitespace-nowrap rounded-full border border-red-200 bg-red-500/90 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm shadow-sm">
-                    Absence ₱{e.fineAmount} · Late ₱{e.lateFine}
-                  </span>
-                )}
-                {e.multiSession && (
-                  <span className="shrink-0 whitespace-nowrap rounded-full border border-violet-200 bg-violet-500/90 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm shadow-sm">
-                    2 sessions
-                  </span>
-                )}
                 <div
                   className="rounded-full border border-white/30 bg-slate-900/25 p-1 text-white backdrop-blur-sm shadow-sm"
                   onClick={(event) => event.stopPropagation()}
@@ -10253,6 +10285,8 @@ export function AdminScannerPage({
 
   const [imageLoading, setImageLoading] = useState(true);
 
+  const [showEventRules, setShowEventRules] = useState(false);
+
   useEffect(() => {
     if (!events.some((event) => event.id === selectedEventId) && events[0]) {
       setSelectedEventId(events[0].id);
@@ -10533,12 +10567,20 @@ export function AdminScannerPage({
         <div className="lg:col-span-4 space-y-4">
           {selectedEvent && (
             <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
-              <div className="px-5 py-3.5 border-b border-slate-50">
+              <button
+                type="button"
+                onClick={() => setShowEventRules((current) => !current)}
+                aria-expanded={showEventRules}
+                className="flex w-full items-center justify-between px-5 py-3.5 text-left md:cursor-default"
+              >
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                   Event info & rules
                 </p>
-              </div>
-              <div className="p-5 space-y-4">
+                <span className="text-slate-400 md:hidden">
+                  {showEventRules ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </span>
+              </button>
+              <div className={`${showEventRules ? "block" : "hidden"} border-t border-slate-50 p-5 space-y-4 md:block`}>
                 <div>
                   <p className="text-sm font-bold text-slate-900">
                     {selectedEvent.title}
@@ -12546,6 +12588,9 @@ export function AdminExcuseRequestsPage({
 }) {
   const pending = requests.filter((r) => r.status === "pending");
   const [actionId, setActionId] = useState<string | null>(null);
+  const [expandedReasonIds, setExpandedReasonIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   const reviewed = requests.filter((r) => r.status !== "pending");
 
@@ -12605,9 +12650,35 @@ export function AdminExcuseRequestsPage({
                   </p>
                   <p className="text-xs text-slate-400 mt-0.5">{r.date}</p>
                 </div>
-                <p className="text-sm text-slate-600 leading-relaxed mb-3">
+                <p
+                  className={`text-sm text-slate-600 leading-relaxed mb-1 ${
+                    expandedReasonIds.has(r.id) ? "whitespace-pre-wrap" : "line-clamp-3"
+                  }`}
+                >
                   {r.reason}
                 </p>
+                {r.reason.length > 180 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedReasonIds((current) => {
+                        const next = new Set(current);
+                        if (next.has(r.id)) next.delete(r.id);
+                        else next.add(r.id);
+                        return next;
+                      })
+                    }
+                    aria-expanded={expandedReasonIds.has(r.id)}
+                    className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 transition-colors hover:text-emerald-700"
+                  >
+                    {expandedReasonIds.has(r.id) ? "Show less" : "See details"}
+                    {expandedReasonIds.has(r.id) ? (
+                      <ChevronUp className="h-3.5 w-3.5" />
+                    ) : (
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                )}
                 {r.proofName && (
                   <p className="text-[11px] text-slate-400 mb-3 flex items-center gap-1">
                     <Icons.Paperclip />
@@ -13180,10 +13251,24 @@ export function AdminReportsPage({
                 {r.rate}% attendance rate
               </p>
               <p className="mt-1 text-[11px] font-semibold text-slate-500">
-                Present/late {r.present} · Absent {r.absent ?? 0} · Late {r.late ?? 0}
-                {(r.fineTotal ?? 0) > 0 && ` · Fees assessed ₱${r.fineTotal}`}
+                Present/late {r.present} · Absent {r.absent ?? 0}
+                {(r.fineTotal ?? 0) > 0 && ` · Fees ₱${r.fineTotal}`}
                 {(r.sanctioned ?? 0) > 0 && ` · Sanctioned ${r.sanctioned}`}
               </p>
+              <details className="mt-2 group">
+                <summary className="flex cursor-pointer list-none items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700">
+                  See details
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 border-t border-slate-100 pt-2 text-[11px] text-slate-500">
+                  <span>Late sessions: {r.late ?? 0}</span>
+                  <span>Absent sessions: {r.absent ?? 0}</span>
+                  <span>Fees assessed: ₱{r.fineTotal ?? 0}</span>
+                  <span>Sanctioned: {r.sanctioned ?? 0}</span>
+                  <span>Sanctioned late: {r.sanctionedLate ?? 0}</span>
+                  <span>Sanctioned absent: {r.sanctionedAbsent ?? 0}</span>
+                </div>
+              </details>
             </div>
           );
         })}
@@ -13251,15 +13336,25 @@ export function AdminReportsPage({
               i < arr.length - 1 ? "border-b border-slate-50" : ""
             }`}
           >
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-slate-900">{e.title}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {e.date} · {formatTimeRange12Hour(e.time) || "Time TBA"} · Fine rates: Absent ₱{e.fineAmount} · Late ₱{e.lateFine ?? 0}
+                {e.date} · {formatTimeRange12Hour(e.time) || "Time TBA"} · Fees ₱{e.reportFineTotal ?? 0} · {e.attendees} students attended
               </p>
-              <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
-                Fees assessed ₱{e.reportFineTotal ?? 0} · 
-                Students attended {e.attendees} · Sessions: Present/late {e.reportAttendedSessions ?? e.attendees} · Absent {e.reportAbsentSessions ?? 0} · Late {e.reportLateSessions ?? 0} · Sanctioned {e.reportSanctionedSessions ?? 0}
-              </p>
+              <details className="mt-2 group">
+                <summary className="flex cursor-pointer list-none items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700">
+                  See details
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 border-t border-slate-100 pt-2 text-[10px] font-semibold text-slate-400">
+                  <span>Absent fine: ₱{e.fineAmount}</span>
+                  <span>Late fine: ₱{e.lateFine ?? 0}</span>
+                  <span>Present/late: {e.reportAttendedSessions ?? e.attendees}</span>
+                  <span>Absent sessions: {e.reportAbsentSessions ?? 0}</span>
+                  <span>Late sessions: {e.reportLateSessions ?? 0}</span>
+                  <span>Sanctioned: {e.reportSanctionedSessions ?? 0}</span>
+                </div>
+              </details>
             </div>
             <div className="text-right">
               <p className="font-bold text-emerald-500 text-lg">{e.attendees}</p>

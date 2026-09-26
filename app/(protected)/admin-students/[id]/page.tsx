@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ChevronDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -906,7 +907,22 @@ export default function StudentDetailRoutePage() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+          <details className="rounded-2xl border border-slate-100 bg-white shadow-sm md:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between p-5 text-base font-semibold text-slate-900">
+              School ID Photo
+              <ChevronDown className="h-4 w-4 text-slate-400" />
+            </summary>
+            <div className="border-t border-slate-100 p-5">
+              <div className="relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50/80">
+                {student.idPhotoUrl ? (
+                  <img src={student.idPhotoUrl} alt="Student ID" className="h-full w-full object-contain" />
+                ) : (
+                  <div className="text-center text-sm text-slate-500">No ID photo uploaded</div>
+                )}
+              </div>
+            </div>
+          </details>
+          <section className="hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:block md:p-6">
             <p className="text-base font-semibold text-slate-900">
               School ID Photo
             </p>
@@ -925,7 +941,27 @@ export default function StudentDetailRoutePage() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+          <details className="rounded-2xl border border-slate-100 bg-white shadow-sm md:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between p-5 text-base font-semibold text-slate-900">
+              Contact Details
+              <ChevronDown className="h-4 w-4 text-slate-400" />
+            </summary>
+            <div className="border-t border-slate-100 px-5 pb-5">
+              <div className="mt-1 divide-y divide-slate-100">
+                {[
+                  ["Email", student.email || "Not provided"],
+                  ["Phone", student.phone || "Not provided"],
+                  ["Joined Adesse", student.joinedDate],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                    <span className="text-xs text-slate-500">{label}</span>
+                    <span className="break-words text-right text-sm font-semibold text-slate-900">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </details>
+          <section className="hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:block md:p-6">
             <p className="text-base font-semibold text-slate-900">
               Contact Details
             </p>
