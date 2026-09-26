@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatTimeRange12Hour } from "@/lib/time";
 
 const adesseLogoSrc = "/adesse-logo.svg";
+const DEFAULT_HERO_IMAGE = "/adesse-default-hero.webp";
 const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -2061,13 +2062,16 @@ function LandingPage({
   settings: SystemSettings;
   user: User | null;
 }) {
-  const heroUrls = settings.heroImageUrls.filter(
+  const configuredHeroUrls = settings.heroImageUrls.filter(
     (url) => !!url && !url.startsWith("blob:"),
   );
+  const hasConfiguredHero = configuredHeroUrls.length > 0;
+  const heroUrls = hasConfiguredHero ? configuredHeroUrls : [DEFAULT_HERO_IMAGE];
   const carouselSlides = settings.carouselSlides.filter(
     (slide) => !!slide.imageUrl && !slide.imageUrl.startsWith("blob:"),
   );
   const hasHero = heroUrls.length > 0;
+  const isDefaultHero = !hasConfiguredHero;
   const hn = heroUrls.length;
   // clone-trick state for hero
   const [heroTrack, setHeroTrack] = useState(0);
@@ -2156,8 +2160,9 @@ function LandingPage({
           <div
             className="absolute inset-0"
             style={{
-              background:
-                "linear-gradient(135deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.18) 100%)",
+              background: isDefaultHero
+                ? "linear-gradient(180deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,.08) 52%, rgba(240,253,250,.58) 100%)"
+                : "linear-gradient(135deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.18) 100%)",
             }}
           />
         )}
@@ -2172,15 +2177,10 @@ function LandingPage({
             ))}
           </div>
         )}
-        {/* Fallback radial glow when no image */}
-        {!hasHero && (
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gradient-to-b from-emerald-50 to-transparent rounded-full blur-3xl opacity-60 pointer-events-none" />
-        )}
-
         {user && (
           <button
             onClick={() => onNav("profile")}
-            className={`absolute top-5 right-6 z-20 flex items-center justify-center rounded-full p-1.5 transition-colors duration-150 ${hasHero ? "bg-black/20 text-white shadow-sm backdrop-blur-sm hover:bg-black/30" : "bg-slate-900/5 text-slate-700 hover:bg-slate-900/10"}`}
+            className={`absolute top-5 right-6 z-20 flex items-center justify-center rounded-full p-1.5 transition-colors duration-150 ${isDefaultHero ? "bg-white/55 text-slate-700 shadow-sm backdrop-blur-sm hover:bg-white/75" : hasHero ? "bg-black/20 text-white shadow-sm backdrop-blur-sm hover:bg-black/30" : "bg-slate-900/5 text-slate-700 hover:bg-slate-900/10"}`}
             aria-label="Open profile"
           >
             <ProfileIcon
@@ -2196,7 +2196,7 @@ function LandingPage({
           className={`relative w-full mx-auto px-3.5 flex flex-col md:max-w-6xl md:px-6 ${hasHero ? "items-start text-left pt-6 pb-6 md:pt-10 md:pb-12" : "items-center text-center pt-6 pb-6 md:pt-10 md:pb-12"}`}
         >
           <div
-            className={`inline-flex items-center gap-2 text-[11px] font-bold tracking-[0.08em] uppercase px-3.5 py-2 rounded-full mb-8 ${hasHero ? "text-emerald-100 bg-white/10 border border-white/25 backdrop-blur-sm shadow-sm" : "text-emerald-700 bg-emerald-50 border border-emerald-200"}`}
+            className={`inline-flex items-center gap-2 text-[11px] font-bold tracking-[0.08em] uppercase px-3.5 py-2 rounded-full mb-8 ${isDefaultHero ? "text-emerald-800 bg-white/60 border border-white/80 backdrop-blur-sm shadow-sm" : hasHero ? "text-emerald-100 bg-white/10 border border-white/25 backdrop-blur-sm shadow-sm" : "text-emerald-700 bg-emerald-50 border border-emerald-200"}`}
           >
             <span
               className="w-1.5 h-1.5 bg-emerald-400 rounded-full"
@@ -2210,20 +2210,20 @@ function LandingPage({
             <AdesseMark className="w-14 h-14" />
           </div>
           <h1
-            className={`adesse-display text-6xl md:text-7xl leading-[0.95] mb-3 ${hasHero ? "text-white" : "text-slate-900"}`}
+            className={`adesse-display text-6xl md:text-7xl leading-[0.95] mb-3 ${isDefaultHero ? "text-slate-900" : hasHero ? "text-white" : "text-slate-900"}`}
           >
             Adesse
           </h1>
           <p
-            className={`text-[11px] font-bold uppercase tracking-[0.16em] mb-7 ${hasHero ? "text-white/75" : "text-slate-400"}`}
+            className={`text-[11px] font-bold uppercase tracking-[0.16em] mb-7 ${isDefaultHero ? "text-slate-600" : hasHero ? "text-white/75" : "text-slate-400"}`}
           >
-            Student Event Attendance &amp; Fee Tracking System
+            Student Event Attendance &amp; Records System
           </p>
           <p
-            className={`text-[17px] mb-10 leading-[1.8] ${hasHero ? "text-white/80 max-w-md" : "text-slate-500 max-w-lg"}`}
+            className={`text-[17px] mb-10 leading-[1.8] ${isDefaultHero ? "text-slate-700 max-w-md" : hasHero ? "text-white/80 max-w-md" : "text-slate-500 max-w-lg"}`}
           >
-            One QR code per student. Real-time attendance logging. Automatic fee
-            tracking.
+            One QR code per student. Real-time attendance logging. Clear event
+            records for students and moderators.
           </p>
           <div
             className={`mt-3 flex items-center gap-3 md:mt-6 ${hasHero ? "" : "justify-center"}`}
@@ -2249,7 +2249,7 @@ function LandingPage({
             </button>
             <button
               onClick={() => onNav("events")}
-              className={`h-12 px-7 text-[13px] font-bold rounded-full transition-all ${hasHero ? "bg-white/10 text-white border border-white/35 hover:bg-white/20 backdrop-blur-sm" : "border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"}`}
+              className={`h-12 px-7 text-[13px] font-bold rounded-full transition-all ${isDefaultHero ? "bg-white/60 text-slate-700 border border-white/80 hover:bg-white/80 backdrop-blur-sm" : hasHero ? "bg-white/10 text-white border border-white/35 hover:bg-white/20 backdrop-blur-sm" : "border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"}`}
             >
               Browse Events
             </button>
@@ -2272,9 +2272,9 @@ function LandingPage({
               d: "Moderators scan student QR codes in real time with automatic duplicate detection and confirmation.",
             },
             {
-              I: Icons.Peso,
-              t: "Automatic fee tracking",
-              d: "Absent students are fined per event policy. Students can view, track, and clear fees from their personal dashboard.",
+              I: Icons.FileText,
+              t: "Attendance records",
+              d: "Students can review attendance status, event history, and applicable policy details from their personal dashboard.",
             },
           ].map((f) => (
             <div
@@ -2486,7 +2486,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
             Welcome to Adesse
           </h1>
           <p className="text-xs text-slate-400 font-medium">
-            Student Event Attendance &amp; Fee Tracking System
+            Student Event Attendance &amp; Records System
           </p>
         </div>
 
@@ -7347,7 +7347,7 @@ export function AdminReportsPage({
     ctx.font = "10px system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(
-      "Adesse · Student Event Attendance & Fee Tracking System",
+      "Adesse · Student Event Attendance & Records System",
       W / 2,
       y + 18,
     );
