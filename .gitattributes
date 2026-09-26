@@ -13,6 +13,7 @@
 *.tif                filter=lfs diff=lfs merge=lfs -text
 *.ico                filter=lfs diff=lfs merge=lfs -text
 *.webp               filter=lfs diff=lfs merge=lfs -text
+public/adesse-default-hero.webp -filter -diff -merge
 *.psd                filter=lfs diff=lfs merge=lfs -text
 *.ai                 filter=lfs diff=lfs merge=lfs -text
 *.sketch             filter=lfs diff=lfs merge=lfs -text

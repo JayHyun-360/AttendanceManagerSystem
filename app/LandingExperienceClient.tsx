@@ -2150,6 +2150,9 @@ function LandingPage({
                   loading="eager"
                   decoding="sync"
                   fetchPriority="high"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                  }}
                   className="w-full h-full object-cover"
                 />
               </div>
