@@ -517,7 +517,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
                   import { Skeleton } from "@/components/ui/skeleton";
 
-                  const adesseLogoSrc = "/adesse-logo.svg";
+                  const adesseLogoSrc = "/adesse-logo.png";
 
                   const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
 
@@ -738,7 +738,7 @@ import { deleteImages, uploadImage } from "@/lib/uploadImage";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
-const adesseLogoSrc = "/adesse-logo.svg";
+const adesseLogoSrc = "/adesse-logo.png";
 
 const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
 
@@ -2911,7 +2911,7 @@ export function AdesseMark({ className = "w-7 h-7" }: { className?: string }) {
     <img
       src={adesseLogoSrc}
       alt="Adesse"
-      className={`${className} shrink-0 rounded-lg object-cover`}
+      className={`${className} shrink-0 object-contain`}
     />
   );
 }
