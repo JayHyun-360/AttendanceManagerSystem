@@ -153,9 +153,24 @@ import { z } from "zod";
 
 import { format } from "date-fns";
 
-import { ArrowLeft, ChevronDown, ChevronUp, LogOut } from "lucide-react";
+import { Archive, ArrowLeft, ChevronDown, ChevronUp, LogOut } from "lucide-react";
 
 import { AnimatePresence, motion } from "framer-motion";
+
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useDroppable,
+  useDraggable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
 
 import {
   Bar,
@@ -7629,6 +7644,101 @@ type PendingSessionExtension = {
   newEnd: string;
 };
 
+const ARCHIVE_DROP_ZONE_ID = "archive";
+
+function ArchiveDropZone({ active }: { active: boolean }) {
+  const { isOver, setNodeRef } = useDroppable({ id: ARCHIVE_DROP_ZONE_ID });
+  const highlighted = active && isOver;
+
+  return (
+    <div
+      ref={setNodeRef}
+      role="button"
+      aria-label="Archive event drop zone"
+      className={`flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-all ${
+        highlighted
+          ? "border-amber-300 bg-amber-50 text-amber-700 shadow-sm ring-2 ring-amber-100"
+          : active
+            ? "border-amber-200 bg-amber-50/60 text-amber-600"
+            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+      }`}
+    >
+      <Archive className={`h-4 w-4 ${highlighted ? "animate-pulse" : ""}`} />
+      <span>{highlighted ? "Release to archive" : "Archive"}</span>
+    </div>
+  );
+}
+
+function DraggableEventCard({
+  event,
+  onClick,
+  children,
+}: {
+  event: EventData;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    isDragging,
+  } = useDraggable({ id: event.id });
+
+  return (
+    <motion.div
+      ref={setNodeRef}
+      layout
+      transition={{ layout: { type: "spring", stiffness: 420, damping: 34 } }}
+      className={`relative ${isDragging ? "opacity-40" : ""}`}
+      onClick={onClick}
+    >
+      {children}
+      <div
+        ref={setActivatorNodeRef}
+        {...listeners}
+        {...attributes}
+        role="button"
+        aria-label={`Drag ${event.title} to archive`}
+        title="Drag to archive"
+        onClick={(clickEvent) => clickEvent.stopPropagation()}
+        className="absolute left-20 right-28 top-0 z-20 h-16 cursor-grab rounded-t-2xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-inset active:cursor-grabbing"
+      />
+    </motion.div>
+  );
+}
+
+function EventDragPreview({ event }: { event: EventData }) {
+  return (
+    <div className="w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-50">
+        {event.highlightUrl ? (
+          <img
+            src={event.highlightUrl}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+            <span className="text-sm font-semibold text-slate-400">No media</span>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/25 via-transparent to-slate-900/10" />
+        <div className="absolute left-3 top-3">
+          <Badge status={event.status} />
+        </div>
+      </div>
+      <div className="p-5">
+        <h3 className="line-clamp-1 text-base font-bold text-slate-900">
+          {event.title}
+        </h3>
+        <p className="mt-2 text-xs text-slate-500">{event.location || "TBA"}</p>
+      </div>
+    </div>
+  );
+}
+
 export function AdminEventsPage({
   onNav,
 
@@ -7734,6 +7844,18 @@ export function AdminEventsPage({
   const [isExtendingSession, setIsExtendingSession] = useState(false);
 
   const [eventHasScans, setEventHasScans] = useState(false);
+
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  const [archivingId, setArchivingId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 180, tolerance: 6 },
+    }),
+    useSensor(KeyboardSensor),
+  );
 
   const photoRef = useRef<HTMLInputElement>(null);
 
@@ -8545,6 +8667,69 @@ export function AdminEventsPage({
     }
   };
 
+  const archiveEvent = async (id: string) => {
+    if (archivingId) return;
+
+    const current = events.find((event) => event.id === id);
+    if (!current) return;
+
+    const version = current.version ?? 1;
+    setArchivingId(id);
+    setEvents((items) => items.filter((event) => event.id !== id));
+
+    try {
+      const { data, error } = await supabase
+        .from("events")
+        .update({
+          archived_at: new Date().toISOString(),
+          version: version + 1,
+        })
+        .eq("id", id)
+        .eq("version", version)
+        .is("archived_at", null)
+        .select("id")
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        throw new Error(
+          "This event was changed by another admin. Refresh and try again.",
+        );
+      }
+
+      toast.success("Event archived");
+    } catch (caughtError) {
+      console.error(caughtError);
+      setEvents((items) => {
+        if (items.some((event) => event.id === current.id)) return items;
+        return [...items, current];
+      });
+      toast.error(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "An error occurred while archiving the event",
+      );
+    } finally {
+      setArchivingId(null);
+    }
+  };
+
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    setActiveDragId(String(active.id));
+  };
+
+  const handleDragCancel = () => {
+    setActiveDragId(null);
+  };
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    setActiveDragId(null);
+    if (over?.id === ARCHIVE_DROP_ZONE_ID) {
+      void archiveEvent(String(active.id));
+    }
+  };
+
   const setStatus = async (id: string, status: EventStatus) => {
     try {
       const current = events.find((e) => e.id === id);
@@ -8630,6 +8815,8 @@ export function AdminEventsPage({
       },
     ].filter((o) => o.status !== current);
 
+  const activeDragEvent = events.find((event) => event.id === activeDragId);
+
   if (selectedEventId) {
     return (
       <EventDetailPageView
@@ -8647,12 +8834,21 @@ export function AdminEventsPage({
   }
 
   return (
-    <>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragCancel={handleDragCancel}
+      onDragEnd={handleDragEnd}
+    >
+      <>
       <PageHeader
         title="Events"
         subtitle="AY 2026-2027, 1st Semester"
         action={
-          <button
+          <div className="flex items-center gap-2">
+            <ArchiveDropZone active={activeDragId !== null} />
+            <button
             onClick={() => {
               setShowForm(true);
 
@@ -8666,7 +8862,8 @@ export function AdminEventsPage({
           >
             <Icons.Plus />
             New event
-          </button>
+            </button>
+          </div>
         }
       />
 
@@ -9539,11 +9736,12 @@ export function AdminEventsPage({
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {events.map((e) => (
-          <div
+          <DraggableEventCard
             key={e.id}
-            className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden h-full"
+            event={e}
             onClick={() => setSelectedEventId(e.id)}
           >
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden h-full">
             <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
               {e.highlightUrl ? (
                 <img
@@ -9668,10 +9866,15 @@ export function AdminEventsPage({
                 </button>
               </div>
             </div>
-          </div>
+            </div>
+          </DraggableEventCard>
         ))}
       </div>
+      <DragOverlay dropAnimation={null}>
+        {activeDragEvent ? <EventDragPreview event={activeDragEvent} /> : null}
+      </DragOverlay>
     </>
+    </DndContext>
   );
 }
 

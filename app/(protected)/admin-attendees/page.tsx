@@ -39,6 +39,7 @@ export default function AdminAttendeesRoutePage() {
           supabase
             .from("events")
             .select("*")
+            .is("archived_at", null)
             .order("event_date", { ascending: false }),
           supabase
             .from("profiles")

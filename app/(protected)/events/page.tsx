@@ -73,7 +73,11 @@ export default function EventsRoutePage() {
         if (!cancelled) setLoadError(null);
         const [{ data, error }, { data: scans, error: scansError }] =
           await Promise.all([
-            supabase.from("events").select("*").order("event_date", { ascending: false }),
+            supabase
+              .from("events")
+              .select("*")
+              .is("archived_at", null)
+              .order("event_date", { ascending: false }),
             supabase
               .from("attendance_scans")
               .select("event_id, student_id, status, scan_in_at"),

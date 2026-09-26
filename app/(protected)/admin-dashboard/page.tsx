@@ -45,6 +45,7 @@ export default function AdminDashboardRoute() {
             supabase
               .from("events")
               .select("*")
+              .is("archived_at", null)
               .order("event_date", { ascending: true }),
             supabase.from("profiles").select("id").eq("role", "student"),
             supabase

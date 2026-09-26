@@ -108,6 +108,7 @@ export default function DashboardRoute() {
           supabase
             .from("events")
             .select("*")
+            .is("archived_at", null)
             .order("event_date", { ascending: true }),
           supabase
             .from("attendance_scans")

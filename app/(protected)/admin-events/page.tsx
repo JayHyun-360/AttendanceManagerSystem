@@ -31,7 +31,11 @@ export default function AdminEventsRoutePage() {
           { data: settingsRow, error: settingsError },
         ] =
           await Promise.all([
-            supabase.from("events").select("*").order("event_date", { ascending: false }),
+            supabase
+              .from("events")
+              .select("*")
+              .is("archived_at", null)
+              .order("event_date", { ascending: false }),
             supabase
               .from("attendance_scans")
               .select("event_id, student_id, status, scan_in_at"),

@@ -27,6 +27,7 @@ export default function AdminScannerRoutePage() {
         const { data, error } = await supabase
           .from("events")
           .select("*")
+          .is("archived_at", null)
           .order("event_date", { ascending: false });
 
         if (error) {
