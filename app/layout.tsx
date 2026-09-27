@@ -6,8 +6,9 @@ import { Toaster } from "@/components/ui/sonner";
 export const metadata: Metadata = {
   title: "Adesse",
   icons: {
-    icon: "/adesse-logo.svg",
-    apple: "/adesse-logo.svg",
+    icon: "/adesse-a.png",
+    shortcut: "/adesse-a.png",
+    apple: "/adesse-a.png",
   },
 };
 

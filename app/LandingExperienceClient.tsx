@@ -1513,7 +1513,7 @@ export function AdesseWordmark({
       className={`inline-flex items-center gap-[0.08em] whitespace-nowrap ${className}`}
       aria-label="Adesse"
     >
-      <AdesseMark className="h-full w-auto" />
+      <AdesseMark className="h-full w-[0.95em]" />
       <span className={`adesse-display leading-none ${textClassName}`}>desse</span>
     </span>
   );

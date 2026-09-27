@@ -532,7 +532,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
                   import { Skeleton } from "@/components/ui/skeleton";
 
-                  const adesseLogoSrc = "/adesse-logo.svg";
+                  const adesseLogoSrc = "/adesse-a.png";
 
                   const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
 
@@ -2945,7 +2945,7 @@ export function AdesseWordmark({
       className={`inline-flex items-center gap-[0.08em] whitespace-nowrap ${className}`}
       aria-label="Adesse"
     >
-      <AdesseMark className="h-full w-auto" />
+      <AdesseMark className="h-full w-[0.95em]" />
       <span className={`adesse-display leading-none ${textClassName}`}>desse</span>
     </span>
   );
