@@ -1517,9 +1517,9 @@ export function AdesseWordmark({
       text: "text-sm",
     },
     mobile: {
-      wrapper: "h-7 gap-[0.15rem]",
-      mark: "h-8 w-10",
-      text: "text-xs",
+      wrapper: "h-6 gap-[0.12rem]",
+      mark: "h-6 w-7",
+      text: "text-[11px]",
     },
     hero: {
       wrapper: "h-[4.5rem] gap-1",
@@ -1621,7 +1621,12 @@ export function TopBar({
             onClick={() => go(dest)}
           >
             <div className="flex flex-col leading-none min-w-0">
-              <AdesseWordmark variant="header" textClassName="text-slate-900" />
+              <span className="hidden lg:inline-flex">
+                <AdesseWordmark variant="header" textClassName="text-slate-900" />
+              </span>
+              <span className="inline-flex lg:hidden">
+                <AdesseWordmark variant="mobile" textClassName="text-slate-900" />
+              </span>
               <span className="text-[10px] text-slate-400 font-medium hidden sm:block leading-tight truncate">
                 {isMod ? "Moderator Portal" : "Student Attendance"}
               </span>
