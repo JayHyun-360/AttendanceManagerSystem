@@ -532,7 +532,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
                   import { Skeleton } from "@/components/ui/skeleton";
 
-                  const adesseLogoSrc = "/adesse-a.png";
+                  const adesseLogoSrc = "/adesse-a.svg";
 
                   const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
 
@@ -754,7 +754,7 @@ import { deleteImages, uploadImage } from "@/lib/uploadImage";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
-const adesseLogoSrc = "/adesse-a.png";
+const adesseLogoSrc = "/adesse-a.svg";
 
 const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
 

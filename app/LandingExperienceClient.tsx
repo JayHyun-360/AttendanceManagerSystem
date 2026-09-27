@@ -23,7 +23,7 @@ import { uploadImage } from "@/lib/uploadImage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTimeRange12Hour } from "@/lib/time";
 
-const adesseLogoSrc = "/adesse-a.png";
+const adesseLogoSrc = "/adesse-a.svg";
 const DEFAULT_HERO_IMAGE = "/adesse-default-hero.webp";
 const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
 
