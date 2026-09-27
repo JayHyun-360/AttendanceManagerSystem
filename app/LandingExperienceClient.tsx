@@ -2250,32 +2250,34 @@ function LandingPage({
           </div>
         )}
         {user && (
-          <button
-            onClick={() => onNav("profile")}
-            className={`absolute top-5 right-6 z-20 flex items-center justify-center rounded-full p-1.5 transition-colors duration-150 ${isDefaultHero ? "bg-white/55 text-slate-700 shadow-sm backdrop-blur-sm hover:bg-white/75" : hasHero ? "bg-black/20 text-white shadow-sm backdrop-blur-sm hover:bg-black/30" : "bg-slate-900/5 text-slate-700 hover:bg-slate-900/10"}`}
-            aria-label="Open profile"
-          >
-            <ProfileIcon
-              photoUrl={user.photoUrl}
-              size="sm"
-              previewable={false}
-            />
-          </button>
+          <div className="absolute top-3 right-3 sm:top-5 sm:right-6 z-20 flex items-center gap-2">
+            <div
+              className={`inline-flex items-center gap-1.5 text-[9px] sm:text-[11px] font-bold tracking-[0.08em] uppercase px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-full ${isDefaultHero ? "text-emerald-800 bg-white/60 border border-white/80 backdrop-blur-sm shadow-sm" : hasHero ? "text-emerald-100 bg-white/10 border border-white/25 backdrop-blur-sm shadow-sm" : "text-emerald-700 bg-emerald-50 border border-emerald-200"}`}
+            >
+              <span
+                className="w-1.5 h-1.5 bg-emerald-400 rounded-full shrink-0"
+                style={{ animation: "pulse 2s infinite" }}
+              />
+              AY 2026-2027 · 1st Semester
+            </div>
+            <button
+              onClick={() => onNav("profile")}
+              className={`flex items-center justify-center rounded-full p-1.5 transition-colors duration-150 ${isDefaultHero ? "bg-white/55 text-slate-700 shadow-sm backdrop-blur-sm hover:bg-white/75" : hasHero ? "bg-black/20 text-white shadow-sm backdrop-blur-sm hover:bg-black/30" : "bg-slate-900/5 text-slate-700 hover:bg-slate-900/10"}`}
+              aria-label="Open profile"
+            >
+              <ProfileIcon
+                photoUrl={user.photoUrl}
+                size="sm"
+                previewable={false}
+              />
+            </button>
+          </div>
         )}
 
         {/* Hero content */}
         <div
-          className={`relative w-full mx-auto px-3.5 flex flex-col md:max-w-6xl md:px-6 ${hasHero ? "items-start text-left pt-6 pb-6 md:pt-10 md:pb-12" : "items-center text-center pt-6 pb-6 md:pt-10 md:pb-12"}`}
+          className={`relative w-full mx-auto px-5 flex flex-col md:max-w-6xl md:px-6 ${hasHero ? "items-start text-left pt-16 pb-12 md:pt-12 md:pb-14" : "items-center text-center pt-16 pb-12 md:pt-12 md:pb-14"}`}
         >
-          <div
-            className={`inline-flex items-center gap-2 text-[11px] font-bold tracking-[0.08em] uppercase px-3.5 py-2 rounded-full mb-8 ${isDefaultHero ? "text-emerald-800 bg-white/60 border border-white/80 backdrop-blur-sm shadow-sm" : hasHero ? "text-emerald-100 bg-white/10 border border-white/25 backdrop-blur-sm shadow-sm" : "text-emerald-700 bg-emerald-50 border border-emerald-200"}`}
-          >
-            <span
-              className="w-1.5 h-1.5 bg-emerald-400 rounded-full"
-              style={{ animation: "pulse 2s infinite" }}
-            />
-            AY 2026-2027 · 1st Semester
-          </div>
           <AdesseWordmark
             variant="hero"
             className={`mb-2 ${hasHero ? "" : "justify-center"}`}
@@ -2283,18 +2285,18 @@ function LandingPage({
           />
           <h1 className="sr-only">Adesse</h1>
           <p
-            className={`text-[11px] font-bold uppercase tracking-[0.16em] mb-7 ${isDefaultHero ? "text-slate-600" : hasHero ? "text-white/75" : "text-slate-400"}`}
+            className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.14em] mb-6 sm:mb-7 ${isDefaultHero ? "text-slate-600" : hasHero ? "text-white/75" : "text-slate-400"}`}
           >
             Student Event Attendance &amp; Records System
           </p>
           <p
-            className={`text-[17px] mb-10 leading-[1.8] ${isDefaultHero ? "text-slate-700 max-w-md" : hasHero ? "text-white/80 max-w-md" : "text-slate-500 max-w-lg"}`}
+            className={`text-[15px] sm:text-[17px] mb-0 leading-[1.75] sm:leading-[1.8] ${isDefaultHero ? "text-slate-700 max-w-md" : hasHero ? "text-white/80 max-w-md" : "text-slate-500 max-w-lg"}`}
           >
             One QR code per student. Real-time attendance logging. Clear event
             records for students and moderators.
           </p>
           <div
-            className={`mt-3 flex items-center gap-3 md:mt-6 ${hasHero ? "" : "justify-center"}`}
+            className={`mt-10 sm:mt-12 flex flex-wrap items-center gap-3 ${hasHero ? "" : "justify-center"}`}
           >
             <button
               onClick={() => {
