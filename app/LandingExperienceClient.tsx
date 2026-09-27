@@ -1513,7 +1513,7 @@ export function AdesseWordmark({
       className={`inline-flex items-center gap-[0.08em] whitespace-nowrap ${className}`}
       aria-label="Adesse"
     >
-      <AdesseMark className="h-full w-[0.95em]" />
+      <AdesseMark className="h-[135%] w-auto aspect-[640/528]" />
       <span className={`adesse-display leading-none ${textClassName}`}>desse</span>
     </span>
   );
@@ -1597,7 +1597,7 @@ export function TopBar({
             onClick={() => go(dest)}
           >
             <div className="flex flex-col leading-none min-w-0">
-              <AdesseWordmark className="h-8" textClassName="text-[15px] text-slate-900" />
+              <AdesseWordmark className="h-8" textClassName="text-[13px] text-slate-900" />
               <span className="text-[10px] text-slate-400 font-medium hidden sm:block leading-tight truncate">
                 {isMod ? "Moderator Portal" : "Student Attendance"}
               </span>
@@ -1808,7 +1808,7 @@ export function Sidebar({
     <div className="flex flex-col h-full bg-white">
       {/* Mobile header inside drawer */}
       <div className="flex items-center justify-between px-4 h-[52px] border-b border-slate-100 lg:hidden shrink-0">
-        <AdesseWordmark className="h-7" textClassName="text-sm text-slate-900" />
+        <AdesseWordmark className="h-7" textClassName="text-xs text-slate-900" />
         <button
           onClick={onClose}
           className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
@@ -2252,7 +2252,7 @@ function LandingPage({
           </div>
           <AdesseWordmark
             className={`h-14 mb-2 ${hasHero ? "" : "justify-center"}`}
-            textClassName={`text-6xl md:text-7xl ${isDefaultHero ? "text-slate-900" : hasHero ? "text-white" : "text-slate-900"}`}
+            textClassName={`text-5xl md:text-6xl ${isDefaultHero ? "text-slate-900" : hasHero ? "text-white" : "text-slate-900"}`}
           />
           <h1 className="sr-only">Adesse</h1>
           <p
@@ -2522,7 +2522,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
         <div className="text-center mb-8">
           <AdesseWordmark
             className="h-12 justify-center mb-4"
-            textClassName="text-4xl text-slate-900"
+            textClassName="text-3xl text-slate-900"
           />
           <h1 className="text-2xl font-bold text-slate-900 mb-1">
             Welcome to Adesse
