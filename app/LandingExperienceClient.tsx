@@ -23,7 +23,7 @@ import { uploadImage } from "@/lib/uploadImage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTimeRange12Hour } from "@/lib/time";
 
-const adesseLogoSrc = "/adesse-logo.svg";
+const adesseLogoSrc = "/adesse-a.png";
 const DEFAULT_HERO_IMAGE = "/adesse-default-hero.webp";
 const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
 
@@ -1495,9 +1495,27 @@ export function AdesseMark({ className = "w-7 h-7" }: { className?: string }) {
   return (
     <img
       src={adesseLogoSrc}
-      alt="Adesse"
+      alt=""
       className={`${className} shrink-0 object-contain`}
     />
+  );
+}
+
+export function AdesseWordmark({
+  className = "h-8",
+  textClassName = "text-[17px]",
+}: {
+  className?: string;
+  textClassName?: string;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-[0.08em] whitespace-nowrap ${className}`}
+      aria-label="Adesse"
+    >
+      <AdesseMark className="h-full w-auto" />
+      <span className={`adesse-display leading-none ${textClassName}`}>desse</span>
+    </span>
   );
 }
 
@@ -1578,11 +1596,8 @@ export function TopBar({
             className="flex items-center gap-2.5 min-w-0"
             onClick={() => go(dest)}
           >
-            <AdesseMark className="w-8 h-8 shrink-0" />
             <div className="flex flex-col leading-none min-w-0">
-              <span className="text-[15px] font-bold text-slate-900 tracking-tight">
-                Adesse
-              </span>
+              <AdesseWordmark className="h-8" textClassName="text-[15px] text-slate-900" />
               <span className="text-[10px] text-slate-400 font-medium hidden sm:block leading-tight truncate">
                 {isMod ? "Moderator Portal" : "Student Attendance"}
               </span>
@@ -1793,12 +1808,7 @@ export function Sidebar({
     <div className="flex flex-col h-full bg-white">
       {/* Mobile header inside drawer */}
       <div className="flex items-center justify-between px-4 h-[52px] border-b border-slate-100 lg:hidden shrink-0">
-        <div className="flex items-center gap-2.5">
-          <AdesseMark />
-          <span className="text-sm font-bold text-slate-900 tracking-tight">
-            Adesse
-          </span>
-        </div>
+        <AdesseWordmark className="h-7" textClassName="text-sm text-slate-900" />
         <button
           onClick={onClose}
           className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
@@ -2240,16 +2250,11 @@ function LandingPage({
             />
             AY 2026-2027 · 1st Semester
           </div>
-          <div
-            className={`flex items-center gap-3 mb-2 ${hasHero ? "" : "justify-center"}`}
-          >
-            <AdesseMark className="w-14 h-14" />
-          </div>
-          <h1
-            className={`adesse-display text-6xl md:text-7xl leading-[0.95] mb-3 ${isDefaultHero ? "text-slate-900" : hasHero ? "text-white" : "text-slate-900"}`}
-          >
-            Adesse
-          </h1>
+          <AdesseWordmark
+            className={`h-14 mb-2 ${hasHero ? "" : "justify-center"}`}
+            textClassName={`text-6xl md:text-7xl ${isDefaultHero ? "text-slate-900" : hasHero ? "text-white" : "text-slate-900"}`}
+          />
+          <h1 className="sr-only">Adesse</h1>
           <p
             className={`text-[11px] font-bold uppercase tracking-[0.16em] mb-7 ${isDefaultHero ? "text-slate-600" : hasHero ? "text-white/75" : "text-slate-400"}`}
           >
@@ -2515,9 +2520,10 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#f8faf9]">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <AdesseMark className="w-12 h-12" />
-          </div>
+          <AdesseWordmark
+            className="h-12 justify-center mb-4"
+            textClassName="text-4xl text-slate-900"
+          />
           <h1 className="text-2xl font-bold text-slate-900 mb-1">
             Welcome to Adesse
           </h1>

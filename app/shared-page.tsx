@@ -754,7 +754,7 @@ import { deleteImages, uploadImage } from "@/lib/uploadImage";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
-const adesseLogoSrc = "/adesse-logo.svg";
+const adesseLogoSrc = "/adesse-a.png";
 
 const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
 
@@ -2927,9 +2927,27 @@ export function AdesseMark({ className = "w-7 h-7" }: { className?: string }) {
   return (
     <img
       src={adesseLogoSrc}
-      alt="Adesse"
+      alt=""
       className={`${className} shrink-0 object-contain`}
     />
+  );
+}
+
+export function AdesseWordmark({
+  className = "h-8",
+  textClassName = "text-[17px]",
+}: {
+  className?: string;
+  textClassName?: string;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-[0.08em] whitespace-nowrap ${className}`}
+      aria-label="Adesse"
+    >
+      <AdesseMark className="h-full w-auto" />
+      <span className={`adesse-display leading-none ${textClassName}`}>desse</span>
+    </span>
   );
 }
 
@@ -3037,11 +3055,8 @@ export function TopBar({
             className="flex items-center gap-1 min-w-0"
             onClick={() => go(dest)}
           >
-            <AdesseMark className="w-8 h-8 shrink-0" />
             <div className="flex min-w-0 flex-col leading-none">
-              <span className="-ml-1 adesse-display text-[17px] text-slate-900 leading-none">
-                Adesse
-              </span>
+              <AdesseWordmark className="h-8" textClassName="text-[17px] text-slate-900" />
               <span className="text-[10px] text-slate-400 font-medium hidden sm:block leading-tight truncate">
                 {isMod ? "Administrator Portal" : "Student Attendance"}
               </span>
@@ -3311,12 +3326,7 @@ export function Sidebar({
     <div className="flex flex-col h-full bg-white">
       {}
       <div className="flex items-center justify-between px-4 h-[52px] border-b border-slate-100 lg:hidden shrink-0">
-        <div className="flex items-center gap-2.5">
-          <AdesseMark />
-          <span className="text-sm font-bold text-slate-900 tracking-tight">
-            Adesse
-          </span>
-        </div>
+        <AdesseWordmark className="h-7" textClassName="text-sm text-slate-900" />
         <button
           onClick={onClose}
           className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
