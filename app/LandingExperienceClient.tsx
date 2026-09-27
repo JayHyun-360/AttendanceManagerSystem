@@ -2276,27 +2276,27 @@ function LandingPage({
 
         {/* Hero content */}
         <div
-          className={`relative w-full mx-auto px-5 flex flex-col md:max-w-6xl md:px-6 ${hasHero ? "items-start text-left pt-24 pb-12 md:pt-20 md:pb-14" : "items-center text-center pt-24 pb-12 md:pt-20 md:pb-14"}`}
+          className={`relative w-full mx-auto px-5 flex flex-col md:max-w-6xl md:px-6 ${hasHero ? "items-start text-left pt-24 pb-16 md:pt-20 md:pb-20" : "items-center text-center pt-24 pb-16 md:pt-20 md:pb-20"}`}
         >
           <AdesseWordmark
             variant="hero"
-            className={`mb-2 ${hasHero ? "" : "justify-center"}`}
+            className={`mb-4 ${hasHero ? "" : "justify-center"}`}
             textClassName={isDefaultHero ? "text-slate-900" : hasHero ? "text-white" : "text-slate-900"}
           />
           <h1 className="sr-only">Adesse</h1>
           <p
-            className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.14em] mb-6 sm:mb-7 ${isDefaultHero ? "text-slate-600" : hasHero ? "text-white/75" : "text-slate-400"}`}
+            className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.14em] mb-8 sm:mb-9 leading-[1.6] ${isDefaultHero ? "text-slate-600" : hasHero ? "text-white/75" : "text-slate-400"}`}
           >
             Student Event Attendance &amp; Records System
           </p>
           <p
-            className={`text-[15px] sm:text-[17px] mb-0 leading-[1.75] sm:leading-[1.8] max-w-[22rem] sm:max-w-md ${isDefaultHero ? "text-slate-700" : hasHero ? "text-white/80" : "text-slate-500"}`}
+            className={`text-[15px] sm:text-[17px] mb-0 leading-[1.95] sm:leading-[2] max-w-[22rem] sm:max-w-md ${isDefaultHero ? "text-slate-700" : hasHero ? "text-white/80" : "text-slate-500"}`}
           >
             One QR code per student. Real-time attendance logging. Clear event
             records for students and moderators.
           </p>
           <div
-            className={`mt-8 sm:mt-10 flex flex-wrap items-center gap-3 ${hasHero ? "" : "justify-center"}`}
+            className={`mt-12 sm:mt-14 flex flex-wrap items-center gap-3 ${hasHero ? "" : "justify-center"}`}
           >
             <button
               onClick={() => {
