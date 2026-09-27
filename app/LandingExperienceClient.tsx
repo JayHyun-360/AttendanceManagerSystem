@@ -1517,9 +1517,9 @@ export function AdesseWordmark({
       text: "text-sm",
     },
     mobile: {
-      wrapper: "h-6 gap-[0.12rem]",
+      wrapper: "h-6 gap-[0.15rem]",
       mark: "h-6 w-7",
-      text: "text-[11px]",
+      text: "text-[13px]",
     },
     hero: {
       wrapper: "h-[4.5rem] gap-1",
