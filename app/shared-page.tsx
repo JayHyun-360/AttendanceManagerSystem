@@ -7538,8 +7538,11 @@ export function AdminDashboard({
           className="rounded-xl bg-emerald-500 p-4 text-left text-white shadow-sm transition-all hover:bg-emerald-600 hover:shadow-md md:p-5"
         >
           <Icons.Scan />
-          <p className="font-semibold text-sm mt-3 mb-0.5">Open Scanner</p>
-          <p className="text-emerald-300 text-xs">Camera-based QR scan</p>
+          <p className="font-semibold text-sm mt-3 mb-0.5">
+            <span className="hidden sm:inline">Open QR Scanner on Desktop</span>
+            <span className="sm:hidden">Open QR Scanner</span>
+          </p>
+          <p className="text-emerald-300 text-xs">Uses your device camera</p>
         </button>
         <button
           onClick={() => onNav("admin-excuse-requests")}
@@ -10136,7 +10139,8 @@ export function AdminEventsPage({
                     className="flex-1 h-9 bg-emerald-500 text-white text-xs font-semibold rounded-lg hover:bg-emerald-600 flex items-center justify-center gap-1.5 shadow-sm"
                   >
                     <Icons.Scan />
-                    Scanner
+                    <span className="hidden sm:inline">Launch Scanner</span>
+                    <span className="sm:hidden">Scan QR</span>
                   </button>
                 )}
                 <button
@@ -10265,6 +10269,8 @@ function CameraScanner({
   const [scanError, setScanError] = useState<string | null>(null);
 
   const [result, setResult] = useState<ScanRecord | null>(null);
+
+  const [cameraAttempt, setCameraAttempt] = useState(0);
 
   const [torch, setTorch] = useState(false);
 
@@ -10508,7 +10514,7 @@ function CameraScanner({
 
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, []);
+  }, [cameraAttempt]);
 
   const toggleTorch = async () => {
     const track = streamRef.current?.getVideoTracks()[0];
@@ -10544,8 +10550,16 @@ function CameraScanner({
     animRef.current = requestAnimationFrame(tickRef.current);
   };
 
+  const retryCamera = () => {
+    scannedRef.current = false;
+    setCamError(null);
+    setScanError(null);
+    setResult(null);
+    setCameraAttempt((attempt) => attempt + 1);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black flex flex-col scanner-enter">
       {}
       <div
         className="relative z-10 flex items-center justify-between px-4 pt-safe"
@@ -10560,7 +10574,8 @@ function CameraScanner({
       >
         <button
           onClick={onClose}
-          className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+          className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-white/90 backdrop-blur-sm hover:bg-white/20 hover:text-white transition-all"
+          aria-label="Exit QR scanner"
         >
           <Icons.ChevronLeft />
           <span className="text-sm font-semibold">Back</span>
@@ -10573,10 +10588,11 @@ function CameraScanner({
         </div>
         <button
           onClick={toggleTorch}
-          className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+          className={`w-9 h-9 rounded-full flex items-center justify-center transition-all backdrop-blur-sm ${
             torch ? "bg-yellow-400 text-slate-900" : "bg-white/15 text-white"
           }`}
-          title="Toggle flash"
+          title={torch ? "Turn flashlight off" : "Turn flashlight on"}
+          aria-label={torch ? "Turn flashlight off" : "Turn flashlight on"}
         >
           <svg
             viewBox="0 0 24 24"
@@ -10612,11 +10628,11 @@ function CameraScanner({
               }}
             />
             {}
-            <div className="relative w-64 h-64 sm:w-72 sm:h-72">
+            <div className="scanner-frame relative w-[min(72vw,18rem)] aspect-square sm:w-[min(52vw,20rem)]">
               {}
               <div
-                className={`absolute inset-x-0 h-[2px] rounded-full ${
-                  sweeping ? "scan-sweep" : ""
+                  className={`absolute inset-x-0 h-[2px] rounded-full ${
+                    sweeping ? "scan-sweep" : "scanner-idle-sweep"
                 }`}
                 style={{
                   top: sweeping ? "8%" : "50%",
@@ -10648,16 +10664,22 @@ function CameraScanner({
               ))}
             </div>
             {!camError && (
-              <p className="absolute bottom-12 text-white/60 text-xs font-medium tracking-wide">
-                Point camera at student's QR code
-              </p>
+              <div className="absolute bottom-10 flex flex-col items-center gap-2 text-center">
+                <p className="text-white text-sm font-semibold tracking-wide">
+                  Align the QR code inside the frame
+                </p>
+                <p className="flex items-center gap-1.5 text-white/60 text-xs font-medium">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 scanner-status-dot" />
+                  Scanning automatically
+                </p>
+              </div>
             )}
           </div>
         )}
 
         {}
         {(camError || scanError) && !result && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950/90 text-center px-8">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950/90 text-center px-8 scanner-state-enter">
             <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center text-white/50">
               <Icons.AlertCircle />
             </div>
@@ -10675,14 +10697,22 @@ function CameraScanner({
                 Scan again
               </button>
             )}
+            {camError && (
+              <button
+                onClick={retryCamera}
+                className="h-11 px-5 rounded-xl bg-emerald-500 text-white text-sm font-semibold shadow-sm transition-all hover:bg-emerald-400 hover:-translate-y-px"
+              >
+                Try camera again
+              </button>
+            )}
           </div>
         )}
 
         {}
         {result && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 px-8 gap-4">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 px-8 gap-4 scanner-state-enter">
             <div
-              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-2xl ${
+              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-2xl scanner-result-icon ${
                 result.action === "time_out"
                   ? "bg-blue-500"
                   : result.status === "duplicate"
@@ -10779,13 +10809,13 @@ function CameraScanner({
             <div className="flex gap-3 mt-2">
               <button
                 onClick={scanAgain}
-                className="h-11 px-6 bg-white text-slate-900 text-sm font-semibold rounded-xl hover:bg-slate-100 transition-colors"
+                className="h-11 px-6 bg-white text-slate-900 text-sm font-semibold rounded-xl hover:bg-slate-100 transition-all hover:-translate-y-px"
               >
                 Scan next
               </button>
               <button
                 onClick={onClose}
-                className="h-11 px-6 bg-white/15 text-white text-sm font-semibold rounded-xl hover:bg-white/25 transition-colors"
+                className="h-11 px-6 bg-white/15 text-white text-sm font-semibold rounded-xl hover:bg-white/25 transition-all"
               >
                 Done
               </button>
@@ -10808,7 +10838,7 @@ function CameraScanner({
           }}
         >
           <p className="text-white/50 text-xs text-center">
-            Camera active · Scanning automatically
+            Camera active · Keep the QR code steady
           </p>
         </div>
       )}
@@ -11103,7 +11133,8 @@ export function AdminScannerPage({
                 }`}
               >
                 <Icons.Scan />
-                Open QR Scanner
+                <span className="hidden sm:inline">Open QR Scanner on Desktop</span>
+                <span className="sm:hidden">Open QR Scanner</span>
               </button>
             </div>
           ) : (

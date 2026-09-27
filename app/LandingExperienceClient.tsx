@@ -4909,8 +4909,11 @@ export function AdminDashboard({
           className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl p-5 text-left transition-all shadow-sm hover:shadow-md"
         >
           <Icons.Scan />
-          <p className="font-semibold text-sm mt-3 mb-0.5">Open Scanner</p>
-          <p className="text-emerald-300 text-xs">Camera-based QR scan</p>
+          <p className="font-semibold text-sm mt-3 mb-0.5">
+            <span className="hidden sm:inline">Open QR Scanner on Desktop</span>
+            <span className="sm:hidden">Open QR Scanner</span>
+          </p>
+          <p className="text-emerald-300 text-xs">Uses your device camera</p>
         </button>
         <button
           onClick={() => onNav("admin-excuse-requests")}
