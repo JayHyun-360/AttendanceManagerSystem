@@ -2934,19 +2934,43 @@ export function AdesseMark({ className = "w-7 h-7" }: { className?: string }) {
 }
 
 export function AdesseWordmark({
-  className = "h-8",
-  textClassName = "text-[17px]",
+  variant = "header",
+  className = "",
+  textClassName = "",
 }: {
+  variant?: "header" | "mobile" | "hero" | "auth";
   className?: string;
   textClassName?: string;
 }) {
+  const styles = {
+    header: {
+      wrapper: "h-8 gap-[0.18rem]",
+      mark: "h-9 w-11",
+      text: "text-sm",
+    },
+    mobile: {
+      wrapper: "h-7 gap-[0.15rem]",
+      mark: "h-8 w-10",
+      text: "text-xs",
+    },
+    hero: {
+      wrapper: "h-[4.5rem] gap-1",
+      mark: "h-[4.5rem] w-[5.5rem]",
+      text: "text-5xl md:text-6xl",
+    },
+    auth: {
+      wrapper: "h-14 gap-[0.25rem]",
+      mark: "h-14 w-[4.25rem]",
+      text: "text-3xl",
+    },
+  }[variant];
   return (
     <span
-      className={`inline-flex items-center gap-[0.08em] whitespace-nowrap ${className}`}
+      className={`inline-flex items-end whitespace-nowrap ${styles.wrapper} ${className}`}
       aria-label="Adesse"
     >
-      <AdesseMark className="h-[135%] w-auto aspect-[640/528]" />
-      <span className={`adesse-display leading-none ${textClassName}`}>desse</span>
+      <AdesseMark className={`${styles.mark} shrink-0`} />
+      <span className={`adesse-display leading-[0.9] ${styles.text} ${textClassName}`}>desse</span>
     </span>
   );
 }
@@ -3056,7 +3080,7 @@ export function TopBar({
             onClick={() => go(dest)}
           >
             <div className="flex min-w-0 flex-col leading-none">
-              <AdesseWordmark className="h-8" textClassName="text-[14px] text-slate-900" />
+              <AdesseWordmark variant="header" textClassName="text-slate-900" />
               <span className="text-[10px] text-slate-400 font-medium hidden sm:block leading-tight truncate">
                 {isMod ? "Administrator Portal" : "Student Attendance"}
               </span>
@@ -3326,7 +3350,7 @@ export function Sidebar({
     <div className="flex flex-col h-full bg-white">
       {}
       <div className="flex items-center justify-between px-4 h-[52px] border-b border-slate-100 lg:hidden shrink-0">
-        <AdesseWordmark className="h-7" textClassName="text-xs text-slate-900" />
+        <AdesseWordmark variant="mobile" textClassName="text-slate-900" />
         <button
           onClick={onClose}
           className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
