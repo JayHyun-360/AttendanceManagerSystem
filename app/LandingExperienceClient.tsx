@@ -2296,7 +2296,7 @@ function LandingPage({
             records for students and moderators.
           </p>
           <div
-            className={`mt-12 sm:mt-14 flex flex-wrap items-center gap-3 ${hasHero ? "" : "justify-center"}`}
+            className={`mt-16 sm:mt-20 flex flex-wrap items-center gap-3 ${hasHero ? "" : "justify-center"}`}
           >
             <button
               onClick={() => {
