@@ -2276,7 +2276,7 @@ function LandingPage({
 
         {/* Hero content */}
         <div
-          className={`relative w-full mx-auto px-5 flex flex-col md:max-w-6xl md:px-6 ${hasHero ? "items-start text-left pt-16 pb-12 md:pt-12 md:pb-14" : "items-center text-center pt-16 pb-12 md:pt-12 md:pb-14"}`}
+          className={`relative w-full mx-auto px-5 flex flex-col md:max-w-6xl md:px-6 ${hasHero ? "items-start text-left pt-24 pb-12 md:pt-20 md:pb-14" : "items-center text-center pt-24 pb-12 md:pt-20 md:pb-14"}`}
         >
           <AdesseWordmark
             variant="hero"
@@ -2290,13 +2290,13 @@ function LandingPage({
             Student Event Attendance &amp; Records System
           </p>
           <p
-            className={`text-[15px] sm:text-[17px] mb-0 leading-[1.75] sm:leading-[1.8] ${isDefaultHero ? "text-slate-700 max-w-md" : hasHero ? "text-white/80 max-w-md" : "text-slate-500 max-w-lg"}`}
+            className={`text-[15px] sm:text-[17px] mb-0 leading-[1.75] sm:leading-[1.8] max-w-[22rem] sm:max-w-md ${isDefaultHero ? "text-slate-700" : hasHero ? "text-white/80" : "text-slate-500"}`}
           >
             One QR code per student. Real-time attendance logging. Clear event
             records for students and moderators.
           </p>
           <div
-            className={`mt-10 sm:mt-12 flex flex-wrap items-center gap-3 ${hasHero ? "" : "justify-center"}`}
+            className={`mt-8 sm:mt-10 flex flex-wrap items-center gap-3 ${hasHero ? "" : "justify-center"}`}
           >
             <button
               onClick={() => {
