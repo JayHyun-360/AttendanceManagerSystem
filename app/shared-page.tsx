@@ -4300,7 +4300,7 @@ export function Sidebar({
     <>
       {}
       <motion.aside
-        className="sidebar-motion hidden shrink-0 border-r border-slate-100 sticky top-[56px] h-[calc(100vh-56px)] self-start overflow-hidden bg-white lg:flex lg:flex-col"
+        className="sidebar-motion sticky top-[56px] hidden h-[calc(100vh-56px)] shrink-0 self-start overflow-hidden border-r border-slate-100 bg-white shadow-[4px_0_16px_rgba(15,23,42,0.06)] lg:flex lg:flex-col"
         initial={false}
         animate={{ width: collapsed ? 80 : 240 }}
         transition={
