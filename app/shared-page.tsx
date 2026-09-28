@@ -3687,7 +3687,7 @@ export function Sidebar({
               </span>
               <span className="truncate lg:hidden">{l}</span>
               <motion.span
-                className="hidden min-w-0 truncate lg:block"
+                className="hidden min-w-0 truncate whitespace-nowrap lg:block"
                 initial={false}
                 animate={
                   collapsed
@@ -3726,7 +3726,7 @@ export function Sidebar({
             </span>
             <span className="truncate lg:hidden">Back to Home</span>
             <motion.span
-              className="hidden min-w-0 truncate lg:block"
+              className="hidden min-w-0 truncate whitespace-nowrap lg:block"
               initial={false}
               animate={
                 collapsed
@@ -3758,7 +3758,7 @@ export function Sidebar({
             </span>
             <span className="truncate lg:hidden">Sign out</span>
             <motion.span
-              className="hidden min-w-0 truncate lg:block"
+              className="hidden min-w-0 truncate whitespace-nowrap lg:block"
               initial={false}
               animate={
                 collapsed
@@ -3805,12 +3805,12 @@ export function Sidebar({
         >
           <motion.span
             animate={{
-              rotate: collapsed ? 180 : 0,
+              rotate: 0,
               scale: collapsed ? 0.9 : 1,
             }}
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
           >
-            <Icons.PanelLeft />
+            {collapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
           </motion.span>
         </button>
       </motion.aside>
