@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AdminEventsPage, type EventData, type Page } from "../../shared-page";
@@ -14,9 +14,7 @@ function mapArchivedEvent(row: any): EventData {
     title: row.title,
     date: row.event_date,
     time:
-      row.start_time && row.end_time
-        ? `${row.start_time}–${row.end_time}`
-        : "",
+      row.start_time && row.end_time ? `${row.start_time}–${row.end_time}` : "",
     location: row.location,
     description: row.description,
     program: row.program || "All Programs",
@@ -96,22 +94,21 @@ export default function AdminEventsRoutePage() {
           { data: rows, error },
           { data: scans, error: scansError },
           { data: settingsRow, error: settingsError },
-        ] =
-          await Promise.all([
-            supabase
-              .from("events")
-              .select("*")
-              .is("archived_at", null)
-              .order("event_date", { ascending: false }),
-            supabase
-              .from("attendance_scans")
-              .select("event_id, student_id, status, scan_in_at"),
-            supabase
-              .from("system_settings")
-              .select("settings")
-              .eq("id", 1)
-              .maybeSingle(),
-          ]);
+        ] = await Promise.all([
+          supabase
+            .from("events")
+            .select("*")
+            .is("archived_at", null)
+            .order("event_date", { ascending: false }),
+          supabase
+            .from("attendance_scans")
+            .select("event_id, student_id, status, scan_in_at"),
+          supabase
+            .from("system_settings")
+            .select("settings")
+            .eq("id", 1)
+            .maybeSingle(),
+        ]);
 
         if (error) {
           console.error(error);
@@ -120,7 +117,10 @@ export default function AdminEventsRoutePage() {
         if (settingsError) console.error(settingsError);
         if (!settingsError && !cancelled) {
           setFinesEnabled(
-            Boolean((settingsRow?.settings as { finesEnabled?: boolean } | null)?.finesEnabled),
+            Boolean(
+              (settingsRow?.settings as { finesEnabled?: boolean } | null)
+                ?.finesEnabled,
+            ),
           );
         }
         if (!error && !cancelled) {
@@ -192,9 +192,12 @@ export default function AdminEventsRoutePage() {
         if (archivedLoaded) void loadArchivedEvents();
       }
     });
-    const attendanceChannel = subscribeToTableChanges("attendance_scans", () => {
-      if (!cancelled) void loadAdminEvents();
-    });
+    const attendanceChannel = subscribeToTableChanges(
+      "attendance_scans",
+      () => {
+        if (!cancelled) void loadAdminEvents();
+      },
+    );
 
     return () => {
       cancelled = true;
@@ -248,15 +251,17 @@ export default function AdminEventsRoutePage() {
   }
 
   return (
-    <AdminEventsPage
-      onNav={onNav}
-      events={events}
-      setEvents={setEvents}
-      archivedEvents={archivedEvents}
-      setArchivedEvents={setArchivedEvents}
-      onLoadArchived={loadArchivedEvents}
-      isArchivedLoading={isArchivedLoading}
-      finesEnabled={finesEnabled}
-    />
+    <Suspense fallback={<Skeleton className="mt-2 h-8 w-36 rounded-lg" />}>
+      <AdminEventsPage
+        onNav={onNav}
+        events={events}
+        setEvents={setEvents}
+        archivedEvents={archivedEvents}
+        setArchivedEvents={setArchivedEvents}
+        onLoadArchived={loadArchivedEvents}
+        isArchivedLoading={isArchivedLoading}
+        finesEnabled={finesEnabled}
+      />
+    </Suspense>
   );
 }

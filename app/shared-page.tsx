@@ -701,11 +701,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { OptimizedImage } from "@/components/OptimizedImage";
 
-import { useState, useRef, useEffect, useMemo, Fragment } from "react";
+import {
+  Suspense,
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  Fragment,
+} from "react";
 
 import Link from "next/link";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { useForm } from "react-hook-form";
 
@@ -3433,118 +3440,179 @@ export function TopBar({
   const [searchQuery, setSearchQuery] = useState("");
 
   const [searchOpen, setSearchOpen] = useState(false);
+  const [activeSearchIndex, setActiveSearchIndex] = useState(0);
 
-  const [liveStudents, setLiveStudents] = useState<
+  const [liveSearchResults, setLiveSearchResults] = useState<
     Array<{
       label: string;
       hint: string;
       path: string;
-      kind: "student";
-      group: "Students";
+      kind: "student" | "event" | "announcement";
+      group: "Students" | "Events" | "Announcements";
+      identifier?: string;
+      matchedQuery: string;
     }>
   >([]);
-
-  const [liveEvents, setLiveEvents] = useState<
-    Array<{
-      label: string;
-      hint: string;
-      path: string;
-      kind: "event";
-      group: "Events";
-    }>
-  >([]);
-
-  const [liveAnnouncements, setLiveAnnouncements] = useState<
-    Array<{
-      label: string;
-      hint: string;
-      path: string;
-      kind: "announcement";
-      group: "Announcements";
-    }>
-  >([]);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    const query = searchQuery.trim();
+    const tokens = query
+      .toLowerCase()
+      .replace(/[\\"%_]/g, " ")
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (!user || tokens.join("").length < 2) {
+      setLiveSearchResults([]);
+      setIsSearchLoading(false);
+      setSearchError(null);
+      return;
+    }
 
     let cancelled = false;
+    setLiveSearchResults([]);
+    setSearchError(null);
+    setIsSearchLoading(true);
 
-    const loadSearchIndex = async () => {
-      try {
-        const [studentResult, eventResult, announcementResult] =
-          await Promise.all([
-            supabase
-              .from("profiles")
-              .select("id, first_name, surname, student_id, program, section")
-              .eq("role", "student")
-              .order("surname", { ascending: true })
-              .limit(25),
-            supabase
-              .from("events")
-              .select("id, title, event_date, location")
-              .order("event_date", { ascending: false })
-              .limit(20),
-            supabase
-              .from("announcements")
-              .select("id, title, created_at, target_role")
-              .order("created_at", { ascending: false })
-              .limit(15),
+    const makeTokenFilter = (columns: string[]) => {
+      const tokenFilters = tokens.map(
+        (token) =>
+          `or(${columns.map((column) => `${column}.ilike."%${token}%"`).join(",")})`,
+      );
+      return tokenFilters.length === 1
+        ? tokenFilters[0]
+        : `and(${tokenFilters.join(",")})`;
+    };
+
+    const timer = window.setTimeout(() => {
+      const loadSearchResults = async () => {
+        try {
+          const eventTextFilter = makeTokenFilter([
+            "title",
+            "description",
+            "location",
+            "program",
           ]);
+          const eventDateFilter = /^\d{4}-\d{2}-\d{2}$/.test(query)
+            ? `${eventTextFilter},event_date.eq.${query}`
+            : eventTextFilter;
 
-        if (cancelled) return;
+          const [studentResult, eventResult, announcementResult] =
+            await Promise.all([
+              isMod
+                ? supabase
+                    .from("profiles")
+                    .select(
+                      "id, first_name, surname, student_id, program, section",
+                    )
+                    .eq("role", "student")
+                    .or(
+                      makeTokenFilter([
+                        "first_name",
+                        "surname",
+                        "student_id",
+                        "program",
+                        "section",
+                      ]),
+                    )
+                    .limit(12)
+                : Promise.resolve({ data: [], error: null }),
+              supabase
+                .from("events")
+                .select("id, title, event_date, location, program")
+                .is("archived_at", null)
+                .or(eventDateFilter)
+                .limit(12),
+              (() => {
+                let announcementQuery = supabase
+                  .from("announcements")
+                  .select("id, title, created_at, target_role")
+                  .or(makeTokenFilter(["title", "content"]));
 
-        if (studentResult.data) {
-          setLiveStudents(
-            studentResult.data.map((student: any) => {
+                if (!isMod) {
+                  announcementQuery = announcementQuery.eq(
+                    "target_role",
+                    "student",
+                  );
+                }
+
+                return announcementQuery.limit(12);
+              })(),
+            ]);
+
+          if (cancelled) return;
+
+          const errors = [
+            studentResult.error,
+            eventResult.error,
+            announcementResult.error,
+          ].filter(Boolean);
+          if (errors.length) {
+            console.error(
+              "Some quick-search results could not be loaded.",
+              errors,
+            );
+            setSearchError("Some results could not be loaded.");
+          }
+
+          const studentResults = (studentResult.data ?? []).map(
+            (student: any) => {
               const name =
                 `${student.first_name ?? ""} ${student.surname ?? ""}`.trim();
               return {
-                label: name || "Student",
+                label: name || student.student_id || "Student",
                 hint: `${student.student_id ?? student.id} · ${student.program ?? "Program"} · ${student.section ?? "Section"}`,
-                path: isMod
-                  ? `/admin-students/${encodeURIComponent(student.student_id ?? student.id)}`
-                  : "/profile",
-                kind: "student",
-                group: "Students",
+                path: `/admin-students/${encodeURIComponent(student.id)}`,
+                kind: "student" as const,
+                group: "Students" as const,
+                identifier: student.student_id ?? "",
+                matchedQuery: query.toLowerCase(),
               };
-            }),
+            },
           );
-        }
-
-        if (eventResult.data) {
-          setLiveEvents(
-            eventResult.data.map((event: any) => ({
-              label: event.title,
-              hint: `${event.event_date ?? ""} · ${event.location ?? "Location"}`,
-              path: isMod ? "/admin-events" : "/events",
-              kind: "event",
-              group: "Events",
-            })),
-          );
-        }
-
-        if (announcementResult.data) {
-          setLiveAnnouncements(
-            announcementResult.data.map((announcement: any) => ({
+          const eventResults = (eventResult.data ?? []).map((event: any) => ({
+            label: event.title,
+            hint: `${event.event_date ?? ""} · ${event.location ?? "Location"}`,
+            path: `${isMod ? "/admin-events" : "/events"}?eventId=${encodeURIComponent(event.id)}`,
+            kind: "event" as const,
+            group: "Events" as const,
+            matchedQuery: query.toLowerCase(),
+          }));
+          const announcementResults = (announcementResult.data ?? []).map(
+            (announcement: any) => ({
               label: announcement.title,
               hint: `${announcement.target_role ?? "student"} · ${new Date(announcement.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
-              path: isMod ? "/admin-announcements" : "/announcements",
-              kind: "announcement",
-              group: "Announcements",
-            })),
+              path: `${isMod ? "/admin-announcements" : "/announcements"}?announcementId=${encodeURIComponent(announcement.id)}`,
+              kind: "announcement" as const,
+              group: "Announcements" as const,
+              matchedQuery: query.toLowerCase(),
+            }),
           );
-        }
-      } catch (error) {
-        console.error("Search index could not be loaded.", error);
-      }
-    };
 
-    void loadSearchIndex();
+          setLiveSearchResults([
+            ...studentResults,
+            ...eventResults,
+            ...announcementResults,
+          ]);
+        } catch (error) {
+          if (cancelled) return;
+          console.error("Quick-search results could not be loaded.", error);
+          setSearchError("Search is temporarily unavailable.");
+        } finally {
+          if (!cancelled) setIsSearchLoading(false);
+        }
+      };
+
+      void loadSearchResults();
+    }, 300);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
-  }, [isMod, user]);
+  }, [isMod, searchQuery, user]);
 
   const quickSearchTargets = useMemo(
     () =>
@@ -3564,10 +3632,10 @@ export function TopBar({
           kind: "page",
         },
         {
-          label: "Attendance",
-          path: "/attendance-history",
+          label: isMod ? "Attendees" : "Attendance",
+          path: isMod ? "/admin-attendees" : "/attendance-history",
           keywords: ["attendance", "history", "records", "log"],
-          hint: "Track attendance",
+          hint: isMod ? "Review event attendance" : "Track attendance",
           kind: "page",
         },
         {
@@ -3582,6 +3650,7 @@ export function TopBar({
           path: "/my-fines",
           keywords: ["fines", "fine", "payments", "balance"],
           hint: "Account balances",
+          show: !isMod,
           kind: "page",
         },
         {
@@ -3612,6 +3681,7 @@ export function TopBar({
           path: "/my-qr",
           keywords: ["my qr", "qr", "check in", "student code"],
           hint: "Student access code",
+          show: !isMod,
           kind: "page",
         },
       ].filter((item) => item.show !== false),
@@ -3620,6 +3690,7 @@ export function TopBar({
 
   const filteredResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
+    const tokens = query.split(/\s+/).filter(Boolean);
 
     if (!query) return [];
 
@@ -3629,12 +3700,20 @@ export function TopBar({
       kind: string;
       path?: string;
       keywords?: string[];
+      identifier?: string;
+      matchedQuery?: string;
     }) => {
       const haystack = [item.label, item.hint ?? "", ...(item.keywords ?? [])]
         .join(" ")
         .toLowerCase();
 
-      if (!haystack.includes(query)) return null;
+      if (item.matchedQuery && item.matchedQuery !== query) return null;
+      if (
+        !item.matchedQuery &&
+        !tokens.every((token) => haystack.includes(token))
+      ) {
+        return null;
+      }
 
       let score = 0;
       const kindBoost: Record<string, number> = {
@@ -3646,6 +3725,7 @@ export function TopBar({
 
       score += kindBoost[item.kind] ?? 30;
 
+      if (item.identifier?.toLowerCase() === query) score += 120;
       if (item.label.toLowerCase() === query) score += 50;
       if (item.label.toLowerCase().startsWith(query)) score += 35;
       if (item.hint?.toLowerCase().includes(query)) score += 15;
@@ -3656,9 +3736,7 @@ export function TopBar({
 
     const items = [
       ...quickSearchTargets.map((item) => ({ ...item, group: "Pages" })),
-      ...liveStudents.map((item) => ({ ...item, group: "Students" })),
-      ...liveEvents.map((item) => ({ ...item, group: "Events" })),
-      ...liveAnnouncements.map((item) => ({ ...item, group: "Announcements" })),
+      ...liveSearchResults,
     ]
       .map((item) => {
         const score = scoreItem(item);
@@ -3679,19 +3757,17 @@ export function TopBar({
       kind: string;
       group: string;
       score: number;
+      identifier?: string;
     }>;
-  }, [
-    liveAnnouncements,
-    liveEvents,
-    liveStudents,
-    quickSearchTargets,
-    searchQuery,
-  ]);
+  }, [liveSearchResults, quickSearchTargets, searchQuery]);
+
+  useEffect(() => {
+    setActiveSearchIndex(0);
+  }, [filteredResults.length, searchQuery]);
 
   const submitQuickSearch = (target?: { path: string }) => {
-    const selected = target ?? {
-      path: quickSearchTargets[0]?.path ?? "/dashboard",
-    };
+    const selected = target ?? filteredResults[0];
+    if (!selected) return;
 
     setSearchQuery("");
     setSearchOpen(false);
@@ -3774,7 +3850,7 @@ export function TopBar({
           {user && (
             <div className="relative w-full max-w-xl">
               <label className="relative block">
-                <span className="sr-only">Search pages</span>
+                <span className="sr-only">Search the app</span>
                 <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400">
                   <span className="block h-4 w-4">
                     <Icons.Search />
@@ -3792,13 +3868,38 @@ export function TopBar({
                     setSearchOpen(true);
                   }}
                   onKeyDown={(event) => {
+                    if (event.key === "ArrowDown" && filteredResults.length) {
+                      event.preventDefault();
+                      setActiveSearchIndex((index) =>
+                        Math.min(index + 1, filteredResults.length - 1),
+                      );
+                    }
+                    if (event.key === "ArrowUp" && filteredResults.length) {
+                      event.preventDefault();
+                      setActiveSearchIndex((index) => Math.max(index - 1, 0));
+                    }
                     if (event.key === "Enter") {
                       event.preventDefault();
-                      submitQuickSearch();
+                      submitQuickSearch(
+                        filteredResults[activeSearchIndex] ??
+                          filteredResults[0],
+                      );
+                    }
+                    if (event.key === "Escape") {
+                      setSearchOpen(false);
                     }
                   }}
                   placeholder="Search students, events, announcements..."
                   aria-label="Search within the app"
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-expanded={searchOpen}
+                  aria-controls="header-quick-search-results"
+                  aria-activedescendant={
+                    searchOpen && filteredResults[activeSearchIndex]
+                      ? `header-quick-search-result-${activeSearchIndex}`
+                      : undefined
+                  }
                   className="w-full h-11 rounded-full border border-slate-200/80 bg-white/85 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 shadow-[0_8px_20px_rgba(15,23,42,0.04)] outline-none transition-all duration-200 focus:border-slate-300 focus:bg-white focus:shadow-[0_12px_24px_rgba(15,23,42,0.07)] focus:ring-4 focus:ring-slate-100"
                 />
               </label>
@@ -3806,11 +3907,25 @@ export function TopBar({
               {searchOpen && (
                 <div className="absolute left-0 right-0 top-[calc(100%+0.6rem)] z-50 overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 shadow-[0_18px_45px_rgba(15,23,42,0.12)] backdrop-blur-sm">
                   <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                    Quick search
+                    {isSearchLoading ? "Searching" : "Quick search"}
                   </div>
 
+                  {searchError && (
+                    <p
+                      className="border-b border-amber-100 bg-amber-50/70 px-3 py-2 text-xs text-amber-800"
+                      role="status"
+                    >
+                      {searchError}
+                    </p>
+                  )}
+
                   {filteredResults.length > 0 ? (
-                    <div className="max-h-[340px] overflow-y-auto p-1.5">
+                    <div
+                      id="header-quick-search-results"
+                      role="listbox"
+                      aria-label="Search results"
+                      className="max-h-[340px] overflow-y-auto p-1.5"
+                    >
                       {filteredResults.map((item, index) => (
                         <div key={`${item.group}-${item.path}-${index}`}>
                           {index === 0 ||
@@ -3821,9 +3936,15 @@ export function TopBar({
                           ) : null}
                           <button
                             type="button"
+                            id={`header-quick-search-result-${index}`}
+                            role="option"
+                            aria-selected={activeSearchIndex === index}
                             onMouseDown={(event) => event.preventDefault()}
+                            onMouseEnter={() => setActiveSearchIndex(index)}
                             onClick={() => submitQuickSearch(item)}
-                            className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+                            className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-slate-50 ${
+                              activeSearchIndex === index ? "bg-slate-50" : ""
+                            }`}
                           >
                             <div>
                               <p className="text-sm font-semibold text-slate-700">
@@ -3841,8 +3962,19 @@ export function TopBar({
                       ))}
                     </div>
                   ) : (
-                    <div className="px-3 py-4 text-sm text-slate-500">
-                      No matching students, events, announcements, or pages.
+                    <div
+                      id="header-quick-search-results"
+                      className="px-3 py-4 text-sm text-slate-500"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      {isSearchLoading
+                        ? "Searching live records..."
+                        : searchQuery.trim().length < 2
+                          ? "Type at least 2 characters to search records."
+                          : searchError
+                            ? "No results are available right now."
+                            : "No matching students, events, announcements, or pages."}
                     </div>
                   )}
                 </div>
@@ -6363,6 +6495,51 @@ export function DashboardPage({
   );
 }
 
+function SearchRecordUnavailable({
+  label,
+  onBack,
+}: {
+  label: string;
+  onBack: () => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white px-5 py-8 text-center shadow-sm">
+      <p className="text-sm font-semibold text-slate-800">
+        {label} is unavailable.
+      </p>
+      <button
+        type="button"
+        onClick={onBack}
+        className="mt-4 h-9 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+      >
+        Back to results
+      </button>
+    </div>
+  );
+}
+
+function useRecordSelection(searchParam: string) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const selectedId = searchParams.get(searchParam);
+
+  const setSelectedId = (id: string | null, replace = false) => {
+    if (searchParams.get(searchParam) === id) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (id) params.set(searchParam, id);
+    else params.delete(searchParam);
+
+    const query = params.toString();
+    const href = query ? `${pathname}?${query}` : pathname;
+    if (replace) router.replace(href, { scroll: false });
+    else router.push(href, { scroll: false });
+  };
+
+  return { selectedId, setSelectedId };
+}
+
 export function EventsPage({
   onNav,
 
@@ -6382,7 +6559,8 @@ export function EventsPage({
 }) {
   const [filter, setFilter] = useState("all");
 
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const { selectedId: selectedEventId, setSelectedId: setSelectedEventId } =
+    useRecordSelection("eventId");
 
   const items =
     filter === "all" ? events : events.filter((e) => e.status === filter);
@@ -6390,15 +6568,24 @@ export function EventsPage({
   const canSeeFees = user?.role === "student" && showFees;
 
   if (selectedEventId) {
+    const selectedEvent = events.find((event) => event.id === selectedEventId);
+
+    if (!selectedEvent) {
+      return (
+        <SearchRecordUnavailable
+          label="Event"
+          onBack={() => setSelectedEventId(null, true)}
+        />
+      );
+    }
+
     return (
       <EventDetailPageView
-        event={items.find((event) => event.id === selectedEventId) ?? null}
+        event={selectedEvent}
         user={user}
         showFees={showFees}
-        onClose={() => setSelectedEventId(null)}
+        onClose={() => setSelectedEventId(null, true)}
         onPrimaryAction={() => {
-          setSelectedEventId(null);
-
           onNav("my-qr");
         }}
       />
@@ -7216,18 +7403,29 @@ export function AnnouncementsPage({
 
   announcements: typeof INITIAL_ANNOUNCEMENTS;
 }) {
-  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<
-    string | null
-  >(null);
+  const {
+    selectedId: selectedAnnouncementId,
+    setSelectedId: setSelectedAnnouncementId,
+  } = useRecordSelection("announcementId");
 
   if (selectedAnnouncementId) {
+    const selectedAnnouncement = announcements.find(
+      (item) => item.id === selectedAnnouncementId,
+    );
+
+    if (!selectedAnnouncement) {
+      return (
+        <SearchRecordUnavailable
+          label="Announcement"
+          onBack={() => setSelectedAnnouncementId(null, true)}
+        />
+      );
+    }
+
     return (
       <AnnouncementDetailPageView
-        announcement={
-          announcements.find((item) => item.id === selectedAnnouncementId) ??
-          null
-        }
-        onBack={() => setSelectedAnnouncementId(null)}
+        announcement={selectedAnnouncement}
+        onBack={() => setSelectedAnnouncementId(null, true)}
       />
     );
   }
@@ -9010,7 +9208,8 @@ export function AdminEventsPage({
 
   const [isCreating, setIsCreating] = useState(false);
 
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const { selectedId: selectedEventId, setSelectedId: setSelectedEventId } =
+    useRecordSelection("eventId");
 
   const [eventView, setEventView] = useState<"active" | "archived">("active");
 
@@ -10215,16 +10414,25 @@ export function AdminEventsPage({
   const activeDragEvent = events.find((event) => event.id === activeDragId);
 
   if (selectedEventId) {
+    const selectedEvent = events.find((event) => event.id === selectedEventId);
+
+    if (!selectedEvent) {
+      return (
+        <SearchRecordUnavailable
+          label="Event"
+          onBack={() => setSelectedEventId(null, true)}
+        />
+      );
+    }
+
     return (
       <EventDetailPageView
-        event={events.find((event) => event.id === selectedEventId) ?? null}
+        event={selectedEvent}
         user={null}
         viewerRole="admin"
         showFees
-        onClose={() => setSelectedEventId(null)}
+        onClose={() => setSelectedEventId(null, true)}
         onPrimaryAction={() => {
-          setSelectedEventId(null);
-
           onNav("admin-attendees");
         }}
       />
@@ -13992,9 +14200,10 @@ export function AdminAnnouncementsPage({
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<
-    string | null
-  >(null);
+  const {
+    selectedId: selectedAnnouncementId,
+    setSelectedId: setSelectedAnnouncementId,
+  } = useRecordSelection("announcementId");
 
   const [editDraft, setEditDraft] = useState<
     (typeof INITIAL_ANNOUNCEMENTS)[0] | null
@@ -14229,24 +14438,35 @@ export function AdminAnnouncementsPage({
   };
 
   if (selectedAnnouncementId) {
+    const selectedAnnouncement = posts.find(
+      (post) => post.id === selectedAnnouncementId,
+    );
+
+    if (!selectedAnnouncement) {
+      return (
+        <SearchRecordUnavailable
+          label="Announcement"
+          onBack={() => setSelectedAnnouncementId(null, true)}
+        />
+      );
+    }
+
     return (
       <AnnouncementDetailPageView
-        announcement={
-          posts.find((post) => post.id === selectedAnnouncementId) ?? null
-        }
-        onBack={() => setSelectedAnnouncementId(null)}
+        announcement={selectedAnnouncement}
+        onBack={() => setSelectedAnnouncementId(null, true)}
         onEdit={() => {
           const post = posts.find((item) => item.id === selectedAnnouncementId);
 
           if (post) startEdit(post);
 
-          setSelectedAnnouncementId(null);
+          setSelectedAnnouncementId(null, true);
         }}
         onDelete={() => {
           const id = selectedAnnouncementId;
 
           void deletePost(id).then((succeeded) => {
-            if (succeeded) setSelectedAnnouncementId(null);
+            if (succeeded) setSelectedAnnouncementId(null, true);
           });
         }}
       />

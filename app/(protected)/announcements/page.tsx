@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnnouncementsPage } from "../../shared-page";
@@ -122,9 +122,11 @@ export default function AnnouncementsRoutePage() {
   }
 
   return (
-    <AnnouncementsPage
-      onBack={() => router.push("/dashboard")}
-      announcements={announcements}
-    />
+    <Suspense fallback={<AnnouncementsSkeleton />}>
+      <AnnouncementsPage
+        onBack={() => router.push("/dashboard")}
+        announcements={announcements}
+      />
+    </Suspense>
   );
 }

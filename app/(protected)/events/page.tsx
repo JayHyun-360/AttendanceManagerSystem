@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EventsPage, type EventData, type Page } from "../../shared-page";
@@ -143,9 +143,12 @@ export default function EventsRoutePage() {
         void loadEvents();
       }
     });
-    const attendanceChannel = subscribeToTableChanges("attendance_scans", () => {
-      if (!cancelled) void loadEvents();
-    });
+    const attendanceChannel = subscribeToTableChanges(
+      "attendance_scans",
+      () => {
+        if (!cancelled) void loadEvents();
+      },
+    );
 
     return () => {
       cancelled = true;
@@ -178,6 +181,13 @@ export default function EventsRoutePage() {
   }
 
   return (
-    <EventsPage onNav={onNav} user={user} showFees={showFees} events={events} />
+    <Suspense fallback={<EventsSkeleton />}>
+      <EventsPage
+        onNav={onNav}
+        user={user}
+        showFees={showFees}
+        events={events}
+      />
+    </Suspense>
   );
 }
