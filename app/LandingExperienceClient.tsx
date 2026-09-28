@@ -124,6 +124,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { OptimizedImage } from "@/components/OptimizedImage";
+import { LazyVideo, VideoPosterTile } from "./shared-page";
 import { usePathname, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -2066,7 +2067,7 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
   const [trackIdx, setTrackIdx] = useState(0);
   const [animated, setAnimated] = useState(true);
   const [paused, setPaused] = useState(false);
-  const [visibilityStamp, setVisibilityStamp] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
   const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const realIdx = trackIdx % n;
   const items = n > 1 ? [...slides, slides[0]] : slides;
@@ -2099,10 +2100,8 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        setTrackIdx(0);
-        setAnimated(false);
-        setPaused(false);
-        setVisibilityStamp((v) => v + 1);
+        const video = carouselRef.current?.querySelector("video");
+        if (video) void video.play().catch(() => {});
       }
     };
 
@@ -2115,6 +2114,7 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
 
   return (
     <div
+      ref={carouselRef}
       className="relative w-full overflow-hidden rounded-2xl select-none"
       style={{ aspectRatio: "16/7" }}
       onMouseEnter={() => setPaused(true)}
@@ -2134,27 +2134,31 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
       >
         {items.map((s, i) => (
           <div
-            key={`${visibilityStamp}-${i}-${s.imageUrl}`}
+            key={`${i}-${s.imageUrl}`}
             className="relative h-full flex-shrink-0"
             style={{
               width: `${100 / total}%`,
             }}
           >
             {/\.mp4($|\?)/i.test(s.imageUrl) ? (
-              <video
-                key={`${visibilityStamp}-video-${i}-${s.imageUrl}`}
-                src={s.imageUrl}
-                aria-label={s.caption}
-                className="w-full h-full object-cover"
-                autoPlay
-                muted
-                loop
-                playsInline
-                controls
-              />
+              i === trackIdx && i < n ? (
+                <LazyVideo
+                  src={s.imageUrl}
+                  preload="metadata"
+                  className="h-full w-full"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  controls
+                  loadOnClick={false}
+                  unmountWhenOffscreen
+                />
+              ) : (
+                <VideoPosterTile className="h-full w-full" />
+              )
             ) : (
               <OptimizedImage
-                key={`${visibilityStamp}-img-${i}-${s.imageUrl}`}
                 src={s.imageUrl}
                 alt={s.caption}
                 loading="eager"
@@ -4023,11 +4027,9 @@ export function EventsPage({
               const cover = e.highlightUrl ?? e.mediaUrls?.[0];
               if (!cover) return null;
               return /\.mp4($|\?)/i.test(cover) ? (
-                <video
-                  src={cover}
-                  muted
-                  playsInline
+                <VideoPosterTile
                   className="w-full h-40 object-cover rounded-lg mb-4"
+                  label={`Open ${e.title} video`}
                 />
               ) : (
                 <OptimizedImage
@@ -4092,26 +4094,37 @@ function EventDetailPage({
   const ev = events.find((e) => e.id === eventId) ?? events[0];
   const canSeeFees = user?.role === "student" && showFees;
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
   const primaryMedia = ev.highlightUrl ?? ev.mediaUrls?.[0];
+  const activeVideoUrl =
+    selectedVideoUrl ??
+    (primaryMedia && /\.mp4($|\?)/i.test(primaryMedia) ? primaryMedia : null);
+
+  useEffect(() => {
+    setSelectedVideoUrl(
+      primaryMedia && /\.mp4($|\?)/i.test(primaryMedia) ? primaryMedia : null,
+    );
+  }, [eventId, primaryMedia]);
+
   return (
     <PageShell>
       <BackButton onClick={onBack} label="Back to Events" />
       <div className="relative rounded-xl overflow-hidden mb-4 shadow-sm">
-        {primaryMedia ? (
-          /\.mp4($|\?)/i.test(primaryMedia) ? (
-            <video
-              src={primaryMedia}
-              controls
-              playsInline
-              className="w-full h-64 object-cover"
-            />
-          ) : (
-            <OptimizedImage
-              src={primaryMedia}
-              alt={ev.title}
-              className="w-full h-64 object-cover"
-            />
-          )
+        {activeVideoUrl ? (
+          <LazyVideo
+            src={activeVideoUrl}
+            preload="metadata"
+            loadOnClick={false}
+            controls
+            playsInline
+            className="w-full h-64"
+          />
+        ) : primaryMedia ? (
+          <OptimizedImage
+            src={primaryMedia}
+            alt={ev.title}
+            className="w-full h-64 object-cover"
+          />
         ) : (
           <div className="w-full h-64 bg-emerald-500" />
         )}
@@ -4181,17 +4194,12 @@ function EventDetailPage({
           <div className="grid grid-cols-2 gap-2">
             {ev.mediaUrls.map((url, i) =>
               /\.mp4($|\?)/i.test(url) ? (
-                <div
+                <VideoPosterTile
                   key={i}
-                  className="relative w-full aspect-video rounded-lg overflow-hidden"
-                >
-                  <video
-                    src={url}
-                    controls
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                  onClick={() => setSelectedVideoUrl(url)}
+                  label={`Play event video ${i + 1}`}
+                  className="w-full aspect-video rounded-lg"
+                />
               ) : (
                 <button
                   key={i}
@@ -6037,10 +6045,10 @@ export function AdminEventsPage({
                 ))}
                 {videoNames.map((url) => (
                   <div key={url} className="flex items-center gap-2">
-                    <video
+                    <LazyVideo
                       src={url}
-                      controls
-                      className="h-10 w-14 rounded object-cover"
+                      preload="none"
+                      className="h-10 w-14 rounded"
                     />
                     <span className="truncate">Uploaded MP4 video</span>
                   </div>
@@ -6359,11 +6367,11 @@ export function AdminEventsPage({
               <div className="flex overflow-x-auto">
                 {e.mediaUrls.map((url, i) =>
                   /\.mp4($|\?)/i.test(url) ? (
-                    <video
+                    <LazyVideo
                       key={i}
                       src={url}
-                      controls
-                      className="h-32 shrink-0 object-cover"
+                      preload="none"
+                      className="h-32 shrink-0"
                       style={{
                         width: e.mediaUrls!.length === 1 ? "100%" : "50%",
                       }}
@@ -8244,12 +8252,7 @@ export function AdminSettingsPage({
                           onClick={() => slideRefs.current[i]?.click()}
                         >
                           {/\.mp4($|\?)/i.test(slide.imageUrl) ? (
-                            <video
-                              src={slide.imageUrl}
-                              muted
-                              playsInline
-                              className="w-full h-full object-cover"
-                            />
+                            <VideoPosterTile className="h-full w-full" />
                           ) : (
                             <OptimizedImage
                               src={slide.imageUrl}

@@ -88,18 +88,14 @@ export async function uploadImage(
 
   const extension = lastDot >= 0 ? file.name.slice(lastDot) : ""
 
-  const fileName = `${Date.now()}-${Math.random()
-
-    .toString(36)
-
-    .slice(2)}${extension}`
+  const fileName = `${Date.now()}-${crypto.randomUUID()}${extension}`
 
   const { error } = await supabase.storage
 
     .from(bucketName)
 
     .upload(fileName, file, {
-      cacheControl: "3600",
+      cacheControl: "31536000",
 
       upsert: false,
     })
