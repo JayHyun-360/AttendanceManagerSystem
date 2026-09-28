@@ -3430,6 +3430,67 @@ export function TopBar({
 
   const [dotOpen, setDotOpen] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const quickSearchTargets = [
+    {
+      label: "Dashboard",
+      path: isMod ? "/admin-dashboard" : "/dashboard",
+      keywords: ["dashboard", "home", "overview"],
+    },
+    {
+      label: "Events",
+      path: isMod ? "/admin-events" : "/events",
+      keywords: ["events", "event", "calendar"],
+    },
+    {
+      label: "Attendance",
+      path: "/attendance-history",
+      keywords: ["attendance", "history", "record", "records"],
+    },
+    {
+      label: "Announcements",
+      path: isMod ? "/admin-announcements" : "/announcements",
+      keywords: ["announcements", "announcement", "news"],
+    },
+    {
+      label: "My Fines",
+      path: "/my-fines",
+      keywords: ["fines", "fine", "payments"],
+    },
+    {
+      label: "Profile",
+      path: "/profile",
+      keywords: ["profile", "account", "settings"],
+    },
+    {
+      label: "Students",
+      path: "/admin-students",
+      keywords: ["students", "student", "people"],
+    },
+    {
+      label: "Scanner",
+      path: "/admin-scanner",
+      keywords: ["scanner", "scan", "qr"],
+    },
+  ];
+
+  const submitQuickSearch = () => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) return;
+
+    const match = quickSearchTargets.find(({ label, keywords }) => {
+      const haystack = [label, ...keywords].join(" ").toLowerCase();
+      return haystack.includes(query);
+    });
+
+    if (match) {
+      setSearchQuery("");
+      router.push(match.path);
+    }
+  };
+
   const go = (target: string) => router.push(target);
 
   return (
@@ -3502,6 +3563,32 @@ export function TopBar({
         </div>
 
         {}
+        <div className="hidden md:flex flex-1 justify-center px-3">
+          {user && (
+            <label className="relative block w-full max-w-xl">
+              <span className="sr-only">Search</span>
+              <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400">
+                <span className="block h-4 w-4">
+                  <Icons.Search />
+                </span>
+              </span>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    submitQuickSearch();
+                  }
+                }}
+                placeholder="Search pages"
+                aria-label="Search pages"
+                className="w-full h-10 rounded-full border border-slate-200 bg-slate-50/90 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition-all duration-200 focus:border-slate-300 focus:bg-white focus:ring-4 focus:ring-slate-100"
+              />
+            </label>
+          )}
+        </div>
         <div className="ml-auto flex items-center gap-1 shrink-0">
           {user ? (
             <>
