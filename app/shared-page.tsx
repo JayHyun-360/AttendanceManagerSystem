@@ -3434,6 +3434,118 @@ export function TopBar({
 
   const [searchOpen, setSearchOpen] = useState(false);
 
+  const [liveStudents, setLiveStudents] = useState<
+    Array<{
+      label: string;
+      hint: string;
+      path: string;
+      kind: "student";
+      group: "Students";
+    }>
+  >([]);
+
+  const [liveEvents, setLiveEvents] = useState<
+    Array<{
+      label: string;
+      hint: string;
+      path: string;
+      kind: "event";
+      group: "Events";
+    }>
+  >([]);
+
+  const [liveAnnouncements, setLiveAnnouncements] = useState<
+    Array<{
+      label: string;
+      hint: string;
+      path: string;
+      kind: "announcement";
+      group: "Announcements";
+    }>
+  >([]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
+    const loadSearchIndex = async () => {
+      try {
+        const [studentResult, eventResult, announcementResult] =
+          await Promise.all([
+            supabase
+              .from("profiles")
+              .select("id, first_name, surname, student_id, program, section")
+              .eq("role", "student")
+              .order("surname", { ascending: true })
+              .limit(25),
+            supabase
+              .from("events")
+              .select("id, title, event_date, location")
+              .order("event_date", { ascending: false })
+              .limit(20),
+            supabase
+              .from("announcements")
+              .select("id, title, created_at, target_role")
+              .order("created_at", { ascending: false })
+              .limit(15),
+          ]);
+
+        if (cancelled) return;
+
+        if (studentResult.data) {
+          setLiveStudents(
+            studentResult.data.map((student: any) => {
+              const name =
+                `${student.first_name ?? ""} ${student.surname ?? ""}`.trim();
+              return {
+                label: name || "Student",
+                hint: `${student.student_id ?? student.id} · ${student.program ?? "Program"} · ${student.section ?? "Section"}`,
+                path: isMod
+                  ? `/admin-students/${encodeURIComponent(student.student_id ?? student.id)}`
+                  : "/profile",
+                kind: "student",
+                group: "Students",
+              };
+            }),
+          );
+        }
+
+        if (eventResult.data) {
+          setLiveEvents(
+            eventResult.data.map((event: any) => ({
+              label: event.title,
+              hint: `${event.event_date ?? ""} · ${event.location ?? "Location"}`,
+              path: isMod ? "/admin-events" : "/events",
+              kind: "event",
+              group: "Events",
+            })),
+          );
+        }
+
+        if (announcementResult.data) {
+          setLiveAnnouncements(
+            announcementResult.data.map((announcement: any) => ({
+              label: announcement.title,
+              hint: `${announcement.target_role ?? "student"} · ${new Date(announcement.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
+              path: isMod ? "/admin-announcements" : "/announcements",
+              kind: "announcement",
+              group: "Announcements",
+            })),
+          );
+        }
+      } catch (error) {
+        console.error("Search index could not be loaded.", error);
+      }
+    };
+
+    void loadSearchIndex();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isMod, user]);
+
   const quickSearchTargets = useMemo(
     () =>
       [
@@ -3506,41 +3618,6 @@ export function TopBar({
     [isMod],
   );
 
-  const studentSearchResults = useMemo(
-    () =>
-      ALL_STUDENTS.map((student) => ({
-        kind: "student",
-        label: student.name,
-        hint: `${student.id} · ${student.program} · ${student.section}`,
-        path: isMod
-          ? `/admin-students/${encodeURIComponent(student.id)}`
-          : "/profile",
-      })),
-    [isMod],
-  );
-
-  const eventSearchResults = useMemo(
-    () =>
-      INITIAL_EVENTS.map((event) => ({
-        kind: "event",
-        label: event.title,
-        hint: `${event.date} · ${event.location}`,
-        path: isMod ? "/admin-events" : "/events",
-      })),
-    [isMod],
-  );
-
-  const announcementSearchResults = useMemo(
-    () =>
-      INITIAL_ANNOUNCEMENTS.map((announcement) => ({
-        kind: "announcement",
-        label: announcement.title,
-        hint: `${announcement.badge} · ${announcement.date}`,
-        path: isMod ? "/admin-announcements" : "/announcements",
-      })),
-    [isMod],
-  );
-
   const filteredResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -3550,7 +3627,7 @@ export function TopBar({
       label: string;
       hint?: string;
       kind: string;
-      path: string;
+      path?: string;
       keywords?: string[];
     }) => {
       const haystack = [item.label, item.hint ?? "", ...(item.keywords ?? [])]
@@ -3579,17 +3656,13 @@ export function TopBar({
 
     const items = [
       ...quickSearchTargets.map((item) => ({ ...item, group: "Pages" })),
-      ...studentSearchResults.map((item) => ({ ...item, group: "Students" })),
-      ...eventSearchResults.map((item) => ({ ...item, group: "Events" })),
-      ...announcementSearchResults.map((item) => ({
-        ...item,
-        group: "Announcements",
-      })),
+      ...liveStudents.map((item) => ({ ...item, group: "Students" })),
+      ...liveEvents.map((item) => ({ ...item, group: "Events" })),
+      ...liveAnnouncements.map((item) => ({ ...item, group: "Announcements" })),
     ]
       .map((item) => {
         const score = scoreItem(item);
         if (score === null) return null;
-
         return { ...item, score };
       })
       .filter(Boolean)
@@ -3599,18 +3672,20 @@ export function TopBar({
       )
       .slice(0, 8);
 
-    return items as Array<
-      (typeof quickSearchTargets)[number] & {
-        group: string;
-        score: number;
-      }
-    >;
+    return items as Array<{
+      label: string;
+      hint: string;
+      path: string;
+      kind: string;
+      group: string;
+      score: number;
+    }>;
   }, [
-    announcementSearchResults,
-    eventSearchResults,
+    liveAnnouncements,
+    liveEvents,
+    liveStudents,
     quickSearchTargets,
     searchQuery,
-    studentSearchResults,
   ]);
 
   const submitQuickSearch = (target?: { path: string }) => {
@@ -3724,8 +3799,19 @@ export function TopBar({
                   }}
                   placeholder="Search students, events, announcements..."
                   aria-label="Search within the app"
-                  className="w-full h-11 rounded-full border border-slate-200/80 bg-white/85 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 shadow-[0_8px_20px_rgba(15,23,42,0.04)] outline-none transition-all duration-200 focus:border-slate-300 focus:bg-white focus:shadow-[0_12px_24px_rgba(15,23,42,0.07)] focus:ring-4 focus:ring-slate-100"
+                  className="w-full h-11 rounded-full border border-slate-200/80 bg-white/85 pl-11 pr-11 text-sm text-slate-700 placeholder:text-slate-400 shadow-[0_8px_20px_rgba(15,23,42,0.04)] outline-none transition-all duration-200 focus:border-slate-300 focus:bg-white focus:shadow-[0_12px_24px_rgba(15,23,42,0.07)] focus:ring-4 focus:ring-slate-100"
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-white transition hover:bg-black"
+                    aria-label="Clear search"
+                  >
+                    <Icons.X />
+                  </button>
+                )}
               </label>
 
               {searchOpen && (
