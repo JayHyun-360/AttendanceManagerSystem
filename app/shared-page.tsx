@@ -3442,36 +3442,42 @@ export function TopBar({
           path: isMod ? "/admin-dashboard" : "/dashboard",
           keywords: ["dashboard", "home", "overview", "summary"],
           hint: isMod ? "Admin overview" : "Student overview",
+          kind: "page",
         },
         {
           label: "Events",
           path: isMod ? "/admin-events" : "/events",
           keywords: ["events", "event", "calendar", "schedule"],
           hint: isMod ? "Manage events" : "Browse events",
+          kind: "page",
         },
         {
           label: "Attendance",
           path: "/attendance-history",
           keywords: ["attendance", "history", "records", "log"],
           hint: "Track attendance",
+          kind: "page",
         },
         {
           label: "Announcements",
           path: isMod ? "/admin-announcements" : "/announcements",
           keywords: ["announcements", "announcement", "news", "updates"],
           hint: "Latest updates",
+          kind: "page",
         },
         {
           label: "My Fines",
           path: "/my-fines",
           keywords: ["fines", "fine", "payments", "balance"],
           hint: "Account balances",
+          kind: "page",
         },
         {
           label: "Profile",
           path: "/profile",
           keywords: ["profile", "account", "details", "settings", "info"],
           hint: "Account details",
+          kind: "page",
         },
         {
           label: "Students",
@@ -3479,6 +3485,7 @@ export function TopBar({
           keywords: ["students", "student", "roster", "people"],
           hint: "Manage roster",
           show: isMod,
+          kind: "page",
         },
         {
           label: "Scanner",
@@ -3486,14 +3493,51 @@ export function TopBar({
           keywords: ["scanner", "scan", "qr", "check in"],
           hint: "Quick attendance scan",
           show: isMod,
+          kind: "page",
         },
         {
           label: "My QR",
           path: "/my-qr",
           keywords: ["my qr", "qr", "check in", "student code"],
           hint: "Student access code",
+          kind: "page",
         },
       ].filter((item) => item.show !== false),
+    [isMod],
+  );
+
+  const studentSearchResults = useMemo(
+    () =>
+      ALL_STUDENTS.map((student) => ({
+        kind: "student",
+        label: student.name,
+        hint: `${student.id} · ${student.program} · ${student.section}`,
+        path: isMod
+          ? `/admin-students/${encodeURIComponent(student.id)}`
+          : "/profile",
+      })),
+    [isMod],
+  );
+
+  const eventSearchResults = useMemo(
+    () =>
+      INITIAL_EVENTS.map((event) => ({
+        kind: "event",
+        label: event.title,
+        hint: `${event.date} · ${event.location}`,
+        path: isMod ? "/admin-events" : "/events",
+      })),
+    [isMod],
+  );
+
+  const announcementSearchResults = useMemo(
+    () =>
+      INITIAL_ANNOUNCEMENTS.map((announcement) => ({
+        kind: "announcement",
+        label: announcement.title,
+        hint: `${announcement.badge} · ${announcement.date}`,
+        path: isMod ? "/admin-announcements" : "/announcements",
+      })),
     [isMod],
   );
 
@@ -3502,35 +3546,81 @@ export function TopBar({
 
     if (!query) return [];
 
-    return quickSearchTargets
-      .filter(({ label, hint, keywords }) => {
-        const haystack = [label, hint, ...keywords].join(" ").toLowerCase();
-        return haystack.includes(query);
+    const scoreItem = (item: {
+      label: string;
+      hint?: string;
+      kind: string;
+      path: string;
+      keywords?: string[];
+    }) => {
+      const haystack = [item.label, item.hint ?? "", ...(item.keywords ?? [])]
+        .join(" ")
+        .toLowerCase();
+
+      if (!haystack.includes(query)) return null;
+
+      let score = 0;
+      const kindBoost: Record<string, number> = {
+        student: 80,
+        event: 65,
+        announcement: 50,
+        page: 45,
+      };
+
+      score += kindBoost[item.kind] ?? 30;
+
+      if (item.label.toLowerCase() === query) score += 50;
+      if (item.label.toLowerCase().startsWith(query)) score += 35;
+      if (item.hint?.toLowerCase().includes(query)) score += 15;
+      if (item.label.toLowerCase().includes(query)) score += 10;
+
+      return score;
+    };
+
+    const items = [
+      ...quickSearchTargets.map((item) => ({ ...item, group: "Pages" })),
+      ...studentSearchResults.map((item) => ({ ...item, group: "Students" })),
+      ...eventSearchResults.map((item) => ({ ...item, group: "Events" })),
+      ...announcementSearchResults.map((item) => ({
+        ...item,
+        group: "Announcements",
+      })),
+    ]
+      .map((item) => {
+        const score = scoreItem(item);
+        if (score === null) return null;
+
+        return { ...item, score };
       })
-      .slice(0, 5);
-  }, [quickSearchTargets, searchQuery]);
+      .filter(Boolean)
+      .sort(
+        (a, b) =>
+          (b as { score: number }).score - (a as { score: number }).score,
+      )
+      .slice(0, 8);
 
-  const submitQuickSearch = (target?: string) => {
-    const query = (target ?? searchQuery).trim().toLowerCase();
+    return items as Array<
+      (typeof quickSearchTargets)[number] & {
+        group: string;
+        score: number;
+      }
+    >;
+  }, [
+    announcementSearchResults,
+    eventSearchResults,
+    quickSearchTargets,
+    searchQuery,
+    studentSearchResults,
+  ]);
 
-    if (!query) return;
+  const submitQuickSearch = (target?: { path: string }) => {
+    const selected = target ?? {
+      path: quickSearchTargets[0]?.path ?? "/dashboard",
+    };
 
-    const match = quickSearchTargets.find(({ label, hint, keywords }) => {
-      const haystack = [label, hint, ...keywords].join(" ").toLowerCase();
-      return haystack.includes(query);
-    });
-
-    if (match) {
-      setSearchQuery("");
-      setSearchOpen(false);
-      router.push(match.path);
-      return;
-    }
-
-    const fallback = quickSearchTargets[0];
     setSearchQuery("");
     setSearchOpen(false);
-    router.push(fallback.path);
+    router.push(selected.path);
   };
 
   const go = (target: string) => router.push(target);
@@ -3632,40 +3722,54 @@ export function TopBar({
                       submitQuickSearch();
                     }
                   }}
-                  placeholder="Search pages"
-                  aria-label="Search pages"
+                  placeholder="Search students, events, announcements..."
+                  aria-label="Search within the app"
                   className="w-full h-11 rounded-full border border-slate-200/80 bg-white/85 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 shadow-[0_8px_20px_rgba(15,23,42,0.04)] outline-none transition-all duration-200 focus:border-slate-300 focus:bg-white focus:shadow-[0_12px_24px_rgba(15,23,42,0.07)] focus:ring-4 focus:ring-slate-100"
                 />
               </label>
 
-              {searchOpen && filteredResults.length > 0 && (
+              {searchOpen && (
                 <div className="absolute left-0 right-0 top-[calc(100%+0.6rem)] z-50 overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 shadow-[0_18px_45px_rgba(15,23,42,0.12)] backdrop-blur-sm">
                   <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                    Quick navigation
+                    Quick search
                   </div>
-                  <div className="p-1.5">
-                    {filteredResults.map((item) => (
-                      <button
-                        key={item.path}
-                        type="button"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => submitQuickSearch(item.label)}
-                        className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
-                      >
-                        <div>
-                          <p className="text-sm font-semibold text-slate-700">
-                            {item.label}
-                          </p>
-                          <p className="text-[11px] text-slate-400">
-                            {item.hint}
-                          </p>
+
+                  {filteredResults.length > 0 ? (
+                    <div className="max-h-[340px] overflow-y-auto p-1.5">
+                      {filteredResults.map((item, index) => (
+                        <div key={`${item.group}-${item.path}-${index}`}>
+                          {index === 0 ||
+                          filteredResults[index - 1].group !== item.group ? (
+                            <div className="px-2 pb-1.5 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                              {item.group}
+                            </div>
+                          ) : null}
+                          <button
+                            type="button"
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => submitQuickSearch(item)}
+                            className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+                          >
+                            <div>
+                              <p className="text-sm font-semibold text-slate-700">
+                                {item.label}
+                              </p>
+                              <p className="text-[11px] text-slate-400">
+                                {item.hint}
+                              </p>
+                            </div>
+                            <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                              Open
+                            </span>
+                          </button>
                         </div>
-                        <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                          Go
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="px-3 py-4 text-sm text-slate-500">
+                      No matching students, events, announcements, or pages.
+                    </div>
+                  )}
                 </div>
               )}
             </div>
