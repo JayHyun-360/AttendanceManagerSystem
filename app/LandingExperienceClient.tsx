@@ -1748,13 +1748,17 @@ export function TopBar({
             className="flex min-w-0 items-center gap-2"
             onClick={() => go(dest)}
           >
-            <AdesseWordmark
-              variant="header"
-              textClassName="text-slate-900"
-              className="shrink-0"
+            <span className="hidden shrink-0 sm:inline-flex">
+              <AdesseWordmark
+                variant="header"
+                textClassName="text-slate-900"
+              />
+            </span>
+            <span
+              className="hidden h-6 w-px shrink-0 bg-slate-300 sm:block"
+              aria-hidden="true"
             />
-            <span className="h-5 w-px shrink-0 bg-slate-200" aria-hidden="true" />
-            <span className="min-w-0 max-w-[10rem] truncate text-left text-[9px] font-semibold leading-tight text-slate-500 sm:max-w-none sm:text-[10px]">
+            <span className="min-w-0 max-w-[15rem] truncate text-left text-[10px] font-bold uppercase leading-tight tracking-[0.08em] text-slate-600 sm:max-w-none sm:text-[11px]">
               Student Event Attendance &amp; Records System
             </span>
           </button>
@@ -2290,7 +2294,7 @@ function LandingPage({
         }`}
       >
         {}
-        {hasHero && (
+        {hasHero && !isDefaultHero && (
           <div
             className="absolute inset-y-0 left-0 flex"
             style={{
@@ -2331,35 +2335,15 @@ function LandingPage({
         )}
         {isDefaultHero && (
           <div
-            className="pointer-events-none absolute inset-0 overflow-hidden"
+            className="pointer-events-none absolute inset-0 overflow-hidden bg-[#f3faf7]"
             aria-hidden="true"
-            style={{
-              background:
-                "radial-gradient(circle at 82% 18%, rgba(110,231,183,.36), transparent 23%), radial-gradient(circle at 18% 88%, rgba(45,212,191,.3), transparent 32%), linear-gradient(135deg, rgba(247,255,253,.88) 0%, rgba(233,248,244,.84) 48%, rgba(217,241,235,.86) 100%)",
-            }}
           >
-            <svg
-              className="absolute -bottom-10 left-0 h-[58%] w-full min-w-[900px]"
-              viewBox="0 0 1440 520"
-              preserveAspectRatio="none"
-              fill="none"
-            >
-              <path
-                d="M-40 330C190 190 330 210 520 350C710 490 820 500 1010 300C1180 120 1310 120 1480 210V560H-40V330Z"
-                fill="rgba(93,202,170,.18)"
-              />
-              <path
-                d="M-40 405C180 270 330 295 525 420C720 545 850 535 1045 350C1225 180 1345 190 1480 270"
-                stroke="rgba(255,255,255,.9)"
-                strokeWidth="5"
-              />
-              <path
-                d="M-40 455C170 340 320 355 510 465C710 580 850 575 1060 410C1230 275 1350 280 1480 340"
-                stroke="rgba(38,166,134,.22)"
-                strokeWidth="2"
-              />
-            </svg>
-            <div className="absolute right-[18%] top-[20%] h-16 w-16 rounded-full bg-white/45 shadow-[0_10px_30px_rgba(16,185,129,.14)] blur-[1px]" />
+            <div className="absolute -right-24 -top-24 h-[22rem] w-[22rem] rotate-12 rounded-[3rem] border border-white/80 bg-white/35 shadow-[0_24px_70px_rgba(15,118,110,.08)] sm:-right-16 sm:-top-32 sm:h-[31rem] sm:w-[31rem]" />
+            <div className="absolute right-[8%] top-[12%] h-48 w-48 -rotate-6 rounded-[2.25rem] border border-emerald-100/80 bg-emerald-100/45 shadow-[0_20px_55px_rgba(16,185,129,.12)] sm:right-[13%] sm:top-[10%] sm:h-72 sm:w-72" />
+            <div className="absolute right-[20%] top-[25%] h-36 w-36 rotate-[14deg] rounded-[1.75rem] border border-white/90 bg-white/75 shadow-[0_18px_45px_rgba(15,23,42,.08)] sm:right-[25%] sm:top-[23%] sm:h-52 sm:w-52" />
+            <div className="absolute -bottom-20 right-[2%] h-64 w-64 -rotate-[18deg] rounded-[2.5rem] border border-teal-100/80 bg-teal-100/35 shadow-[0_24px_60px_rgba(13,148,136,.1)] sm:-bottom-28 sm:right-[8%] sm:h-96 sm:w-96" />
+            <div className="absolute bottom-[16%] right-[34%] h-10 w-10 rotate-12 rounded-xl bg-emerald-400/70 shadow-[0_12px_25px_rgba(16,185,129,.2)] sm:h-14 sm:w-14" />
+            <div className="absolute bottom-[12%] left-[10%] h-24 w-24 -rotate-12 rounded-[1.5rem] border border-white/80 bg-white/45 shadow-[0_18px_40px_rgba(15,118,110,.06)] sm:left-[18%] sm:h-36 sm:w-36" />
           </div>
         )}
         {hasHero && (

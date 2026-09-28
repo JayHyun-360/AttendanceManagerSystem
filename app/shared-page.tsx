@@ -3107,13 +3107,17 @@ export function TopBar({
             className="flex min-w-0 items-center gap-2"
             onClick={() => go(dest)}
           >
-            <AdesseWordmark
-              variant="header"
-              textClassName="text-slate-900"
-              className="shrink-0"
+            <span className="hidden shrink-0 sm:inline-flex">
+              <AdesseWordmark
+                variant="header"
+                textClassName="text-slate-900"
+              />
+            </span>
+            <span
+              className="hidden h-6 w-px shrink-0 bg-slate-300 sm:block"
+              aria-hidden="true"
             />
-            <span className="h-5 w-px shrink-0 bg-slate-200" aria-hidden="true" />
-            <span className="min-w-0 max-w-[10rem] truncate text-left text-[9px] font-semibold leading-tight text-slate-500 sm:max-w-none sm:text-[10px]">
+            <span className="min-w-0 max-w-[15rem] truncate text-left text-[10px] font-bold uppercase leading-tight tracking-[0.08em] text-slate-600 sm:max-w-none sm:text-[11px]">
               Student Event Attendance &amp; Records System
             </span>
           </button>
