@@ -3672,10 +3672,16 @@ export function Sidebar({
                   : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-normal"
               }`}
             >
-              <span
+              <motion.span
+                layout="position"
+                transition={{
+                  layout: prefersReducedMotion
+                    ? { duration: 0 }
+                    : { duration: 0.24, ease: [0.22, 1, 0.36, 1] },
+                }}
                 className={`relative z-10 shrink-0 ${
                   active ? "text-emerald-500" : "text-slate-400"
-                }`}
+                }}`}
               >
                 <I />
                 {badgeLabel && (
@@ -3683,7 +3689,7 @@ export function Sidebar({
                     {badgeLabel}
                   </span>
                 )}
-              </span>
+              </motion.span>
               <span className="truncate lg:hidden">{l}</span>
               <motion.span
                 className="sidebar-motion pointer-events-none absolute left-[42px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
@@ -3716,9 +3722,17 @@ export function Sidebar({
               collapsed ? "lg:justify-center" : "lg:justify-start"
             }`}
           >
-            <span className="relative z-10 shrink-0 text-slate-400">
+            <motion.span
+              layout="position"
+              transition={{
+                layout: prefersReducedMotion
+                  ? { duration: 0 }
+                  : { duration: 0.24, ease: [0.22, 1, 0.36, 1] },
+              }}
+              className="relative z-10 shrink-0 text-slate-400"
+            >
               <ArrowLeft className="w-[18px] h-[18px]" />
-            </span>
+            </motion.span>
             <span className="truncate lg:hidden">Back to Home</span>
             <motion.span
               className="sidebar-motion pointer-events-none absolute left-[42px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
@@ -3742,9 +3756,17 @@ export function Sidebar({
               collapsed ? "lg:justify-center" : "lg:justify-start"
             }`}
           >
-            <span className="relative z-10 text-slate-300 shrink-0">
+            <motion.span
+              layout="position"
+              transition={{
+                layout: prefersReducedMotion
+                  ? { duration: 0 }
+                  : { duration: 0.24, ease: [0.22, 1, 0.36, 1] },
+              }}
+              className="relative z-10 text-slate-300 shrink-0"
+            >
               <LogOut className="w-[18px] h-[18px]" />
-            </span>
+            </motion.span>
             <span className="truncate lg:hidden">Sign out</span>
             <motion.span
               className="sidebar-motion pointer-events-none absolute left-[42px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
@@ -3789,7 +3811,7 @@ export function Sidebar({
         >
           <motion.span
             animate={{
-              rotate: 0,
+              rotate: collapsed ? 180 : 0,
               scale: collapsed ? 0.9 : 1,
             }}
             transition={
@@ -3798,7 +3820,7 @@ export function Sidebar({
                 : { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
             }
           >
-            {collapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
+            <Icons.ChevronLeft />
           </motion.span>
         </button>
       </motion.aside>
