@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,9 +25,11 @@
 // ─── QR Code ──────────────────────────────────────────────────────────────────
 
 // ─── Top Bar ──────────────────────────────────────────────────────────────────
+
 /* Left — hamburger + brand */ /* Right — user actions */ /* Three-dot menu */
 
 // ─── Sidebar (desktop + mobile drawer) ───────────────────────────────────────
+
 /* Mobile header inside drawer */ /* Nav items */ /* Sidebar footer */ /* ── Desktop: persistent sidebar ── */ /* ── Mobile: fade overlay ── */
 
 // ─── LANDING CAROUSEL ─────────────────────────────────────────────────────────
@@ -41,11 +43,13 @@
 // manual jump (dots/arrows) — always jumps to real slide
 
 // after sliding onto the clone (trackIdx === n), silently snap to real slide 0
+
 /* Slide strip */ /* Arrow controls */ /* Dot indicators — keyed to realIdx */
 
 // ─── LANDING ──────────────────────────────────────────────────────────────────
 
 // clone-trick state for hero
+
 /* ── Hero ──────────────────────────────────────────────────── */ /* Background images — sliding clone-loop track */ /* Dot indicators */ /* Fallback radial glow when no image */ /* Hero content */ /* ── Feature cards ─────────────────────────────────────────── */ /* ── Event carousel ────────────────────────────────────────── */
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
@@ -77,6 +81,7 @@
 // ─── STUDENT: Events ──────────────────────────────────────────────────────────
 
 // ─── STUDENT: Event Detail ────────────────────────────────────────────────────
+
 /* Gradient overlay */ /* Badge — top-left */ /* Bottom content — pinned with explicit bottom padding */ /* Lightbox */
 
 // ─── STUDENT: My QR ───────────────────────────────────────────────────────────
@@ -104,6 +109,7 @@
 // multi-admin conflict check: compare version in current state
 
 // Map to database snake_case
+
 /* ── Create event modal ── */ /* Multi-session toggle */ /* Single-session time OR multi-session blocks */ /* Highlight photo */ /* ── Edit event modal ── */ /* Multi-session toggle */
 
 // ─── MODERATOR: QR Scanner ────────────────────────────────────────────────────
@@ -137,6 +143,7 @@
 // Open as PDF-like image
 
 // ─── MODERATOR: Management & Settings ────────────────────────────────────────
+
 /* Fee Visibility */ /* Attendance & Requests */ /* Academic Information */ /* Landing Page */ /* Hero images */ /* Carousel slides */ /* Thumbnail */ /* Fields */ /* Controls */ /* System Info */
 
 /*
@@ -692,21 +699,21 @@ import { Skeleton } from "@/components/ui/skeleton";
       </div>
 */
 
-import { OptimizedImage } from "@/components/OptimizedImage";
+import { OptimizedImage } from "@/components/OptimizedImage"
 
-import { useState, useRef, useEffect, Fragment } from "react";
+import { useState, useRef, useEffect, Fragment } from "react"
 
-import Link from "next/link";
+import Link from "next/link"
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation"
 
-import { useForm } from "react-hook-form";
+import { useForm } from "react-hook-form"
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@hookform/resolvers/zod"
 
-import { z } from "zod";
+import { z } from "zod"
 
-import { format } from "date-fns";
+import { format } from "date-fns"
 
 import {
   Archive,
@@ -714,9 +721,9 @@ import {
   ChevronDown,
   ChevronUp,
   LogOut,
-} from "lucide-react";
+} from "lucide-react"
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion"
 
 import {
   DndContext,
@@ -731,7 +738,7 @@ import {
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
-} from "@dnd-kit/core";
+} from "@dnd-kit/core"
 
 import {
   Bar,
@@ -740,83 +747,105 @@ import {
   PieChart,
   ResponsiveContainer,
   Tooltip,
-} from "recharts";
+} from "recharts"
 
-import jsQR from "jsqr";
+import jsQR from "jsqr"
 
-import QRCode from "qrcode";
+import QRCode from "qrcode"
 
-import { toast } from "sonner";
+import { toast } from "sonner"
 
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase"
 
-import { recordAttendance } from "@/lib/attendance";
+import { recordAttendance } from "@/lib/attendance"
+
 import {
   buildAttendanceSessionRecords,
   type FineEventLike,
   type FineRowLike,
   type FineScanLike,
-} from "@/lib/attendance-fines";
-import { formatTime12Hour, formatTimeRange12Hour } from "@/lib/time";
-import { deleteImages, uploadImage } from "@/lib/uploadImage";
+} from "@/lib/attendance-fines"
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { formatTime12Hour, formatTimeRange12Hour } from "@/lib/time"
 
-const adesseLogoSrc = "/adesse-a.svg";
+import { deleteImages, uploadImage } from "@/lib/uploadImage"
+
+import { Skeleton } from "@/components/ui/skeleton"
+
+const adesseLogoSrc = "/adesse-a.svg"
 
 function useDashboardDateLabel() {
-  const [label, setLabel] = useState("");
+  const [label, setLabel] = useState("")
 
   useEffect(() => {
-    setLabel(format(new Date(), "MMM d, yyyy · EEEE"));
-  }, []);
+    setLabel(format(new Date(), "MMM d, yyyy · EEEE"))
+  }, [])
 
-  return label;
+  return label
 }
 
 function toMinutes(value?: string | null) {
-  if (!value) return null;
+  if (!value) return null
+
   const match = value
+
     .trim()
-    .match(/^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(AM|PM)?$/i);
-  if (!match) return null;
-  let hour = Number(match[1]);
-  const minute = Number(match[2]);
-  const meridiem = match[3]?.toUpperCase();
-  if (hour > 23 || minute > 59) return null;
-  if (meridiem === "AM" && hour === 12) hour = 0;
-  if (meridiem === "PM" && hour !== 12) hour += 12;
-  return hour * 60 + minute;
+
+    .match(/^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(AM|PM)?$/i)
+
+  if (!match) return null
+
+  let hour = Number(match[1])
+
+  const minute = Number(match[2])
+
+  const meridiem = match[3]?.toUpperCase()
+
+  if (hour > 23 || minute > 59) return null
+
+  if (meridiem === "AM" && hour === 12) hour = 0
+
+  if (meridiem === "PM" && hour !== 12) hour += 12
+
+  return hour * 60 + minute
 }
 
 function addMinutesToTime(value: string | null | undefined, minutes: number) {
-  const current = toMinutes(value);
-  if (current === null) return null;
+  const current = toMinutes(value)
 
-  const next = current + minutes;
-  if (next >= 24 * 60) return null;
+  if (current === null) return null
+
+  const next = current + minutes
+
+  if (next >= 24 * 60) return null
 
   return `${String(Math.floor(next / 60)).padStart(2, "0")}:${String(
     next % 60,
-  ).padStart(2, "0")}`;
+  ).padStart(2, "0")}`
 }
 
 function normalizeTimeValue(value: unknown) {
-  return typeof value === "string" ? value.slice(0, 5) : "";
+  return typeof value === "string" ? value.slice(0, 5) : ""
 }
 
 function SessionExtensionControls({
   label,
+
   end,
+
   disabled,
+
   onRequest,
 }: {
-  label: string;
-  end?: string | null;
-  disabled?: boolean;
-  onRequest: (minutes: number) => void;
+  label: string
+
+  end?: string | null
+
+  disabled?: boolean
+
+  onRequest: (minutes: number) => void
 }) {
-  const [minutes, setMinutes] = useState(5);
+  const [minutes, setMinutes] = useState(5)
 
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
@@ -859,35 +888,46 @@ function SessionExtensionControls({
         </p>
       )}
     </div>
-  );
+  )
 }
 
 function getEventSessionMeta(
   event: EventData | null | undefined,
+
   nowMinutes: number | null = null,
 ) {
   if (!event) {
     return {
       sessionLabel: null as "morning" | "afternoon" | null,
+
       strict: false,
+
       hasActiveSession: false,
-    };
+    }
   }
+
   if (!event.multiSession) {
     return {
       sessionLabel: "morning" as const,
+
       strict: !!event.strictMorning,
+
       hasActiveSession: true,
-    };
-  }
-  if (nowMinutes === null) {
-    return { sessionLabel: null, strict: false, hasActiveSession: false };
+    }
   }
 
-  const morningStart = toMinutes(event.morningStart);
-  const morningEnd = toMinutes(event.morningEnd);
-  const afternoonStart = toMinutes(event.afternoonStart);
-  const afternoonEnd = toMinutes(event.afternoonEnd);
+  if (nowMinutes === null) {
+    return { sessionLabel: null, strict: false, hasActiveSession: false }
+  }
+
+  const morningStart = toMinutes(event.morningStart)
+
+  const morningEnd = toMinutes(event.morningEnd)
+
+  const afternoonStart = toMinutes(event.afternoonStart)
+
+  const afternoonEnd = toMinutes(event.afternoonEnd)
+
   if (
     morningStart !== null &&
     morningEnd !== null &&
@@ -896,10 +936,13 @@ function getEventSessionMeta(
   ) {
     return {
       sessionLabel: "morning" as const,
+
       strict: !!event.strictMorning,
+
       hasActiveSession: true,
-    };
+    }
   }
+
   if (
     afternoonStart !== null &&
     afternoonEnd !== null &&
@@ -908,218 +951,317 @@ function getEventSessionMeta(
   ) {
     return {
       sessionLabel: "afternoon" as const,
+
       strict: !!event.strictAfternoon,
+
       hasActiveSession: true,
-    };
+    }
   }
-  return { sessionLabel: null, strict: false, hasActiveSession: false };
+
+  return { sessionLabel: null, strict: false, hasActiveSession: false }
 }
 
 function getSelectedSessionMeta(
   event: EventData | null | undefined,
+
   manualSessionLabel: "morning" | "afternoon" | null,
 ) {
   if (!event) {
     return {
       sessionLabel: null as "morning" | "afternoon" | null,
+
       strict: false,
-    };
+    }
   }
+
   if (!event.multiSession) {
-    return { sessionLabel: "morning" as const, strict: !!event.strictMorning };
+    return { sessionLabel: "morning" as const, strict: !!event.strictMorning }
   }
+
   if (manualSessionLabel === "morning" || manualSessionLabel === "afternoon") {
     return {
       sessionLabel: manualSessionLabel,
+
       strict:
         manualSessionLabel === "morning"
           ? !!event.strictMorning
           : !!event.strictAfternoon,
-    };
+    }
   }
-  return getEventSessionMeta(event);
+
+  return getEventSessionMeta(event)
 }
 
-export type Page = string;
-export type Role = "student" | "admin" | null;
-export type FineStatus = "unpaid" | "paid" | "excused";
-export type EventStatus = "active" | "upcoming" | "closed";
+export type Page = string
+
+export type Role = "student" | "admin" | null
+
+export type FineStatus = "unpaid" | "paid" | "excused"
+
+export type EventStatus = "active" | "upcoming" | "closed"
 
 export interface User {
-  firstName: string;
-  middleInitial: string;
-  surname: string;
-  studentId: string;
-  program: string;
-  yearLevel: string;
-  section: string;
-  phone: string;
-  contactEmail: string;
-  role: Role;
-  photoUrl?: string;
-  coverPhotoUrl?: string;
-  idPhotoUrl?: string;
-  qrVersion?: number;
+  firstName: string
+
+  middleInitial: string
+
+  surname: string
+
+  studentId: string
+
+  program: string
+
+  yearLevel: string
+
+  section: string
+
+  phone: string
+
+  contactEmail: string
+
+  role: Role
+
+  photoUrl?: string
+
+  coverPhotoUrl?: string
+
+  idPhotoUrl?: string
+
+  qrVersion?: number
 }
 
 export interface EventData {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  location: string;
-  status: EventStatus;
-  attendees: number;
-  description: string;
-  program: string;
-  fineAmount: number;
-  mediaUrls?: string[];
-  highlightUrl?: string;
-  multiSession?: boolean;
-  sanctionsEnabled?: boolean;
-  strictMorning?: boolean;
-  strictAfternoon?: boolean;
-  morningStart?: string;
-  morningEnd?: string;
-  morningLateCutoff?: string;
-  afternoonStart?: string;
-  afternoonEnd?: string;
-  afternoonLateCutoff?: string;
-  absentFine?: number;
-  lateFine?: number;
-  morningAbsentFine?: number;
-  morningLateFine?: number;
-  afternoonAbsentFine?: number;
-  afternoonLateFine?: number;
-  version?: number;
-  archivedAt?: string;
-  reportAttendedSessions?: number;
-  reportAbsentSessions?: number;
-  reportLateSessions?: number;
-  reportFineTotal?: number;
-  reportSanctionedSessions?: number;
+  id: string
+
+  title: string
+
+  date: string
+
+  time: string
+
+  location: string
+
+  status: EventStatus
+
+  attendees: number
+
+  description: string
+
+  program: string
+
+  fineAmount: number
+
+  mediaUrls?: string[]
+
+  highlightUrl?: string
+
+  multiSession?: boolean
+
+  sanctionsEnabled?: boolean
+
+  strictMorning?: boolean
+
+  strictAfternoon?: boolean
+
+  morningStart?: string
+
+  morningEnd?: string
+
+  morningLateCutoff?: string
+
+  afternoonStart?: string
+
+  afternoonEnd?: string
+
+  afternoonLateCutoff?: string
+
+  absentFine?: number
+
+  lateFine?: number
+
+  morningAbsentFine?: number
+
+  morningLateFine?: number
+
+  afternoonAbsentFine?: number
+
+  afternoonLateFine?: number
+
+  version?: number
+
+  archivedAt?: string
+
+  reportAttendedSessions?: number
+
+  reportAbsentSessions?: number
+
+  reportLateSessions?: number
+
+  reportFineTotal?: number
+
+  reportSanctionedSessions?: number
 }
 
 interface ScanRecord {
-  profileId?: string;
-  name: string;
-  id: string;
-  program: string;
-  section: string;
-  photoUrl?: string;
-  time: string;
-  status: "present" | "confirmed" | "late" | "absent" | "duplicate";
-  sanctioned?: boolean;
-  sessionLabel?: "morning" | "afternoon";
-  action?:
-    | "time_in"
-    | "time_out"
-    | "time_out_rejected"
-    | "event_not_active"
-    | "duplicate";
-  dbId: string | number;
-  fineStatus?: "unpaid" | "paid" | "excused";
-  fineAmount?: number;
+  profileId?: string
+
+  name: string
+
+  id: string
+
+  program: string
+
+  section: string
+
+  photoUrl?: string
+
+  time: string
+
+  status: "present" | "confirmed" | "late" | "absent" | "duplicate"
+
+  sanctioned?: boolean
+
+  sessionLabel?: "morning" | "afternoon"
+
+  action?: "time_in" | "time_out" | "time_out_rejected" | "event_not_active" | "duplicate"
+
+  dbId: string | number
+
+  fineStatus?: "unpaid" | "paid" | "excused"
+
+  fineAmount?: number
 }
 
 export interface ExcuseRequest {
-  id: string;
-  studentName: string;
-  studentId: string;
-  photoUrl?: string;
-  event: string;
-  eventId?: string;
-  fineId?: string;
-  sessionLabel?: "morning" | "afternoon";
-  date: string;
-  reason: string;
-  proofName: string | null;
-  status: "pending" | "approved" | "denied";
-  submittedDate: string;
+  id: string
+
+  studentName: string
+
+  studentId: string
+
+  photoUrl?: string
+
+  event: string
+
+  eventId?: string
+
+  fineId?: string
+
+  sessionLabel?: "morning" | "afternoon"
+
+  date: string
+
+  reason: string
+
+  proofName: string | null
+
+  status: "pending" | "approved" | "denied"
+
+  submittedDate: string
 }
 
 export interface FineRecord {
-  id: string;
-  eventId: string;
-  attendanceScanId?: string;
-  sessionLabel?: "morning" | "afternoon";
-  reason?: string;
-  eventTitle: string;
-  eventDate: string;
-  amount: number;
-  status: FineStatus;
+  id: string
+
+  eventId: string
+
+  attendanceScanId?: string
+
+  sessionLabel?: "morning" | "afternoon"
+
+  reason?: string
+
+  eventTitle: string
+
+  eventDate: string
+
+  amount: number
+
+  status: FineStatus
 }
 
 export interface StudentProfile {
-  profileId?: string;
-  name: string;
-  id: string;
-  program: string;
-  yearLevel: string;
-  section: string;
-  phone: string;
-  email: string;
-  photoUrl?: string;
-  idPhotoUrl?: string;
-  joinedDate: string;
+  profileId?: string
+
+  name: string
+
+  id: string
+
+  program: string
+
+  yearLevel: string
+
+  section: string
+
+  phone: string
+
+  email: string
+
+  photoUrl?: string
+
+  idPhotoUrl?: string
+
+  joinedDate: string
 }
 
 function fullName(u: Pick<User, "firstName" | "middleInitial" | "surname">) {
-  const mid = u.middleInitial ? ` ${u.middleInitial}.` : "";
+  const mid = u.middleInitial ? ` ${u.middleInitial}.` : ""
 
-  return `${u.firstName}${mid} ${u.surname}`.trim();
+  return `${u.firstName}${mid} ${u.surname}`.trim()
 }
 
 function normalizeEventTime(value: string): string | null {
-  const normalized = value.trim().replace(/;/g, ":").toUpperCase();
+  const normalized = value.trim().replace(/;/g, ":").toUpperCase()
 
   const twelveHour = normalized.match(
     /^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/,
-  );
+  )
 
   if (twelveHour) {
-    let hour = Number(twelveHour[1]);
+    let hour = Number(twelveHour[1])
 
-    const minute = Number(twelveHour[2]);
+    const minute = Number(twelveHour[2])
 
-    if (hour < 1 || hour > 12 || minute > 59) return null;
+    if (hour < 1 || hour > 12 || minute > 59) return null
 
-    if (twelveHour[3] === "AM" && hour === 12) hour = 0;
+    if (twelveHour[3] === "AM" && hour === 12) hour = 0
 
-    if (twelveHour[3] === "PM" && hour !== 12) hour += 12;
+    if (twelveHour[3] === "PM" && hour !== 12) hour += 12
 
-    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
   }
 
-  const twentyFourHour = normalized.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  const twentyFourHour = normalized.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/)
 
   if (twentyFourHour) {
-    const hour = Number(twentyFourHour[1]);
+    const hour = Number(twentyFourHour[1])
 
-    const minute = Number(twentyFourHour[2]);
+    const minute = Number(twentyFourHour[2])
 
-    if (hour > 23 || minute > 59) return null;
+    if (hour > 23 || minute > 59) return null
 
-    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
   }
 
-  return null;
+  return null
 }
 
-function parseEventTimeRange(value: string): {
-  start: string;
+function parseEventTimeRange(
+  value: string,
+): {
+  start: string
 
-  end: string | null;
+  end: string | null
 } | null {
-  const parts = value.trim().split(/\s*[-–—]\s*/);
+  const parts = value.trim().split(/\s*[-–—]\s*/)
 
-  const start = normalizeEventTime(parts[0] ?? "");
+  const start = normalizeEventTime(parts[0] ?? "")
 
-  const end = parts[1] ? normalizeEventTime(parts[1]) : null;
+  const end = parts[1] ? normalizeEventTime(parts[1]) : null
 
-  if (!start || (parts[1] && !end)) return null;
+  if (!start || (parts[1] && !end)) return null
 
-  return { start, end };
+  return { start, end }
 }
 
 export const INITIAL_EVENTS: EventData[] = [
@@ -1214,7 +1356,7 @@ export const INITIAL_EVENTS: EventData[] = [
     description:
       "Opening ceremony for the annual intramural sports festival. Parade of athletes, oath-taking, and opening of games.",
   },
-];
+]
 
 const EVENT_SCANS: Record<string, ScanRecord[]> = {
   "2": [
@@ -1444,7 +1586,7 @@ const EVENT_SCANS: Record<string, ScanRecord[]> = {
       dbId: 7,
     },
   ],
-};
+}
 
 const ALL_STUDENTS: StudentProfile[] = [
   {
@@ -1626,7 +1768,7 @@ const ALL_STUDENTS: StudentProfile[] = [
 
     joinedDate: "Aug 17, 2026",
   },
-];
+]
 
 export const INITIAL_ANNOUNCEMENTS = [
   {
@@ -1692,7 +1834,7 @@ export const INITIAL_ANNOUNCEMENTS = [
 
     photoUrl: "",
   },
-];
+]
 
 export const ATTENDANCE_RECORDS = [
   {
@@ -1750,7 +1892,7 @@ export const ATTENDANCE_RECORDS = [
 
     status: "absent",
   },
-];
+]
 
 const STUDENT_FINES: FineRecord[] = [
   {
@@ -1780,7 +1922,7 @@ const STUDENT_FINES: FineRecord[] = [
 
     status: "unpaid",
   },
-];
+]
 
 const sv = {
   fill: "none",
@@ -1792,9 +1934,9 @@ const sv = {
   strokeLinecap: "round" as const,
 
   strokeLinejoin: "round" as const,
-};
+}
 
-const ic = "w-[18px] h-[18px] shrink-0";
+const ic = "w-[18px] h-[18px] shrink-0"
 
 const Icons = {
   Home: () => (
@@ -2128,7 +2270,7 @@ const Icons = {
       <line x1="3" y1="18" x2="21" y2="18" />
     </svg>
   ),
-};
+}
 
 function Toggle({
   on,
@@ -2141,15 +2283,15 @@ function Toggle({
 
   desc,
 }: {
-  on: boolean;
+  on: boolean
 
-  onToggle: () => void;
+  onToggle: () => void
 
-  disabled?: boolean;
+  disabled?: boolean
 
-  label: string;
+  label: string
 
-  desc?: string;
+  desc?: string
 }) {
   return (
     <div className="flex items-center justify-between py-4 gap-4">
@@ -2177,21 +2319,23 @@ function Toggle({
         />
       </button>
     </div>
-  );
+  )
 }
 
 function FieldInput({
   label,
+
   required,
 
   error,
 
   ...p
 }: {
-  label: string;
-  required?: boolean;
+  label: string
 
-  error?: string;
+  required?: boolean
+
+  error?: string
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -2206,11 +2350,12 @@ function FieldInput({
       />
       {error && <p className="text-[10px] text-red-500">{error}</p>}
     </div>
-  );
+  )
 }
 
 function FieldSelect({
   label,
+
   required,
 
   children,
@@ -2219,12 +2364,13 @@ function FieldSelect({
 
   ...p
 }: {
-  label: string;
-  required?: boolean;
+  label: string
 
-  children: React.ReactNode;
+  required?: boolean
 
-  error?: string;
+  children: React.ReactNode
+
+  error?: string
 } & React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -2241,7 +2387,7 @@ function FieldSelect({
       </select>
       {error && <p className="text-[10px] text-red-500">{error}</p>}
     </div>
-  );
+  )
 }
 
 function FieldTextarea({
@@ -2251,9 +2397,9 @@ function FieldTextarea({
 
   ...p
 }: {
-  label: string;
+  label: string
 
-  error?: string;
+  error?: string
 } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -2266,15 +2412,17 @@ function FieldTextarea({
       />
       {error && <p className="text-[10px] text-red-500">{error}</p>}
     </div>
-  );
+  )
 }
 
 function Badge({
   status,
+
   sanctioned = false,
 }: {
-  status: string;
-  sanctioned?: boolean;
+  status: string
+
+  sanctioned?: boolean
 }) {
   const cfg: Record<string, { cls: string; label: string; dot?: boolean }> = {
     active: {
@@ -2380,19 +2528,20 @@ function Badge({
 
       label: "Cleared",
     },
-  };
+  }
 
   const c = cfg[status] ?? {
     cls: "bg-slate-100 text-slate-500",
 
     label: status,
-  };
+  }
 
   const sanctionedStatus =
-    sanctioned && (status === "late" || status === "absent");
+    sanctioned && (status === "late" || status === "absent")
+
   const badgeClass = sanctionedStatus
     ? "bg-violet-50 text-violet-700 ring-1 ring-violet-200"
-    : c.cls;
+    : c.cls
 
   return (
     <span
@@ -2408,7 +2557,7 @@ function Badge({
       )}
       {sanctionedStatus ? `Sanctioned · ${c.label}` : c.label}
     </span>
-  );
+  )
 }
 
 function InlineToggle({
@@ -2418,11 +2567,11 @@ function InlineToggle({
 
   label,
 }: {
-  on: boolean;
+  on: boolean
 
-  onToggle: () => void;
+  onToggle: () => void
 
-  label: string;
+  label: string
 }) {
   return (
     <div className="flex items-center justify-between py-2">
@@ -2442,7 +2591,7 @@ function InlineToggle({
         />
       </button>
     </div>
-  );
+  )
 }
 
 function SessionFields({
@@ -2466,25 +2615,25 @@ function SessionFields({
 
   onStrict,
 }: {
-  prefix: string;
+  prefix: string
 
-  label: string;
+  label: string
 
-  start: string;
+  start: string
 
-  onStart: (v: string) => void;
+  onStart: (v: string) => void
 
-  end: string;
+  end: string
 
-  onEnd: (v: string) => void;
+  onEnd: (v: string) => void
 
-  cutoff: string;
+  cutoff: string
 
-  onCutoff: (v: string) => void;
+  onCutoff: (v: string) => void
 
-  strict: boolean;
+  strict: boolean
 
-  onStrict: () => void;
+  onStrict: () => void
 }) {
   return (
     <div className="border border-slate-100 rounded-xl p-3 space-y-2.5">
@@ -2517,7 +2666,7 @@ function SessionFields({
         label="Strict attendance (require time-out scan)"
       />
     </div>
-  );
+  )
 }
 
 function FineFields({
@@ -2526,28 +2675,30 @@ function FineFields({
   values,
 
   onChange,
+
   enabled = true,
 }: {
-  multi: boolean;
+  multi: boolean
 
   values: {
-    absentFine: string;
+    absentFine: string
 
-    lateFine: string;
+    lateFine: string
 
-    morningAbsentFine: string;
+    morningAbsentFine: string
 
-    morningLateFine: string;
+    morningLateFine: string
 
-    afternoonAbsentFine: string;
+    afternoonAbsentFine: string
 
-    afternoonLateFine: string;
-  };
+    afternoonLateFine: string
+  }
 
-  onChange: (k: string, v: string) => void;
-  enabled?: boolean;
+  onChange: (k: string, v: string) => void
+
+  enabled?: boolean
 }) {
-  if (!enabled) return null;
+  if (!enabled) return null
 
   return (
     <div className="space-y-2.5">
@@ -2608,7 +2759,7 @@ function FineFields({
         </>
       )}
     </div>
-  );
+  )
 }
 
 function UnavailableFinesNotice() {
@@ -2622,7 +2773,7 @@ function UnavailableFinesNotice() {
         attendance fine rules for this event.
       </p>
     </div>
-  );
+  )
 }
 
 function Avatar({
@@ -2632,15 +2783,15 @@ function Avatar({
 
   size = "md",
 }: {
-  name: string;
+  name: string
 
-  photoUrl?: string;
+  photoUrl?: string
 
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg"
 }) {
   const sz = { xs: "w-6 h-6", sm: "w-7 h-7", md: "w-9 h-9", lg: "w-14 h-14" }[
     size
-  ];
+  ]
 
   if (photoUrl)
     return (
@@ -2649,7 +2800,7 @@ function Avatar({
         alt={name}
         className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200`}
       />
-    );
+    )
 
   const letters = name
 
@@ -2663,7 +2814,7 @@ function Avatar({
 
     .join("")
 
-    .toUpperCase();
+    .toUpperCase()
 
   if (letters) {
     const textSz = {
@@ -2674,7 +2825,7 @@ function Avatar({
       md: "text-sm",
 
       lg: "text-lg",
-    }[size];
+    }[size]
 
     return (
       <div
@@ -2682,7 +2833,7 @@ function Avatar({
       >
         {letters}
       </div>
-    );
+    )
   }
 
   return (
@@ -2694,23 +2845,23 @@ function Avatar({
         <ellipse cx="18" cy="42" rx="18" ry="15" />
       </svg>
     </div>
-  );
+  )
 }
 
 function isGoogleProfilePhotoUrl(photoUrl?: string) {
-  if (!photoUrl) return false;
+  if (!photoUrl) return false
 
   try {
-    const hostname = new URL(photoUrl).hostname.toLowerCase();
+    const hostname = new URL(photoUrl).hostname.toLowerCase()
 
     return (
       hostname === "googleusercontent.com" ||
       hostname.endsWith(".googleusercontent.com") ||
       hostname === "google.com" ||
       hostname.endsWith(".google.com")
-    );
+    )
   } catch {
-    return false;
+    return false
   }
 }
 
@@ -2721,20 +2872,23 @@ export function ProfileIcon({
 
   previewable = true,
 }: {
-  photoUrl?: string;
+  photoUrl?: string
 
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg"
 
-  previewable?: boolean;
+  previewable?: boolean
 }) {
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const sz = {
     xs: "w-7 h-7",
+
     sm: "w-9 h-9",
+
     md: "w-11 h-11",
+
     lg: "w-16 h-16",
-  }[size];
+  }[size]
 
   const content = photoUrl ? (
     <OptimizedImage
@@ -2751,10 +2905,10 @@ export function ProfileIcon({
         <ellipse cx="18" cy="42" rx="18" ry="15" />
       </svg>
     </div>
-  );
+  )
 
   if (!photoUrl || !previewable || isGoogleProfilePhotoUrl(photoUrl)) {
-    return content;
+    return content
   }
 
   return (
@@ -2792,7 +2946,7 @@ export function ProfileIcon({
         </div>
       )}
     </>
-  );
+  )
 }
 
 export function Toast({
@@ -2800,9 +2954,9 @@ export function Toast({
 
   variant = "success",
 }: {
-  message: string;
+  message: string
 
-  variant?: "success" | "error";
+  variant?: "success" | "error"
 }) {
   return (
     <div
@@ -2818,31 +2972,31 @@ export function Toast({
       </span>
       {message}
     </div>
-  );
+  )
 }
 
 export function DotMenu({
   items,
 }: {
   items: {
-    label: string;
+    label: string
 
-    icon?: React.ReactNode;
+    icon?: React.ReactNode
 
-    danger?: boolean;
+    danger?: boolean
 
-    onClick: () => void;
-  }[];
+    onClick: () => void
+  }[]
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false)
 
   return (
     <div className="relative">
       <button
         onClick={(e) => {
-          e.stopPropagation();
+          e.stopPropagation()
 
-          setOpen((o) => !o);
+          setOpen((o) => !o)
         }}
         className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
       >
@@ -2856,9 +3010,9 @@ export function DotMenu({
               <button
                 key={it.label}
                 onClick={() => {
-                  it.onClick();
+                  it.onClick()
 
-                  setOpen(false);
+                  setOpen(false)
                 }}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium hover:bg-slate-50 transition-colors text-left ${
                   it.danger ? "text-red-500" : "text-slate-700"
@@ -2878,7 +3032,7 @@ export function DotMenu({
         </>
       )}
     </div>
-  );
+  )
 }
 
 export function BackButton({
@@ -2886,9 +3040,9 @@ export function BackButton({
 
   onClick,
 }: {
-  label?: string;
+  label?: string
 
-  onClick: () => void;
+  onClick: () => void
 }) {
   return (
     <button
@@ -2900,7 +3054,7 @@ export function BackButton({
       </span>
       {label}
     </button>
-  );
+  )
 }
 
 export function PageShell({ children }: { children: React.ReactNode }) {
@@ -2908,7 +3062,7 @@ export function PageShell({ children }: { children: React.ReactNode }) {
     <div className="w-full px-2.5 pt-2 pb-12 md:max-w-6xl md:mx-auto md:px-6 md:pt-4 md:pb-16 lg:max-w-7xl">
       {children}
     </div>
-  );
+  )
 }
 
 export function PageHeader({
@@ -2918,11 +3072,11 @@ export function PageHeader({
 
   action,
 }: {
-  title: string;
+  title: string
 
-  subtitle?: string;
+  subtitle?: string
 
-  action?: React.ReactNode;
+  action?: React.ReactNode
 }) {
   return (
     <div className="flex items-start justify-between mb-6">
@@ -2936,7 +3090,7 @@ export function PageHeader({
       </div>
       {action}
     </div>
-  );
+  )
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -2944,7 +3098,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">
       {children}
     </p>
-  );
+  )
 }
 
 export function AdesseMark({ className = "w-7 h-7" }: { className?: string }) {
@@ -2954,40 +3108,56 @@ export function AdesseMark({ className = "w-7 h-7" }: { className?: string }) {
       alt=""
       className={`${className} shrink-0 object-contain`}
     />
-  );
+  )
 }
 
 export function AdesseWordmark({
   variant = "header",
+
   className = "",
+
   textClassName = "",
 }: {
-  variant?: "header" | "mobile" | "hero" | "auth";
-  className?: string;
-  textClassName?: string;
+  variant?: "header" | "mobile" | "hero" | "auth"
+
+  className?: string
+
+  textClassName?: string
 }) {
   const styles = {
     header: {
       wrapper: "h-8 gap-[0.18rem]",
+
       mark: "h-9 w-11",
+
       text: "text-base",
     },
+
     mobile: {
       wrapper: "h-6 gap-[0.15rem]",
+
       mark: "h-6 w-7",
+
       text: "text-sm",
     },
+
     hero: {
       wrapper: "h-[4.5rem] gap-1",
+
       mark: "h-[4.5rem] w-[5.5rem]",
+
       text: "text-5xl md:text-6xl",
     },
+
     auth: {
       wrapper: "h-14 gap-[0.25rem]",
+
       mark: "h-14 w-[4.25rem]",
+
       text: "text-3xl",
     },
-  }[variant];
+  }[variant]
+
   return (
     <span
       className={`inline-flex items-end whitespace-nowrap ${styles.wrapper} ${className}`}
@@ -3000,21 +3170,23 @@ export function AdesseWordmark({
         desse
       </span>
     </span>
-  );
+  )
 }
 
 export function StudentQR({
   studentId,
+
   qrVersion = 1,
 
   size,
 }: {
-  studentId: string;
-  qrVersion?: number;
+  studentId: string
 
-  size: number;
+  qrVersion?: number
+
+  size: number
 }) {
-  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [dataUrl, setDataUrl] = useState<string | null>(null)
 
   useEffect(() => {
     QRCode.toDataURL(`ADESSE:${studentId}:v${qrVersion}`, {
@@ -3029,8 +3201,8 @@ export function StudentQR({
 
       .then(setDataUrl)
 
-      .catch(() => setDataUrl(null));
-  }, [qrVersion, studentId, size]);
+      .catch(() => setDataUrl(null))
+  }, [qrVersion, studentId, size])
 
   if (!dataUrl)
     return (
@@ -3038,7 +3210,7 @@ export function StudentQR({
         style={{ width: size, height: size }}
         className="bg-slate-100 rounded animate-pulse"
       />
-    );
+    )
 
   return (
     <OptimizedImage
@@ -3048,7 +3220,7 @@ export function StudentQR({
       alt="Student QR Code"
       style={{ display: "block", imageRendering: "pixelated" }}
     />
-  );
+  )
 }
 
 export function TopBar({
@@ -3057,33 +3229,41 @@ export function TopBar({
   onNav,
 
   onMenuOpen,
+
+  sidebarCollapsed,
+
+  onSidebarToggle,
 }: {
-  user: User | null;
+  user: User | null
 
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  onMenuOpen: () => void;
+  onMenuOpen: () => void
+
+  sidebarCollapsed: boolean
+
+  onSidebarToggle: () => void
 }) {
-  const router = useRouter();
+  const router = useRouter()
 
-  const pathname = usePathname();
+  const pathname = usePathname()
 
   const hideAuthButton =
     pathname === "/login" ||
     pathname.startsWith("/login") ||
     pathname === "/onboarding" ||
-    pathname.startsWith("/onboarding");
+    pathname.startsWith("/onboarding")
 
   const dest =
-    user?.role === "admin" ? "/admin-dashboard" : user ? "/dashboard" : "/";
+    user?.role === "admin" ? "/admin-dashboard" : user ? "/dashboard" : "/"
 
-  const isMod = user?.role === "admin";
+  const isMod = user?.role === "admin"
 
-  const notificationDest = isMod ? "/admin-announcements" : "/announcements";
+  const notificationDest = isMod ? "/admin-announcements" : "/announcements"
 
-  const [dotOpen, setDotOpen] = useState(false);
+  const [dotOpen, setDotOpen] = useState(false)
 
-  const go = (target: string) => router.push(target);
+  const go = (target: string) => router.push(target)
 
   return (
     <header
@@ -3103,6 +3283,21 @@ export function TopBar({
               aria-label="Open menu"
             >
               <Icons.Menu />
+            </button>
+          )}
+          {user && (
+            <button
+              type="button"
+              onClick={onSidebarToggle}
+              className={`hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all duration-300 hover:bg-slate-100 hover:text-slate-800 lg:flex ${
+                sidebarCollapsed ? "rotate-180" : "rotate-0"
+              }`}
+              aria-label={
+                sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+              }
+              aria-expanded={!sidebarCollapsed}
+            >
+              <Icons.ChevronLeft />
             </button>
           )}
           <button
@@ -3125,7 +3320,7 @@ export function TopBar({
                 aria-hidden="true"
               />
               <span className="min-w-0 max-w-[15rem] truncate text-left text-[10px] font-bold uppercase leading-tight tracking-[0.08em] text-slate-600 md:max-w-none md:text-[11px]">
-              Student Event Attendance &amp; Records System
+                Student Event Attendance &amp; Records System
               </span>
             </span>
           </button>
@@ -3256,7 +3451,7 @@ export function TopBar({
         </div>
       </div>
     </header>
-  );
+  )
 }
 
 export function Sidebar({
@@ -3273,28 +3468,34 @@ export function Sidebar({
   onLogout,
 
   badges,
+
+  collapsed,
+
+  onToggleCollapse,
 }: {
-  page: Page;
+  page: Page
 
-  user: User | null;
+  user: User | null
 
-  open: boolean;
+  open: boolean
 
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  onClose: () => void;
+  onClose: () => void
 
-  onLogout: () => void;
+  onLogout: () => void
 
-  badges?: Partial<Record<Page, number>>;
+  badges?: Partial<Record<Page, number>>
+
+  collapsed: boolean
+
+  onToggleCollapse: () => void
 }) {
-  const router = useRouter();
+  const router = useRouter()
 
-  const [collapsed, setCollapsed] = useState(false);
+  if (!user) return null
 
-  if (!user) return null;
-
-  const isMod = user.role === "admin";
+  const isMod = user.role === "admin"
 
   const nav = isMod
     ? [
@@ -3346,7 +3547,7 @@ export function Sidebar({
         { p: "my-fines" as Page, l: "My Fines", I: Icons.Peso },
 
         { p: "profile" as Page, l: "Profile", I: Icons.User },
-      ];
+      ]
 
   const routeFromPage: Record<Page, string> = {
     landing: "/",
@@ -3366,6 +3567,7 @@ export function Sidebar({
     announcements: "/announcements",
 
     "dev-notes": "/dev-notes",
+
     "attendance-history": "/attendance-history",
 
     "my-fines": "/my-fines",
@@ -3389,40 +3591,25 @@ export function Sidebar({
     "admin-excuse-requests": "/admin-excuse-requests",
 
     "admin-settings": "/admin-settings",
-  };
+  }
 
   const handleNav = (p: Page) => {
-    const target = routeFromPage[p] ?? "/dashboard";
+    const target = routeFromPage[p] ?? "/dashboard"
 
-    router.push(target);
+    router.push(target)
 
-    onClose();
-  };
+    onClose()
+  }
 
   const prefetchRoute = (p: Page) => {
-    const target = routeFromPage[p] ?? "/dashboard";
+    const target = routeFromPage[p] ?? "/dashboard"
 
-    void router.prefetch(target);
-  };
+    void router.prefetch(target)
+  }
 
   const inner = (
     <div className="flex flex-col h-full bg-white">
       {}
-      <div
-        className={`hidden h-[52px] shrink-0 items-center border-b border-slate-100 lg:flex ${
-          collapsed ? "justify-center" : "justify-end px-3"
-        }`}
-      >
-        <button
-          type="button"
-          onClick={() => setCollapsed((value) => !value)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          aria-expanded={!collapsed}
-        >
-          {collapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
-        </button>
-      </div>
       <div className="flex items-center justify-between px-4 h-[52px] border-b border-slate-100 lg:hidden shrink-0">
         <span className="flex items-center gap-2" aria-label="Adesse">
           <AdesseMark className="h-7 w-7" />
@@ -3443,14 +3630,13 @@ export function Sidebar({
       {}
       <nav className="flex-1 px-2 pt-3 pb-2 space-y-0.5 overflow-y-auto">
         {nav.map(({ p, l, I }) => {
-          const active = page === p;
+          const active = page === p
 
-          const count = badges?.[p] ?? 0;
+          const count = badges?.[p] ?? 0
 
-          const badgeLabel =
-            count > 9 ? "9+" : count > 0 ? String(count) : null;
+          const badgeLabel = count > 9 ? "9+" : count > 0 ? String(count) : null
 
-          const target = routeFromPage[p] ?? "/dashboard";
+          const target = routeFromPage[p] ?? "/dashboard"
 
           return (
             <Link
@@ -3494,7 +3680,7 @@ export function Sidebar({
                 {l}
               </span>
             </Link>
-          );
+          )
         })}
       </nav>
 
@@ -3550,7 +3736,7 @@ export function Sidebar({
         </div>
       </div>
     </div>
-  );
+  )
 
   return (
     <>
@@ -3561,6 +3747,21 @@ export function Sidebar({
         }`}
       >
         {inner}
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          className="group absolute right-0 top-1/2 z-20 hidden h-16 w-3 -translate-y-1/2 items-center justify-center rounded-l-md border border-r-0 border-slate-200 bg-white/95 text-slate-300 shadow-sm transition-all duration-300 hover:w-5 hover:bg-slate-50 hover:text-slate-600 lg:flex"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!collapsed}
+        >
+          <span
+            className={`transition-transform duration-300 ease-out ${
+              collapsed ? "rotate-180" : "rotate-0"
+            }`}
+          >
+            <Icons.ChevronRight />
+          </span>
+        </button>
       </aside>
 
       {}
@@ -3580,84 +3781,84 @@ export function Sidebar({
         </div>
       )}
     </>
-  );
+  )
 }
 
 function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
-  const n = slides.length;
+  const n = slides.length
 
-  const [trackIdx, setTrackIdx] = useState(0);
+  const [trackIdx, setTrackIdx] = useState(0)
 
-  const [animated, setAnimated] = useState(true);
+  const [animated, setAnimated] = useState(true)
 
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(false)
 
-  const [visibilityStamp, setVisibilityStamp] = useState(0);
+  const [visibilityStamp, setVisibilityStamp] = useState(0)
 
-  const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const realIdx = trackIdx % n;
+  const realIdx = trackIdx % n
 
-  const items = n > 1 ? [...slides, slides[0]] : slides;
+  const items = n > 1 ? [...slides, slides[0]] : slides
 
-  const total = items.length;
+  const total = items.length
 
   const advance = () => {
-    setAnimated(true);
+    setAnimated(true)
 
-    setTrackIdx((i) => i + 1);
-  };
+    setTrackIdx((i) => i + 1)
+  }
 
   const go = (next: number) => {
-    const target = ((next % n) + n) % n;
+    const target = ((next % n) + n) % n
 
-    setAnimated(true);
+    setAnimated(true)
 
-    setTrackIdx(target);
+    setTrackIdx(target)
 
-    setPaused(true);
+    setPaused(true)
 
-    if (pauseTimer.current) clearTimeout(pauseTimer.current);
+    if (pauseTimer.current) clearTimeout(pauseTimer.current)
 
-    pauseTimer.current = setTimeout(() => setPaused(false), 8000);
-  };
+    pauseTimer.current = setTimeout(() => setPaused(false), 8000)
+  }
 
   const handleTransitionEnd = () => {
     if (trackIdx === n) {
-      setAnimated(false);
+      setAnimated(false)
 
-      setTrackIdx(0);
+      setTrackIdx(0)
     }
-  };
+  }
 
   useEffect(() => {
-    if (paused || n <= 1) return;
+    if (paused || n <= 1) return
 
-    const t = setInterval(advance, 5000);
+    const t = setInterval(advance, 5000)
 
-    return () => clearInterval(t);
-  }, [paused, n]);
+    return () => clearInterval(t)
+  }, [paused, n])
 
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        setTrackIdx(0);
+        setTrackIdx(0)
 
-        setAnimated(false);
+        setAnimated(false)
 
-        setPaused(false);
+        setPaused(false)
 
-        setVisibilityStamp((v) => v + 1);
+        setVisibilityStamp((v) => v + 1)
       }
-    };
+    }
 
-    document.addEventListener("visibilitychange", handleVisibility);
+    document.addEventListener("visibilitychange", handleVisibility)
 
     return () =>
-      document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
+      document.removeEventListener("visibilitychange", handleVisibility)
+  }, [])
 
-  if (n === 0) return null;
+  if (n === 0) return null
 
   return (
     <div
@@ -3763,7 +3964,7 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
         </div>
       )}
     </div>
-  );
+  )
 }
 
 function LandingPage({
@@ -3773,80 +3974,80 @@ function LandingPage({
 
   user,
 }: {
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  settings: SystemSettings;
+  settings: SystemSettings
 
-  user: User | null;
+  user: User | null
 }) {
   const heroUrls = settings.heroImageUrls.filter(
     (url) => !!url && !url.startsWith("blob:"),
-  );
+  )
 
   const carouselSlides = settings.carouselSlides.filter(
     (slide) => !!slide.imageUrl && !slide.imageUrl.startsWith("blob:"),
-  );
+  )
 
-  const hasHero = heroUrls.length > 0;
+  const hasHero = heroUrls.length > 0
 
-  const hn = heroUrls.length;
+  const hn = heroUrls.length
 
-  const [heroTrack, setHeroTrack] = useState(0);
+  const [heroTrack, setHeroTrack] = useState(0)
 
-  const [heroAnim, setHeroAnim] = useState(true);
+  const [heroAnim, setHeroAnim] = useState(true)
 
-  const [heroVisibilityStamp, setHeroVisibilityStamp] = useState(0);
+  const [heroVisibilityStamp, setHeroVisibilityStamp] = useState(0)
 
-  const heroRealIdx = heroTrack % (hn || 1);
+  const heroRealIdx = heroTrack % (hn || 1)
 
-  const heroItems = hn > 1 ? [...heroUrls, heroUrls[0]] : heroUrls;
+  const heroItems = hn > 1 ? [...heroUrls, heroUrls[0]] : heroUrls
 
-  const heroTotal = heroItems.length;
+  const heroTotal = heroItems.length
 
   const heroAdvance = () => {
-    setHeroAnim(true);
+    setHeroAnim(true)
 
-    setHeroTrack((i) => i + 1);
-  };
+    setHeroTrack((i) => i + 1)
+  }
 
   const heroTransitionEnd = () => {
     if (heroTrack === hn) {
-      setHeroAnim(false);
+      setHeroAnim(false)
 
-      setHeroTrack(0);
+      setHeroTrack(0)
     }
-  };
+  }
 
   useEffect(() => {
-    if (hn <= 1) return;
+    if (hn <= 1) return
 
-    const t = setInterval(heroAdvance, 5000);
+    const t = setInterval(heroAdvance, 5000)
 
-    return () => clearInterval(t);
-  }, [hn]);
+    return () => clearInterval(t)
+  }, [hn])
 
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        setHeroTrack(0);
+        setHeroTrack(0)
 
-        setHeroAnim(false);
+        setHeroAnim(false)
 
-        setHeroVisibilityStamp((v) => v + 1);
+        setHeroVisibilityStamp((v) => v + 1)
       }
-    };
+    }
 
-    document.addEventListener("visibilitychange", handleVisibility);
+    document.addEventListener("visibilitychange", handleVisibility)
 
     return () =>
-      document.removeEventListener("visibilitychange", handleVisibility);
-  }, [hn]);
+      document.removeEventListener("visibilitychange", handleVisibility)
+  }, [hn])
 
   useEffect(() => {
-    setHeroTrack(0);
+    setHeroTrack(0)
 
-    setHeroAnim(false);
-  }, [hn]);
+    setHeroAnim(false)
+  }, [hn])
 
   return (
     <div className="min-h-screen bg-white">
@@ -3998,15 +4199,15 @@ function LandingPage({
                 if (user) {
                   onNav(
                     user.role === "admin" ? "admin-dashboard" : "dashboard",
-                  );
+                  )
 
-                  return;
+                  return
                 }
 
                 if (typeof window !== "undefined") {
-                  window.location.assign("/login");
+                  window.location.assign("/login")
                 } else {
-                  onNav("login");
+                  onNav("login")
                 }
               }}
               className="h-11 px-6 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-px"
@@ -4083,39 +4284,39 @@ function LandingPage({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 export function LoginPage({ onBack }: { onBack: () => void }) {
-  const router = useRouter();
+  const router = useRouter()
 
-  const [showEmailFlow, setShowEmailFlow] = useState(false);
+  const [showEmailFlow, setShowEmailFlow] = useState(false)
 
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup">("signin")
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("")
 
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState("")
 
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("")
 
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false)
 
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  const [loading, setLoading] = useState<"google" | "submit" | null>(null);
+  const [loading, setLoading] = useState<"google" | "submit" | null>(null)
 
   const routeAfterAuth = async () => {
     const {
       data: { user },
 
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser()
 
     if (userError || !user) {
-      router.push("/login");
+      router.push("/login")
 
-      return;
+      return
     }
 
     const { data: profile, error: profileError } = await supabase
@@ -4126,10 +4327,10 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
 
       .eq("id", user.id)
 
-      .maybeSingle();
+      .maybeSingle()
 
     if (profileError && profileError.code !== "PGRST116") {
-      console.error(profileError);
+      console.error(profileError)
     }
 
     const incomplete =
@@ -4137,23 +4338,23 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
       !profile.first_name ||
       !profile.surname ||
       (profile.role !== "admin" &&
-        (!profile.student_id || !profile.program || !profile.year_level));
+        (!profile.student_id || !profile.program || !profile.year_level))
 
     if (incomplete) {
-      router.push("/onboarding?freshLogin=1");
+      router.push("/onboarding?freshLogin=1")
 
-      return;
+      return
     }
 
     router.push(
       profile.role === "admin"
         ? "/admin-dashboard?freshLogin=1"
         : "/dashboard?freshLogin=1",
-    );
-  };
+    )
+  }
 
   const handleGoogleLogin = async () => {
-    setLoading("google");
+    setLoading("google")
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -4162,73 +4363,73 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
-      });
+      })
 
       if (error) {
-        console.error(error);
+        console.error(error)
 
-        toast.error(error.message || "Google sign-in failed.");
+        toast.error(error.message || "Google sign-in failed.")
       }
     } catch (error) {
-      console.error(error);
+      console.error(error)
 
-      toast.error("Google sign-in failed.");
+      toast.error("Google sign-in failed.")
     } finally {
-      setLoading(null);
+      setLoading(null)
     }
-  };
+  }
 
   const handleEmailSubmit = async () => {
-    const trimmedEmail = email.trim();
+    const trimmedEmail = email.trim()
 
     if (!trimmedEmail || !password) {
-      toast.error("Please enter both your email and password.");
+      toast.error("Please enter both your email and password.")
 
-      return;
+      return
     }
 
     if (mode === "signup") {
       if (!confirmPassword) {
-        toast.error("Please confirm your password.");
+        toast.error("Please confirm your password.")
 
-        return;
+        return
       }
 
       if (password !== confirmPassword) {
-        toast.error("Passwords do not match.");
+        toast.error("Passwords do not match.")
 
-        return;
+        return
       }
     }
 
-    setLoading("submit");
+    setLoading("submit")
 
     try {
-      let result;
+      let result
 
       if (mode === "signin") {
         result = await supabase.auth.signInWithPassword({
           email: trimmedEmail,
 
           password,
-        });
+        })
       } else {
         result = await supabase.auth.signUp({
           email: trimmedEmail,
 
           password,
-        });
+        })
       }
 
       if (result.error) {
-        const message = result.error.message.toLowerCase();
+        const message = result.error.message.toLowerCase()
 
         if (
           message.includes("invalid login") ||
           message.includes("wrong password") ||
           message.includes("invalid credentials")
         ) {
-          toast.error("Invalid email or password.");
+          toast.error("Invalid email or password.")
         } else if (
           message.includes("already registered") ||
           message.includes("user already registered") ||
@@ -4236,49 +4437,49 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
         ) {
           toast.error(
             "This email is already registered. Please sign in instead.",
-          );
+          )
         } else if (message.includes("password") && message.includes("match")) {
-          toast.error("Passwords do not match.");
+          toast.error("Passwords do not match.")
         } else if (message.includes("password") && message.includes("least")) {
-          toast.error("Password must be at least 6 characters long.");
+          toast.error("Password must be at least 6 characters long.")
         } else {
-          toast.error(result.error.message || "Authentication failed.");
+          toast.error(result.error.message || "Authentication failed.")
         }
 
-        return;
+        return
       }
 
       if (mode === "signup") {
         if (result.data.session) {
-          await routeAfterAuth();
+          await routeAfterAuth()
         } else {
           toast.success(
             "Account created. Please check your inbox and confirm your email before signing in.",
-          );
+          )
 
-          setMode("signin");
+          setMode("signin")
 
-          setPassword("");
+          setPassword("")
 
-          setConfirmPassword("");
+          setConfirmPassword("")
 
-          setShowPassword(false);
+          setShowPassword(false)
 
-          setShowConfirmPassword(false);
+          setShowConfirmPassword(false)
         }
 
-        return;
+        return
       }
 
-      await routeAfterAuth();
+      await routeAfterAuth()
     } catch (error) {
-      console.error(error);
+      console.error(error)
 
-      toast.error("Authentication failed. Please try again.");
+      toast.error("Authentication failed. Please try again.")
     } finally {
-      setLoading(null);
+      setLoading(null)
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-3.5 bg-[#f8faf9] md:p-6">
@@ -4314,7 +4515,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
             <button
               type="button"
               onClick={() => {
-                setShowEmailFlow(true);
+                setShowEmailFlow(true)
               }}
               disabled={!!loading}
               className="w-full h-12 flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 rounded-xl text-sm font-semibold text-white transition-all shadow-sm disabled:opacity-50"
@@ -4443,11 +4644,11 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                   <button
                     type="button"
                     onClick={() => {
-                      setMode(mode === "signin" ? "signup" : "signin");
+                      setMode(mode === "signin" ? "signup" : "signin")
 
-                      setPassword("");
+                      setPassword("")
 
-                      setConfirmPassword("");
+                      setConfirmPassword("")
                     }}
                     className="text-emerald-500 font-semibold hover:text-emerald-600"
                   >
@@ -4458,15 +4659,15 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                 <button
                   type="button"
                   onClick={() => {
-                    setShowEmailFlow(false);
+                    setShowEmailFlow(false)
 
-                    setPassword("");
+                    setPassword("")
 
-                    setConfirmPassword("");
+                    setConfirmPassword("")
 
-                    setShowPassword(false);
+                    setShowPassword(false)
 
-                    setShowConfirmPassword(false);
+                    setShowConfirmPassword(false)
                   }}
                   className="w-full text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-1 pt-3"
                 >
@@ -4490,45 +4691,46 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 export interface OBForm {
-  firstName: string;
+  firstName: string
 
-  middleInitial: string;
+  middleInitial: string
 
-  surname: string;
+  surname: string
 
-  phone: string;
+  phone: string
 
-  contactEmail: string;
+  contactEmail: string
 
-  studentId: string;
+  studentId: string
 
-  program: string;
+  program: string
 
-  yearLevel: string;
+  yearLevel: string
 
-  section: string;
+  section: string
 
-  idPhotoUrl?: string;
+  idPhotoUrl?: string
 
-  agreedToTerms?: boolean;
+  agreedToTerms?: boolean
 }
 
 export function OnboardingPage({
   onComplete,
+
   submitting = false,
 }: {
-  onComplete: (d: OBForm) => Promise<boolean> | boolean | void;
-  submitting?: boolean;
-}) {
-  const [step, setStep] = useState(1);
+  onComplete: (d: OBForm) => Promise<boolean> | boolean | void
 
-  const [idPhotoUploadState, setIdPhotoUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  submitting?: boolean
+}) {
+  const [step, setStep] = useState(1)
+
+  const [idPhotoUploadState, setIdPhotoUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
   const [f, setF] = useState<OBForm>({
     firstName: "",
@@ -4548,26 +4750,26 @@ export function OnboardingPage({
     yearLevel: "",
 
     section: "",
-  });
+  })
 
-  const [agreed, setAgreed] = useState(false);
+  const [agreed, setAgreed] = useState(false)
 
-  const idPhotoRef = useRef<HTMLInputElement>(null);
+  const idPhotoRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     return () => {
       if (f.idPhotoUrl) {
-        URL.revokeObjectURL(f.idPhotoUrl);
+        URL.revokeObjectURL(f.idPhotoUrl)
       }
-    };
-  }, []);
+    }
+  }, [])
 
   const set =
     (k: keyof OBForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-      setF((p) => ({ ...p, [k]: e.target.value }));
+      setF((p) => ({ ...p, [k]: e.target.value }))
 
-  const TOTAL = 6;
+  const TOTAL = 6
 
   const steps = [
     {
@@ -4593,40 +4795,42 @@ export function OnboardingPage({
     },
 
     { t: "Terms & Privacy", d: "Please read and agree to continue." },
-  ];
+  ]
 
   const canContinue = () => {
     if (step === 1) {
-      return f.firstName.trim().length > 0 && f.surname.trim().length > 0;
+      return f.firstName.trim().length > 0 && f.surname.trim().length > 0
     }
 
     if (step === 2) {
-      const phone = f.phone.replace(/[^\d+]/g, "");
-      const email = f.contactEmail.trim();
+      const phone = f.phone.replace(/[^\d+]/g, "")
+
+      const email = f.contactEmail.trim()
+
       return (
         /^(?:09\d{9}|\+639\d{9})$/.test(phone) &&
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-      );
+      )
     }
 
     if (step === 3) {
-      return /^\d{7,}$/.test(f.studentId.trim());
+      return /^\d{7,}$/.test(f.studentId.trim())
     }
 
     if (step === 4) {
-      return f.program.trim().length > 0 && f.yearLevel.trim().length > 0;
+      return f.program.trim().length > 0 && f.yearLevel.trim().length > 0
     }
 
     if (step === 5) {
-      return !!f.idPhotoUrl;
+      return !!f.idPhotoUrl
     }
 
     if (step === 6) {
-      return agreed;
+      return agreed
     }
 
-    return false;
-  };
+    return false
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-3.5 bg-[#f8faf9] md:p-6">
@@ -4759,29 +4963,29 @@ export function OnboardingPage({
                   capture="environment"
                   className="hidden"
                   onChange={async (e) => {
-                    const file = e.target.files?.[0];
+                    const file = e.target.files?.[0]
 
-                    if (!file) return;
+                    if (!file) return
 
-                    setIdPhotoUploadState("uploading");
+                    setIdPhotoUploadState("uploading")
 
-                    const result = await uploadImage(file);
+                    const result = await uploadImage(file)
 
                     if ("error" in result) {
-                      setIdPhotoUploadState("error");
+                      setIdPhotoUploadState("error")
 
-                      toast.error(result.error);
+                      toast.error(result.error)
 
-                      return;
+                      return
                     }
 
-                    setIdPhotoUploadState("idle");
+                    setIdPhotoUploadState("idle")
 
                     setF((p) => ({
                       ...p,
 
                       idPhotoUrl: result.url,
-                    }));
+                    }))
                   }}
                 />
                 {idPhotoUploadState === "uploading" ? (
@@ -4817,10 +5021,10 @@ export function OnboardingPage({
                     <button
                       onClick={() => {
                         if (f.idPhotoUrl) {
-                          URL.revokeObjectURL(f.idPhotoUrl);
+                          URL.revokeObjectURL(f.idPhotoUrl)
                         }
 
-                        setF((p) => ({ ...p, idPhotoUrl: undefined }));
+                        setF((p) => ({ ...p, idPhotoUrl: undefined }))
                       }}
                       className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
                     >
@@ -4939,10 +5143,12 @@ export function OnboardingPage({
               disabled={!canContinue() || submitting}
               onClick={async () => {
                 if (step < TOTAL) {
-                  setStep((s) => s + 1);
-                  return;
+                  setStep((s) => s + 1)
+
+                  return
                 }
-                await onComplete({ ...f, agreedToTerms: agreed });
+
+                await onComplete({ ...f, agreedToTerms: agreed })
               }}
               className={`flex-1 h-10 text-white text-sm font-semibold rounded-lg transition-all shadow-sm ${
                 canContinue()
@@ -4960,7 +5166,7 @@ export function OnboardingPage({
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function ExcuseModal({
@@ -4970,19 +5176,19 @@ function ExcuseModal({
 
   onSubmit,
 }: {
-  record: (typeof ATTENDANCE_RECORDS)[0];
+  record: typeof ATTENDANCE_RECORDS[0]
 
-  onClose: () => void;
+  onClose: () => void
 
-  onSubmit: (r: ExcuseRequest) => Promise<boolean> | boolean;
+  onSubmit: (r: ExcuseRequest) => Promise<boolean> | boolean
 }) {
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState("")
 
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(null)
 
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false)
 
-  const ref = useRef<HTMLInputElement>(null);
+  const ref = useRef<HTMLInputElement>(null)
 
   return (
     <div
@@ -5058,9 +5264,10 @@ function ExcuseModal({
           </button>
           <button
             onClick={async () => {
-              if (!reason.trim()) return;
+              if (!reason.trim()) return
 
-              setSubmitting(true);
+              setSubmitting(true)
+
               try {
                 const succeeded = await onSubmit({
                   id: Date.now().toString(),
@@ -5080,10 +5287,11 @@ function ExcuseModal({
                   status: "pending",
 
                   submittedDate: "Aug 22, 2026",
-                });
-                if (succeeded) onClose();
+                })
+
+                if (succeeded) onClose()
               } finally {
-                setSubmitting(false);
+                setSubmitting(false)
               }
             }}
             disabled={!reason.trim() || submitting}
@@ -5095,7 +5303,7 @@ function ExcuseModal({
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function FormModal({
@@ -5109,15 +5317,15 @@ function FormModal({
 
   children,
 }: {
-  title: string;
+  title: string
 
-  onClose: () => void;
+  onClose: () => void
 
-  sidebar?: React.ReactNode;
+  sidebar?: React.ReactNode
 
-  footer?: React.ReactNode;
+  footer?: React.ReactNode
 
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <div
@@ -5173,7 +5381,7 @@ function FormModal({
         )}
       </div>
     </div>
-  );
+  )
 }
 
 function UpcomingEventCard({
@@ -5181,11 +5389,11 @@ function UpcomingEventCard({
 
   onClick,
 }: {
-  event: EventData;
+  event: EventData
 
-  onClick: () => void;
+  onClick: () => void
 }) {
-  const cover = ev.mediaUrls?.[0] ?? null;
+  const cover = ev.mediaUrls?.[0] ?? null
 
   const greenText = (dim?: boolean) => (
     <>
@@ -5221,7 +5429,7 @@ function UpcomingEventCard({
         </span>
       </div>
     </>
-  );
+  )
 
   return (
     <button onClick={onClick} className="w-full text-left mb-5 block group">
@@ -5322,7 +5530,7 @@ function UpcomingEventCard({
         </div>
       )}
     </button>
-  );
+  )
 }
 
 export function DashboardPage({
@@ -5340,33 +5548,33 @@ export function DashboardPage({
 
   attendanceStats,
 }: {
-  user: User;
+  user: User
 
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  fines: FineRecord[];
+  fines: FineRecord[]
 
-  showFees: boolean;
+  showFees: boolean
 
-  announcements: typeof INITIAL_ANNOUNCEMENTS;
+  announcements: typeof INITIAL_ANNOUNCEMENTS
 
-  nextEvent?: EventData;
+  nextEvent?: EventData
 
   attendanceStats?: {
-    present: number;
+    present: number
 
-    absent: number;
+    absent: number
 
-    upcoming: number;
+    upcoming: number
 
-    rate: number;
-  };
+    rate: number
+  }
 }) {
-  const unpaidFines = fines.filter((f) => f.status === "unpaid");
+  const unpaidFines = fines.filter((f) => f.status === "unpaid")
 
-  const total = unpaidFines.reduce((s, f) => s + Number(f.amount || 0), 0);
+  const total = unpaidFines.reduce((s, f) => s + Number(f.amount || 0), 0)
 
-  const latestAnnouncements = announcements.slice(0, 2);
+  const latestAnnouncements = announcements.slice(0, 2)
 
   const statValues = attendanceStats ?? {
     present: 0,
@@ -5376,7 +5584,7 @@ export function DashboardPage({
     upcoming: 0,
 
     rate: 0,
-  };
+  }
 
   const attendanceData = [
     { name: "Present", value: statValues.present, fill: "#10b981" },
@@ -5384,7 +5592,7 @@ export function DashboardPage({
     { name: "Absent", value: statValues.absent, fill: "#94a3b8" },
 
     { name: "Upcoming", value: statValues.upcoming, fill: "#a7f3d0" },
-  ];
+  ]
 
   return (
     <>
@@ -5392,8 +5600,11 @@ export function DashboardPage({
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">
           {new Date().toLocaleDateString("en-US", {
             month: "short",
+
             day: "numeric",
+
             year: "numeric",
+
             weekday: "long",
           })}
         </p>
@@ -5561,6 +5772,7 @@ export function DashboardPage({
             animate={{ opacity: 1, y: 0 }}
             transition={{
               duration: 0.2,
+
               delay: 0.02 * Number(a.id),
             }}
           >
@@ -5575,7 +5787,7 @@ export function DashboardPage({
         ))}
       </div>
     </>
-  );
+  )
 }
 
 export function EventsPage({
@@ -5587,22 +5799,22 @@ export function EventsPage({
 
   events,
 }: {
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  user: User | null;
+  user: User | null
 
-  showFees: boolean;
+  showFees: boolean
 
-  events: EventData[];
+  events: EventData[]
 }) {
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("all")
 
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
 
   const items =
-    filter === "all" ? events : events.filter((e) => e.status === filter);
+    filter === "all" ? events : events.filter((e) => e.status === filter)
 
-  const canSeeFees = user?.role === "student" && showFees;
+  const canSeeFees = user?.role === "student" && showFees
 
   if (selectedEventId) {
     return (
@@ -5612,11 +5824,12 @@ export function EventsPage({
         showFees={showFees}
         onClose={() => setSelectedEventId(null)}
         onPrimaryAction={() => {
-          setSelectedEventId(null);
-          onNav("my-qr");
+          setSelectedEventId(null)
+
+          onNav("my-qr")
         }}
       />
-    );
+    )
   }
 
   return (
@@ -5654,7 +5867,7 @@ export function EventsPage({
           >
             <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
               {(() => {
-                const cover = e.highlightUrl;
+                const cover = e.highlightUrl
 
                 if (!cover) {
                   return (
@@ -5663,7 +5876,7 @@ export function EventsPage({
                         No media
                       </span>
                     </div>
-                  );
+                  )
                 }
 
                 return /\.mp4($|\?)/i.test(cover) ? (
@@ -5679,7 +5892,7 @@ export function EventsPage({
                     alt={e.title}
                     className="w-full h-full object-cover"
                   />
-                );
+                )
               })()}
 
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/25 via-transparent to-slate-900/10" />
@@ -5731,7 +5944,7 @@ export function EventsPage({
         ))}
       </div>
     </>
-  );
+  )
 }
 
 function EventDetailPage({
@@ -5745,23 +5958,23 @@ function EventDetailPage({
 
   events,
 }: {
-  eventId: string;
+  eventId: string
 
-  user: User | null;
+  user: User | null
 
-  showFees: boolean;
+  showFees: boolean
 
-  onBack: () => void;
+  onBack: () => void
 
-  events: EventData[];
+  events: EventData[]
 }) {
-  const ev = events.find((e) => e.id === eventId) ?? events[0];
+  const ev = events.find((e) => e.id === eventId) ?? events[0]
 
-  const canSeeFees = user?.role === "student" && showFees;
+  const canSeeFees = user?.role === "student" && showFees
 
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null)
 
-  const primaryMedia = ev.highlightUrl ?? ev.mediaUrls?.[0];
+  const primaryMedia = ev.highlightUrl ?? ev.mediaUrls?.[0]
 
   return (
     <>
@@ -5932,36 +6145,49 @@ function EventDetailPage({
         </div>
       )}
     </>
-  );
+  )
 }
 
 function EventDetailPageView({
   event,
+
   user,
+
   viewerRole,
+
   showFees,
+
   onClose,
+
   onPrimaryAction,
 }: {
-  event: EventData | null;
-  user: User | null;
-  viewerRole?: Role;
-  showFees: boolean;
-  onClose: () => void;
-  onPrimaryAction: () => void;
+  event: EventData | null
+
+  user: User | null
+
+  viewerRole?: Role
+
+  showFees: boolean
+
+  onClose: () => void
+
+  onPrimaryAction: () => void
 }) {
-  const [lightbox, setLightbox] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [lightbox, setLightbox] = useState<string | null>(null)
+
+  const [isLoading, setIsLoading] = useState(true)
+
   const [mobileSection, setMobileSection] = useState<"details" | "gallery">(
     "details",
-  );
+  )
 
   useEffect(() => {
-    setIsLoading(true);
-    const frame = requestAnimationFrame(() => setIsLoading(false));
+    setIsLoading(true)
 
-    return () => cancelAnimationFrame(frame);
-  }, [event?.id]);
+    const frame = requestAnimationFrame(() => setIsLoading(false))
+
+    return () => cancelAnimationFrame(frame)
+  }, [event?.id])
 
   if (isLoading || !event) {
     return (
@@ -5987,11 +6213,12 @@ function EventDetailPageView({
           </div>
         </div>
       </div>
-    );
+    )
   }
 
-  const role = user?.role ?? viewerRole;
-  const canSeeFees = role === "student" && showFees;
+  const role = user?.role ?? viewerRole
+
+  const canSeeFees = role === "student" && showFees
 
   return (
     <div className="min-h-screen bg-slate-50/60">
@@ -6008,6 +6235,7 @@ function EventDetailPageView({
         <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl border border-slate-200 bg-white p-1 md:hidden">
           {[
             ["details", "Event details"],
+
             ["gallery", "Gallery"],
           ].map(([value, label]) => (
             <button
@@ -6215,7 +6443,7 @@ function EventDetailPageView({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 export function MyQRPage({
@@ -6225,42 +6453,43 @@ export function MyQRPage({
 
   onBack,
 }: {
-  user: User;
+  user: User
 
-  qrVersion: number;
+  qrVersion: number
 
-  onBack: () => void;
+  onBack: () => void
 }) {
-  const name = fullName(user);
+  const name = fullName(user)
 
   const handleDownload = async () => {
     const size = 240,
       pad = 24,
       footH = 72,
-      dpr = 2;
+      dpr = 2
 
-    const canvas = document.createElement("canvas");
+    const canvas = document.createElement("canvas")
 
-    canvas.width = (size + pad * 2) * dpr;
+    canvas.width = (size + pad * 2) * dpr
 
-    canvas.height = (size + pad * 2 + footH) * dpr;
+    canvas.height = (size + pad * 2 + footH) * dpr
 
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d")!
 
-    ctx.scale(dpr, dpr);
+    ctx.scale(dpr, dpr)
 
-    const W = size + pad * 2;
+    const W = size + pad * 2
 
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = "#fff"
 
-    ctx.beginPath();
+    ctx.beginPath()
 
-    ctx.roundRect(0, 0, W, size + pad * 2 + footH, 16);
+    ctx.roundRect(0, 0, W, size + pad * 2 + footH, 16)
 
-    ctx.fill();
+    ctx.fill()
 
     const qrDataUrl = await QRCode.toDataURL(
       `ADESSE:${user.studentId}:v${qrVersion}`,
+
       {
         width: size,
 
@@ -6270,39 +6499,39 @@ export function MyQRPage({
 
         errorCorrectionLevel: "H",
       },
-    );
+    )
 
-    const img = new Image();
+    const img = new Image()
 
     await new Promise((r) => {
-      img.onload = r;
-    });
+      img.onload = r
+    })
 
-    ctx.drawImage(img, pad, pad, size, size);
+    ctx.drawImage(img, pad, pad, size, size)
 
-    ctx.strokeStyle = "#f1f5f9";
+    ctx.strokeStyle = "#f1f5f9"
 
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1
 
-    ctx.beginPath();
+    ctx.beginPath()
 
-    ctx.moveTo(pad, size + pad + 12);
+    ctx.moveTo(pad, size + pad + 12)
 
-    ctx.lineTo(W - pad, size + pad + 12);
+    ctx.lineTo(W - pad, size + pad + 12)
 
-    ctx.stroke();
+    ctx.stroke()
 
-    ctx.fillStyle = "#111827";
+    ctx.fillStyle = "#111827"
 
-    ctx.font = "bold 13px sans-serif";
+    ctx.font = "bold 13px sans-serif"
 
-    ctx.textAlign = "center";
+    ctx.textAlign = "center"
 
-    ctx.fillText(name, W / 2, size + pad + 32);
+    ctx.fillText(name, W / 2, size + pad + 32)
 
-    ctx.fillStyle = "#94a3b8";
+    ctx.fillStyle = "#94a3b8"
 
-    ctx.font = "11px sans-serif";
+    ctx.font = "11px sans-serif"
 
     ctx.fillText(
       `${user.studentId} · ${user.program} ${user.yearLevel}`,
@@ -6310,11 +6539,11 @@ export function MyQRPage({
       W / 2,
 
       size + pad + 50,
-    );
+    )
 
-    ctx.fillStyle = "#10b981";
+    ctx.fillStyle = "#10b981"
 
-    ctx.font = "bold 10px sans-serif";
+    ctx.font = "bold 10px sans-serif"
 
     ctx.fillText(
       "Adesse · Student Attendance & Fee Tracking System",
@@ -6322,16 +6551,16 @@ export function MyQRPage({
       W / 2,
 
       size + pad + 66,
-    );
+    )
 
-    const a = document.createElement("a");
+    const a = document.createElement("a")
 
-    a.download = `adesse-qr-${user.studentId}-v${qrVersion}.png`;
+    a.download = `adesse-qr-${user.studentId}-v${qrVersion}.png`
 
-    a.href = canvas.toDataURL("image/png");
+    a.href = canvas.toDataURL("image/png")
 
-    a.click();
-  };
+    a.click()
+  }
 
   return (
     <>
@@ -6398,7 +6627,7 @@ export function MyQRPage({
         </div>
       </div>
     </>
-  );
+  )
 }
 
 export function AnnouncementsPage({
@@ -6406,13 +6635,12 @@ export function AnnouncementsPage({
 
   announcements,
 }: {
-  onBack: () => void;
+  onBack: () => void
 
-  announcements: typeof INITIAL_ANNOUNCEMENTS;
+  announcements: typeof INITIAL_ANNOUNCEMENTS
 }) {
-  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<
-    string | null
-  >(null);
+  const [selectedAnnouncementId, setSelectedAnnouncementId] =
+    useState<string | null>(null)
 
   if (selectedAnnouncementId) {
     return (
@@ -6423,7 +6651,7 @@ export function AnnouncementsPage({
         }
         onBack={() => setSelectedAnnouncementId(null)}
       />
-    );
+    )
   }
 
   return (
@@ -6487,23 +6715,29 @@ export function AnnouncementsPage({
         ))}
       </div>
     </>
-  );
+  )
 }
 
 function AnnouncementDetailPageView({
   announcement,
+
   onBack,
+
   onEdit,
+
   onDelete,
 }: {
-  announcement: (typeof INITIAL_ANNOUNCEMENTS)[0] | null;
-  onBack: () => void;
-  onEdit?: () => void;
-  onDelete?: () => void;
-}) {
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+  announcement: typeof INITIAL_ANNOUNCEMENTS[0] | null
 
-  if (!announcement) return null;
+  onBack: () => void
+
+  onEdit?: () => void
+
+  onDelete?: () => void
+}) {
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+
+  if (!announcement) return null
 
   return (
     <div className="min-h-screen bg-slate-50/60">
@@ -6611,7 +6845,7 @@ function AnnouncementDetailPageView({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 export function AttendanceHistoryPage({
@@ -6627,21 +6861,21 @@ export function AttendanceHistoryPage({
 
   attendanceRecords = ATTENDANCE_RECORDS,
 }: {
-  excuseRequests: ExcuseRequest[];
+  excuseRequests: ExcuseRequest[]
 
-  fines: FineRecord[];
+  fines: FineRecord[]
 
-  showFees: boolean;
+  showFees: boolean
 
-  onSubmitExcuse: (r: ExcuseRequest) => Promise<boolean> | boolean;
+  onSubmitExcuse: (r: ExcuseRequest) => Promise<boolean> | boolean
 
-  onBack: () => void;
+  onBack: () => void
 
-  attendanceRecords?: typeof ATTENDANCE_RECORDS;
+  attendanceRecords?: typeof ATTENDANCE_RECORDS
 }) {
-  const [modal, setModal] = useState<(typeof ATTENDANCE_RECORDS)[0] | null>(
+  const [modal, setModal] = useState<typeof ATTENDANCE_RECORDS[0] | null>(
     null,
-  );
+  )
 
   return (
     <>
@@ -6661,30 +6895,32 @@ export function AttendanceHistoryPage({
         ) : (
           attendanceRecords.map((r, i) => {
             const rowSessionLabel =
-              "sessionLabel" in r ? r.sessionLabel : undefined;
+              "sessionLabel" in r ? r.sessionLabel : undefined
+
             const req = excuseRequests.find(
               (x) =>
                 (x.eventId &&
                   x.eventId === r.eventId &&
                   (!x.sessionLabel || x.sessionLabel === rowSessionLabel)) ||
                 (!x.eventId && x.event === r.event),
-            );
+            )
 
             const eff =
               req?.status === "approved"
                 ? "excused"
                 : req?.status === "pending"
                   ? "pending"
-                  : r.status;
+                  : r.status
 
             const fine = fines.find(
               (f) =>
                 f.attendanceScanId === r.id ||
                 (f.eventId === r.eventId &&
                   (!f.sessionLabel || f.sessionLabel === rowSessionLabel)),
-            );
+            )
+
             const cleared =
-              fine?.status === "paid" || fine?.status === "excused";
+              fine?.status === "paid" || fine?.status === "excused"
 
             return (
               <div
@@ -6757,7 +6993,7 @@ export function AttendanceHistoryPage({
                   <Badge status={eff} />
                 )}
               </div>
-            );
+            )
           })
         )}
       </div>
@@ -6794,14 +7030,16 @@ export function AttendanceHistoryPage({
           record={modal}
           onClose={() => setModal(null)}
           onSubmit={async (r) => {
-            const succeeded = await onSubmitExcuse(r);
-            if (succeeded) setModal(null);
-            return succeeded;
+            const succeeded = await onSubmitExcuse(r)
+
+            if (succeeded) setModal(null)
+
+            return succeeded
           }}
         />
       )}
     </>
-  );
+  )
 }
 
 export function MyFinesPage({
@@ -6811,15 +7049,15 @@ export function MyFinesPage({
 
   onBack,
 }: {
-  fines: FineRecord[];
+  fines: FineRecord[]
 
-  showFees: boolean;
+  showFees: boolean
 
-  onBack: () => void;
+  onBack: () => void
 }) {
-  const unpaid = fines.filter((f) => f.status === "unpaid");
+  const unpaid = fines.filter((f) => f.status === "unpaid")
 
-  const total = unpaid.reduce((s, f) => s + f.amount, 0);
+  const total = unpaid.reduce((s, f) => s + f.amount, 0)
 
   if (!showFees) {
     return (
@@ -6839,7 +7077,7 @@ export function MyFinesPage({
           </p>
         </div>
       </>
-    );
+    )
   }
 
   return (
@@ -6943,7 +7181,7 @@ export function MyFinesPage({
         </>
       )}
     </>
-  );
+  )
 }
 
 export function ProfilePage({
@@ -6955,104 +7193,102 @@ export function ProfilePage({
 
   saving,
 }: {
-  user: User;
+  user: User
 
-  onSave: (u: User) => Promise<boolean>;
+  onSave: (u: User) => Promise<boolean>
 
-  onBack: () => void;
+  onBack: () => void
 
-  saving?: boolean;
+  saving?: boolean
 }) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(false)
 
-  const [photoUploadState, setPhotoUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [photoUploadState, setPhotoUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
-  const [coverPhotoUploadState, setCoverPhotoUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [coverPhotoUploadState, setCoverPhotoUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
-  const [draft, setDraft] = useState({ ...user });
+  const [draft, setDraft] = useState({ ...user })
 
-  const photoRef = useRef<HTMLInputElement>(null);
+  const photoRef = useRef<HTMLInputElement>(null)
 
-  const coverPhotoRef = useRef<HTMLInputElement>(null);
+  const coverPhotoRef = useRef<HTMLInputElement>(null)
 
   const setF =
     (k: keyof User) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-      setDraft((d) => ({ ...d, [k]: e.target.value }));
+      setDraft((d) => ({ ...d, [k]: e.target.value }))
 
-  const isMod = user.role === "admin";
+  const isMod = user.role === "admin"
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]
 
-    if (!file) return;
+    if (!file) return
 
     if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(draft.photoUrl);
+      URL.revokeObjectURL(draft.photoUrl)
     }
 
-    setPhotoUploadState("uploading");
+    setPhotoUploadState("uploading")
 
-    const result = await uploadImage(file);
+    const result = await uploadImage(file)
 
     if ("error" in result) {
-      setPhotoUploadState("error");
+      setPhotoUploadState("error")
 
-      toast.error(result.error);
+      toast.error(result.error)
 
-      return;
+      return
     }
 
-    setPhotoUploadState("idle");
+    setPhotoUploadState("idle")
 
-    setDraft((d) => ({ ...d, photoUrl: result.url }));
-  };
+    setDraft((d) => ({ ...d, photoUrl: result.url }))
+  }
 
   const handleCoverPhotoChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]
 
-    if (!file) return;
+    if (!file) return
 
     if (draft.coverPhotoUrl && draft.coverPhotoUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(draft.coverPhotoUrl);
+      URL.revokeObjectURL(draft.coverPhotoUrl)
     }
 
-    setCoverPhotoUploadState("uploading");
+    setCoverPhotoUploadState("uploading")
 
-    const result = await uploadImage(file);
+    const result = await uploadImage(file)
 
     if ("error" in result) {
-      setCoverPhotoUploadState("error");
+      setCoverPhotoUploadState("error")
 
-      toast.error(result.error);
+      toast.error(result.error)
 
-      return;
+      return
     }
 
-    setCoverPhotoUploadState("idle");
+    setCoverPhotoUploadState("idle")
 
-    setDraft((d) => ({ ...d, coverPhotoUrl: result.url }));
-  };
+    setDraft((d) => ({ ...d, coverPhotoUrl: result.url }))
+  }
 
   useEffect(() => {
     return () => {
       if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
-        URL.revokeObjectURL(draft.photoUrl);
+        URL.revokeObjectURL(draft.photoUrl)
       }
 
       if (draft.coverPhotoUrl && draft.coverPhotoUrl.startsWith("blob:")) {
-        URL.revokeObjectURL(draft.coverPhotoUrl);
+        URL.revokeObjectURL(draft.coverPhotoUrl)
       }
-    };
-  }, []);
+    }
+  }, [])
 
-  const profile = editing ? draft : user;
+  const profile = editing ? draft : user
 
   return (
     <>
@@ -7068,12 +7304,12 @@ export function ProfilePage({
               <button
                 onClick={() => {
                   if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
-                    URL.revokeObjectURL(draft.photoUrl);
+                    URL.revokeObjectURL(draft.photoUrl)
                   }
 
-                  setDraft({ ...user });
+                  setDraft({ ...user })
 
-                  setEditing(false);
+                  setEditing(false)
                 }}
                 className="h-9 px-4 border border-slate-200 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-50"
               >
@@ -7082,7 +7318,7 @@ export function ProfilePage({
               <button
                 onClick={async () => {
                   if (await onSave({ ...user, ...draft })) {
-                    setEditing(false);
+                    setEditing(false)
                   }
                 }}
                 disabled={saving}
@@ -7196,10 +7432,14 @@ export function ProfilePage({
                 <div className="mt-3 flex flex-wrap gap-2">
                   {[
                     (editing ? draft : user).program,
+
                     (editing ? draft : user).yearLevel,
+
                     (editing ? draft : user).section,
                   ]
+
                     .filter(Boolean)
+
                     .map((t) => (
                       <span
                         key={t}
@@ -7214,7 +7454,9 @@ export function ProfilePage({
             <div className="grid grid-cols-3 gap-2 border-t border-slate-100 bg-slate-50/60 p-4 text-center">
               {[
                 ["Profile", "Status"],
+
                 [isMod ? "Admin" : "Student", "Role"],
+
                 [profile.contactEmail ? "Verified" : "Pending", "Contact"],
               ].map(([value, label]) => (
                 <div key={label}>
@@ -7255,8 +7497,10 @@ export function ProfilePage({
               <div className="mt-1 divide-y divide-slate-100">
                 {[
                   { label: "Phone", value: profile.phone || "Not provided" },
+
                   {
                     label: "Email",
+
                     value: profile.contactEmail || "Not provided",
                   },
                 ].map((item) => (
@@ -7279,8 +7523,10 @@ export function ProfilePage({
             <div className="mt-4 divide-y divide-slate-100">
               {[
                 { label: "Phone", value: profile.phone || "Not provided" },
+
                 {
                   label: "Email",
+
                   value: profile.contactEmail || "Not provided",
                 },
               ].map((item) => (
@@ -7313,20 +7559,29 @@ export function ProfilePage({
               <div className="divide-y divide-slate-100">
                 {[
                   { l: "First name", v: user.firstName },
+
                   {
                     l: "Middle initial",
+
                     v: user.middleInitial ? user.middleInitial + "." : "—",
                   },
+
                   { l: "Surname", v: user.surname },
+
                   ...(!isMod ? [{ l: "Student ID", v: user.studentId }] : []),
+
                   { l: "Program", v: user.program },
+
                   ...(!isMod
                     ? [
                         { l: "Year level", v: user.yearLevel },
+
                         { l: "Section", v: user.section || "—" },
                       ]
                     : []),
+
                   { l: "Phone", v: user.phone || "—" },
+
                   { l: "Email", v: user.contactEmail || "—" },
                 ].map((f, i, arr) => (
                   <div
@@ -7497,7 +7752,7 @@ export function ProfilePage({
         </main>
       </div>
     </>
-  );
+  )
 }
 
 export function AdminDashboard({
@@ -7513,44 +7768,45 @@ export function AdminDashboard({
 
   featuredEventStatus,
 }: {
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  excuseRequests: ExcuseRequest[];
+  excuseRequests: ExcuseRequest[]
 
   stats?: {
-    scannedToday: number;
+    scannedToday: number
 
-    duplicates: number;
+    duplicates: number
 
-    activeEvents: number;
+    activeEvents: number
 
-    students: number;
-  };
+    students: number
+  }
 
   recentScans?: Array<{
-    name: string;
+    name: string
 
-    id: string;
+    id: string
 
-    program: string;
+    program: string
 
-    section: string;
+    section: string
 
-    photoUrl?: string;
+    photoUrl?: string
 
-    time: string;
+    time: string
 
-    status: "confirmed" | "duplicate";
+    status: "confirmed" | "duplicate"
 
-    sanctioned?: boolean;
-  }>;
+    sanctioned?: boolean
+  }>
 
-  featuredEventTitle?: string;
+  featuredEventTitle?: string
 
-  featuredEventStatus?: EventStatus;
+  featuredEventStatus?: EventStatus
 }) {
-  const dashboardDateLabel = useDashboardDateLabel();
-  const pending = excuseRequests.filter((r) => r.status === "pending").length;
+  const dashboardDateLabel = useDashboardDateLabel()
+
+  const pending = excuseRequests.filter((r) => r.status === "pending").length
 
   const liveStats = stats ?? {
     scannedToday: 0,
@@ -7560,19 +7816,19 @@ export function AdminDashboard({
     activeEvents: 0,
 
     students: 0,
-  };
+  }
 
-  const liveRecentScans = recentScans ?? [];
+  const liveRecentScans = recentScans ?? []
 
-  const statusConfig: Record<
-    EventStatus,
-    {
-      label: string;
-      message: string;
-      classes: string;
-      dotClass: string;
-    }
-  > = {
+  const statusConfig: Record<EventStatus, {
+    label: string
+
+    message: string
+
+    classes: string
+
+    dotClass: string
+  }> = {
     active: {
       label: "Live",
 
@@ -7602,11 +7858,11 @@ export function AdminDashboard({
 
       dotClass: "bg-slate-500",
     },
-  };
+  }
 
-  const currentStatus = featuredEventStatus ?? "upcoming";
+  const currentStatus = featuredEventStatus ?? "upcoming"
 
-  const currentStatusMeta = statusConfig[currentStatus];
+  const currentStatusMeta = statusConfig[currentStatus]
 
   return (
     <>
@@ -7772,83 +8028,91 @@ export function AdminDashboard({
         ))}
       </div>
     </>
-  );
+  )
 }
 
 interface NewEventDraft {
-  title: string;
+  title: string
 
-  date: string;
+  date: string
 
-  time: string;
+  time: string
 
-  location: string;
+  location: string
 
-  description: string;
+  description: string
 
-  program: string;
+  program: string
 
-  fineAmount: string;
+  fineAmount: string
 
-  photos: File[];
+  photos: File[]
 
-  videos: File[];
+  videos: File[]
 
-  multiSession: boolean;
+  multiSession: boolean
 
-  sanctionsEnabled: boolean;
+  sanctionsEnabled: boolean
 
-  strictMorning: boolean;
+  strictMorning: boolean
 
-  strictAfternoon: boolean;
+  strictAfternoon: boolean
 
-  morningStart: string;
+  morningStart: string
 
-  morningEnd: string;
+  morningEnd: string
 
-  morningLateCutoff: string;
+  morningLateCutoff: string
 
-  afternoonStart: string;
+  afternoonStart: string
 
-  afternoonEnd: string;
+  afternoonEnd: string
 
-  afternoonLateCutoff: string;
+  afternoonLateCutoff: string
 
-  absentFine: string;
+  absentFine: string
 
-  lateFine: string;
+  lateFine: string
 
-  morningAbsentFine: string;
+  morningAbsentFine: string
 
-  morningLateFine: string;
+  morningLateFine: string
 
-  afternoonAbsentFine: string;
+  afternoonAbsentFine: string
 
-  afternoonLateFine: string;
+  afternoonLateFine: string
 }
 
-type CreateEventTab = "basic" | "session" | "fines" | "media";
+type CreateEventTab = "basic" | "session" | "fines" | "media"
 
 type PendingSessionExtension = {
-  sessionLabel: "morning" | "afternoon";
-  minutes: number;
-  oldEnd: string;
-  newEnd: string;
-};
+  sessionLabel: "morning" | "afternoon"
 
-const ARCHIVE_DROP_ZONE_ID = "archive";
+  minutes: number
+
+  oldEnd: string
+
+  newEnd: string
+}
+
+const ARCHIVE_DROP_ZONE_ID = "archive"
 
 function ArchiveDropZone({
   active,
+
   onClick,
+
   archived,
 }: {
-  active: boolean;
-  onClick: () => void;
-  archived: boolean;
+  active: boolean
+
+  onClick: () => void
+
+  archived: boolean
 }) {
-  const { isOver, setNodeRef } = useDroppable({ id: ARCHIVE_DROP_ZONE_ID });
-  const highlighted = active && isOver;
+  const { isOver, setNodeRef } = useDroppable({ id: ARCHIVE_DROP_ZONE_ID })
+
+  const highlighted = active && isOver
 
   return (
     <div
@@ -7860,7 +8124,7 @@ function ArchiveDropZone({
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") onClick();
+        if (event.key === "Enter" || event.key === " ") onClick()
       }}
       title={
         archived
@@ -7888,22 +8152,28 @@ function ArchiveDropZone({
             : "Archive"}
       </span>
     </div>
-  );
+  )
 }
 
 function DraggableEventCard({
   event,
+
   onClick,
+
   children,
+
   dragDisabled,
 }: {
-  event: EventData;
-  onClick: () => void;
-  children: React.ReactNode;
-  dragDisabled: boolean;
+  event: EventData
+
+  onClick: () => void
+
+  children: React.ReactNode
+
+  dragDisabled: boolean
 }) {
   const { attributes, listeners, setActivatorNodeRef, setNodeRef, isDragging } =
-    useDraggable({ id: event.id, disabled: dragDisabled });
+    useDraggable({ id: event.id, disabled: dragDisabled })
 
   return (
     <motion.div
@@ -7927,7 +8197,7 @@ function DraggableEventCard({
         />
       )}
     </motion.div>
-  );
+  )
 }
 
 function EventDragPreview({ event }: { event: EventData }) {
@@ -7959,17 +8229,21 @@ function EventDragPreview({ event }: { event: EventData }) {
         <p className="mt-2 text-xs text-slate-500">{event.location || "TBA"}</p>
       </div>
     </div>
-  );
+  )
 }
 
 function ArchivedEventCard({
   event,
+
   onRestore,
+
   onDelete,
 }: {
-  event: EventData;
-  onRestore: () => void;
-  onDelete: () => void;
+  event: EventData
+
+  onRestore: () => void
+
+  onDelete: () => void
 }) {
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -8027,7 +8301,7 @@ function ArchivedEventCard({
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function ArchivedEventsSkeleton() {
@@ -8055,7 +8329,7 @@ function ArchivedEventsSkeleton() {
         </div>
       ))}
     </div>
-  );
+  )
 }
 
 export function AdminEventsPage({
@@ -8064,22 +8338,32 @@ export function AdminEventsPage({
   events,
 
   setEvents,
+
   archivedEvents,
+
   setArchivedEvents,
+
   onLoadArchived,
+
   isArchivedLoading,
+
   finesEnabled = false,
 }: {
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  events: EventData[];
+  events: EventData[]
 
-  setEvents: React.Dispatch<React.SetStateAction<EventData[]>>;
-  archivedEvents: EventData[];
-  setArchivedEvents: React.Dispatch<React.SetStateAction<EventData[]>>;
-  onLoadArchived: () => Promise<void>;
-  isArchivedLoading: boolean;
-  finesEnabled?: boolean;
+  setEvents: React.Dispatch<React.SetStateAction<EventData[]>>
+
+  archivedEvents: EventData[]
+
+  setArchivedEvents: React.Dispatch<React.SetStateAction<EventData[]>>
+
+  onLoadArchived: () => Promise<void>
+
+  isArchivedLoading: boolean
+
+  finesEnabled?: boolean
 }) {
   const EMPTY_DRAFT: NewEventDraft = {
     title: "",
@@ -8131,41 +8415,44 @@ export function AdminEventsPage({
     afternoonAbsentFine: "0",
 
     afternoonLateFine: "0",
-  };
+  }
 
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(false)
 
-  const [activeTab, setActiveTab] = useState<CreateEventTab>("basic");
+  const [activeTab, setActiveTab] = useState<CreateEventTab>("basic")
 
-  const [editEventTab, setEditEventTab] = useState<CreateEventTab>("basic");
+  const [editEventTab, setEditEventTab] = useState<CreateEventTab>("basic")
 
-  const [editId, setEditId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null)
 
-  const [isCreating, setIsCreating] = useState(false);
+  const [isCreating, setIsCreating] = useState(false)
 
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
 
-  const [eventView, setEventView] = useState<"active" | "archived">("active");
+  const [eventView, setEventView] = useState<"active" | "archived">("active")
 
   const [pendingPermanentDelete, setPendingPermanentDelete] =
-    useState<EventData | null>(null);
+    useState<EventData | null>(null)
 
-  const [isPermanentlyDeleting, setIsPermanentlyDeleting] = useState(false);
+  const [isPermanentlyDeleting, setIsPermanentlyDeleting] = useState(false)
 
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false)
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 767px)");
-    const updateViewport = () => setIsMobileViewport(mediaQuery.matches);
+    const mediaQuery = window.matchMedia("(max-width: 767px)")
 
-    updateViewport();
-    mediaQuery.addEventListener("change", updateViewport);
-    return () => mediaQuery.removeEventListener("change", updateViewport);
-  }, []);
+    const updateViewport = () => setIsMobileViewport(mediaQuery.matches)
 
-  const [editDraft, setEditDraft] = useState<EventData | null>(null);
+    updateViewport()
 
-  const [editOriginal, setEditOriginal] = useState<EventData | null>(null);
+    mediaQuery.addEventListener("change", updateViewport)
+
+    return () => mediaQuery.removeEventListener("change", updateViewport)
+  }, [])
+
+  const [editDraft, setEditDraft] = useState<EventData | null>(null)
+
+  const [editOriginal, setEditOriginal] = useState<EventData | null>(null)
 
   const [editFineValues, setEditFineValues] = useState({
     absentFine: "0",
@@ -8179,92 +8466,89 @@ export function AdminEventsPage({
     afternoonAbsentFine: "0",
 
     afternoonLateFine: "0",
-  });
+  })
 
-  const [showSensitiveWarning, setShowSensitiveWarning] = useState(false);
+  const [showSensitiveWarning, setShowSensitiveWarning] = useState(false)
 
   const [pendingSessionExtension, setPendingSessionExtension] =
-    useState<PendingSessionExtension | null>(null);
+    useState<PendingSessionExtension | null>(null)
 
-  const [isExtendingSession, setIsExtendingSession] = useState(false);
+  const [isExtendingSession, setIsExtendingSession] = useState(false)
 
-  const [eventHasScans, setEventHasScans] = useState(false);
+  const [eventHasScans, setEventHasScans] = useState(false)
 
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null)
 
-  const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [archivingId, setArchivingId] = useState<string | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+
     useSensor(TouchSensor, {
       activationConstraint: { delay: 180, tolerance: 6 },
     }),
+
     useSensor(KeyboardSensor),
-  );
+  )
 
-  const photoRef = useRef<HTMLInputElement>(null);
+  const photoRef = useRef<HTMLInputElement>(null)
 
-  const videoRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null)
 
-  const editPhotoRef = useRef<HTMLInputElement>(null);
+  const editPhotoRef = useRef<HTMLInputElement>(null)
 
-  const highlightRef = useRef<HTMLInputElement>(null);
+  const highlightRef = useRef<HTMLInputElement>(null)
 
-  const editHighlightRef = useRef<HTMLInputElement>(null);
+  const editHighlightRef = useRef<HTMLInputElement>(null)
 
-  const [draft, setDraft] = useState<NewEventDraft>(EMPTY_DRAFT);
+  const [draft, setDraft] = useState<NewEventDraft>(EMPTY_DRAFT)
 
-  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [photoUrls, setPhotoUrls] = useState<string[]>([])
 
-  const [videoNames, setVideoNames] = useState<string[]>([]);
+  const [videoNames, setVideoNames] = useState<string[]>([])
 
-  const [highlightUrl, setHighlightUrl] = useState<string | null>(null);
+  const [highlightUrl, setHighlightUrl] = useState<string | null>(null)
 
-  const [highlightUploadState, setHighlightUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [highlightUploadState, setHighlightUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
-  const [mediaUploadState, setMediaUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [mediaUploadState, setMediaUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
-  const [mediaUploadError, setMediaUploadError] = useState<string | null>(null);
+  const [mediaUploadError, setMediaUploadError] = useState<string | null>(null)
 
-  const [editHighlightUploadState, setEditHighlightUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [editHighlightUploadState, setEditHighlightUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
   const setD =
     (k: keyof NewEventDraft) =>
     (
-      e: React.ChangeEvent<
-        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >,
+      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
     ) =>
-      setDraft((d) => ({ ...d, [k]: e.target.value }));
+      setDraft((d) => ({ ...d, [k]: e.target.value }))
 
   const toggleD = (k: keyof NewEventDraft) => () =>
-    setDraft((d) => ({ ...d, [k]: !d[k] }));
+    setDraft((d) => ({ ...d, [k]: !d[k] }))
 
   const uploadEventMedia = async (files: File[]) => {
-    if (!files.length) return;
+    if (!files.length) return
 
-    setMediaUploadState("uploading");
+    setMediaUploadState("uploading")
 
-    setMediaUploadError(null);
+    setMediaUploadError(null)
 
-    const results = await Promise.all(files.map((file) => uploadImage(file)));
+    const results = await Promise.all(files.map((file) => uploadImage(file)))
 
-    const failed = results.find((result) => "error" in result);
+    const failed = results.find((result) => "error" in result)
 
     if (failed && "error" in failed) {
-      setMediaUploadState("error");
+      setMediaUploadState("error")
 
-      setMediaUploadError(failed.error);
+      setMediaUploadError(failed.error)
 
-      toast.error(failed.error);
+      toast.error(failed.error)
 
-      return;
+      return
     }
 
     const urls = results
@@ -8273,22 +8557,22 @@ export function AdminEventsPage({
         (result): result is { url: string; path: string } => "url" in result,
       )
 
-      .map((result) => result.url);
+      .map((result) => result.url)
 
-    setMediaUploadState("idle");
+    setMediaUploadState("idle")
 
     setPhotoUrls((current) => [
       ...current,
 
       ...urls.filter((url) => !/\.mp4($|\?)/i.test(url)),
-    ]);
+    ])
 
     setVideoNames((current) => [
       ...current,
 
       ...urls.filter((url) => /\.mp4($|\?)/i.test(url)),
-    ]);
-  };
+    ])
+  }
 
   const discardCreateMedia = () => {
     const mediaToDelete = [
@@ -8299,16 +8583,16 @@ export function AdminEventsPage({
       ...(highlightUrl && !highlightUrl.startsWith("blob:")
         ? [highlightUrl]
         : []),
-    ];
+    ]
 
-    setPhotoUrls([]);
+    setPhotoUrls([])
 
-    setVideoNames([]);
+    setVideoNames([])
 
-    setHighlightUrl(null);
+    setHighlightUrl(null)
 
-    void deleteImages(mediaToDelete);
-  };
+    void deleteImages(mediaToDelete)
+  }
 
   const discardEditMedia = () => {
     const uploadedReplacement =
@@ -8316,39 +8600,39 @@ export function AdminEventsPage({
       editDraft.highlightUrl !== editOriginal?.highlightUrl &&
       !editDraft.highlightUrl.startsWith("blob:")
         ? [editDraft.highlightUrl]
-        : [];
+        : []
 
-    void deleteImages(uploadedReplacement);
+    void deleteImages(uploadedReplacement)
 
-    setEditId(null);
+    setEditId(null)
 
-    setEditDraft(null);
+    setEditDraft(null)
 
-    setEditOriginal(null);
+    setEditOriginal(null)
 
-    setShowSensitiveWarning(false);
-  };
+    setShowSensitiveWarning(false)
+  }
 
   const handleCreate = async () => {
-    if (!draft.title || !draft.date) return;
+    if (!draft.title || !draft.date) return
 
-    if (isCreating) return;
+    if (isCreating) return
 
-    setIsCreating(true);
+    setIsCreating(true)
 
     try {
       const timeRange = draft.multiSession
         ? null
-        : parseEventTimeRange(draft.time);
+        : parseEventTimeRange(draft.time)
 
       if (!draft.multiSession && !timeRange) {
-        toast.error("Enter time like 3:35 AM - 5:20 AM.");
+        toast.error("Enter time like 3:35 AM - 5:20 AM.")
 
-        return;
+        return
       }
 
       const persistedHighlightUrl =
-        highlightUrl && !highlightUrl.startsWith("blob:") ? highlightUrl : null;
+        highlightUrl && !highlightUrl.startsWith("blob:") ? highlightUrl : null
 
       const payload = {
         title: draft.title,
@@ -8422,7 +8706,7 @@ export function AdminEventsPage({
             ? Number(draft.afternoonLateFine) || 0
             : 0
           : null,
-      };
+      }
 
       const { data, error } = await supabase
 
@@ -8430,7 +8714,7 @@ export function AdminEventsPage({
 
         .insert([payload])
 
-        .select();
+        .select()
 
       if (error) {
         await deleteImages([
@@ -8439,23 +8723,23 @@ export function AdminEventsPage({
           ...videoNames,
 
           ...(persistedHighlightUrl ? [persistedHighlightUrl] : []),
-        ]);
+        ])
 
-        setPhotoUrls([]);
+        setPhotoUrls([])
 
-        setVideoNames([]);
+        setVideoNames([])
 
-        setHighlightUrl(null);
+        setHighlightUrl(null)
 
-        toast.error(`Failed to create event: ${error.message}`);
+        toast.error(`Failed to create event: ${error.message}`)
 
-        console.error(error);
+        console.error(error)
 
-        return;
+        return
       }
 
       if (data && data.length > 0) {
-        const row = data[0];
+        const row = data[0]
 
         const newEvent: EventData = {
           id: row.id,
@@ -8475,7 +8759,7 @@ export function AdminEventsPage({
 
           program: row.program || "All Programs",
 
-          status: (row.status as any) || "upcoming",
+          status: row.status as any || "upcoming",
 
           attendees: 0,
 
@@ -8537,25 +8821,25 @@ export function AdminEventsPage({
           afternoonLateFine: finesEnabled
             ? parseInt(draft.afternoonLateFine) || 0
             : 0,
-        };
+        }
 
-        setEvents((ev) => [newEvent, ...ev]);
+        setEvents((ev) => [newEvent, ...ev])
 
-        setDraft(EMPTY_DRAFT);
+        setDraft(EMPTY_DRAFT)
 
-        setPhotoUrls([]);
+        setPhotoUrls([])
 
-        setVideoNames([]);
+        setVideoNames([])
 
-        setHighlightUrl(null);
+        setHighlightUrl(null)
 
-        setMediaUploadState("idle");
+        setMediaUploadState("idle")
 
-        setMediaUploadError(null);
+        setMediaUploadError(null)
 
-        setShowForm(false);
+        setShowForm(false)
 
-        toast.success("Event created successfully");
+        toast.success("Event created successfully")
       }
     } catch (caughtError) {
       await deleteImages([
@@ -8566,21 +8850,21 @@ export function AdminEventsPage({
         ...(highlightUrl && !highlightUrl.startsWith("blob:")
           ? [highlightUrl]
           : []),
-      ]);
+      ])
 
-      setPhotoUrls([]);
+      setPhotoUrls([])
 
-      setVideoNames([]);
+      setVideoNames([])
 
-      setHighlightUrl(null);
+      setHighlightUrl(null)
 
-      console.error(caughtError);
+      console.error(caughtError)
 
-      toast.error("An error occurred while creating the event");
+      toast.error("An error occurred while creating the event")
     } finally {
-      setIsCreating(false);
+      setIsCreating(false)
     }
-  };
+  }
 
   const startEdit = async (e: EventData) => {
     const { count, error } = await supabase
@@ -8589,17 +8873,17 @@ export function AdminEventsPage({
 
       .select("*", { count: "exact", head: true })
 
-      .eq("event_id", e.id);
+      .eq("event_id", e.id)
 
-    setEventHasScans(!error && (count ?? 0) > 0);
+    setEventHasScans(!error && (count ?? 0) > 0)
 
-    setEditId(e.id);
+    setEditId(e.id)
 
-    setEditEventTab("basic");
+    setEditEventTab("basic")
 
-    setEditDraft({ ...e });
+    setEditDraft({ ...e })
 
-    setEditOriginal({ ...e });
+    setEditOriginal({ ...e })
 
     setEditFineValues({
       absentFine: String(e.absentFine ?? e.fineAmount ?? 0),
@@ -8613,12 +8897,12 @@ export function AdminEventsPage({
       afternoonAbsentFine: String(e.afternoonAbsentFine ?? 0),
 
       afternoonLateFine: String(e.afternoonLateFine ?? 0),
-    });
+    })
 
-    setShowSensitiveWarning(false);
+    setShowSensitiveWarning(false)
 
-    setShowForm(false);
-  };
+    setShowForm(false)
+  }
 
   const SENSITIVE_KEYS: (keyof EventData)[] = [
     "time",
@@ -8652,14 +8936,14 @@ export function AdminEventsPage({
     "afternoonAbsentFine",
 
     "afternoonLateFine",
-  ];
+  ]
 
   const hasSensitiveChanges = () => {
-    if (!editDraft || !editOriginal) return false;
+    if (!editDraft || !editOriginal) return false
 
     const eventFieldChanged = SENSITIVE_KEYS.some(
       (k) => String(editDraft[k] ?? "") !== String(editOriginal[k] ?? ""),
-    );
+    )
 
     const fineChanged =
       editFineValues.absentFine !==
@@ -8672,128 +8956,151 @@ export function AdminEventsPage({
       editFineValues.afternoonAbsentFine !==
         String(editOriginal.afternoonAbsentFine ?? 0) ||
       editFineValues.afternoonLateFine !==
-        String(editOriginal.afternoonLateFine ?? 0);
+        String(editOriginal.afternoonLateFine ?? 0)
 
-    return eventFieldChanged || fineChanged;
-  };
+    return eventFieldChanged || fineChanged
+  }
 
   const requestSessionExtension = (
     sessionLabel: "morning" | "afternoon",
+
     minutes: number,
   ) => {
-    if (!editDraft) return;
+    if (!editDraft) return
 
     const oldEnd =
-      sessionLabel === "morning"
-        ? editDraft.morningEnd
-        : editDraft.afternoonEnd;
-    const newEnd = addMinutesToTime(oldEnd, minutes);
+      sessionLabel === "morning" ? editDraft.morningEnd : editDraft.afternoonEnd
+
+    const newEnd = addMinutesToTime(oldEnd, minutes)
 
     if (!oldEnd || !newEnd) {
-      toast.error("This session cannot be extended beyond midnight.");
-      return;
+      toast.error("This session cannot be extended beyond midnight.")
+
+      return
     }
 
     setPendingSessionExtension({
       sessionLabel,
+
       minutes,
+
       oldEnd: normalizeTimeValue(oldEnd),
+
       newEnd,
-    });
-  };
+    })
+  }
 
   const extendSession = async () => {
-    if (!editDraft || !pendingSessionExtension || isExtendingSession) return;
+    if (!editDraft || !pendingSessionExtension || isExtendingSession) return
 
-    setIsExtendingSession(true);
+    setIsExtendingSession(true)
 
     const { data, error } = await supabase.rpc("extend_event_session", {
       p_event_id: editDraft.id,
+
       p_session_label: pendingSessionExtension.sessionLabel,
+
       p_extension_minutes: pendingSessionExtension.minutes,
-    });
+    })
 
     if (error) {
-      console.error(error);
-      toast.error(`Could not extend session: ${error.message}`);
-      setIsExtendingSession(false);
-      return;
+      console.error(error)
+
+      toast.error(`Could not extend session: ${error.message}`)
+
+      setIsExtendingSession(false)
+
+      return
     }
 
-    const result = Array.isArray(data) ? data[0] : data;
-    const newEnd = normalizeTimeValue(result?.new_end_time);
-    const upgradedCount = Number(result?.upgraded_count ?? 0);
+    const result = Array.isArray(data) ? data[0] : data
+
+    const newEnd = normalizeTimeValue(result?.new_end_time)
+
+    const upgradedCount = Number(result?.upgraded_count ?? 0)
 
     if (!newEnd) {
-      toast.error("The extension completed without returning a new end time.");
-      setIsExtendingSession(false);
-      return;
+      toast.error("The extension completed without returning a new end time.")
+
+      setIsExtendingSession(false)
+
+      return
     }
 
     const nextDraft: EventData = {
       ...editDraft,
-      version: (editDraft.version ?? 1) + 1,
-    };
 
-    if (pendingSessionExtension.sessionLabel === "morning") {
-      nextDraft.morningEnd = newEnd;
-      nextDraft.morningLateCutoff = newEnd;
-      if (!nextDraft.multiSession) {
-        const start = nextDraft.time.split(/[–-]/)[0]?.trim();
-        nextDraft.time = start ? `${start}–${newEnd}` : newEnd;
-      }
-    } else {
-      nextDraft.afternoonEnd = newEnd;
-      nextDraft.afternoonLateCutoff = newEnd;
+      version: (editDraft.version ?? 1) + 1,
     }
 
-    setEditDraft(nextDraft);
-    setEditOriginal(nextDraft);
+    if (pendingSessionExtension.sessionLabel === "morning") {
+      nextDraft.morningEnd = newEnd
+
+      nextDraft.morningLateCutoff = newEnd
+
+      if (!nextDraft.multiSession) {
+        const start = nextDraft.time.split(/[–-]/)[0]?.trim()
+
+        nextDraft.time = start ? `${start}–${newEnd}` : newEnd
+      }
+    } else {
+      nextDraft.afternoonEnd = newEnd
+
+      nextDraft.afternoonLateCutoff = newEnd
+    }
+
+    setEditDraft(nextDraft)
+
+    setEditOriginal(nextDraft)
+
     setEvents((current) =>
       current.map((event) => (event.id === nextDraft.id ? nextDraft : event)),
-    );
-    setPendingSessionExtension(null);
-    setIsExtendingSession(false);
+    )
+
+    setPendingSessionExtension(null)
+
+    setIsExtendingSession(false)
+
     toast.success(
       `Session extended to ${newEnd}. ${upgradedCount} late ${
         upgradedCount === 1 ? "record was" : "records were"
       } upgraded to present.`,
-    );
-  };
+    )
+  }
 
   const commitSave = async () => {
-    if (!editDraft) return;
+    if (!editDraft) return
 
-    setShowSensitiveWarning(false);
+    setShowSensitiveWarning(false)
 
     try {
       const timeRange = editDraft.multiSession
         ? null
-        : parseEventTimeRange(editDraft.time);
+        : parseEventTimeRange(editDraft.time)
 
       if (!editDraft.multiSession && !timeRange) {
-        toast.error("Enter time like 3:35 AM - 5:20 AM.");
+        toast.error("Enter time like 3:35 AM - 5:20 AM.")
 
-        return;
+        return
       }
 
       const persistedHighlightUrl =
         editDraft.highlightUrl && !editDraft.highlightUrl.startsWith("blob:")
           ? editDraft.highlightUrl
-          : null;
+          : null
 
       const nextGalleryUrls = (editDraft.mediaUrls ?? []).filter(
         (url) =>
           url !== editDraft.highlightUrl && url !== editOriginal?.highlightUrl,
-      );
+      )
 
       const previousMediaUrls = [
         ...(editOriginal?.mediaUrls ?? []),
 
         ...(editOriginal?.highlightUrl ? [editOriginal.highlightUrl] : []),
-      ];
+      ]
 
-      const current = events.find((e) => e.id === editDraft.id);
+      const current = events.find((e) => e.id === editDraft.id)
 
       if (
         current &&
@@ -8802,36 +9109,46 @@ export function AdminEventsPage({
       ) {
         toast.error(
           "Another admin modified this event — please review and try again.",
-        );
+        )
 
-        setEditId(null);
+        setEditId(null)
 
-        setEditDraft(null);
+        setEditDraft(null)
 
-        setEditOriginal(null);
+        setEditOriginal(null)
 
-        setShowSensitiveWarning(false);
+        setShowSensitiveWarning(false)
 
-        return;
+        return
       }
 
       const savedFineValues = finesEnabled
         ? {
             absent: Number(editFineValues.absentFine) || 0,
+
             late: Number(editFineValues.lateFine) || 0,
+
             morningAbsent: Number(editFineValues.morningAbsentFine) || 0,
+
             morningLate: Number(editFineValues.morningLateFine) || 0,
+
             afternoonAbsent: Number(editFineValues.afternoonAbsentFine) || 0,
+
             afternoonLate: Number(editFineValues.afternoonLateFine) || 0,
           }
         : {
             absent: editOriginal?.absentFine ?? editOriginal?.fineAmount ?? 0,
+
             late: editOriginal?.lateFine ?? 0,
+
             morningAbsent: editOriginal?.morningAbsentFine ?? 0,
+
             morningLate: editOriginal?.morningLateFine ?? 0,
+
             afternoonAbsent: editOriginal?.afternoonAbsentFine ?? 0,
+
             afternoonLate: editOriginal?.afternoonLateFine ?? 0,
-          };
+          }
 
       const payload = {
         title: editDraft.title,
@@ -8891,7 +9208,7 @@ export function AdminEventsPage({
         afternoon_late_fine: savedFineValues.afternoonLate,
 
         version: (editOriginal?.version ?? 1) + 1,
-      };
+      }
 
       const { error } = await supabase
 
@@ -8899,14 +9216,14 @@ export function AdminEventsPage({
 
         .update(payload)
 
-        .eq("id", editDraft.id);
+        .eq("id", editDraft.id)
 
       if (error) {
-        toast.error(`Failed to update event: ${error.message}`);
+        toast.error(`Failed to update event: ${error.message}`)
 
-        console.error(error);
+        console.error(error)
 
-        return;
+        return
       }
 
       await deleteImages(
@@ -8914,7 +9231,7 @@ export function AdminEventsPage({
           (url) =>
             url !== persistedHighlightUrl && !nextGalleryUrls.includes(url),
         ),
-      );
+      )
 
       const saved: EventData = {
         ...editDraft,
@@ -8944,59 +9261,59 @@ export function AdminEventsPage({
         afternoonAbsentFine: savedFineValues.afternoonAbsent,
 
         afternoonLateFine: savedFineValues.afternoonLate,
-      };
+      }
 
-      setEvents((ev) => ev.map((e) => (e.id === saved.id ? saved : e)));
+      setEvents((ev) => ev.map((e) => (e.id === saved.id ? saved : e)))
 
-      setEditId(null);
+      setEditId(null)
 
-      setEditDraft(null);
+      setEditDraft(null)
 
-      setEditOriginal(null);
+      setEditOriginal(null)
 
-      setShowSensitiveWarning(false);
+      setShowSensitiveWarning(false)
 
-      toast.success("Event updated successfully");
+      toast.success("Event updated successfully")
     } catch (caughtError) {
-      console.error(caughtError);
+      console.error(caughtError)
 
-      toast.error("An error occurred while updating the event");
+      toast.error("An error occurred while updating the event")
     }
-  };
+  }
 
   const handleSaveEdit = () => {
     if (hasSensitiveChanges()) {
-      setShowSensitiveWarning(true);
+      setShowSensitiveWarning(true)
 
-      return;
+      return
     }
 
-    commitSave();
-  };
+    commitSave()
+  }
 
   const deleteEvent = async (id: string) => {
     try {
-      const event = events.find((item) => item.id === id);
+      const event = events.find((item) => item.id === id)
 
       const mediaUrls = [
         ...(event?.mediaUrls ?? []),
 
         ...(event?.highlightUrl ? [event.highlightUrl] : []),
-      ];
+      ]
 
-      const { error } = await supabase.from("events").delete().eq("id", id);
+      const { error } = await supabase.from("events").delete().eq("id", id)
 
       if (error) {
-        toast.error(`Failed to delete event: ${error.message}`);
+        toast.error(`Failed to delete event: ${error.message}`)
 
-        console.error(error);
+        console.error(error)
 
-        return;
+        return
       }
 
-      setEvents((ev) => ev.filter((e) => e.id !== id));
+      setEvents((ev) => ev.filter((e) => e.id !== id))
 
-      const cleanupResults = await deleteImages(mediaUrls);
+      const cleanupResults = await deleteImages(mediaUrls)
 
       cleanupResults
 
@@ -9004,185 +9321,233 @@ export function AdminEventsPage({
 
         .forEach((result) =>
           console.error("Failed to delete event media", result.error),
-        );
+        )
 
-      toast.success("Event deleted successfully");
+      toast.success("Event deleted successfully")
     } catch (caughtError) {
-      console.error(caughtError);
+      console.error(caughtError)
 
-      toast.error("An error occurred while deleting the event");
+      toast.error("An error occurred while deleting the event")
     }
-  };
+  }
 
   const archiveEvent = async (id: string) => {
-    if (archivingId) return;
+    if (archivingId) return
 
-    const current = events.find((event) => event.id === id);
-    if (!current) return;
+    const current = events.find((event) => event.id === id)
 
-    const version = current.version ?? 1;
-    setArchivingId(id);
-    setEvents((items) => items.filter((event) => event.id !== id));
+    if (!current) return
+
+    const version = current.version ?? 1
+
+    setArchivingId(id)
+
+    setEvents((items) => items.filter((event) => event.id !== id))
 
     try {
       const { data, error } = await supabase
+
         .from("events")
+
         .update({
           archived_at: new Date().toISOString(),
+
           version: version + 1,
         })
-        .eq("id", id)
-        .eq("version", version)
-        .is("archived_at", null)
-        .select("id")
-        .maybeSingle();
 
-      if (error) throw error;
+        .eq("id", id)
+
+        .eq("version", version)
+
+        .is("archived_at", null)
+
+        .select("id")
+
+        .maybeSingle()
+
+      if (error) throw error
 
       if (!data) {
         throw new Error(
           "This event was changed by another admin. Refresh and try again.",
-        );
+        )
       }
 
-      toast.success("Event archived");
+      toast.success("Event archived")
     } catch (caughtError) {
-      console.error(caughtError);
+      console.error(caughtError)
+
       setEvents((items) => {
-        if (items.some((event) => event.id === current.id)) return items;
-        return [...items, current];
-      });
+        if (items.some((event) => event.id === current.id)) return items
+
+        return [...items, current]
+      })
+
       toast.error(
         caughtError instanceof Error
           ? caughtError.message
           : "An error occurred while archiving the event",
-      );
+      )
     } finally {
-      setArchivingId(null);
+      setArchivingId(null)
     }
-  };
+  }
 
   const restoreEvent = async (id: string) => {
-    const current = archivedEvents.find((event) => event.id === id);
-    if (!current) return;
+    const current = archivedEvents.find((event) => event.id === id)
 
-    const version = current.version ?? 1;
-    setArchivedEvents((items) => items.filter((event) => event.id !== id));
+    if (!current) return
+
+    const version = current.version ?? 1
+
+    setArchivedEvents((items) => items.filter((event) => event.id !== id))
 
     try {
       const { data, error } = await supabase
-        .from("events")
-        .update({ archived_at: null, version: version + 1 })
-        .eq("id", id)
-        .eq("version", version)
-        .not("archived_at", "is", null)
-        .select("id")
-        .maybeSingle();
 
-      if (error) throw error;
+        .from("events")
+
+        .update({ archived_at: null, version: version + 1 })
+
+        .eq("id", id)
+
+        .eq("version", version)
+
+        .not("archived_at", "is", null)
+
+        .select("id")
+
+        .maybeSingle()
+
+      if (error) throw error
+
       if (!data) {
         throw new Error(
           "This event was changed by another admin. Refresh and try again.",
-        );
+        )
       }
 
       setEvents((items) => [
         { ...current, archivedAt: undefined, version: version + 1 },
+
         ...items,
-      ]);
-      toast.success("Event restored");
+      ])
+
+      toast.success("Event restored")
     } catch (caughtError) {
-      console.error(caughtError);
-      setArchivedEvents((items) => [current, ...items]);
+      console.error(caughtError)
+
+      setArchivedEvents((items) => [current, ...items])
+
       toast.error(
         caughtError instanceof Error
           ? caughtError.message
           : "An error occurred while restoring the event",
-      );
+      )
     }
-  };
+  }
 
   const permanentlyDeleteEvent = async () => {
-    if (!pendingPermanentDelete || isPermanentlyDeleting) return;
+    if (!pendingPermanentDelete || isPermanentlyDeleting) return
 
-    const current = pendingPermanentDelete;
-    const version = current.version ?? 1;
-    setIsPermanentlyDeleting(true);
+    const current = pendingPermanentDelete
+
+    const version = current.version ?? 1
+
+    setIsPermanentlyDeleting(true)
 
     try {
       const { data, error } = await supabase
-        .from("events")
-        .delete()
-        .eq("id", current.id)
-        .eq("version", version)
-        .not("archived_at", "is", null)
-        .select("id")
-        .maybeSingle();
 
-      if (error) throw error;
+        .from("events")
+
+        .delete()
+
+        .eq("id", current.id)
+
+        .eq("version", version)
+
+        .not("archived_at", "is", null)
+
+        .select("id")
+
+        .maybeSingle()
+
+      if (error) throw error
+
       if (!data) {
         throw new Error(
           "This event was changed by another admin. Refresh and try again.",
-        );
+        )
       }
 
       setArchivedEvents((items) =>
         items.filter((event) => event.id !== current.id),
-      );
+      )
+
       const mediaUrls = [
         ...(current.mediaUrls ?? []),
+
         ...(current.highlightUrl ? [current.highlightUrl] : []),
-      ];
-      const cleanupResults = await deleteImages(mediaUrls);
+      ]
+
+      const cleanupResults = await deleteImages(mediaUrls)
+
       cleanupResults
+
         .filter((result) => !result.success)
+
         .forEach((result) =>
           console.error("Failed to delete event media", result.error),
-        );
-      setPendingPermanentDelete(null);
-      toast.success("Event permanently deleted");
+        )
+
+      setPendingPermanentDelete(null)
+
+      toast.success("Event permanently deleted")
     } catch (caughtError) {
-      console.error(caughtError);
+      console.error(caughtError)
+
       toast.error(
         caughtError instanceof Error
           ? caughtError.message
           : "An error occurred while permanently deleting the event",
-      );
+      )
     } finally {
-      setIsPermanentlyDeleting(false);
+      setIsPermanentlyDeleting(false)
     }
-  };
+  }
 
   const handleDragStart = ({ active }: DragStartEvent) => {
-    setActiveDragId(String(active.id));
-  };
+    setActiveDragId(String(active.id))
+  }
 
   const handleDragCancel = () => {
-    setActiveDragId(null);
-  };
+    setActiveDragId(null)
+  }
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    setActiveDragId(null);
+    setActiveDragId(null)
+
     if (over?.id === ARCHIVE_DROP_ZONE_ID) {
-      void archiveEvent(String(active.id));
+      void archiveEvent(String(active.id))
     }
-  };
+  }
 
   const setStatus = async (id: string, status: EventStatus) => {
     try {
-      const current = events.find((e) => e.id === id);
+      const current = events.find((e) => e.id === id)
 
       if (!current) {
-        toast.error("Event not found");
+        toast.error("Event not found")
 
-        return;
+        return
       }
 
       const payload = {
         status,
 
         version: (current.version ?? 1) + 1,
-      };
+      }
 
       const { error } = await supabase
 
@@ -9190,14 +9555,14 @@ export function AdminEventsPage({
 
         .update(payload)
 
-        .eq("id", id);
+        .eq("id", id)
 
       if (error) {
-        toast.error(`Failed to update event status: ${error.message}`);
+        toast.error(`Failed to update event status: ${error.message}`)
 
-        console.error(error);
+        console.error(error)
 
-        return;
+        return
       }
 
       setEvents((ev) =>
@@ -9205,27 +9570,29 @@ export function AdminEventsPage({
           e.id === id
             ? {
                 ...e,
+
                 status,
+
                 version: (e.version ?? 1) + 1,
               }
             : e,
         ),
-      );
+      )
 
-      toast.success(`Event marked as ${status}`);
+      toast.success(`Event marked as ${status}`)
     } catch (caughtError) {
-      console.error(caughtError);
+      console.error(caughtError)
 
-      toast.error("An error occurred while updating event status");
+      toast.error("An error occurred while updating event status")
     }
-  };
+  }
 
-  const statusOptions = (
-    current: EventStatus,
-  ): {
-    status: EventStatus;
-    label: string;
-    icon: React.ReactNode;
+  const statusOptions = (current: EventStatus): {
+    status: EventStatus
+
+    label: string
+
+    icon: React.ReactNode
   }[] =>
     [
       {
@@ -9251,9 +9618,9 @@ export function AdminEventsPage({
 
         icon: <Icons.Check />,
       },
-    ].filter((o) => o.status !== current);
+    ].filter((o) => o.status !== current)
 
-  const activeDragEvent = events.find((event) => event.id === activeDragId);
+  const activeDragEvent = events.find((event) => event.id === activeDragId)
 
   if (selectedEventId) {
     return (
@@ -9264,11 +9631,12 @@ export function AdminEventsPage({
         showFees
         onClose={() => setSelectedEventId(null)}
         onPrimaryAction={() => {
-          setSelectedEventId(null);
-          onNav("admin-attendees");
+          setSelectedEventId(null)
+
+          onNav("admin-attendees")
         }}
       />
-    );
+    )
   }
 
   return (
@@ -9290,23 +9658,25 @@ export function AdminEventsPage({
                 archived={eventView === "archived"}
                 onClick={() => {
                   if (eventView === "archived") {
-                    setEventView("active");
+                    setEventView("active")
                   } else {
-                    setEventView("archived");
-                    void onLoadArchived();
+                    setEventView("archived")
+
+                    void onLoadArchived()
                   }
                 }}
               />
               <button
                 onClick={() => {
-                  setEventView("active");
-                  setShowForm(true);
+                  setEventView("active")
 
-                  setActiveTab("basic");
+                  setShowForm(true)
 
-                  setEditId(null);
+                  setActiveTab("basic")
 
-                  setEditDraft(null);
+                  setEditId(null)
+
+                  setEditDraft(null)
                 }}
                 className="h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"
               >
@@ -9326,22 +9696,29 @@ export function AdminEventsPage({
                 {[
                   [
                     "basic",
+
                     "Basic Details",
+
                     "Title, date, program, location, description",
                   ],
+
                   [
                     "session",
+
                     "Session & Timing",
+
                     "Session mode, times, cutoffs",
                   ],
+
                   ["fines", "Fines & Rules", "Attendance fine settings"],
+
                   ["media", "Media & Assets", "Photos and event media"],
                 ].map(([value, label, description]) => (
                   <button
                     key={value}
                     type="button"
                     onClick={() => {
-                      setActiveTab(value as CreateEventTab);
+                      setActiveTab(value as CreateEventTab)
                     }}
                     className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
                       activeTab === value
@@ -9358,9 +9735,9 @@ export function AdminEventsPage({
               </nav>
             }
             onClose={() => {
-              discardCreateMedia();
+              discardCreateMedia()
 
-              setShowForm(false);
+              setShowForm(false)
             }}
             footer={
               <>
@@ -9380,9 +9757,9 @@ export function AdminEventsPage({
                 </button>
                 <button
                   onClick={() => {
-                    discardCreateMedia();
+                    discardCreateMedia()
 
-                    setShowForm(false);
+                    setShowForm(false)
                   }}
                   className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50"
                 >
@@ -9576,25 +9953,25 @@ export function AdminEventsPage({
                     accept="image/*"
                     className="hidden"
                     onChange={async (e) => {
-                      const f = e.target.files?.[0];
+                      const f = e.target.files?.[0]
 
-                      if (!f) return;
+                      if (!f) return
 
-                      setHighlightUploadState("uploading");
+                      setHighlightUploadState("uploading")
 
-                      const result = await uploadImage(f);
+                      const result = await uploadImage(f)
 
                       if ("error" in result) {
-                        setHighlightUploadState("error");
+                        setHighlightUploadState("error")
 
-                        toast.error(result.error);
+                        toast.error(result.error)
 
-                        return;
+                        return
                       }
 
-                      setHighlightUploadState("idle");
+                      setHighlightUploadState("idle")
 
-                      setHighlightUrl(result.url);
+                      setHighlightUrl(result.url)
                     }}
                   />
                   {highlightUploadState === "uploading" ? (
@@ -9621,10 +9998,10 @@ export function AdminEventsPage({
                       <button
                         onClick={() => {
                           if (highlightUrl) {
-                            URL.revokeObjectURL(highlightUrl);
+                            URL.revokeObjectURL(highlightUrl)
                           }
 
-                          setHighlightUrl(null);
+                          setHighlightUrl(null)
                         }}
                         className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
                       >
@@ -9652,9 +10029,9 @@ export function AdminEventsPage({
                     multiple
                     className="hidden"
                     onChange={async (e) => {
-                      await uploadEventMedia(Array.from(e.target.files ?? []));
+                      await uploadEventMedia(Array.from(e.target.files ?? []))
 
-                      e.target.value = "";
+                      e.target.value = ""
                     }}
                   />
                   <input
@@ -9664,9 +10041,9 @@ export function AdminEventsPage({
                     multiple
                     className="hidden"
                     onChange={async (e) => {
-                      await uploadEventMedia(Array.from(e.target.files ?? []));
+                      await uploadEventMedia(Array.from(e.target.files ?? []))
 
-                      e.target.value = "";
+                      e.target.value = ""
                     }}
                   />
                   {mediaUploadState === "uploading" ? (
@@ -9738,22 +10115,29 @@ export function AdminEventsPage({
                 {[
                   [
                     "basic",
+
                     "Basic Details",
+
                     "Title, date, program, location, description",
                   ],
+
                   [
                     "session",
+
                     "Session & Timing",
+
                     "Session mode, times, cutoffs",
                   ],
+
                   ["fines", "Fines & Rules", "Attendance fine settings"],
+
                   ["media", "Media & Assets", "Photos and event media"],
                 ].map(([value, label, description]) => (
                   <button
                     key={value}
                     type="button"
                     onClick={() => {
-                      setEditEventTab(value as CreateEventTab);
+                      setEditEventTab(value as CreateEventTab)
                     }}
                     className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
                       editEventTab === value
@@ -9775,9 +10159,9 @@ export function AdminEventsPage({
                 <>
                   <button
                     onClick={() => {
-                      setShowSensitiveWarning(false);
+                      setShowSensitiveWarning(false)
 
-                      void commitSave();
+                      void commitSave()
                     }}
                     className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm"
                   >
@@ -9894,11 +10278,11 @@ export function AdminEventsPage({
                     </div>
                     <button
                       onClick={() => {
-                        if (eventHasScans) return;
+                        if (eventHasScans) return
 
                         setEditDraft((d) =>
                           d ? { ...d, multiSession: !d.multiSession } : d,
-                        );
+                        )
                       }}
                       role="switch"
                       aria-checked={!!editDraft.multiSession}
@@ -10099,27 +10483,27 @@ export function AdminEventsPage({
                     accept="image/*"
                     className="hidden"
                     onChange={async (e) => {
-                      const f = e.target.files?.[0];
+                      const f = e.target.files?.[0]
 
-                      if (!f) return;
+                      if (!f) return
 
-                      setEditHighlightUploadState("uploading");
+                      setEditHighlightUploadState("uploading")
 
-                      const result = await uploadImage(f);
+                      const result = await uploadImage(f)
 
                       if ("error" in result) {
-                        setEditHighlightUploadState("error");
+                        setEditHighlightUploadState("error")
 
-                        toast.error(result.error);
+                        toast.error(result.error)
 
-                        return;
+                        return
                       }
 
-                      setEditHighlightUploadState("idle");
+                      setEditHighlightUploadState("idle")
 
                       setEditDraft((d) =>
                         d ? { ...d, highlightUrl: result.url } : d,
-                      );
+                      )
                     }}
                   />
                   {editHighlightUploadState === "uploading" ? (
@@ -10173,7 +10557,7 @@ export function AdminEventsPage({
           <FormModal
             title="Confirm session extension"
             onClose={() => {
-              if (!isExtendingSession) setPendingSessionExtension(null);
+              if (!isExtendingSession) setPendingSessionExtension(null)
             }}
             footer={
               <>
@@ -10326,8 +10710,9 @@ export function AdminEventsPage({
                       {e.status === "active" && (
                         <button
                           onClick={(event) => {
-                            event.stopPropagation();
-                            onNav("admin-scanner");
+                            event.stopPropagation()
+
+                            onNav("admin-scanner")
                           }}
                           className="flex-1 h-9 bg-emerald-500 text-white text-xs font-semibold rounded-lg hover:bg-emerald-600 flex items-center justify-center gap-1.5 shadow-sm"
                         >
@@ -10340,8 +10725,9 @@ export function AdminEventsPage({
                       )}
                       <button
                         onClick={(event) => {
-                          event.stopPropagation();
-                          onNav("admin-attendees");
+                          event.stopPropagation()
+
+                          onNav("admin-attendees")
                         }}
                         className={`h-9 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1.5 ${
                           e.status === "active" ? "flex-1" : "w-full"
@@ -10393,7 +10779,7 @@ export function AdminEventsPage({
           <FormModal
             title="Permanently delete event?"
             onClose={() => {
-              if (!isPermanentlyDeleting) setPendingPermanentDelete(null);
+              if (!isPermanentlyDeleting) setPendingPermanentDelete(null)
             }}
             footer={
               <>
@@ -10430,7 +10816,7 @@ export function AdminEventsPage({
         )}
       </>
     </DndContext>
-  );
+  )
 }
 
 function CameraScanner({
@@ -10444,53 +10830,55 @@ function CameraScanner({
 
   manualSessionLabel,
 }: {
-  event: EventData;
+  event: EventData
 
-  scannerId: string | null;
+  scannerId: string | null
 
-  onResult: (r: ScanRecord) => void;
+  onResult: (r: ScanRecord) => void
 
-  onClose: () => void;
+  onClose: () => void
 
-  manualSessionLabel: "morning" | "afternoon" | null;
+  manualSessionLabel: "morning" | "afternoon" | null
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null)
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  const streamRef = useRef<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null)
 
-  const animRef = useRef<number>(0);
+  const animRef = useRef<number>(0)
 
-  const scannedRef = useRef<boolean>(false);
+  const scannedRef = useRef<boolean>(false)
 
-  const [camError, setCamError] = useState<string | null>(null);
+  const [camError, setCamError] = useState<string | null>(null)
 
-  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null)
 
-  const [result, setResult] = useState<ScanRecord | null>(null);
+  const [result, setResult] = useState<ScanRecord | null>(null)
 
-  const [cameraAttempt, setCameraAttempt] = useState(0);
+  const [cameraAttempt, setCameraAttempt] = useState(0)
 
-  const [torch, setTorch] = useState(false);
+  const [torch, setTorch] = useState(false)
 
   const determineSessionLabel = () =>
-    event.multiSession ? manualSessionLabel : "morning";
+    event.multiSession ? manualSessionLabel : "morning"
 
   const resolveQr = async (raw: string) => {
-    if (scannedRef.current) return;
+    if (scannedRef.current) return
 
-    scannedRef.current = true;
+    scannedRef.current = true
 
-    setScanError(null);
+    setScanError(null)
 
     try {
-      const qrMatch = raw.match(/^ADESSE:([^:]+)(?::v(\d+))?$/i);
-      const studentId = qrMatch?.[1]?.trim() ?? "";
-      const qrVersion = qrMatch?.[2] ? Number(qrMatch[2]) : null;
+      const qrMatch = raw.match(/^ADESSE:([^:]+)(?::v(\d+))?$/i)
+
+      const studentId = qrMatch?.[1]?.trim() ?? ""
+
+      const qrVersion = qrMatch?.[2] ? Number(qrMatch[2]) : null
 
       if (!studentId || !scannerId) {
-        throw new Error("This QR code is not a valid Adesse student code.");
+        throw new Error("This QR code is not a valid Adesse student code.")
       }
 
       const sessionMeta = event.multiSession
@@ -10504,12 +10892,12 @@ function CameraScanner({
                   ? !!event.strictAfternoon
                   : false,
           }
-        : getEventSessionMeta(event);
+        : getEventSessionMeta(event)
 
-      const sessionLabel = sessionMeta.sessionLabel;
+      const sessionLabel = sessionMeta.sessionLabel
 
       if (!sessionLabel) {
-        throw new Error("Please select a session before scanning.");
+        throw new Error("Please select a session before scanning.")
       }
 
       const { data: profile, error: profileError } = await supabase
@@ -10522,58 +10910,68 @@ function CameraScanner({
 
         .eq("student_id", studentId)
 
-        .maybeSingle();
+        .maybeSingle()
 
-      if (profileError) throw profileError;
+      if (profileError) throw profileError
 
       if (!profile) {
         throw new Error(
           "Student profile not found. Ask the student to renew their QR code.",
-        );
+        )
       }
 
       if (qrVersion !== null && qrVersion !== Number(profile.qr_version ?? 1)) {
         throw new Error(
           "This QR code has expired. Ask the student to renew it.",
-        );
+        )
       }
 
-      const now = new Date();
+      const now = new Date()
 
-      const strictSession = sessionMeta.strict;
+      const strictSession = sessionMeta.strict
 
       const cutoffValue =
         sessionLabel === "morning"
           ? event.morningLateCutoff
-          : event.afternoonLateCutoff;
+          : event.afternoonLateCutoff
 
-      const cutoffMinutes = cutoffValue ? toMinutes(cutoffValue) : null;
+      const cutoffMinutes = cutoffValue ? toMinutes(cutoffValue) : null
 
-      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes()
 
-      const isLateScan = cutoffMinutes !== null && nowMinutes > cutoffMinutes;
+      const isLateScan = cutoffMinutes !== null && nowMinutes > cutoffMinutes
 
       const sessionEndValue =
-        sessionLabel === "morning" ? event.morningEnd : event.afternoonEnd;
+        sessionLabel === "morning" ? event.morningEnd : event.afternoonEnd
+
       const sessionEndMinutes = sessionEndValue
         ? toMinutes(sessionEndValue)
-        : null;
+        : null
+
       const canTimeOut =
         sessionEndMinutes !== null &&
-        now.getHours() * 60 + now.getMinutes() >= sessionEndMinutes;
+        now.getHours() * 60 + now.getMinutes() >= sessionEndMinutes
+
       const attendance = await recordAttendance({
         eventId: event.id,
+
         studentId: profile.id,
+
         sessionLabel,
+
         status: isLateScan ? "late" : "present",
+
         scannedBy: scannerId,
+
         strictSession,
+
         canTimeOut,
+
         now,
-      });
+      })
 
       if (attendance.outcome === "error") {
-        throw attendance.error;
+        throw attendance.error
       }
 
       if (
@@ -10582,14 +10980,18 @@ function CameraScanner({
       ) {
         setScanError(
           "Attendance already recorded for this student and session.",
-        );
-        scannedRef.current = false;
-        return;
+        )
+
+        scannedRef.current = false
+
+        return
       }
+
       const rec: ScanRecord = {
         name:
           `${profile.first_name ?? ""} ${profile.surname ?? ""}`.trim() ||
           "Student",
+
         id: profile.student_id,
 
         program: profile.program ?? "",
@@ -10608,30 +11010,30 @@ function CameraScanner({
         action: attendance.action,
 
         dbId: attendance.recordId,
-      };
+      }
 
-      setSweeping(true);
+      setSweeping(true)
 
       setTimeout(() => {
-        setResult(rec);
+        setResult(rec)
 
-        onResult(rec);
-      }, 700);
+        onResult(rec)
+      }, 700)
     } catch (caughtError) {
-      console.error("Failed to record QR attendance", caughtError);
+      console.error("Failed to record QR attendance", caughtError)
 
       setScanError(
         caughtError instanceof Error
           ? caughtError.message
           : "Unable to record attendance. Please try again.",
-      );
+      )
 
-      scannedRef.current = false;
+      scannedRef.current = false
     }
-  };
+  }
 
   useEffect(() => {
-    let active = true;
+    let active = true
 
     async function start() {
       try {
@@ -10643,119 +11045,123 @@ function CameraScanner({
 
             height: { ideal: 720 },
           },
-        });
+        })
 
         if (!active) {
-          stream.getTracks().forEach((t) => t.stop());
+          stream.getTracks().forEach((t) => t.stop())
 
-          return;
+          return
         }
 
-        streamRef.current = stream;
+        streamRef.current = stream
 
         if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+          videoRef.current.srcObject = stream
 
-          await videoRef.current.play();
+          await videoRef.current.play()
         }
 
         tickRef.current = () => {
-          if (!active || scannedRef.current) return;
+          if (!active || scannedRef.current) return
 
-          const video = videoRef.current;
+          const video = videoRef.current
 
-          const canvas = canvasRef.current;
+          const canvas = canvasRef.current
 
           if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
-            const { videoWidth: w, videoHeight: h } = video;
+            const { videoWidth: w, videoHeight: h } = video
 
-            canvas.width = w;
+            canvas.width = w
 
-            canvas.height = h;
+            canvas.height = h
 
-            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            const ctx = canvas.getContext("2d", { willReadFrequently: true })
 
             if (ctx) {
-              ctx.drawImage(video, 0, 0, w, h);
+              ctx.drawImage(video, 0, 0, w, h)
 
-              const imageData = ctx.getImageData(0, 0, w, h);
+              const imageData = ctx.getImageData(0, 0, w, h)
 
               const code = jsQR(imageData.data, w, h, {
                 inversionAttempts: "dontInvert",
-              });
+              })
 
               if (code?.data) {
-                resolveQr(code.data);
+                resolveQr(code.data)
 
-                return;
+                return
               }
             }
           }
 
-          animRef.current = requestAnimationFrame(tickRef.current);
-        };
+          animRef.current = requestAnimationFrame(tickRef.current)
+        }
 
-        animRef.current = requestAnimationFrame(tickRef.current);
+        animRef.current = requestAnimationFrame(tickRef.current)
       } catch {
         if (active)
           setCamError(
             "Camera access denied. Please allow camera permission and try again.",
-          );
+          )
       }
     }
 
-    start();
+    start()
 
     return () => {
-      active = false;
+      active = false
 
-      cancelAnimationFrame(animRef.current);
+      cancelAnimationFrame(animRef.current)
 
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-    };
-  }, [cameraAttempt]);
+      streamRef.current?.getTracks().forEach((t) => t.stop())
+    }
+  }, [cameraAttempt])
 
   const toggleTorch = async () => {
-    const track = streamRef.current?.getVideoTracks()[0];
+    const track = streamRef.current?.getVideoTracks()[0]
 
-    if (!track) return;
+    if (!track) return
 
     try {
-      await (
-        track as MediaStreamTrack & {
-          applyConstraints: (c: object) => Promise<void>;
-        }
-      ).applyConstraints({
-        advanced: [{ torch: !torch } as MediaTrackConstraintSet],
-      });
+      await (track as MediaStreamTrack & {
+        applyConstraints: (c: object) => Promise<void>
+      })
 
-      setTorch((t) => !t);
+        .applyConstraints({
+          advanced: [{ torch: !torch } as MediaTrackConstraintSet],
+        })
+
+      setTorch((t) => !t)
     } catch {}
-  };
+  }
 
-  const [sweeping, setSweeping] = useState(false);
+  const [sweeping, setSweeping] = useState(false)
 
-  const tickRef = useRef<() => void>(() => {});
+  const tickRef = useRef<() => void>(() => {})
 
   const scanAgain = () => {
-    scannedRef.current = false;
+    scannedRef.current = false
 
-    setSweeping(false);
+    setSweeping(false)
 
-    setResult(null);
+    setResult(null)
 
-    setScanError(null);
+    setScanError(null)
 
-    animRef.current = requestAnimationFrame(tickRef.current);
-  };
+    animRef.current = requestAnimationFrame(tickRef.current)
+  }
 
   const retryCamera = () => {
-    scannedRef.current = false;
-    setCamError(null);
-    setScanError(null);
-    setResult(null);
-    setCameraAttempt((attempt) => attempt + 1);
-  };
+    scannedRef.current = false
+
+    setCamError(null)
+
+    setScanError(null)
+
+    setResult(null)
+
+    setCameraAttempt((attempt) => attempt + 1)
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col scanner-enter">
@@ -11042,7 +11448,7 @@ function CameraScanner({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 export function AdminScannerPage({
@@ -11050,73 +11456,72 @@ export function AdminScannerPage({
 
   scannerId,
 }: {
-  events?: EventData[];
+  events?: EventData[]
 
-  scannerId: string | null;
+  scannerId: string | null
 }) {
   const [selectedEventId, setSelectedEventId] = useState<string>(
     events[0]?.id ?? "",
-  );
+  )
 
-  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false)
 
-  const [scanned, setScanned] = useState<ScanRecord[]>([]);
+  const [scanned, setScanned] = useState<ScanRecord[]>([])
 
-  const [manualSessionLabel, setManualSessionLabel] = useState<
-    "morning" | "afternoon" | null
-  >(null);
+  const [manualSessionLabel, setManualSessionLabel] =
+    useState<"morning" | "afternoon" | null>(null)
 
-  const [imageLoading, setImageLoading] = useState(true);
+  const [imageLoading, setImageLoading] = useState(true)
 
-  const [showEventRules, setShowEventRules] = useState(false);
+  const [showEventRules, setShowEventRules] = useState(false)
 
   useEffect(() => {
     if (!events.some((event) => event.id === selectedEventId) && events[0]) {
-      setSelectedEventId(events[0].id);
+      setSelectedEventId(events[0].id)
     }
-  }, [events, selectedEventId]);
+  }, [events, selectedEventId])
 
   useEffect(() => {
-    const nextEvent = events.find((event) => event.id === selectedEventId);
+    const nextEvent = events.find((event) => event.id === selectedEventId)
 
     if (!nextEvent) {
-      setManualSessionLabel(null);
+      setManualSessionLabel(null)
 
-      return;
+      return
     }
 
     if (!nextEvent.multiSession) {
-      setManualSessionLabel(null);
+      setManualSessionLabel(null)
 
-      return;
+      return
     }
 
     const defaultSession =
-      getEventSessionMeta(nextEvent).sessionLabel ?? "morning";
+      getEventSessionMeta(nextEvent).sessionLabel ?? "morning"
 
-    setManualSessionLabel(defaultSession);
-  }, [selectedEventId, events]);
+    setManualSessionLabel(defaultSession)
+  }, [selectedEventId, events])
 
   const activeEvents = events.filter(
     (e) => e.status === "active" || e.status === "upcoming",
-  );
+  )
 
-  const selectedEvent = events.find((e) => e.id === selectedEventId);
+  const selectedEvent = events.find((e) => e.id === selectedEventId)
 
   const primaryMedia =
-    selectedEvent?.highlightUrl ?? selectedEvent?.mediaUrls?.[0];
+    selectedEvent?.highlightUrl ?? selectedEvent?.mediaUrls?.[0]
 
   useEffect(() => {
-    setImageLoading(Boolean(primaryMedia));
-  }, [selectedEventId, primaryMedia]);
+    setImageLoading(Boolean(primaryMedia))
+  }, [selectedEventId, primaryMedia])
 
-  const canScanSelectedEvent = selectedEvent?.status === "active";
+  const canScanSelectedEvent = selectedEvent?.status === "active"
 
   const selectedSessionMeta = getSelectedSessionMeta(
     selectedEvent,
 
     manualSessionLabel,
-  );
+  )
 
   const handleResult = (r: ScanRecord) => {
     setScanned((prev) => [
@@ -11131,8 +11536,8 @@ export function AdminScannerPage({
       },
 
       ...prev,
-    ]);
-  };
+    ])
+  }
 
   if (scannerOpen && selectedEvent) {
     return (
@@ -11143,7 +11548,7 @@ export function AdminScannerPage({
         onClose={() => setScannerOpen(false)}
         manualSessionLabel={manualSessionLabel}
       />
-    );
+    )
   }
 
   return (
@@ -11442,8 +11847,7 @@ export function AdminScannerPage({
                 {scanned.length}
               </span>
             </div>
-            {scanned.length > 0 ? (
-              scanned.slice(0, 8).map((s, i) => (
+            {scanned.length > 0 ? scanned.slice(0, 8).map((s, i) => (
                 <div
                   key={i}
                   className={`flex items-center gap-3 px-5 py-3.5 ${
@@ -11463,17 +11867,14 @@ export function AdminScannerPage({
                   </div>
                   <Badge status={s.status} sanctioned={s.sanctioned} />
                 </div>
-              ))
-            ) : (
-              <p className="px-5 py-6 text-sm text-slate-400 text-center">
+              )) : <p className="px-5 py-6 text-sm text-slate-400 text-center">
                 No scans recorded yet.
-              </p>
-            )}
+              </p>}
           </div>
         </div>
       </div>
     </>
-  );
+  )
 }
 
 export function AdminAttendeesPage({
@@ -11489,39 +11890,42 @@ export function AdminAttendeesPage({
 
   onDeleteAttendance,
 }: {
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  events?: EventData[];
+  events?: EventData[]
 
-  students?: StudentProfile[];
+  students?: StudentProfile[]
 
-  scanState?: Record<string, ScanRecord[]>;
+  scanState?: Record<string, ScanRecord[]>
 
-  fineRows?: FineRowLike[];
+  fineRows?: FineRowLike[]
 
-  onDeleteAttendance?: (dbId: string | number) => Promise<boolean>;
+  onDeleteAttendance?: (dbId: string | number) => Promise<boolean>
 }) {
-  const ALL_EVENTS_ID = "__all_events__";
-  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "");
-  const [studentSearch, setStudentSearch] = useState("");
+  const ALL_EVENTS_ID = "__all_events__"
+
+  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "")
+
+  const [studentSearch, setStudentSearch] = useState("")
 
   const [scanState, setScanState] = useState<Record<string, ScanRecord[]>>(
     initialScanState ?? {},
-  );
+  )
 
   const [tab, setTab] = useState<"present" | "late" | "absent" | "duplicates">(
     "present",
-  );
-  const [deletingId, setDeletingId] = useState<string | number | null>(null);
-  const [selectedSession, setSelectedSession] = useState<
-    "morning" | "afternoon"
-  >("morning");
+  )
+
+  const [deletingId, setDeletingId] = useState<string | number | null>(null)
+
+  const [selectedSession, setSelectedSession] =
+    useState<"morning" | "afternoon">("morning")
 
   useEffect(() => {
     if (initialScanState) {
-      setScanState(initialScanState);
+      setScanState(initialScanState)
     }
-  }, [initialScanState]);
+  }, [initialScanState])
 
   useEffect(() => {
     if (
@@ -11529,221 +11933,300 @@ export function AdminAttendeesPage({
       !events.some((event) => event.id === selectedEventId) &&
       events[0]
     ) {
-      setSelectedEventId(events[0].id);
+      setSelectedEventId(events[0].id)
     }
-  }, [events, selectedEventId]);
+  }, [events, selectedEventId])
 
-  const allEventsSelected = selectedEventId === ALL_EVENTS_ID;
+  const allEventsSelected = selectedEventId === ALL_EVENTS_ID
+
   const selectedEvent = allEventsSelected
     ? null
-    : (events.find((e) => e.id === selectedEventId) ?? events[0] ?? null);
+    : (events.find((e) => e.id === selectedEventId) ?? events[0] ?? null)
 
   useEffect(() => {
-    setSelectedSession("morning");
-  }, [selectedEventId]);
+    setSelectedSession("morning")
+  }, [selectedEventId])
 
   const scans = selectedEvent
     ? (scanState[selectedEvent.id] ?? []).filter(
         (scan) => (scan.sessionLabel ?? "morning") === selectedSession,
       )
-    : [];
+    : []
 
   const fineForScan = (scan?: ScanRecord) =>
     scan
       ? fineRows.find(
           (fine) => String(fine.attendance_scan_id ?? "") === String(scan.dbId),
         )
-      : undefined;
+      : undefined
 
   const sessionFine = selectedEvent
     ? selectedSession === "afternoon"
       ? (selectedEvent.afternoonAbsentFine ?? selectedEvent.absentFine ?? 0)
       : (selectedEvent.morningAbsentFine ?? selectedEvent.absentFine ?? 0)
-    : 0;
+    : 0
+
   const sessionLateFine = selectedEvent
     ? selectedSession === "afternoon"
       ? (selectedEvent.afternoonLateFine ?? selectedEvent.lateFine ?? 0)
       : (selectedEvent.morningLateFine ?? selectedEvent.lateFine ?? 0)
-    : 0;
+    : 0
 
   const presentScans = scans.filter(
     (s) => s.status === "present" || s.status === "confirmed",
-  );
-  const lateScans = scans.filter((s) => s.status === "late");
-  const absentScans = scans.filter((s) => s.status === "absent");
+  )
 
-  const duplicates = scans.filter((s) => s.status === "duplicate");
+  const lateScans = scans.filter((s) => s.status === "late")
+
+  const absentScans = scans.filter((s) => s.status === "absent")
+
+  const duplicates = scans.filter((s) => s.status === "duplicate")
 
   const presentIds = new Set(
     [...presentScans, ...lateScans].map((s) => s.profileId ?? s.id),
-  );
+  )
 
   const eligibleStudents = students.filter(
     (student) =>
       !selectedEvent?.program ||
       selectedEvent.program === "All Programs" ||
       student.program === selectedEvent.program,
-  );
-  const searchQuery = studentSearch.trim().toLowerCase();
+  )
+
+  const searchQuery = studentSearch.trim().toLowerCase()
+
   const visibleStudents = searchQuery
     ? eligibleStudents.filter((student) =>
         [student.name, student.id, student.program, student.section]
+
           .filter(Boolean)
+
           .some((value) => value.toLowerCase().includes(searchQuery)),
       )
-    : eligibleStudents;
+    : eligibleStudents
+
   const visibleScans = (records: ScanRecord[]) =>
     searchQuery
       ? records.filter((scan) =>
           [scan.name, scan.id, scan.program, scan.section]
+
             .filter(Boolean)
+
             .some((value) => value.toLowerCase().includes(searchQuery)),
         )
-      : records;
+      : records
+
   const absentScanByProfileId = new Map(
     absentScans.map((scan) => [scan.profileId ?? scan.id, scan]),
-  );
+  )
+
   const absentees: ScanRecord[] = visibleStudents
+
     .filter((student) => !presentIds.has(student.profileId ?? student.id))
+
     .map(
       (student) =>
         absentScanByProfileId.get(student.profileId ?? student.id) ?? {
           profileId: student.profileId,
+
           name: student.name,
+
           id: student.id,
+
           program: student.program,
+
           section: student.section,
+
           photoUrl: student.photoUrl,
+
           time: "",
+
           status: "absent" as const,
+
           sanctioned: Boolean(selectedEvent?.sanctionsEnabled),
+
           sessionLabel: selectedSession,
+
           dbId: `inferred-${selectedEvent?.id ?? "event"}-${student.profileId ?? student.id}`,
         },
-    );
+    )
+
   const absentFineForStudent = (profileId: string) => {
-    const absentScan = absentScanByProfileId.get(profileId);
-    return fineForScan(absentScan);
-  };
+    const absentScan = absentScanByProfileId.get(profileId)
+
+    return fineForScan(absentScan)
+  }
+
   const isAbsentCleared = (profileId: string) => {
-    const status = absentFineForStudent(profileId)?.status;
-    return status === "paid" || status === "excused";
-  };
-  const visiblePresent = visibleScans(presentScans);
-  const visibleLate = visibleScans(lateScans);
+    const status = absentFineForStudent(profileId)?.status
+
+    return status === "paid" || status === "excused"
+  }
+
+  const visiblePresent = visibleScans(presentScans)
+
+  const visibleLate = visibleScans(lateScans)
+
   const visibleAbsent = searchQuery
     ? absentees.filter((scan) =>
         [scan.name, scan.id, scan.program, scan.section]
+
           .filter(Boolean)
+
           .some((value) => value.toLowerCase().includes(searchQuery)),
       )
-    : absentees;
-  const monetaryPolicyActive = sessionFine > 0 || sessionLateFine > 0;
+    : absentees
+
+  const monetaryPolicyActive = sessionFine > 0 || sessionLateFine > 0
+
   const policyColumn = monetaryPolicyActive
     ? "Fee"
     : selectedEvent?.sanctionsEnabled
       ? "Sanction"
-      : null;
-  const visibleCurrentScans = tab === "late" ? visibleLate : visiblePresent;
+      : null
+
+  const visibleCurrentScans = tab === "late" ? visibleLate : visiblePresent
 
   const matchedStudent = students.find((student) => {
-    if (!searchQuery) return false;
+    if (!searchQuery) return false
+
     return [student.name, student.id, student.program, student.section]
+
       .filter(Boolean)
-      .some((value) => value.toLowerCase().includes(searchQuery));
-  });
+
+      .some((value) => value.toLowerCase().includes(searchQuery))
+  })
+
   const allEventRows = matchedStudent
     ? buildAttendanceSessionRecords(
         events.map((event) => ({
           id: event.id,
+
           event_date: event.date,
+
           program: event.program,
+
           status: event.status,
+
           multi_session: event.multiSession,
+
           absent_fine: event.absentFine,
+
           late_fine: event.lateFine,
+
           morning_absent_fine: event.morningAbsentFine,
+
           morning_late_fine: event.morningLateFine,
+
           afternoon_absent_fine: event.afternoonAbsentFine,
+
           afternoon_late_fine: event.afternoonLateFine,
         })) as FineEventLike[],
+
         Object.entries(scanState).flatMap(([eventId, records]) =>
           records
+
             .filter((scan) => scan.id === matchedStudent.id)
+
             .map((scan) => ({
               id: String(scan.dbId),
+
               event_id: eventId,
+
               session_label: scan.sessionLabel,
+
               status: scan.status,
+
               scan_in_at: scan.time,
             })),
         ) as FineScanLike[],
+
         fineRows,
+
         matchedStudent.program,
       ).map((record) => {
-        const event = events.find((item) => item.id === record.eventId);
+        const event = events.find((item) => item.id === record.eventId)
+
         return {
           ...record,
+
           eventTitle: event?.title ?? "Event",
+
           eventDate: event?.date ?? "",
-        };
+        }
       })
-    : [];
+    : []
 
   const deleteRecord = async (dbId: string | number) => {
-    if (deletingId !== null) return;
+    if (deletingId !== null) return
+
     if (
       !window.confirm(
         "Delete this attendance record? This action cannot be undone.",
       )
     )
-      return;
-    setDeletingId(dbId);
+      return
+
+    setDeletingId(dbId)
+
     try {
       if (onDeleteAttendance && !(await onDeleteAttendance(dbId))) {
-        return;
+        return
       }
 
       setScanState((st) => ({
         ...st,
+
         [selectedEventId]: (st[selectedEventId] ?? []).filter(
           (r) => r.dbId !== dbId,
         ),
-      }));
+      }))
     } finally {
-      setDeletingId(null);
+      setDeletingId(null)
     }
-  };
+  }
 
   const exportAttendance = () => {
-    if (!selectedEvent) return;
+    if (!selectedEvent) return
 
-    const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`
 
     const rows = scans.map((scan) =>
       [
         scan.name,
+
         scan.id,
+
         scan.program,
+
         scan.section,
+
         scan.sessionLabel ?? "morning",
+
         scan.time,
+
         scan.status,
       ]
 
         .map((value) => escapeCsv(String(value ?? "")))
 
         .join(","),
-    );
+    )
 
     const csv = [
       [
         "Student",
+
         "Student ID",
+
         "Program",
+
         "Section",
+
         "Session",
+
         "Time",
+
         "Status",
       ]
 
@@ -11752,22 +12235,22 @@ export function AdminAttendeesPage({
         .join(","),
 
       ...rows,
-    ].join("\n");
+    ].join("\n")
 
     const url = URL.createObjectURL(
       new Blob([csv], { type: "text/csv;charset=utf-8" }),
-    );
+    )
 
-    const link = document.createElement("a");
+    const link = document.createElement("a")
 
-    link.href = url;
+    link.href = url
 
-    link.download = `${selectedEvent.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-attendees.csv`;
+    link.download = `${selectedEvent.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-attendees.csv`
 
-    link.click();
+    link.click()
 
-    URL.revokeObjectURL(url);
-  };
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <>
@@ -11795,9 +12278,9 @@ export function AdminAttendeesPage({
         <select
           value={selectedEventId}
           onChange={(e) => {
-            setSelectedEventId(e.target.value);
+            setSelectedEventId(e.target.value)
 
-            setTab("present");
+            setTab("present")
           }}
           className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium outline-none focus:border-emerald-500 appearance-none"
         >
@@ -11815,8 +12298,9 @@ export function AdminAttendeesPage({
             onChange={(event) => {
               setSelectedEventId(
                 event.target.checked ? ALL_EVENTS_ID : (events[0]?.id ?? ""),
-              );
-              setTab("present");
+              )
+
+              setTab("present")
             }}
             className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
           />
@@ -11878,7 +12362,8 @@ export function AdminAttendeesPage({
                     0)
                   : (selectedEvent.morningAbsentFine ??
                     selectedEvent.absentFine ??
-                    0);
+                    0)
+
               const lateAmount =
                 session === "afternoon"
                   ? (selectedEvent.afternoonLateFine ??
@@ -11886,7 +12371,8 @@ export function AdminAttendeesPage({
                     0)
                   : (selectedEvent.morningLateFine ??
                     selectedEvent.lateFine ??
-                    0);
+                    0)
+
               return (
                 <button
                   key={session}
@@ -11905,7 +12391,7 @@ export function AdminAttendeesPage({
                     Absent ₱{amount} · Late ₱{lateAmount}
                   </span>
                 </button>
-              );
+              )
             })}
           </div>
         </div>
@@ -11994,7 +12480,8 @@ export function AdminAttendeesPage({
                 <div className="divide-y divide-slate-100">
                   {allEventRows.map((row) => {
                     const cleared =
-                      row.fineStatus === "paid" || row.fineStatus === "excused";
+                      row.fineStatus === "paid" || row.fineStatus === "excused"
+
                     return (
                       <div
                         key={row.key}
@@ -12045,7 +12532,7 @@ export function AdminAttendeesPage({
                           )}
                         </div>
                       </div>
-                    );
+                    )
                   })}
                 </div>
               )}
@@ -12267,9 +12754,12 @@ export function AdminAttendeesPage({
                 )}
               </div>
               {visibleAbsent.map((s, i) => {
-                const profileId = s.profileId ?? s.id;
-                const fine = fineForScan(s)?.amount ?? sessionFine;
-                const cleared = isAbsentCleared(profileId);
+                const profileId = s.profileId ?? s.id
+
+                const fine = fineForScan(s)?.amount ?? sessionFine
+
+                const cleared = isAbsentCleared(profileId)
+
                 return (
                   <div
                     key={s.profileId ?? s.id}
@@ -12355,185 +12845,236 @@ export function AdminAttendeesPage({
                       )}
                     </div>
                   </div>
-                );
+                )
               })}
             </div>
           )}
         </>
       )}
     </>
-  );
+  )
 }
 
 export function AdminStudentsPage({
   students = [],
+
   events = [],
+
   authUserId,
 }: {
-  students?: StudentProfile[];
-  events?: EventData[];
-  authUserId?: string | null;
-}) {
-  const router = useRouter();
+  students?: StudentProfile[]
 
-  const [query, setQuery] = useState("");
-  const [bulkSelectionEnabled, setBulkSelectionEnabled] = useState(false);
+  events?: EventData[]
+
+  authUserId?: string | null
+}) {
+  const router = useRouter()
+
+  const [query, setQuery] = useState("")
+
+  const [bulkSelectionEnabled, setBulkSelectionEnabled] = useState(false)
+
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(
     new Set(),
-  );
-  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "");
+  )
+
+  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "")
+
   const [sessionLabel, setSessionLabel] = useState<"morning" | "afternoon">(
     "morning",
-  );
-  const [existingStudentIds, setExistingStudentIds] = useState<string[]>([]);
-  const [isChecking, setIsChecking] = useState(false);
-  const [isMarking, setIsMarking] = useState(false);
+  )
+
+  const [existingStudentIds, setExistingStudentIds] = useState<string[]>([])
+
+  const [isChecking, setIsChecking] = useState(false)
+
+  const [isMarking, setIsMarking] = useState(false)
 
   const filtered = students.filter((s) => {
-    const q = query.toLowerCase();
+    const q = query.toLowerCase()
 
     return (
       s.name.toLowerCase().includes(q) ||
       s.id.includes(q) ||
       s.program.toLowerCase().includes(q) ||
       s.section.toLowerCase().includes(q)
-    );
-  });
+    )
+  })
 
-  const selectedEvent = events.find((event) => event.id === selectedEventId);
-  const visibleIds = filtered.map((student) => student.profileId ?? student.id);
+  const selectedEvent = events.find((event) => event.id === selectedEventId)
+
+  const visibleIds = filtered.map((student) => student.profileId ?? student.id)
+
   const allVisibleSelected =
     visibleIds.length > 0 &&
-    visibleIds.every((id) => selectedStudentIds.has(id));
+    visibleIds.every((id) => selectedStudentIds.has(id))
+
   const suggestedSessionLabel = selectedEvent
     ? getEventSessionMeta(selectedEvent).sessionLabel
-    : null;
+    : null
+
   const sessionMismatch =
     selectedEvent?.multiSession &&
     suggestedSessionLabel !== null &&
-    suggestedSessionLabel !== sessionLabel;
+    suggestedSessionLabel !== sessionLabel
 
   const openStudent = (student: StudentProfile) => {
-    const targetId = student.profileId ?? student.id;
+    const targetId = student.profileId ?? student.id
 
-    router.push(`/admin-students/${encodeURIComponent(targetId)}`);
-  };
+    router.push(`/admin-students/${encodeURIComponent(targetId)}`)
+  }
 
   useEffect(() => {
     if (!events.some((event) => event.id === selectedEventId) && events[0]) {
-      setSelectedEventId(events[0].id);
+      setSelectedEventId(events[0].id)
     }
-  }, [events, selectedEventId]);
+  }, [events, selectedEventId])
 
   useEffect(() => {
-    if (!selectedEvent) return;
+    if (!selectedEvent) return
+
     setSessionLabel(
       selectedEvent.multiSession
         ? (getEventSessionMeta(selectedEvent).sessionLabel ?? "morning")
         : "morning",
-    );
-  }, [selectedEvent]);
+    )
+  }, [selectedEvent])
 
   const toggleStudent = (studentId: string) => {
     setSelectedStudentIds((current) => {
-      const next = new Set(current);
-      if (next.has(studentId)) next.delete(studentId);
-      else next.add(studentId);
-      return next;
-    });
-  };
+      const next = new Set(current)
+
+      if (next.has(studentId)) next.delete(studentId)
+      else next.add(studentId)
+
+      return next
+    })
+  }
 
   const toggleVisibleStudents = () => {
     setSelectedStudentIds((current) => {
-      const next = new Set(current);
-      if (allVisibleSelected) visibleIds.forEach((id) => next.delete(id));
-      else visibleIds.forEach((id) => next.add(id));
-      return next;
-    });
-  };
+      const next = new Set(current)
+
+      if (allVisibleSelected) visibleIds.forEach((id) => next.delete(id))
+      else visibleIds.forEach((id) => next.add(id))
+
+      return next
+    })
+  }
 
   const clearSelection = () => {
-    setSelectedStudentIds(new Set());
-    setExistingStudentIds([]);
-  };
+    setSelectedStudentIds(new Set())
+
+    setExistingStudentIds([])
+  }
 
   const disableBulkSelection = () => {
-    setBulkSelectionEnabled(false);
-    clearSelection();
-  };
+    setBulkSelectionEnabled(false)
+
+    clearSelection()
+  }
 
   const markSelected = async (overwriteExisting: boolean) => {
     if (!selectedEventId || !selectedEvent || !authUserId) {
-      toast.error("Select an event before marking attendance.");
-      return;
+      toast.error("Select an event before marking attendance.")
+
+      return
     }
 
-    const studentIds = Array.from(selectedStudentIds);
-    setIsMarking(true);
+    const studentIds = Array.from(selectedStudentIds)
+
+    setIsMarking(true)
+
     const results = await Promise.all(
       studentIds.map((studentId) =>
         recordAttendance({
           eventId: selectedEventId,
+
           studentId,
+
           sessionLabel,
+
           status: "present",
+
           scannedBy: authUserId,
+
           strictSession: false,
+
           canTimeOut: false,
+
           method: "manual",
+
           overwrite:
             overwriteExisting || !existingStudentIds.includes(studentId),
         }),
       ),
-    );
-    setIsMarking(false);
+    )
+
+    setIsMarking(false)
 
     const marked = results.filter(
       (result) => result.outcome === "success",
-    ).length;
+    ).length
+
     const failed = results.filter(
       (result) => result.outcome === "error",
-    ).length;
+    ).length
+
     const skipped = results.filter(
       (result) =>
         result.outcome === "duplicate" || result.outcome === "rejected",
-    ).length;
+    ).length
 
     toast.success(
       `${marked} marked present, ${skipped} skipped, ${failed} failed.`,
-    );
-    clearSelection();
-  };
+    )
+
+    clearSelection()
+  }
 
   const preflightAndMark = async () => {
     if (!selectedEventId || !selectedEvent || !authUserId) {
-      toast.error("Select an event before marking attendance.");
-      return;
+      toast.error("Select an event before marking attendance.")
+
+      return
     }
 
-    const studentIds = Array.from(selectedStudentIds);
-    setIsChecking(true);
+    const studentIds = Array.from(selectedStudentIds)
+
+    setIsChecking(true)
+
     const { data, error } = await supabase
+
       .from("attendance_scans")
+
       .select("student_id")
+
       .eq("event_id", selectedEventId)
+
       .eq("session_label", sessionLabel)
-      .in("student_id", studentIds);
-    setIsChecking(false);
+
+      .in("student_id", studentIds)
+
+    setIsChecking(false)
 
     if (error) {
-      console.error(error);
-      toast.error("Could not check existing attendance.");
-      return;
+      console.error(error)
+
+      toast.error("Could not check existing attendance.")
+
+      return
     }
 
     const existingIds = Array.from(
       new Set((data ?? []).map((row) => String(row.student_id))),
-    );
-    setExistingStudentIds(existingIds);
-    if (existingIds.length > 0) return;
-    await markSelected(false);
-  };
+    )
+
+    setExistingStudentIds(existingIds)
+
+    if (existingIds.length > 0) return
+
+    await markSelected(false)
+  }
 
   return (
     <>
@@ -12792,7 +13333,7 @@ export function AdminStudentsPage({
         </div>
       )}
     </>
-  );
+  )
 }
 
 export function AdminAnnouncementsPage({
@@ -12806,74 +13347,70 @@ export function AdminAnnouncementsPage({
 
   onDelete,
 }: {
-  posts: typeof INITIAL_ANNOUNCEMENTS;
+  posts: typeof INITIAL_ANNOUNCEMENTS
 
-  setPosts: React.Dispatch<React.SetStateAction<typeof INITIAL_ANNOUNCEMENTS>>;
+  setPosts: React.Dispatch<React.SetStateAction<typeof INITIAL_ANNOUNCEMENTS>>
 
   onCreate?: (payload: {
-    title: string;
+    title: string
 
-    body: string;
+    body: string
 
-    badge: string;
+    badge: string
 
-    photoUrl: string | null;
-  }) => Promise<void | boolean>;
+    photoUrl: string | null
+  }) => Promise<void | boolean>
 
   onUpdate?: (payload: {
-    id: string;
+    id: string
 
-    title: string;
+    title: string
 
-    body: string;
+    body: string
 
-    badge: string;
+    badge: string
 
-    photoUrl: string | null;
+    photoUrl: string | null
 
-    previousPhotoUrl?: string;
-  }) => Promise<void | boolean>;
+    previousPhotoUrl?: string
+  }) => Promise<void | boolean>
 
-  onDelete?: (id: string, photoUrl?: string) => Promise<void | boolean>;
+  onDelete?: (id: string, photoUrl?: string) => Promise<void | boolean>
 }) {
-  type NewPostTab = "details" | "media";
+  type NewPostTab = "details" | "media"
 
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(false)
 
-  const [newPostTab, setNewPostTab] = useState<NewPostTab>("details");
+  const [newPostTab, setNewPostTab] = useState<NewPostTab>("details")
 
   const [editAnnouncementTab, setEditAnnouncementTab] =
-    useState<NewPostTab>("details");
+    useState<NewPostTab>("details")
 
-  const [editId, setEditId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null)
 
-  const [isPublishing, setIsPublishing] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false)
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false)
 
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<
-    string | null
-  >(null);
+  const [selectedAnnouncementId, setSelectedAnnouncementId] =
+    useState<string | null>(null)
 
-  const [editDraft, setEditDraft] = useState<
-    (typeof INITIAL_ANNOUNCEMENTS)[0] | null
-  >(null);
+  const [editDraft, setEditDraft] =
+    useState<typeof INITIAL_ANNOUNCEMENTS[0] | null>(null)
 
-  const [newPhoto, setNewPhoto] = useState<string | null>(null);
+  const [newPhoto, setNewPhoto] = useState<string | null>(null)
 
-  const [newPhotoUploadState, setNewPhotoUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [newPhotoUploadState, setNewPhotoUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
-  const [editPhotoUploadState, setEditPhotoUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [editPhotoUploadState, setEditPhotoUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
-  const photoRef = useRef<HTMLInputElement>(null);
+  const photoRef = useRef<HTMLInputElement>(null)
 
-  const editPhotoRef = useRef<HTMLInputElement>(null);
+  const editPhotoRef = useRef<HTMLInputElement>(null)
 
   const announcementFormSchema = z.object({
     title: z.string().trim().min(1, "Title is required"),
@@ -12881,9 +13418,9 @@ export function AdminAnnouncementsPage({
     body: z.string().trim().min(10, "Body must be at least 10 characters"),
 
     badge: z.string().trim().min(1, "Category is required"),
-  });
+  })
 
-  type AnnouncementFormValues = z.infer<typeof announcementFormSchema>;
+  type AnnouncementFormValues = z.infer<typeof announcementFormSchema>
 
   const {
     register,
@@ -12903,50 +13440,50 @@ export function AdminAnnouncementsPage({
 
       badge: "General",
     },
-  });
+  })
 
   const uploadSelectedPhoto = async (file: File) => {
     try {
-      const result = await uploadImage(file, "public-images");
+      const result = await uploadImage(file, "public-images")
 
       if ("error" in result) {
-        toast.error(result.error);
+        toast.error(result.error)
 
-        return null;
+        return null
       }
 
-      return result.url;
+      return result.url
     } catch {
-      toast.error("Image upload failed.");
+      toast.error("Image upload failed.")
 
-      return null;
+      return null
     }
-  };
+  }
 
   const uploadNewPhoto = async (file: File) => {
-    setNewPhotoUploadState("uploading");
+    setNewPhotoUploadState("uploading")
 
-    const uploaded = await uploadSelectedPhoto(file);
+    const uploaded = await uploadSelectedPhoto(file)
 
-    setNewPhotoUploadState(uploaded ? "idle" : "error");
+    setNewPhotoUploadState(uploaded ? "idle" : "error")
 
-    if (uploaded) setNewPhoto(uploaded);
-  };
+    if (uploaded) setNewPhoto(uploaded)
+  }
 
   const uploadEditPhoto = async (file: File) => {
-    setEditPhotoUploadState("uploading");
+    setEditPhotoUploadState("uploading")
 
-    const uploaded = await uploadSelectedPhoto(file);
+    const uploaded = await uploadSelectedPhoto(file)
 
-    setEditPhotoUploadState(uploaded ? "idle" : "error");
+    setEditPhotoUploadState(uploaded ? "idle" : "error")
 
-    if (uploaded) setEditDraft((d) => (d ? { ...d, photoUrl: uploaded } : d));
-  };
+    if (uploaded) setEditDraft((d) => (d ? { ...d, photoUrl: uploaded } : d))
+  }
 
   const handlePublish = handleSubmit(async (values) => {
-    if (isPublishing) return;
+    if (isPublishing) return
 
-    setIsPublishing(true);
+    setIsPublishing(true)
 
     const payload = {
       title: values.title.trim(),
@@ -12956,12 +13493,13 @@ export function AdminAnnouncementsPage({
       badge: values.badge,
 
       photoUrl: newPhoto ?? null,
-    };
+    }
 
     try {
       if (onCreate) {
-        const result = await onCreate(payload);
-        if (result === false) return;
+        const result = await onCreate(payload)
+
+        if (result === false) return
       } else {
         setPosts((p) => [
           {
@@ -12981,37 +13519,37 @@ export function AdminAnnouncementsPage({
           },
 
           ...p,
-        ]);
+        ])
       }
 
-      reset({ title: "", body: "", badge: "General" });
+      reset({ title: "", body: "", badge: "General" })
 
-      setNewPhoto(null);
+      setNewPhoto(null)
 
-      setNewPhotoUploadState("idle");
+      setNewPhotoUploadState("idle")
 
-      setShowForm(false);
+      setShowForm(false)
     } finally {
-      setIsPublishing(false);
+      setIsPublishing(false)
     }
-  });
+  })
 
-  const startEdit = (a: (typeof INITIAL_ANNOUNCEMENTS)[0]) => {
-    setEditId(a.id);
+  const startEdit = (a: typeof INITIAL_ANNOUNCEMENTS[0]) => {
+    setEditId(a.id)
 
-    setEditAnnouncementTab("details");
+    setEditAnnouncementTab("details")
 
-    setEditDraft({ ...a });
+    setEditDraft({ ...a })
 
-    setShowForm(false);
-  };
+    setShowForm(false)
+  }
 
   const saveEdit = async () => {
-    if (!editDraft || isEditing) return;
+    if (!editDraft || isEditing) return
 
-    setIsEditing(true);
+    setIsEditing(true)
 
-    const currentPost = posts.find((post) => post.id === editDraft.id);
+    const currentPost = posts.find((post) => post.id === editDraft.id)
 
     const payload = {
       id: editDraft.id,
@@ -13025,56 +13563,68 @@ export function AdminAnnouncementsPage({
       photoUrl: editDraft.photoUrl || null,
 
       previousPhotoUrl: currentPost?.photoUrl || undefined,
-    };
+    }
 
     try {
       if (onUpdate) {
-        const result = await onUpdate(payload);
-        if (result === false) return;
+        const result = await onUpdate(payload)
+
+        if (result === false) return
       } else {
         setPosts((p) =>
           p.map((a) =>
             a.id === editDraft.id
               ? {
                   ...a,
+
                   title: payload.title,
+
                   body: payload.body,
+
                   badge: payload.badge,
+
                   photoUrl: payload.photoUrl ?? "",
                 }
               : a,
           ),
-        );
+        )
       }
 
-      setEditId(null);
-      setEditDraft(null);
+      setEditId(null)
+
+      setEditDraft(null)
     } finally {
-      setIsEditing(false);
+      setIsEditing(false)
     }
-  };
+  }
 
   const deletePost = async (id: string) => {
-    if (deletingId) return false;
+    if (deletingId) return false
+
     if (
       !window.confirm("Delete this announcement? This action cannot be undone.")
     ) {
-      return false;
+      return false
     }
-    const currentPost = posts.find((post) => post.id === id);
-    setDeletingId(id);
+
+    const currentPost = posts.find((post) => post.id === id)
+
+    setDeletingId(id)
+
     try {
       if (onDelete) {
-        const result = await onDelete(id, currentPost?.photoUrl || undefined);
-        if (result === false) return false;
+        const result = await onDelete(id, currentPost?.photoUrl || undefined)
+
+        if (result === false) return false
       } else {
-        setPosts((p) => p.filter((a) => a.id !== id));
+        setPosts((p) => p.filter((a) => a.id !== id))
       }
-      return true;
+
+      return true
     } finally {
-      setDeletingId(null);
+      setDeletingId(null)
     }
-  };
+  }
 
   if (selectedAnnouncementId) {
     return (
@@ -13084,21 +13634,21 @@ export function AdminAnnouncementsPage({
         }
         onBack={() => setSelectedAnnouncementId(null)}
         onEdit={() => {
-          const post = posts.find((item) => item.id === selectedAnnouncementId);
+          const post = posts.find((item) => item.id === selectedAnnouncementId)
 
-          if (post) startEdit(post);
+          if (post) startEdit(post)
 
-          setSelectedAnnouncementId(null);
+          setSelectedAnnouncementId(null)
         }}
         onDelete={() => {
-          const id = selectedAnnouncementId;
+          const id = selectedAnnouncementId
 
           void deletePost(id).then((succeeded) => {
-            if (succeeded) setSelectedAnnouncementId(null);
-          });
+            if (succeeded) setSelectedAnnouncementId(null)
+          })
         }}
       />
-    );
+    )
   }
 
   return (
@@ -13108,13 +13658,13 @@ export function AdminAnnouncementsPage({
         action={
           <button
             onClick={() => {
-              setShowForm(true);
+              setShowForm(true)
 
-              setNewPostTab("details");
+              setNewPostTab("details")
 
-              setEditId(null);
+              setEditId(null)
 
-              setEditDraft(null);
+              setEditDraft(null)
             }}
             className="h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"
           >
@@ -13132,9 +13682,12 @@ export function AdminAnnouncementsPage({
               {[
                 [
                   "details",
+
                   "Post Details",
+
                   "Title, category, and announcement body",
                 ],
+
                 ["media", "Media", "Optional announcement photo"],
               ].map(([value, label, description]) => (
                 <button
@@ -13221,11 +13774,11 @@ export function AdminAnnouncementsPage({
                 accept="image/*"
                 className="hidden"
                 onChange={async (e) => {
-                  const f = e.target.files?.[0];
+                  const f = e.target.files?.[0]
 
-                  if (!f) return;
+                  if (!f) return
 
-                  await uploadNewPhoto(f);
+                  await uploadNewPhoto(f)
                 }}
               />
               {newPhotoUploadState === "uploading" ? (
@@ -13278,9 +13831,12 @@ export function AdminAnnouncementsPage({
               {[
                 [
                   "details",
+
                   "Post Details",
+
                   "Title, category, and announcement body",
                 ],
+
                 ["media", "Media", "Optional announcement photo"],
               ].map(([value, label, description]) => (
                 <button
@@ -13302,9 +13858,9 @@ export function AdminAnnouncementsPage({
             </nav>
           }
           onClose={() => {
-            setEditId(null);
+            setEditId(null)
 
-            setEditDraft(null);
+            setEditDraft(null)
           }}
           footer={
             <>
@@ -13316,9 +13872,9 @@ export function AdminAnnouncementsPage({
               </button>
               <button
                 onClick={() => {
-                  setEditId(null);
+                  setEditId(null)
 
-                  setEditDraft(null);
+                  setEditDraft(null)
                 }}
                 className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50"
               >
@@ -13371,11 +13927,11 @@ export function AdminAnnouncementsPage({
                 accept="image/*"
                 className="hidden"
                 onChange={async (e) => {
-                  const f = e.target.files?.[0];
+                  const f = e.target.files?.[0]
 
-                  if (!f) return;
+                  if (!f) return
 
-                  await uploadEditPhoto(f);
+                  await uploadEditPhoto(f)
                 }}
               />
               {editPhotoUploadState === "uploading" ? (
@@ -13504,7 +14060,7 @@ export function AdminAnnouncementsPage({
         ))}
       </div>
     </>
-  );
+  )
 }
 
 export function AdminExcuseRequestsPage({
@@ -13514,19 +14070,21 @@ export function AdminExcuseRequestsPage({
 
   onBack,
 }: {
-  requests: ExcuseRequest[];
+  requests: ExcuseRequest[]
 
-  onAction: (id: string, a: "approved" | "denied") => Promise<void> | void;
+  onAction: (id: string, a: "approved" | "denied") => Promise<void> | void
 
-  onBack: () => void;
+  onBack: () => void
 }) {
-  const pending = requests.filter((r) => r.status === "pending");
-  const [actionId, setActionId] = useState<string | null>(null);
+  const pending = requests.filter((r) => r.status === "pending")
+
+  const [actionId, setActionId] = useState<string | null>(null)
+
   const [expandedReasonIds, setExpandedReasonIds] = useState<Set<string>>(
     new Set(),
-  );
+  )
 
-  const reviewed = requests.filter((r) => r.status !== "pending");
+  const reviewed = requests.filter((r) => r.status !== "pending")
 
   return (
     <>
@@ -13598,10 +14156,12 @@ export function AdminExcuseRequestsPage({
                     type="button"
                     onClick={() =>
                       setExpandedReasonIds((current) => {
-                        const next = new Set(current);
-                        if (next.has(r.id)) next.delete(r.id);
-                        else next.add(r.id);
-                        return next;
+                        const next = new Set(current)
+
+                        if (next.has(r.id)) next.delete(r.id)
+                        else next.add(r.id)
+
+                        return next
                       })
                     }
                     aria-expanded={expandedReasonIds.has(r.id)}
@@ -13627,12 +14187,14 @@ export function AdminExcuseRequestsPage({
                 <div className="flex gap-2 pt-4 border-t border-slate-50">
                   <button
                     onClick={async () => {
-                      if (actionId) return;
-                      setActionId(r.id);
+                      if (actionId) return
+
+                      setActionId(r.id)
+
                       try {
-                        await onAction(r.id, "approved");
+                        await onAction(r.id, "approved")
                       } finally {
-                        setActionId(null);
+                        setActionId(null)
                       }
                     }}
                     disabled={actionId === r.id}
@@ -13643,12 +14205,14 @@ export function AdminExcuseRequestsPage({
                   </button>
                   <button
                     onClick={async () => {
-                      if (actionId) return;
-                      setActionId(r.id);
+                      if (actionId) return
+
+                      setActionId(r.id)
+
                       try {
-                        await onAction(r.id, "denied");
+                        await onAction(r.id, "denied")
                       } finally {
-                        setActionId(null);
+                        setActionId(null)
                       }
                     }}
                     disabled={actionId === r.id}
@@ -13696,80 +14260,92 @@ export function AdminExcuseRequestsPage({
         </>
       )}
     </>
-  );
+  )
 }
 
 export function AdminReportsPage({
   events = [],
 
   reportData,
+
   period = { dateFrom: "", dateTo: "" },
+
   onPeriodChange,
 }: {
-  events?: EventData[];
+  events?: EventData[]
 
   reportData?: {
-    events?: EventData[];
+    events?: EventData[]
 
-    periodLabel?: string;
+    periodLabel?: string
 
     programStats?: Array<{
-      label: string;
+      label: string
 
-      present: number;
+      present: number
 
-      total: number;
+      total: number
 
-      rate: number;
+      rate: number
 
-      absent?: number;
+      absent?: number
 
-      late?: number;
+      late?: number
 
-      fineTotal?: number;
-      sanctioned?: number;
-      sanctionedLate?: number;
-      sanctionedAbsent?: number;
-    }>;
+      fineTotal?: number
+
+      sanctioned?: number
+
+      sanctionedLate?: number
+
+      sanctionedAbsent?: number
+    }>
 
     feeSummary?: Array<{
-      label: string;
+      label: string
 
-      value: string;
+      value: string
 
-      color: string;
-    }>;
-  };
-  period?: { dateFrom: string; dateTo: string };
-  onPeriodChange?: (period: { dateFrom: string; dateTo: string }) => void;
+      color: string
+    }>
+  }
+
+  period?: { dateFrom: string; dateTo: string }
+
+  onPeriodChange?: (period: { dateFrom: string; dateTo: string }) => void
 }) {
-  const liveEvents = reportData?.events ?? events ?? [];
+  const liveEvents = reportData?.events ?? events ?? []
 
-  const programRows = reportData?.programStats ?? [];
+  const programRows = reportData?.programStats ?? []
 
-  const fees = reportData?.feeSummary ?? [];
+  const fees = reportData?.feeSummary ?? []
 
-  const eventRows = liveEvents.filter((e) => e.status !== "upcoming");
+  const eventRows = liveEvents.filter((e) => e.status !== "upcoming")
 
   const totalSanctioned = programRows.reduce(
     (total, row) => total + (row.sanctioned ?? 0),
+
     0,
-  );
+  )
+
   const totalSanctionedLate = programRows.reduce(
     (total, row) => total + (row.sanctionedLate ?? 0),
+
     0,
-  );
+  )
+
   const totalSanctionedAbsent = programRows.reduce(
     (total, row) => total + (row.sanctionedAbsent ?? 0),
-    0,
-  );
 
-  const printReport = () => window.print();
+    0,
+  )
+
+  const printReport = () => window.print()
 
   const exportPDF = () => {
     const W = 794,
       pad = 48,
-      dpr = 2;
+      dpr = 2
 
     const H =
       80 +
@@ -13783,142 +14359,146 @@ export function AdminReportsPage({
       20 +
       24 +
       (eventRows.length * 26 + 16) +
-      48;
+      48
 
-    const canvas = document.createElement("canvas");
+    const canvas = document.createElement("canvas")
 
-    canvas.width = W * dpr;
+    canvas.width = W * dpr
 
-    canvas.height = H * dpr;
+    canvas.height = H * dpr
 
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d")!
 
-    ctx.scale(dpr, dpr);
+    ctx.scale(dpr, dpr)
 
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = "#fff"
 
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(0, 0, W, H)
 
-    let y = 0;
+    let y = 0
 
-    ctx.fillStyle = "#10b981";
+    ctx.fillStyle = "#10b981"
 
-    ctx.fillRect(0, 0, W, 60);
+    ctx.fillRect(0, 0, W, 60)
 
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = "#fff"
 
-    ctx.font = "bold 18px system-ui, sans-serif";
+    ctx.font = "bold 18px system-ui, sans-serif"
 
-    ctx.textAlign = "left";
+    ctx.textAlign = "left"
 
-    ctx.fillText("Adesse — Attendance & Fees Report", pad, 38);
+    ctx.fillText("Adesse — Attendance & Fees Report", pad, 38)
 
-    ctx.font = "12px system-ui, sans-serif";
+    ctx.font = "12px system-ui, sans-serif"
 
-    ctx.textAlign = "right";
+    ctx.textAlign = "right"
 
-    ctx.fillText(`AY 2026-2027 · 1st Semester`, W - pad, 38);
+    ctx.fillText(`AY 2026-2027 · 1st Semester`, W - pad, 38)
 
-    y = 60;
+    y = 60
 
-    ctx.fillStyle = "#94a3b8";
+    ctx.fillStyle = "#94a3b8"
 
-    ctx.font = "10px system-ui, sans-serif";
+    ctx.font = "10px system-ui, sans-serif"
 
-    ctx.textAlign = "left";
+    ctx.textAlign = "left"
 
-    ctx.fillText(`Generated ${new Date().toLocaleString()}`, pad, y + 18);
+    ctx.fillText(`Generated ${new Date().toLocaleString()}`, pad, y + 18)
 
-    y += 32;
+    y += 32
 
     const sectionTitle = (title: string) => {
-      ctx.fillStyle = "#f1f5f9";
+      ctx.fillStyle = "#f1f5f9"
 
-      ctx.fillRect(pad, y, W - pad * 2, 22);
+      ctx.fillRect(pad, y, W - pad * 2, 22)
 
-      ctx.fillStyle = "#334155";
+      ctx.fillStyle = "#334155"
 
-      ctx.font = "bold 11px system-ui, sans-serif";
+      ctx.font = "bold 11px system-ui, sans-serif"
 
-      ctx.fillText(title.toUpperCase(), pad + 8, y + 15);
+      ctx.fillText(title.toUpperCase(), pad + 8, y + 15)
 
-      y += 22;
-    };
+      y += 22
+    }
 
     const tableHeader = (
       cols: { t: string; x: number; align?: CanvasTextAlign }[],
     ) => {
-      ctx.fillStyle = "#f8fafc";
+      ctx.fillStyle = "#f8fafc"
 
-      ctx.fillRect(pad, y, W - pad * 2, 22);
+      ctx.fillRect(pad, y, W - pad * 2, 22)
 
-      ctx.strokeStyle = "#e2e8f0";
+      ctx.strokeStyle = "#e2e8f0"
 
-      ctx.lineWidth = 0.5;
+      ctx.lineWidth = 0.5
 
-      ctx.strokeRect(pad, y, W - pad * 2, 22);
+      ctx.strokeRect(pad, y, W - pad * 2, 22)
 
       cols.forEach((c) => {
-        ctx.fillStyle = "#64748b";
+        ctx.fillStyle = "#64748b"
 
-        ctx.font = "bold 10px system-ui, sans-serif";
+        ctx.font = "bold 10px system-ui, sans-serif"
 
-        ctx.textAlign = c.align ?? "left";
+        ctx.textAlign = c.align ?? "left"
 
-        ctx.fillText(c.t, c.x, y + 15);
-      });
+        ctx.fillText(c.t, c.x, y + 15)
+      })
 
-      y += 22;
-    };
+      y += 22
+    }
 
     const tableRow = (
       cols: {
-        t: string;
-        x: number;
-        align?: CanvasTextAlign;
-        color?: string;
+        t: string
+
+        x: number
+
+        align?: CanvasTextAlign
+
+        color?: string
       }[],
 
       shade: boolean,
     ) => {
       if (shade) {
-        ctx.fillStyle = "#fafafa";
+        ctx.fillStyle = "#fafafa"
 
-        ctx.fillRect(pad, y, W - pad * 2, 24);
+        ctx.fillRect(pad, y, W - pad * 2, 24)
       }
 
-      ctx.strokeStyle = "#f1f5f9";
+      ctx.strokeStyle = "#f1f5f9"
 
-      ctx.lineWidth = 0.5;
+      ctx.lineWidth = 0.5
 
-      ctx.beginPath();
+      ctx.beginPath()
 
-      ctx.moveTo(pad, y + 24);
+      ctx.moveTo(pad, y + 24)
 
-      ctx.lineTo(W - pad, y + 24);
+      ctx.lineTo(W - pad, y + 24)
 
-      ctx.stroke();
+      ctx.stroke()
 
       cols.forEach((c) => {
-        ctx.fillStyle = c.color ?? "#1e293b";
+        ctx.fillStyle = c.color ?? "#1e293b"
 
-        ctx.font = "11px system-ui, sans-serif";
+        ctx.font = "11px system-ui, sans-serif"
 
-        ctx.textAlign = c.align ?? "left";
+        ctx.textAlign = c.align ?? "left"
 
-        ctx.fillText(c.t, c.x, y + 16);
-      });
+        ctx.fillText(c.t, c.x, y + 16)
+      })
 
-      y += 24;
-    };
+      y += 24
+    }
 
-    y += 14;
+    y += 14
 
-    sectionTitle("Attendance by Program");
+    sectionTitle("Attendance by Program")
 
     tableHeader([
       {
         t: "Program",
+
         x: pad + 8,
       },
 
@@ -13927,13 +14507,14 @@ export function AdminReportsPage({
       { t: "Total", x: W - pad - 120, align: "right" },
 
       { t: "Rate", x: W - pad - 8, align: "right" },
-    ]);
+    ])
 
     programRows.forEach((r, i) =>
       tableRow(
         [
           {
             t: r.label,
+
             x: pad + 8,
           },
 
@@ -13955,20 +14536,21 @@ export function AdminReportsPage({
 
         i % 2 === 1,
       ),
-    );
+    )
 
-    y += 14;
+    y += 14
 
-    sectionTitle("Fees Summary");
+    sectionTitle("Fees Summary")
 
     tableHeader([
       {
         t: "Category",
+
         x: pad + 8,
       },
 
       { t: "Amount", x: W - pad - 8, align: "right" },
-    ]);
+    ])
 
     const feeColors: Record<string, string> = {
       "Total fees issued": "#dc2626",
@@ -13976,13 +14558,14 @@ export function AdminReportsPage({
       Collected: "#10b981",
 
       Pending: "#d97706",
-    };
+    }
 
     fees.forEach((f, i) =>
       tableRow(
         [
           {
             t: f.label,
+
             x: pad + 8,
           },
 
@@ -13999,15 +14582,16 @@ export function AdminReportsPage({
 
         i % 2 === 1,
       ),
-    );
+    )
 
-    y += 14;
+    y += 14
 
-    sectionTitle("By Event");
+    sectionTitle("By Event")
 
     tableHeader([
       {
         t: "Event",
+
         x: pad + 8,
       },
 
@@ -14016,7 +14600,7 @@ export function AdminReportsPage({
       { t: "Absent / Late", x: W - pad - 100, align: "right" },
 
       { t: "Attended", x: W - pad - 8, align: "right" },
-    ]);
+    ])
 
     eventRows.forEach((e, i) =>
       tableRow(
@@ -14031,7 +14615,9 @@ export function AdminReportsPage({
 
           {
             t: `₱${e.fineAmount} / ₱${e.lateFine ?? 0}`,
+
             x: W - pad - 100,
+
             align: "right",
           },
 
@@ -14048,19 +14634,19 @@ export function AdminReportsPage({
 
         i % 2 === 1,
       ),
-    );
+    )
 
-    y += 20;
+    y += 20
 
-    ctx.fillStyle = "#e2e8f0";
+    ctx.fillStyle = "#e2e8f0"
 
-    ctx.fillRect(pad, y, W - pad * 2, 1);
+    ctx.fillRect(pad, y, W - pad * 2, 1)
 
-    ctx.fillStyle = "#94a3b8";
+    ctx.fillStyle = "#94a3b8"
 
-    ctx.font = "10px system-ui, sans-serif";
+    ctx.font = "10px system-ui, sans-serif"
 
-    ctx.textAlign = "center";
+    ctx.textAlign = "center"
 
     ctx.fillText(
       "Adesse · Student Event Attendance & Fee Tracking System",
@@ -14068,24 +14654,24 @@ export function AdminReportsPage({
       W / 2,
 
       y + 18,
-    );
+    )
 
     canvas.toBlob((blob) => {
-      if (!blob) return;
+      if (!blob) return
 
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob)
 
-      const a = document.createElement("a");
+      const a = document.createElement("a")
 
-      a.href = url;
+      a.href = url
 
-      a.download = `adesse-report-${new Date().toISOString().slice(0, 10)}.png`;
+      a.download = `adesse-report-${new Date().toISOString().slice(0, 10)}.png`
 
-      a.click();
+      a.click()
 
-      URL.revokeObjectURL(url);
-    }, "image/png");
-  };
+      URL.revokeObjectURL(url)
+    }, "image/png")
+  }
 
   return (
     <>
@@ -14164,7 +14750,7 @@ export function AdminReportsPage({
             "bg-violet-400",
 
             "bg-amber-400",
-          ];
+          ]
 
           return (
             <div
@@ -14210,7 +14796,7 @@ export function AdminReportsPage({
                 </div>
               </details>
             </div>
-          );
+          )
         })}
       </div>
       <SectionLabel>Sanctions overview</SectionLabel>
@@ -14218,7 +14804,9 @@ export function AdminReportsPage({
         <div className="grid grid-cols-3 gap-3">
           {[
             [totalSanctioned, "Total sanctioned"],
+
             [totalSanctionedLate, "Sanctioned late"],
+
             [totalSanctionedAbsent, "Sanctioned absent"],
           ].map(([value, label]) => (
             <div key={label}>
@@ -14323,35 +14911,35 @@ export function AdminReportsPage({
         multi-session events.
       </p>
     </>
-  );
+  )
 }
 
 export interface CarouselSlide {
-  imageUrl: string;
+  imageUrl: string
 
-  caption: string;
+  caption: string
 
-  date: string;
+  date: string
 }
 
 export interface SystemSettings {
-  finesEnabled: boolean;
+  finesEnabled: boolean
 
-  showFees: boolean;
+  showFees: boolean
 
-  allowExcuseRequests: boolean;
+  allowExcuseRequests: boolean
 
-  requirePhotoId: boolean;
+  requirePhotoId: boolean
 
-  academicYear: string;
+  academicYear: string
 
-  semester: string;
+  semester: string
 
-  institution: string;
+  institution: string
 
-  heroImageUrls: string[];
+  heroImageUrls: string[]
 
-  carouselSlides: CarouselSlide[];
+  carouselSlides: CarouselSlide[]
 }
 
 export function AdminSettingsPage({
@@ -14359,47 +14947,45 @@ export function AdminSettingsPage({
 
   onSave,
 }: {
-  settings: SystemSettings;
+  settings: SystemSettings
 
-  onSave: (s: SystemSettings) => void;
+  onSave: (s: SystemSettings) => void
 }) {
-  const isBlobUrl = (value?: string) => !!value && value.startsWith("blob:");
+  const isBlobUrl = (value?: string) => !!value && value.startsWith("blob:")
 
-  const heroImageUrls = settings.heroImageUrls.filter((url) => !isBlobUrl(url));
+  const heroImageUrls = settings.heroImageUrls.filter((url) => !isBlobUrl(url))
 
   const carouselSlides = settings.carouselSlides.map((slide) => ({
     ...slide,
 
     imageUrl: isBlobUrl(slide.imageUrl) ? "" : slide.imageUrl,
-  }));
+  }))
 
   type UploadSlot = {
-    file: File;
+    file: File
 
-    status: "uploading" | "error";
+    status: "uploading" | "error"
 
-    error?: string;
-  };
+    error?: string
+  }
 
-  const [heroUploadSlots, setHeroUploadSlots] = useState<
-    Record<string, UploadSlot>
-  >({});
+  const [heroUploadSlots, setHeroUploadSlots] =
+    useState<Record<string, UploadSlot>>({})
 
-  const [slideUploadSlots, setSlideUploadSlots] = useState<
-    Record<number, UploadSlot>
-  >({});
+  const [slideUploadSlots, setSlideUploadSlots] =
+    useState<Record<number, UploadSlot>>({})
 
   const isPublicMediaUrl = (value?: string) =>
-    !!value && value.startsWith("https://") && !value.startsWith("blob:");
+    !!value && value.startsWith("https://") && !value.startsWith("blob:")
 
   const handleHeroImageUpload = async (files: File[]) => {
-    if (!files.length) return;
+    if (!files.length) return
 
     const slots = files.map((file, index) => ({
       id: `hero-${Date.now()}-${index}`,
 
       file,
-    }));
+    }))
 
     setHeroUploadSlots((current) => ({
       ...current,
@@ -14407,34 +14993,34 @@ export function AdminSettingsPage({
       ...Object.fromEntries(
         slots.map(({ id, file }) => [id, { file, status: "uploading" }]),
       ),
-    }));
+    }))
 
     const uploaded = await Promise.all(
       slots.map(async ({ id, file }) => {
-        const result = await uploadImage(file);
+        const result = await uploadImage(file)
 
         if ("error" in result || !isPublicMediaUrl(result.url)) {
           const error =
             "error" in result
               ? result.error
-              : "Upload did not return a valid public image URL.";
+              : "Upload did not return a valid public image URL."
 
           setHeroUploadSlots((current) => ({
             ...current,
 
             [id]: { file, status: "error", error },
-          }));
+          }))
 
-          return null;
+          return null
         }
 
-        return { id, url: result.url };
+        return { id, url: result.url }
       }),
-    );
+    )
 
     const validUploads = uploaded.filter(
       (upload): upload is { id: string; url: string } => !!upload,
-    );
+    )
 
     if (validUploads.length) {
       update({
@@ -14443,71 +15029,71 @@ export function AdminSettingsPage({
 
           ...validUploads.map((upload) => upload.url),
         ],
-      });
+      })
 
       setHeroUploadSlots((current) => {
-        const next = { ...current };
+        const next = { ...current }
 
-        validUploads.forEach(({ id }) => delete next[id]);
+        validUploads.forEach(({ id }) => delete next[id])
 
-        return next;
-      });
+        return next
+      })
     }
-  };
+  }
 
   const handleSlideImageUpload = async (i: number, file: File) => {
     setSlideUploadSlots((current) => ({
       ...current,
 
       [i]: { file, status: "uploading" },
-    }));
+    }))
 
-    const result = await uploadImage(file);
+    const result = await uploadImage(file)
 
     if ("error" in result || !isPublicMediaUrl(result.url)) {
       const error =
         "error" in result
           ? result.error
-          : "Upload did not return a valid public image URL.";
+          : "Upload did not return a valid public image URL."
 
       setSlideUploadSlots((current) => ({
         ...current,
 
         [i]: { file, status: "error", error },
-      }));
+      }))
 
-      return;
+      return
     }
 
-    patchSlide(i, { imageUrl: result.url });
+    patchSlide(i, { imageUrl: result.url })
 
     setSlideUploadSlots((current) => {
-      const next = { ...current };
+      const next = { ...current }
 
-      delete next[i];
+      delete next[i]
 
-      return next;
-    });
-  };
+      return next
+    })
+  }
 
   const update = (patch: Partial<SystemSettings>) =>
-    onSave({ ...settings, ...patch });
+    onSave({ ...settings, ...patch })
 
   const toggle = (
     k: "finesEnabled" | "showFees" | "allowExcuseRequests" | "requirePhotoId",
-  ) => onSave({ ...settings, [k]: !settings[k] });
+  ) => onSave({ ...settings, [k]: !settings[k] })
 
-  const heroRef = useRef<HTMLInputElement>(null);
+  const heroRef = useRef<HTMLInputElement>(null)
 
-  const addHero = () => heroRef.current?.click();
+  const addHero = () => heroRef.current?.click()
 
   const removeHero = (i: number) =>
-    update({ heroImageUrls: settings.heroImageUrls.filter((_, j) => j !== i) });
+    update({ heroImageUrls: settings.heroImageUrls.filter((_, j) => j !== i) })
 
-  const slideRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const slideRefs = useRef<(HTMLInputElement | null)[]>([])
 
   const addSlide = () => {
-    if (settings.carouselSlides.length >= 10) return;
+    if (settings.carouselSlides.length >= 10) return
 
     update({
       carouselSlides: [
@@ -14515,32 +15101,33 @@ export function AdminSettingsPage({
 
         { imageUrl: "", caption: "", date: "" },
       ],
-    });
-  };
+    })
+  }
 
   const removeSlide = (i: number) =>
     update({
       carouselSlides: settings.carouselSlides.filter((_, j) => j !== i),
-    });
+    })
 
   const moveSlide = (i: number, dir: -1 | 1) => {
-    const arr = [...settings.carouselSlides];
+    const arr = [...settings.carouselSlides]
 
-    const t = i + dir;
+    const t = i + dir
 
-    if (t < 0 || t >= arr.length) return;
-    [arr[i], arr[t]] = [arr[t], arr[i]];
+    if (t < 0 || t >= arr.length) return
 
-    update({ carouselSlides: arr });
-  };
+    ;[arr[i], arr[t]] = [arr[t], arr[i]]
+
+    update({ carouselSlides: arr })
+  }
 
   const patchSlide = (i: number, patch: Partial<CarouselSlide>) => {
     const arr = settings.carouselSlides.map((s, j) =>
       j === i ? { ...s, ...patch } : s,
-    );
+    )
 
-    update({ carouselSlides: arr });
-  };
+    update({ carouselSlides: arr })
+  }
 
   return (
     <>
@@ -14685,17 +15272,17 @@ export function AdminSettingsPage({
             multiple
             className="hidden"
             onChange={async (e) => {
-              const files = Array.from(e.target.files ?? []);
+              const files = Array.from(e.target.files ?? [])
 
-              const remaining = 6 - settings.heroImageUrls.length;
+              const remaining = 6 - settings.heroImageUrls.length
 
-              const toAdd = files.slice(0, remaining);
+              const toAdd = files.slice(0, remaining)
 
               if (toAdd.length) {
-                await handleHeroImageUpload(toAdd);
+                await handleHeroImageUpload(toAdd)
               }
 
-              e.target.value = "";
+              e.target.value = ""
             }}
           />
           {heroImageUrls.length > 0 && (
@@ -14736,14 +15323,14 @@ export function AdminSettingsPage({
                     <button
                       onClick={() => {
                         setHeroUploadSlots((current) => {
-                          const next = { ...current };
+                          const next = { ...current }
 
-                          delete next[slotId];
+                          delete next[slotId]
 
-                          return next;
-                        });
+                          return next
+                        })
 
-                        void handleHeroImageUpload([slot.file]);
+                        void handleHeroImageUpload([slot.file])
                       }}
                       className="h-7 px-2.5 rounded-lg border border-red-200 bg-white text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
                     >
@@ -14774,14 +15361,14 @@ export function AdminSettingsPage({
                       <button
                         onClick={() => {
                           setHeroUploadSlots((current) => {
-                            const next = { ...current };
+                            const next = { ...current }
 
-                            delete next[slotId];
+                            delete next[slotId]
 
-                            return next;
-                          });
+                            return next
+                          })
 
-                          void handleHeroImageUpload([slot.file]);
+                          void handleHeroImageUpload([slot.file])
                         }}
                         className="h-7 px-2.5 rounded-lg border border-red-200 bg-white text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
                       >
@@ -14835,8 +15422,8 @@ export function AdminSettingsPage({
           <div className="divide-y divide-slate-50">
             {carouselSlides.map((slide, i) => {
               const ref = (el: HTMLInputElement | null) => {
-                slideRefs.current[i] = el;
-              };
+                slideRefs.current[i] = el
+              }
 
               return (
                 <div key={i} className="px-5 py-4">
@@ -14849,10 +15436,10 @@ export function AdminSettingsPage({
                         accept="image/*,video/mp4"
                         className="hidden"
                         onChange={async (e) => {
-                          const f = e.target.files?.[0];
+                          const f = e.target.files?.[0]
 
                           if (f) {
-                            await handleSlideImageUpload(i, f);
+                            await handleSlideImageUpload(i, f)
                           }
                         }}
                       />
@@ -14865,10 +15452,10 @@ export function AdminSettingsPage({
                           </span>
                           <button
                             onClick={() => {
-                              const slot = slideUploadSlots[i];
+                              const slot = slideUploadSlots[i]
 
                               if (slot) {
-                                void handleSlideImageUpload(i, slot.file);
+                                void handleSlideImageUpload(i, slot.file)
                               }
                             }}
                             className="text-[9px] font-bold text-red-700 underline"
@@ -14952,7 +15539,7 @@ export function AdminSettingsPage({
                     </div>
                   </div>
                 </div>
-              );
+              )
             })}
           </div>
         )}
@@ -14982,30 +15569,30 @@ export function AdminSettingsPage({
         ))}
       </div>
     </>
-  );
+  )
 }
 
 export default function LandingExperienceClient({
   settings,
 }: {
-  settings: SystemSettings;
+  settings: SystemSettings
 }) {
-  const router = useRouter();
+  const router = useRouter()
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null)
 
-  const [showLoader, setShowLoader] = useState(true);
+  const [showLoader, setShowLoader] = useState(true)
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setShowLoader(false);
-    }, 180);
+      setShowLoader(false)
+    }, 180)
 
-    return () => window.clearTimeout(timer);
-  }, []);
+    return () => window.clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false
 
     async function loadAuthenticatedUser() {
       try {
@@ -15013,18 +15600,18 @@ export default function LandingExperienceClient({
           data: { session },
 
           error: sessionError,
-        } = await supabase.auth.getSession();
+        } = await supabase.auth.getSession()
 
         if (sessionError) {
-          console.error("Failed to load landing session", sessionError);
+          console.error("Failed to load landing session", sessionError)
         }
 
         if (!session?.user) {
           if (!cancelled) {
-            setUser(null);
+            setUser(null)
           }
 
-          return;
+          return
         }
 
         const { data: profile, error: profileError } = await supabase
@@ -15035,18 +15622,18 @@ export default function LandingExperienceClient({
 
           .eq("id", session.user.id)
 
-          .maybeSingle();
+          .maybeSingle()
 
         if (profileError && profileError.code !== "PGRST116") {
-          console.error("Failed to load landing profile", profileError);
+          console.error("Failed to load landing profile", profileError)
         }
 
         if (!profile) {
           if (!cancelled) {
-            setUser(null);
+            setUser(null)
           }
 
-          return;
+          return
         }
 
         const profileIsComplete =
@@ -15054,14 +15641,14 @@ export default function LandingExperienceClient({
           !!profile.surname &&
           !!profile.student_id &&
           !!profile.program &&
-          !!profile.year_level;
+          !!profile.year_level
 
         if (!profileIsComplete) {
           if (!cancelled) {
-            setUser(null);
+            setUser(null)
           }
 
-          return;
+          return
         }
 
         if (!cancelled) {
@@ -15089,23 +15676,23 @@ export default function LandingExperienceClient({
             photoUrl: profile.photo_url ?? undefined,
 
             idPhotoUrl: profile.id_photo_url ?? undefined,
-          });
+          })
         }
       } catch (caughtError) {
-        console.error(caughtError);
+        console.error(caughtError)
 
         if (!cancelled) {
-          setUser(null);
+          setUser(null)
         }
       }
     }
 
-    void loadAuthenticatedUser();
+    void loadAuthenticatedUser()
 
     return () => {
-      cancelled = true;
-    };
-  }, []);
+      cancelled = true
+    }
+  }, [])
 
   const handleLandingNav = (page: Page) => {
     const routeFromPage: Record<Page, string> = {
@@ -15150,10 +15737,10 @@ export default function LandingExperienceClient({
       "admin-excuse-requests": "/admin-excuse-requests",
 
       "admin-settings": "/admin-settings",
-    };
+    }
 
-    router.push(routeFromPage[page] ?? "/");
-  };
+    router.push(routeFromPage[page] ?? "/")
+  }
 
   return (
     <AnimatePresence mode="wait">
@@ -15221,5 +15808,5 @@ export default function LandingExperienceClient({
         </motion.div>
       )}
     </AnimatePresence>
-  );
+  )
 }
