@@ -2040,6 +2040,13 @@ const Icons = {
     </svg>
   ),
 
+  PanelLeft: () => (
+    <svg viewBox="0 0 24 24" className={ic} {...sv}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="9" y1="4" x2="9" y2="20" />
+    </svg>
+  ),
+
   Scan: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <path d="M3 7V5a2 2 0 012-2h2" />
@@ -3297,7 +3304,15 @@ export function TopBar({
               }
               aria-expanded={!sidebarCollapsed}
             >
-              <Icons.ChevronLeft />
+              <motion.span
+                animate={{
+                  rotate: sidebarCollapsed ? 180 : 0,
+                  scale: sidebarCollapsed ? 0.94 : 1,
+                }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <Icons.PanelLeft />
+              </motion.span>
             </button>
           )}
           <button
@@ -3670,15 +3685,24 @@ export function Sidebar({
                   </span>
                 )}
               </span>
-              <span
-                className={`truncate transition-[max-width,opacity,transform] duration-300 ease-in-out ${
+              <span className="truncate lg:hidden">{l}</span>
+              <motion.span
+                className="hidden min-w-0 truncate lg:block"
+                initial={false}
+                animate={
                   collapsed
-                    ? "lg:max-w-0 lg:opacity-0 lg:-translate-x-2"
-                    : "max-w-[12rem] opacity-100"
-                }`}
+                    ? { width: 0, opacity: 0, x: -8 }
+                    : { width: "auto", opacity: 1, x: 0 }
+                }
+                transition={{
+                  width: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
+                  opacity: { duration: 0.16, ease: "easeOut" },
+                  x: { duration: 0.24, ease: [0.22, 1, 0.36, 1] },
+                }}
+                style={{ willChange: "width, opacity, transform" }}
               >
                 {l}
-              </span>
+              </motion.span>
             </Link>
           )
         })}
@@ -3700,15 +3724,24 @@ export function Sidebar({
             <span className="shrink-0 text-slate-400">
               <ArrowLeft className="w-[18px] h-[18px]" />
             </span>
-            <span
-              className={`truncate transition-[max-width,opacity,transform] duration-300 ease-in-out ${
+            <span className="truncate lg:hidden">Back to Home</span>
+            <motion.span
+              className="hidden min-w-0 truncate lg:block"
+              initial={false}
+              animate={
                 collapsed
-                  ? "lg:max-w-0 lg:opacity-0 lg:-translate-x-2"
-                  : "max-w-[12rem] opacity-100"
-              }`}
+                  ? { width: 0, opacity: 0, x: -8 }
+                  : { width: "auto", opacity: 1, x: 0 }
+              }
+              transition={{
+                width: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
+                opacity: { duration: 0.16, ease: "easeOut" },
+                x: { duration: 0.24, ease: [0.22, 1, 0.36, 1] },
+              }}
+              style={{ willChange: "width, opacity, transform" }}
             >
               Back to Home
-            </span>
+            </motion.span>
           </button>
           <button
             onClick={onLogout}
@@ -3723,15 +3756,24 @@ export function Sidebar({
             <span className="text-slate-300 shrink-0">
               <LogOut className="w-[18px] h-[18px]" />
             </span>
-            <span
-              className={`truncate transition-[max-width,opacity,transform] duration-300 ease-in-out ${
+            <span className="truncate lg:hidden">Sign out</span>
+            <motion.span
+              className="hidden min-w-0 truncate lg:block"
+              initial={false}
+              animate={
                 collapsed
-                  ? "lg:max-w-0 lg:opacity-0 lg:-translate-x-2"
-                  : "max-w-[12rem] opacity-100"
-              }`}
+                  ? { width: 0, opacity: 0, x: -8 }
+                  : { width: "auto", opacity: 1, x: 0 }
+              }
+              transition={{
+                width: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
+                opacity: { duration: 0.16, ease: "easeOut" },
+                x: { duration: 0.24, ease: [0.22, 1, 0.36, 1] },
+              }}
+              style={{ willChange: "width, opacity, transform" }}
             >
               Sign out
-            </span>
+            </motion.span>
           </button>
         </div>
       </div>
@@ -3741,28 +3783,37 @@ export function Sidebar({
   return (
     <>
       {}
-      <aside
-        className={`hidden shrink-0 border-r border-slate-100 sticky top-[56px] h-[calc(100vh-56px)] self-start overflow-hidden bg-white lg:flex lg:flex-col transition-[width] duration-300 ease-in-out ${
-          collapsed ? "w-20" : "w-60"
-        }`}
+      <motion.aside
+        className="hidden shrink-0 border-r border-slate-100 sticky top-[56px] h-[calc(100vh-56px)] self-start overflow-hidden bg-white lg:flex lg:flex-col"
+        initial={false}
+        animate={{ width: collapsed ? 80 : 240 }}
+        transition={{
+          type: "spring",
+          stiffness: 360,
+          damping: 34,
+          mass: 0.8,
+        }}
+        style={{ willChange: "width" }}
       >
         {inner}
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="group absolute right-0 top-1/2 z-20 hidden h-16 w-3 -translate-y-1/2 items-center justify-center rounded-l-md border border-r-0 border-slate-200 bg-white/95 text-slate-300 shadow-sm transition-all duration-300 hover:w-5 hover:bg-slate-50 hover:text-slate-600 lg:flex"
+          className="group absolute right-0 top-1/2 z-20 hidden h-16 w-3 -translate-y-1/2 items-center justify-center rounded-l-md border border-r-0 border-slate-200 bg-white/95 text-slate-300 shadow-sm transition-[width,background-color,color] duration-200 ease-out hover:w-5 hover:bg-slate-50 hover:text-slate-600 lg:flex"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-expanded={!collapsed}
         >
-          <span
-            className={`transition-transform duration-300 ease-out ${
-              collapsed ? "rotate-180" : "rotate-0"
-            }`}
+          <motion.span
+            animate={{
+              rotate: collapsed ? 180 : 0,
+              scale: collapsed ? 0.9 : 1,
+            }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
           >
-            <Icons.ChevronRight />
-          </span>
+            <Icons.PanelLeft />
+          </motion.span>
         </button>
-      </aside>
+      </motion.aside>
 
       {}
       {open && (
