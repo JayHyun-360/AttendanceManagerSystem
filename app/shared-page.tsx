@@ -3104,20 +3104,18 @@ export function TopBar({
             </button>
           )}
           <button
-            className="hidden lg:flex items-center gap-1 min-w-0"
+            className="flex min-w-0 items-center gap-2"
             onClick={() => go(dest)}
           >
-            <div className="flex min-w-0 flex-col leading-none">
-              <span className="hidden lg:inline-flex">
-                <AdesseWordmark
-                  variant="header"
-                  textClassName="text-slate-900"
-                />
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium hidden sm:block leading-tight truncate">
-                {isMod ? "Administrator Portal" : "Student Attendance"}
-              </span>
-            </div>
+            <AdesseWordmark
+              variant="header"
+              textClassName="text-slate-900"
+              className="shrink-0"
+            />
+            <span className="h-5 w-px shrink-0 bg-slate-200" aria-hidden="true" />
+            <span className="min-w-0 max-w-[10rem] truncate text-left text-[9px] font-semibold leading-tight text-slate-500 sm:max-w-none sm:text-[10px]">
+              Student Event Attendance &amp; Records System
+            </span>
           </button>
         </div>
 

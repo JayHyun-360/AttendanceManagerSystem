@@ -1745,20 +1745,18 @@ export function TopBar({
             </button>
           )}
           <button
-            className="hidden lg:flex items-center gap-2.5 min-w-0"
+            className="flex min-w-0 items-center gap-2"
             onClick={() => go(dest)}
           >
-            <div className="flex flex-col leading-none min-w-0">
-              <span className="hidden lg:inline-flex">
-                <AdesseWordmark
-                  variant="header"
-                  textClassName="text-slate-900"
-                />
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium hidden sm:block leading-tight truncate">
-                {isMod ? "Moderator Portal" : "Student Attendance"}
-              </span>
-            </div>
+            <AdesseWordmark
+              variant="header"
+              textClassName="text-slate-900"
+              className="shrink-0"
+            />
+            <span className="h-5 w-px shrink-0 bg-slate-200" aria-hidden="true" />
+            <span className="min-w-0 max-w-[10rem] truncate text-left text-[9px] font-semibold leading-tight text-slate-500 sm:max-w-none sm:text-[10px]">
+              Student Event Attendance &amp; Records System
+            </span>
           </button>
         </div>
 
@@ -2468,8 +2466,8 @@ function LandingPage({
             records for students and moderators.
           </p>
           <div
-            className={`mt-16 sm:mt-20 flex flex-wrap items-center gap-3 ${
-              hasHero ? "" : "justify-center"
+            className={`mt-16 grid w-full max-w-sm grid-cols-2 items-center gap-3 sm:mt-20 sm:flex sm:w-auto sm:max-w-none ${
+              hasHero ? "" : "sm:justify-center"
             }`}
           >
             <button
@@ -2487,13 +2485,13 @@ function LandingPage({
                   onNav("login");
                 }
               }}
-              className="h-12 px-7 bg-emerald-500 hover:bg-emerald-400 text-white text-[13px] font-bold rounded-full transition-all shadow-[0_10px_25px_rgba(16,185,129,.22)] hover:shadow-[0_14px_30px_rgba(16,185,129,.3)] hover:-translate-y-0.5"
+              className="h-12 w-full px-3 text-[12px] font-bold rounded-full bg-emerald-500 text-white transition-all shadow-[0_10px_25px_rgba(16,185,129,.22)] hover:bg-emerald-400 hover:shadow-[0_14px_30px_rgba(16,185,129,.3)] hover:-translate-y-0.5 sm:w-auto sm:px-7 sm:text-[13px]"
             >
               {user ? "Go to Dashboard" : "Get Started"}
             </button>
             <button
               onClick={() => onNav("events")}
-              className={`h-12 px-7 text-[13px] font-bold rounded-full transition-all ${
+              className={`h-12 w-full px-3 text-[12px] font-bold rounded-full transition-all sm:w-auto sm:px-7 sm:text-[13px] ${
                 isDefaultHero
                   ? "bg-white/60 text-slate-700 border border-white/80 hover:bg-white/80 backdrop-blur-sm"
                   : hasHero
