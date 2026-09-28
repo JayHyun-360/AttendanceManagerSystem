@@ -723,7 +723,7 @@ import {
   LogOut,
 } from "lucide-react"
 
-import { AnimatePresence, motion } from "framer-motion"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 
 import {
   DndContext,
@@ -3507,6 +3507,7 @@ export function Sidebar({
   onToggleCollapse: () => void
 }) {
   const router = useRouter()
+  const prefersReducedMotion = useReducedMotion()
 
   if (!user) return null
 
@@ -3663,10 +3664,8 @@ export function Sidebar({
               onClick={onClose}
               title={collapsed ? l : undefined}
               aria-label={l}
-              className={`w-full flex items-center gap-3 border-l-[3px] px-3 h-10 rounded-lg text-sm transition-[background-color,color,border-color,gap,padding] duration-300 ease-in-out ${
-                collapsed
-                  ? "lg:justify-center lg:gap-0 lg:px-0"
-                  : "lg:justify-start"
+              className={`relative w-full flex items-center gap-3 border-l-[3px] px-3 h-10 rounded-lg text-sm transition-[background-color,color,border-color] duration-150 ease-out lg:gap-0 ${
+                collapsed ? "lg:justify-center" : "lg:justify-start"
               } ${
                 active
                   ? "border-emerald-500 bg-emerald-50/70 text-emerald-700 font-medium"
@@ -3674,7 +3673,7 @@ export function Sidebar({
               }`}
             >
               <span
-                className={`relative shrink-0 ${
+                className={`relative z-10 shrink-0 ${
                   active ? "text-emerald-500" : "text-slate-400"
                 }`}
               >
@@ -3687,19 +3686,17 @@ export function Sidebar({
               </span>
               <span className="truncate lg:hidden">{l}</span>
               <motion.span
-                className="hidden min-w-0 truncate whitespace-nowrap lg:block"
+                className="sidebar-motion pointer-events-none absolute left-[42px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
                 initial={false}
                 animate={
-                  collapsed
-                    ? { width: 0, opacity: 0, x: -8 }
-                    : { width: "auto", opacity: 1, x: 0 }
+                  collapsed ? { opacity: 0, x: -6 } : { opacity: 1, x: 0 }
                 }
-                transition={{
-                  width: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
-                  opacity: { duration: 0.16, ease: "easeOut" },
-                  x: { duration: 0.24, ease: [0.22, 1, 0.36, 1] },
-                }}
-                style={{ willChange: "width, opacity, transform" }}
+                transition={
+                  prefersReducedMotion
+                    ? { duration: 0 }
+                    : { duration: 0.18, ease: [0.22, 1, 0.36, 1] }
+                }
+                style={{ willChange: "opacity, transform" }}
               >
                 {l}
               </motion.span>
@@ -3715,30 +3712,24 @@ export function Sidebar({
             onClick={() => onNav("landing")}
             title={collapsed ? "Back to Home" : undefined}
             aria-label="Back to Home"
-            className={`w-full flex items-center gap-3 border-l-[3px] border-transparent px-3 h-10 rounded-lg text-sm font-normal text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-[background-color,color,gap,padding] duration-300 ease-in-out ${
-              collapsed
-                ? "lg:justify-center lg:gap-0 lg:px-0"
-                : "lg:justify-start"
+            className={`relative w-full flex items-center gap-3 border-l-[3px] border-transparent px-3 h-10 rounded-lg text-sm font-normal text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-[background-color,color] duration-150 ease-out lg:gap-0 ${
+              collapsed ? "lg:justify-center" : "lg:justify-start"
             }`}
           >
-            <span className="shrink-0 text-slate-400">
+            <span className="relative z-10 shrink-0 text-slate-400">
               <ArrowLeft className="w-[18px] h-[18px]" />
             </span>
             <span className="truncate lg:hidden">Back to Home</span>
             <motion.span
-              className="hidden min-w-0 truncate whitespace-nowrap lg:block"
+              className="sidebar-motion pointer-events-none absolute left-[42px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
               initial={false}
-              animate={
-                collapsed
-                  ? { width: 0, opacity: 0, x: -8 }
-                  : { width: "auto", opacity: 1, x: 0 }
+              animate={collapsed ? { opacity: 0, x: -6 } : { opacity: 1, x: 0 }}
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : { duration: 0.18, ease: [0.22, 1, 0.36, 1] }
               }
-              transition={{
-                width: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
-                opacity: { duration: 0.16, ease: "easeOut" },
-                x: { duration: 0.24, ease: [0.22, 1, 0.36, 1] },
-              }}
-              style={{ willChange: "width, opacity, transform" }}
+              style={{ willChange: "opacity, transform" }}
             >
               Back to Home
             </motion.span>
@@ -3747,30 +3738,24 @@ export function Sidebar({
             onClick={onLogout}
             title={collapsed ? "Sign out" : undefined}
             aria-label="Sign out"
-            className={`w-full flex items-center gap-3 border-l-[3px] border-transparent px-3 h-10 rounded-lg text-sm font-normal text-slate-500 hover:text-red-600 hover:bg-red-50/70 transition-[background-color,color,gap,padding] duration-300 ease-in-out ${
-              collapsed
-                ? "lg:justify-center lg:gap-0 lg:px-0"
-                : "lg:justify-start"
+            className={`relative w-full flex items-center gap-3 border-l-[3px] border-transparent px-3 h-10 rounded-lg text-sm font-normal text-slate-500 hover:text-red-600 hover:bg-red-50/70 transition-[background-color,color] duration-150 ease-out lg:gap-0 ${
+              collapsed ? "lg:justify-center" : "lg:justify-start"
             }`}
           >
-            <span className="text-slate-300 shrink-0">
+            <span className="relative z-10 text-slate-300 shrink-0">
               <LogOut className="w-[18px] h-[18px]" />
             </span>
             <span className="truncate lg:hidden">Sign out</span>
             <motion.span
-              className="hidden min-w-0 truncate whitespace-nowrap lg:block"
+              className="sidebar-motion pointer-events-none absolute left-[42px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
               initial={false}
-              animate={
-                collapsed
-                  ? { width: 0, opacity: 0, x: -8 }
-                  : { width: "auto", opacity: 1, x: 0 }
+              animate={collapsed ? { opacity: 0, x: -6 } : { opacity: 1, x: 0 }}
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : { duration: 0.18, ease: [0.22, 1, 0.36, 1] }
               }
-              transition={{
-                width: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
-                opacity: { duration: 0.16, ease: "easeOut" },
-                x: { duration: 0.24, ease: [0.22, 1, 0.36, 1] },
-              }}
-              style={{ willChange: "width, opacity, transform" }}
+              style={{ willChange: "opacity, transform" }}
             >
               Sign out
             </motion.span>
@@ -3784,15 +3769,14 @@ export function Sidebar({
     <>
       {}
       <motion.aside
-        className="hidden shrink-0 border-r border-slate-100 sticky top-[56px] h-[calc(100vh-56px)] self-start overflow-hidden bg-white lg:flex lg:flex-col"
+        className="sidebar-motion hidden shrink-0 border-r border-slate-100 sticky top-[56px] h-[calc(100vh-56px)] self-start overflow-hidden bg-white lg:flex lg:flex-col"
         initial={false}
         animate={{ width: collapsed ? 80 : 240 }}
-        transition={{
-          type: "spring",
-          stiffness: 360,
-          damping: 34,
-          mass: 0.8,
-        }}
+        transition={
+          prefersReducedMotion
+            ? { duration: 0 }
+            : { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
+        }
         style={{ willChange: "width" }}
       >
         {inner}
@@ -3808,7 +3792,11 @@ export function Sidebar({
               rotate: 0,
               scale: collapsed ? 0.9 : 1,
             }}
-            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            transition={
+              prefersReducedMotion
+                ? { duration: 0 }
+                : { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
+            }
           >
             {collapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
           </motion.span>
@@ -4248,9 +4236,7 @@ function LandingPage({
             <button
               onClick={() => {
                 if (user) {
-                  onNav(
-                    user.role === "admin" ? "admin-dashboard" : "dashboard",
-                  )
+                  onNav(user.role === "admin" ? "admin-dashboard" : "dashboard")
 
                   return
                 }
@@ -6924,9 +6910,7 @@ export function AttendanceHistoryPage({
 
   attendanceRecords?: typeof ATTENDANCE_RECORDS
 }) {
-  const [modal, setModal] = useState<typeof ATTENDANCE_RECORDS[0] | null>(
-    null,
-  )
+  const [modal, setModal] = useState<typeof ATTENDANCE_RECORDS[0] | null>(null)
 
   return (
     <>
@@ -13067,9 +13051,7 @@ export function AdminStudentsPage({
       (result) => result.outcome === "success",
     ).length
 
-    const failed = results.filter(
-      (result) => result.outcome === "error",
-    ).length
+    const failed = results.filter((result) => result.outcome === "error").length
 
     const skipped = results.filter(
       (result) =>
@@ -15166,7 +15148,6 @@ export function AdminSettingsPage({
     const t = i + dir
 
     if (t < 0 || t >= arr.length) return
-
     ;[arr[i], arr[t]] = [arr[t], arr[i]]
 
     update({ carouselSlides: arr })

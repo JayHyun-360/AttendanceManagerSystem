@@ -262,6 +262,7 @@ textarea {
   animation: scanner-result-icon 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+
 @media (prefers-reduced-motion: reduce) {
   .scanner-enter,
   .scanner-idle-sweep,
@@ -269,6 +270,13 @@ textarea {
   .scanner-state-enter,
   .scanner-result-icon {
     animation: none !important;
+  }
+
+  .sidebar-motion,
+  .sidebar-motion * {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
 
