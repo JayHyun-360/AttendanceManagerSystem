@@ -1745,14 +1745,11 @@ export function TopBar({
             </button>
           )}
           <button
-            className="flex min-w-0 items-center gap-2"
+            className="flex min-w-0 items-center gap-3"
             onClick={() => go(dest)}
           >
-            <span className="hidden shrink-0 sm:inline-flex">
-              <AdesseWordmark
-                variant="header"
-                textClassName="text-slate-900"
-              />
+            <span className="hidden h-9 w-9 shrink-0 items-center justify-center sm:inline-flex">
+              <AdesseMark className="h-8 w-8" />
             </span>
             <span
               className="hidden h-6 w-px shrink-0 bg-slate-300 sm:block"
@@ -2335,15 +2332,32 @@ function LandingPage({
         )}
         {isDefaultHero && (
           <div
-            className="pointer-events-none absolute inset-0 overflow-hidden bg-[#f3faf7]"
+            className="pointer-events-none absolute inset-0 overflow-hidden bg-[#f2faf6]"
             aria-hidden="true"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 76% 44%, rgba(16,185,129,.16), transparent 24%), radial-gradient(circle at 18% 18%, rgba(255,255,255,.9), transparent 28%), linear-gradient(135deg, #f8fcfa 0%, #edf8f3 52%, #e3f3ec 100%)",
+            }}
           >
-            <div className="absolute -right-24 -top-24 h-[22rem] w-[22rem] rotate-12 rounded-[3rem] border border-white/80 bg-white/35 shadow-[0_24px_70px_rgba(15,118,110,.08)] sm:-right-16 sm:-top-32 sm:h-[31rem] sm:w-[31rem]" />
-            <div className="absolute right-[8%] top-[12%] h-48 w-48 -rotate-6 rounded-[2.25rem] border border-emerald-100/80 bg-emerald-100/45 shadow-[0_20px_55px_rgba(16,185,129,.12)] sm:right-[13%] sm:top-[10%] sm:h-72 sm:w-72" />
-            <div className="absolute right-[20%] top-[25%] h-36 w-36 rotate-[14deg] rounded-[1.75rem] border border-white/90 bg-white/75 shadow-[0_18px_45px_rgba(15,23,42,.08)] sm:right-[25%] sm:top-[23%] sm:h-52 sm:w-52" />
-            <div className="absolute -bottom-20 right-[2%] h-64 w-64 -rotate-[18deg] rounded-[2.5rem] border border-teal-100/80 bg-teal-100/35 shadow-[0_24px_60px_rgba(13,148,136,.1)] sm:-bottom-28 sm:right-[8%] sm:h-96 sm:w-96" />
-            <div className="absolute bottom-[16%] right-[34%] h-10 w-10 rotate-12 rounded-xl bg-emerald-400/70 shadow-[0_12px_25px_rgba(16,185,129,.2)] sm:h-14 sm:w-14" />
-            <div className="absolute bottom-[12%] left-[10%] h-24 w-24 -rotate-12 rounded-[1.5rem] border border-white/80 bg-white/45 shadow-[0_18px_40px_rgba(15,118,110,.06)] sm:left-[18%] sm:h-36 sm:w-36" />
+            <div
+              className="absolute inset-0 opacity-40 sm:opacity-60"
+              style={{
+                backgroundImage:
+                  "radial-gradient(rgba(5,150,105,.18) 1px, transparent 1px)",
+                backgroundSize: "22px 22px",
+                maskImage:
+                  "linear-gradient(90deg, transparent 0%, transparent 43%, black 70%, black 100%)",
+              }}
+            />
+            <div className="absolute -right-32 -top-40 h-[27rem] w-[27rem] rotate-[18deg] rounded-[4rem] border border-white/90 bg-white/30 shadow-[0_32px_90px_rgba(15,118,110,.1)] sm:-right-20 sm:-top-44 sm:h-[38rem] sm:w-[38rem]" />
+            <div className="absolute right-[2%] top-[8%] h-64 w-64 -rotate-[10deg] rounded-[3rem] border border-emerald-100/90 bg-emerald-100/35 shadow-[0_28px_70px_rgba(16,185,129,.12)] sm:right-[10%] sm:top-[7%] sm:h-[22rem] sm:w-[22rem]" />
+            <div className="absolute right-[12%] top-[17%] h-56 w-56 rotate-[7deg] rounded-[2.75rem] border border-white bg-white/60 shadow-[0_24px_55px_rgba(15,23,42,.1)] sm:right-[20%] sm:top-[17%] sm:h-[18rem] sm:w-[18rem]" />
+            <div className="absolute right-[21%] top-[25%] h-44 w-44 -rotate-[5deg] rounded-[2.25rem] border border-emerald-200/80 bg-gradient-to-br from-emerald-100/80 to-teal-50/70 shadow-[0_20px_45px_rgba(5,150,105,.16)] sm:right-[28%] sm:top-[25%] sm:h-56 sm:w-56" />
+            <div className="absolute right-[28%] top-[33%] h-28 w-28 rotate-12 rounded-[1.75rem] border border-white/90 bg-white/90 shadow-[0_18px_36px_rgba(15,23,42,.12)] sm:right-[35%] sm:top-[33%] sm:h-36 sm:w-36" />
+            <div className="absolute right-[34%] top-[41%] h-16 w-16 -rotate-12 rounded-2xl bg-emerald-500 shadow-[0_16px_32px_rgba(16,185,129,.28)] sm:right-[40%] sm:top-[42%] sm:h-20 sm:w-20" />
+            <div className="absolute -bottom-28 right-[1%] h-72 w-72 -rotate-[22deg] rounded-[3.5rem] border border-teal-100/90 bg-teal-100/30 shadow-[0_30px_75px_rgba(13,148,136,.12)] sm:-bottom-40 sm:right-[8%] sm:h-[28rem] sm:w-[28rem]" />
+            <div className="absolute bottom-[13%] left-[8%] h-28 w-28 -rotate-[14deg] rounded-[2rem] border border-white/90 bg-white/45 shadow-[0_20px_45px_rgba(15,118,110,.08)] sm:left-[17%] sm:h-40 sm:w-40" />
+            <div className="absolute bottom-[18%] right-[47%] h-3 w-3 rounded-full bg-emerald-500/70 shadow-[18px_-12px_0_rgba(16,185,129,.4),36px_4px_0_rgba(20,184,166,.32)] sm:right-[48%] sm:h-4 sm:w-4" />
           </div>
         )}
         {hasHero && (

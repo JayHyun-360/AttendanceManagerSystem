@@ -3104,14 +3104,11 @@ export function TopBar({
             </button>
           )}
           <button
-            className="flex min-w-0 items-center gap-2"
+            className="flex min-w-0 items-center gap-3"
             onClick={() => go(dest)}
           >
-            <span className="hidden shrink-0 sm:inline-flex">
-              <AdesseWordmark
-                variant="header"
-                textClassName="text-slate-900"
-              />
+            <span className="hidden h-9 w-9 shrink-0 items-center justify-center sm:inline-flex">
+              <AdesseMark className="h-8 w-8" />
             </span>
             <span
               className="hidden h-6 w-px shrink-0 bg-slate-300 sm:block"
