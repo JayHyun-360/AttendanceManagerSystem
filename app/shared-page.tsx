@@ -764,7 +764,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const adesseLogoSrc = "/adesse-a.svg";
 
-const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
+function useDashboardDateLabel() {
+  const [label, setLabel] = useState("");
+
+  useEffect(() => {
+    setLabel(format(new Date(), "MMM d, yyyy · EEEE"));
+  }, []);
+
+  return label;
+}
 
 function toMinutes(value?: string | null) {
   if (!value) return null;
@@ -854,7 +862,10 @@ function SessionExtensionControls({
   );
 }
 
-function getEventSessionMeta(event: EventData | null | undefined) {
+function getEventSessionMeta(
+  event: EventData | null | undefined,
+  nowMinutes: number | null = null,
+) {
   if (!event) {
     return {
       sessionLabel: null as "morning" | "afternoon" | null,
@@ -869,7 +880,10 @@ function getEventSessionMeta(event: EventData | null | undefined) {
       hasActiveSession: true,
     };
   }
-  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  if (nowMinutes === null) {
+    return { sessionLabel: null, strict: false, hasActiveSession: false };
+  }
+
   const morningStart = toMinutes(event.morningStart);
   const morningEnd = toMinutes(event.morningEnd);
   const afternoonStart = toMinutes(event.afternoonStart);
@@ -7442,6 +7456,7 @@ export function AdminDashboard({
 
   featuredEventStatus?: EventStatus;
 }) {
+  const dashboardDateLabel = useDashboardDateLabel();
   const pending = excuseRequests.filter((r) => r.status === "pending").length;
 
   const liveStats = stats ?? {

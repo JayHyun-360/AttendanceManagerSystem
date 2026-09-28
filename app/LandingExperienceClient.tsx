@@ -148,7 +148,15 @@ import { formatTimeRange12Hour } from "@/lib/time";
 
 const adesseLogoSrc = "/adesse-a.svg";
 const DEFAULT_HERO_IMAGE = "/adesse-default-hero.webp";
-const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
+function useDashboardDateLabel() {
+  const [label, setLabel] = useState("");
+
+  useEffect(() => {
+    setLabel(format(new Date(), "MMM d, yyyy · EEEE"));
+  }, []);
+
+  return label;
+}
 export type Page = string;
 
 export type Role = "student" | "admin" | null;
@@ -5037,6 +5045,7 @@ export function AdminDashboard({
   }>;
   featuredEventTitle?: string;
 }) {
+  const dashboardDateLabel = useDashboardDateLabel();
   const pending = excuseRequests.filter((r) => r.status === "pending").length;
   const liveStats = stats ?? {
     scannedToday: 0,

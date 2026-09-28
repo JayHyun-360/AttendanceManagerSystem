@@ -91,9 +91,13 @@ function writeReadIds(ids: Set<string>) {
 
 export function DevNotesProvider({ children }: { children: ReactNode }) {
   const [notes, setNotes] = useState<DevNote[]>([]);
-  const [readIds, setReadIds] = useState<Set<string>>(() => readIdsFromStorage());
+  const [readIds, setReadIds] = useState<Set<string>>(() => new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    setReadIds(readIdsFromStorage());
+  }, []);
 
   const loadNotes = useCallback(async () => {
     const { data, error } = await supabase
