@@ -3,23 +3,24 @@
 import {
   createContext,
   useContext,
-  useEffect,
+	useEffect,
 	useState,
-	type ComponentProps,
 	type Dispatch,
   type ReactNode,
   type SetStateAction,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  TopBar,
-  Sidebar,
   Toast,
   PageShell,
   type Page,
   type User,
 } from "../shared-page";
-import { DevNotesProvider, useDevNotes } from "../DevNotesPage";
+import { AppHeader } from "@/components/shell/app-header";
+import { AppSidebar } from "@/components/shell/app-sidebar";
+import { useSidebar } from "@/components/shell/use-sidebar";
+import { pageForRoute, routeForPage } from "@/components/shell/navigation-config";
+import { DevNotesProvider } from "../DevNotesPage";
 import { supabase } from "@/lib/supabase";
 import { FeedbackState } from "@/components/ui/feedback";
 import { toast } from "sonner";
@@ -44,41 +45,14 @@ export function useProtectedUser() {
 	return value;
 }
 
-type ProtectedSidebarProps = ComponentProps<typeof Sidebar>;
-
-function ProtectedSidebar(props: ProtectedSidebarProps) {
-  const { unreadCount } = useDevNotes();
-  return <Sidebar {...props} badges={{ "dev-notes": unreadCount }} />;
-}
-
-const pathToPage: Partial<Record<string, Page>> = {
-  "/dashboard": "dashboard",
-  "/admin-dashboard": "admin-dashboard",
-  "/onboarding": "onboarding",
-  "/events": "events",
-	  "/my-qr": "my-qr",
-	  "/announcements": "announcements",
-	  "/dev-notes": "dev-notes",
-	  "/attendance-history": "attendance-history",
-  "/my-fines": "my-fines",
-  "/profile": "profile",
-  "/admin-events": "admin-events",
-  "/admin-scanner": "admin-scanner",
-  "/admin-attendees": "admin-attendees",
-  "/admin-students": "admin-students",
-  "/admin-announcements": "admin-announcements",
-  "/admin-excuse-requests": "admin-excuse-requests",
-  "/admin-reports": "admin-reports",
-  "/admin-settings": "admin-settings",
-};
-
 export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [page, setPage] = useState<Page>("landing");
-  const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { mode, cycleMode, reducedMotion } = useSidebar();
   const [sessionReady, setSessionReady] = useState(false);
   const [hasSession, setHasSession] = useState(false);
 	  const [settingsReady, setSettingsReady] = useState(false);
@@ -259,7 +233,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   }, [router, user?.role]);
 
   useEffect(() => {
-    const routePage = pathToPage[pathname] ?? "dashboard";
+    const routePage = pageForRoute(pathname);
     setPage(routePage);
 
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -294,10 +268,10 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     setAuthUserId(null);
     setHasSession(false);
 	    setSessionReady(false);
-	    setSettingsReady(false);
-	    setShowFees(false);
-	    setPage("landing");
-    setOpen(false);
+    setSettingsReady(false);
+    setShowFees(false);
+    setPage("landing");
+    setMobileOpen(false);
   };
 
   const onLogout = async () => {
@@ -315,33 +289,9 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   };
 
   const onNav = (p: Page) => {
-    const routeFromPage: Record<Page, string> = {
-      landing: "/",
-      login: "/login",
-      onboarding: "/onboarding",
-      dashboard: "/dashboard",
-	      "my-qr": "/my-qr",
-	      events: "/events",
-	      "event-detail": "/events",
-	      announcements: "/announcements",
-	      "dev-notes": "/dev-notes",
-	      "attendance-history": "/attendance-history",
-      "my-fines": "/my-fines",
-      profile: "/profile",
-      "admin-dashboard": "/admin-dashboard",
-      "admin-events": "/admin-events",
-      "admin-scanner": "/admin-scanner",
-      "admin-attendees": "/admin-attendees",
-      "admin-students": "/admin-students",
-      "admin-announcements": "/admin-announcements",
-      "admin-reports": "/admin-reports",
-      "admin-excuse-requests": "/admin-excuse-requests",
-      "admin-settings": "/admin-settings",
-    };
-
-    const target = routeFromPage[p] ?? "/dashboard";
+    const target = routeForPage(p);
     router.push(target);
-    setOpen(false);
+    setMobileOpen(false);
   };
 
 	  const showGlobalLoading = !sessionReady || !settingsReady || !user;
@@ -376,7 +326,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 	      value={{ user, setUser, authUserId, setAuthUserId, showFees }}
 	    >
 	      <DevNotesProvider>
-	      <div className="w-full min-h-screen m-0 p-0 bg-white md:h-screen md:overflow-hidden md:bg-[#f8faf9] md:relative">
+	      <div data-shell="true" className="app-shell w-full min-h-screen m-0 p-0 bg-white md:h-screen md:overflow-hidden md:bg-[#f8faf9] md:relative">
         {showGlobalLoading && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#f8faf9]/85 backdrop-blur-[1px]">
             <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
@@ -385,14 +335,24 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
         )}
-        <TopBar user={user} onNav={onNav} onMenuOpen={() => setOpen(true)} />
-        <div className="w-full md:flex md:min-h-0 md:h-[calc(100vh-56px)]">
-	          <ProtectedSidebar
+        <AppHeader
+          page={page}
+          role={user.role}
+          user={user}
+          sidebarHidden={mode === "hidden"}
+          onDesktopToggle={cycleMode}
+          onMobileMenuOpen={() => setMobileOpen(true)}
+          onNavigate={onNav}
+        />
+        <div className="w-full md:flex md:min-h-0 md:h-[calc(100vh-64px)]">
+	          <AppSidebar
             page={page}
             user={user}
-            open={open}
-            onNav={onNav}
-            onClose={() => setOpen(false)}
+            mode={mode}
+            reducedMotion={reducedMotion}
+            mobileOpen={mobileOpen}
+            onMobileOpenChange={setMobileOpen}
+            onNavigate={onNav}
             onLogout={onLogout}
           />
           <main

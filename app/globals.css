@@ -87,6 +87,12 @@ textarea {
   transition-duration: 150ms;
 }
 
+/* Shell motion is owned by motion/react; do not let the broad app transition rule interfere. */
+.app-shell,
+.app-shell * {
+  transition-property: none;
+}
+
 /* Pulse animation for live badges */
 @keyframes pulse-green {
   0%,
