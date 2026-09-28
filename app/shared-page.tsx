@@ -701,7 +701,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { OptimizedImage } from "@/components/OptimizedImage";
 
-import { useState, useRef, useEffect, Fragment } from "react";
+import { useState, useRef, useEffect, useMemo, Fragment } from "react";
 
 import Link from "next/link";
 
@@ -3432,63 +3432,105 @@ export function TopBar({
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  const quickSearchTargets = [
-    {
-      label: "Dashboard",
-      path: isMod ? "/admin-dashboard" : "/dashboard",
-      keywords: ["dashboard", "home", "overview"],
-    },
-    {
-      label: "Events",
-      path: isMod ? "/admin-events" : "/events",
-      keywords: ["events", "event", "calendar"],
-    },
-    {
-      label: "Attendance",
-      path: "/attendance-history",
-      keywords: ["attendance", "history", "record", "records"],
-    },
-    {
-      label: "Announcements",
-      path: isMod ? "/admin-announcements" : "/announcements",
-      keywords: ["announcements", "announcement", "news"],
-    },
-    {
-      label: "My Fines",
-      path: "/my-fines",
-      keywords: ["fines", "fine", "payments"],
-    },
-    {
-      label: "Profile",
-      path: "/profile",
-      keywords: ["profile", "account", "settings"],
-    },
-    {
-      label: "Students",
-      path: "/admin-students",
-      keywords: ["students", "student", "people"],
-    },
-    {
-      label: "Scanner",
-      path: "/admin-scanner",
-      keywords: ["scanner", "scan", "qr"],
-    },
-  ];
+  const [searchOpen, setSearchOpen] = useState(false);
 
-  const submitQuickSearch = () => {
+  const quickSearchTargets = useMemo(
+    () =>
+      [
+        {
+          label: "Dashboard",
+          path: isMod ? "/admin-dashboard" : "/dashboard",
+          keywords: ["dashboard", "home", "overview", "summary"],
+          hint: isMod ? "Admin overview" : "Student overview",
+        },
+        {
+          label: "Events",
+          path: isMod ? "/admin-events" : "/events",
+          keywords: ["events", "event", "calendar", "schedule"],
+          hint: isMod ? "Manage events" : "Browse events",
+        },
+        {
+          label: "Attendance",
+          path: "/attendance-history",
+          keywords: ["attendance", "history", "records", "log"],
+          hint: "Track attendance",
+        },
+        {
+          label: "Announcements",
+          path: isMod ? "/admin-announcements" : "/announcements",
+          keywords: ["announcements", "announcement", "news", "updates"],
+          hint: "Latest updates",
+        },
+        {
+          label: "My Fines",
+          path: "/my-fines",
+          keywords: ["fines", "fine", "payments", "balance"],
+          hint: "Account balances",
+        },
+        {
+          label: "Profile",
+          path: "/profile",
+          keywords: ["profile", "account", "details", "settings", "info"],
+          hint: "Account details",
+        },
+        {
+          label: "Students",
+          path: "/admin-students",
+          keywords: ["students", "student", "roster", "people"],
+          hint: "Manage roster",
+          show: isMod,
+        },
+        {
+          label: "Scanner",
+          path: "/admin-scanner",
+          keywords: ["scanner", "scan", "qr", "check in"],
+          hint: "Quick attendance scan",
+          show: isMod,
+        },
+        {
+          label: "My QR",
+          path: "/my-qr",
+          keywords: ["my qr", "qr", "check in", "student code"],
+          hint: "Student access code",
+        },
+      ].filter((item) => item.show !== false),
+    [isMod],
+  );
+
+  const filteredResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
+
+    if (!query) return [];
+
+    return quickSearchTargets
+      .filter(({ label, hint, keywords }) => {
+        const haystack = [label, hint, ...keywords].join(" ").toLowerCase();
+        return haystack.includes(query);
+      })
+      .slice(0, 5);
+  }, [quickSearchTargets, searchQuery]);
+
+  const submitQuickSearch = (target?: string) => {
+    const query = (target ?? searchQuery).trim().toLowerCase();
 
     if (!query) return;
 
-    const match = quickSearchTargets.find(({ label, keywords }) => {
-      const haystack = [label, ...keywords].join(" ").toLowerCase();
+    const match = quickSearchTargets.find(({ label, hint, keywords }) => {
+      const haystack = [label, hint, ...keywords].join(" ").toLowerCase();
       return haystack.includes(query);
     });
 
     if (match) {
       setSearchQuery("");
+      setSearchOpen(false);
       router.push(match.path);
+      return;
     }
+
+    const fallback = quickSearchTargets[0];
+    setSearchQuery("");
+    setSearchOpen(false);
+    router.push(fallback.path);
   };
 
   const go = (target: string) => router.push(target);
@@ -3565,28 +3607,68 @@ export function TopBar({
         {}
         <div className="hidden md:flex flex-1 justify-center px-3">
           {user && (
-            <label className="relative block w-full max-w-xl">
-              <span className="sr-only">Search</span>
-              <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400">
-                <span className="block h-4 w-4">
-                  <Icons.Search />
+            <div className="relative w-full max-w-xl">
+              <label className="relative block">
+                <span className="sr-only">Search pages</span>
+                <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400">
+                  <span className="block h-4 w-4">
+                    <Icons.Search />
+                  </span>
                 </span>
-              </span>
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    submitQuickSearch();
-                  }
-                }}
-                placeholder="Search pages"
-                aria-label="Search pages"
-                className="w-full h-10 rounded-full border border-slate-200 bg-slate-50/90 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition-all duration-200 focus:border-slate-300 focus:bg-white focus:ring-4 focus:ring-slate-100"
-              />
-            </label>
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onFocus={() => setSearchOpen(true)}
+                  onBlur={() => {
+                    window.setTimeout(() => setSearchOpen(false), 120);
+                  }}
+                  onChange={(event) => {
+                    setSearchQuery(event.target.value);
+                    setSearchOpen(true);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      submitQuickSearch();
+                    }
+                  }}
+                  placeholder="Search pages"
+                  aria-label="Search pages"
+                  className="w-full h-11 rounded-full border border-slate-200/80 bg-white/85 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 shadow-[0_8px_20px_rgba(15,23,42,0.04)] outline-none transition-all duration-200 focus:border-slate-300 focus:bg-white focus:shadow-[0_12px_24px_rgba(15,23,42,0.07)] focus:ring-4 focus:ring-slate-100"
+                />
+              </label>
+
+              {searchOpen && filteredResults.length > 0 && (
+                <div className="absolute left-0 right-0 top-[calc(100%+0.6rem)] z-50 overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 shadow-[0_18px_45px_rgba(15,23,42,0.12)] backdrop-blur-sm">
+                  <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                    Quick navigation
+                  </div>
+                  <div className="p-1.5">
+                    {filteredResults.map((item) => (
+                      <button
+                        key={item.path}
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => submitQuickSearch(item.label)}
+                        className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-slate-700">
+                            {item.label}
+                          </p>
+                          <p className="text-[11px] text-slate-400">
+                            {item.hint}
+                          </p>
+                        </div>
+                        <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                          Go
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
         <div className="ml-auto flex items-center gap-1 shrink-0">
