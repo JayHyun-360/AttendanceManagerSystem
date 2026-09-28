@@ -3799,19 +3799,8 @@ export function TopBar({
                   }}
                   placeholder="Search students, events, announcements..."
                   aria-label="Search within the app"
-                  className="w-full h-11 rounded-full border border-slate-200/80 bg-white/85 pl-11 pr-11 text-sm text-slate-700 placeholder:text-slate-400 shadow-[0_8px_20px_rgba(15,23,42,0.04)] outline-none transition-all duration-200 focus:border-slate-300 focus:bg-white focus:shadow-[0_12px_24px_rgba(15,23,42,0.07)] focus:ring-4 focus:ring-slate-100"
+                  className="w-full h-11 rounded-full border border-slate-200/80 bg-white/85 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 shadow-[0_8px_20px_rgba(15,23,42,0.04)] outline-none transition-all duration-200 focus:border-slate-300 focus:bg-white focus:shadow-[0_12px_24px_rgba(15,23,42,0.07)] focus:ring-4 focus:ring-slate-100"
                 />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-white transition hover:bg-black"
-                    aria-label="Clear search"
-                  >
-                    <Icons.X />
-                  </button>
-                )}
               </label>
 
               {searchOpen && (
@@ -4255,7 +4244,7 @@ export function Sidebar({
             </motion.span>
             <span className="truncate lg:hidden">Back to Home</span>
             <motion.span
-              className="sidebar-motion pointer-events-none absolute left-[42px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
+              className="sidebar-motion pointer-events-none absolute left-[36px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
               initial={false}
               animate={collapsed ? { opacity: 0, x: -6 } : { opacity: 1, x: 0 }}
               transition={
@@ -4289,7 +4278,7 @@ export function Sidebar({
             </motion.span>
             <span className="truncate lg:hidden">Sign out</span>
             <motion.span
-              className="sidebar-motion pointer-events-none absolute left-[42px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
+              className="sidebar-motion pointer-events-none absolute left-[36px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
               initial={false}
               animate={collapsed ? { opacity: 0, x: -6 } : { opacity: 1, x: 0 }}
               transition={
