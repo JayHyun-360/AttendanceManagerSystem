@@ -3079,6 +3079,8 @@ export function TopBar({
 
   const isMod = user?.role === "admin";
 
+  const notificationDest = isMod ? "/admin-announcements" : "/announcements";
+
   const [dotOpen, setDotOpen] = useState(false);
 
   const go = (target: string) => router.push(target);
@@ -3107,15 +3109,24 @@ export function TopBar({
             className="flex min-w-0 items-center gap-3"
             onClick={() => go(dest)}
           >
-            <span className="hidden h-9 w-9 shrink-0 items-center justify-center sm:inline-flex">
-              <AdesseMark className="h-8 w-8" />
+            <span className="flex items-center gap-2 md:hidden">
+              <AdesseMark className="h-7 w-7" />
+              <span className="text-slate-300" aria-hidden="true">
+                |
+              </span>
+              <span className="text-sm font-semibold text-slate-500">
+                Adesse
+              </span>
             </span>
-            <span
-              className="hidden h-6 w-px shrink-0 bg-slate-300 sm:block"
-              aria-hidden="true"
-            />
-            <span className="min-w-0 max-w-[15rem] truncate text-left text-[10px] font-bold uppercase leading-tight tracking-[0.08em] text-slate-600 sm:max-w-none sm:text-[11px]">
+            <span className="hidden items-center gap-3 md:flex">
+              <AdesseMark className="h-8 w-8" />
+              <span
+                className="h-6 w-px shrink-0 bg-slate-300"
+                aria-hidden="true"
+              />
+              <span className="min-w-0 max-w-[15rem] truncate text-left text-[10px] font-bold uppercase leading-tight tracking-[0.08em] text-slate-600 md:max-w-none md:text-[11px]">
               Student Event Attendance &amp; Records System
+              </span>
             </span>
           </button>
         </div>
@@ -3124,6 +3135,13 @@ export function TopBar({
         <div className="ml-auto flex items-center gap-1 shrink-0">
           {user ? (
             <>
+              <button
+                onClick={() => go(notificationDest)}
+                className="hidden md:flex w-8 h-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                aria-label="View notifications"
+              >
+                <Icons.Bell />
+              </button>
               <button
                 onClick={() => go("/profile")}
                 className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100 transition-colors group"
@@ -3138,11 +3156,18 @@ export function TopBar({
                   {user.firstName || (isMod ? "Admin" : "My Profile")}
                 </span>
               </button>
+              <button
+                onClick={() => go(notificationDest)}
+                className="md:hidden flex w-8 h-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                aria-label="View notifications"
+              >
+                <Icons.Bell />
+              </button>
               {}
               <div className="relative">
                 <button
                   onClick={() => setDotOpen((o) => !o)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                  className="hidden md:flex w-8 h-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
                   aria-label="More options"
                 >
                   <svg
@@ -3382,7 +3407,13 @@ export function Sidebar({
     <div className="flex flex-col h-full bg-white">
       {}
       <div className="flex items-center justify-between px-4 h-[52px] border-b border-slate-100 lg:hidden shrink-0">
-        <AdesseWordmark variant="mobile" textClassName="text-slate-900" />
+        <span className="flex items-center gap-2" aria-label="Adesse">
+          <AdesseMark className="h-7 w-7" />
+          <span className="text-slate-300" aria-hidden="true">
+            |
+          </span>
+          <span className="text-sm font-semibold text-slate-500">Adesse</span>
+        </span>
         <button
           onClick={onClose}
           className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
