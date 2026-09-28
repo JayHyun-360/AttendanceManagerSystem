@@ -3290,6 +3290,8 @@ export function Sidebar({
 }) {
   const router = useRouter();
 
+  const [collapsed, setCollapsed] = useState(false);
+
   if (!user) return null;
 
   const isMod = user.role === "admin";
@@ -3406,6 +3408,21 @@ export function Sidebar({
   const inner = (
     <div className="flex flex-col h-full bg-white">
       {}
+      <div
+        className={`hidden h-[52px] shrink-0 items-center border-b border-slate-100 lg:flex ${
+          collapsed ? "justify-center" : "justify-end px-3"
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => setCollapsed((value) => !value)}
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!collapsed}
+        >
+          {collapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
+        </button>
+      </div>
       <div className="flex items-center justify-between px-4 h-[52px] border-b border-slate-100 lg:hidden shrink-0">
         <span className="flex items-center gap-2" aria-label="Adesse">
           <AdesseMark className="h-7 w-7" />
@@ -3443,7 +3460,13 @@ export function Sidebar({
               onMouseEnter={() => prefetchRoute(p)}
               onFocus={() => prefetchRoute(p)}
               onClick={onClose}
-              className={`w-full flex items-center gap-3 border-l-[3px] px-3 h-10 rounded-lg text-sm transition-colors duration-150 ease-in-out ${
+              title={collapsed ? l : undefined}
+              aria-label={l}
+              className={`w-full flex items-center gap-3 border-l-[3px] px-3 h-10 rounded-lg text-sm transition-[background-color,color,border-color,gap,padding] duration-300 ease-in-out ${
+                collapsed
+                  ? "lg:justify-center lg:gap-0 lg:px-0"
+                  : "lg:justify-start"
+              } ${
                 active
                   ? "border-emerald-500 bg-emerald-50/70 text-emerald-700 font-medium"
                   : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-normal"
@@ -3461,7 +3484,15 @@ export function Sidebar({
                   </span>
                 )}
               </span>
-              <span className="truncate">{l}</span>
+              <span
+                className={`truncate transition-[max-width,opacity,transform] duration-300 ease-in-out ${
+                  collapsed
+                    ? "lg:max-w-0 lg:opacity-0 lg:-translate-x-2"
+                    : "max-w-[12rem] opacity-100"
+                }`}
+              >
+                {l}
+              </span>
             </Link>
           );
         })}
@@ -3472,21 +3503,49 @@ export function Sidebar({
         <div className="space-y-2">
           <button
             onClick={() => onNav("landing")}
-            className="w-full flex items-center gap-3 border-l-[3px] border-transparent px-3 h-10 rounded-lg text-sm font-normal text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors duration-150 ease-in-out"
+            title={collapsed ? "Back to Home" : undefined}
+            aria-label="Back to Home"
+            className={`w-full flex items-center gap-3 border-l-[3px] border-transparent px-3 h-10 rounded-lg text-sm font-normal text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-[background-color,color,gap,padding] duration-300 ease-in-out ${
+              collapsed
+                ? "lg:justify-center lg:gap-0 lg:px-0"
+                : "lg:justify-start"
+            }`}
           >
             <span className="shrink-0 text-slate-400">
               <ArrowLeft className="w-[18px] h-[18px]" />
             </span>
-            Back to Home
+            <span
+              className={`truncate transition-[max-width,opacity,transform] duration-300 ease-in-out ${
+                collapsed
+                  ? "lg:max-w-0 lg:opacity-0 lg:-translate-x-2"
+                  : "max-w-[12rem] opacity-100"
+              }`}
+            >
+              Back to Home
+            </span>
           </button>
           <button
             onClick={onLogout}
-            className="w-full flex items-center gap-3 border-l-[3px] border-transparent px-3 h-10 rounded-lg text-sm font-normal text-slate-500 hover:text-red-600 hover:bg-red-50/70 transition-colors duration-150 ease-in-out"
+            title={collapsed ? "Sign out" : undefined}
+            aria-label="Sign out"
+            className={`w-full flex items-center gap-3 border-l-[3px] border-transparent px-3 h-10 rounded-lg text-sm font-normal text-slate-500 hover:text-red-600 hover:bg-red-50/70 transition-[background-color,color,gap,padding] duration-300 ease-in-out ${
+              collapsed
+                ? "lg:justify-center lg:gap-0 lg:px-0"
+                : "lg:justify-start"
+            }`}
           >
             <span className="text-slate-300 shrink-0">
               <LogOut className="w-[18px] h-[18px]" />
             </span>
-            Sign out
+            <span
+              className={`truncate transition-[max-width,opacity,transform] duration-300 ease-in-out ${
+                collapsed
+                  ? "lg:max-w-0 lg:opacity-0 lg:-translate-x-2"
+                  : "max-w-[12rem] opacity-100"
+              }`}
+            >
+              Sign out
+            </span>
           </button>
         </div>
       </div>
@@ -3496,7 +3555,11 @@ export function Sidebar({
   return (
     <>
       {}
-      <aside className="hidden lg:flex flex-col w-60 shrink-0 border-r border-slate-100 sticky top-[56px] h-[calc(100vh-56px)] self-start overflow-hidden bg-white">
+      <aside
+        className={`hidden shrink-0 border-r border-slate-100 sticky top-[56px] h-[calc(100vh-56px)] self-start overflow-hidden bg-white lg:flex lg:flex-col transition-[width] duration-300 ease-in-out ${
+          collapsed ? "w-20" : "w-60"
+        }`}
+      >
         {inner}
       </aside>
 
