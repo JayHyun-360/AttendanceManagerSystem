@@ -139,65 +139,6 @@
 // ─── MODERATOR: Management & Settings ────────────────────────────────────────
 /* Fee Visibility */ /* Attendance & Requests */ /* Academic Information */ /* Landing Page */ /* Hero images */ /* Carousel slides */ /* Thumbnail */ /* Fields */ /* Controls */ /* System Info */
 
-import { useState, useRef, useEffect, Fragment } from "react";
-
-import Link from "next/link";
-
-import { usePathname, useRouter } from "next/navigation";
-
-import { useForm } from "react-hook-form";
-
-import { zodResolver } from "@hookform/resolvers/zod";
-
-import { z } from "zod";
-
-import { format } from "date-fns";
-
-import { Archive, ArrowLeft, ChevronDown, ChevronUp, LogOut } from "lucide-react";
-
-import { AnimatePresence, motion } from "framer-motion";
-
-import {
-  DndContext,
-  DragOverlay,
-  KeyboardSensor,
-  PointerSensor,
-  TouchSensor,
-  rectIntersection,
-  useDroppable,
-  useDraggable,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core";
-
-import {
-  Bar,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
-
-import jsQR from "jsqr";
-
-import QRCode from "qrcode";
-
-import { toast } from "sonner";
-
-import { supabase } from "@/lib/supabase";
-
-import { recordAttendance } from "@/lib/attendance";
-import {
-  buildAttendanceSessionRecords,
-  type FineEventLike,
-  type FineRowLike,
-  type FineScanLike,
-} from "@/lib/attendance-fines";
-import { formatTime12Hour, formatTimeRange12Hour } from "@/lib/time";
-
 /*
 import { deleteImages, uploadImage } from "@/lib/uploadImage";
 
@@ -520,7 +461,7 @@ import { Skeleton } from "@/components/ui/skeleton";
                   </div>
                   <div className="mt-4 overflow-hidden rounded-xl bg-slate-100">
                     {profile.idPhotoUrl ? (
-                      <img
+                      <OptimizedImage
                         src={profile.idPhotoUrl}
                         alt="School ID"
                         className="h-[260px] w-full object-contain md:h-[360px]"
@@ -750,6 +691,73 @@ import { Skeleton } from "@/components/ui/skeleton";
         </div>
       </div>
 */
+
+import { OptimizedImage } from "@/components/OptimizedImage";
+
+import { useState, useRef, useEffect, Fragment } from "react";
+
+import Link from "next/link";
+
+import { usePathname, useRouter } from "next/navigation";
+
+import { useForm } from "react-hook-form";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { z } from "zod";
+
+import { format } from "date-fns";
+
+import {
+  Archive,
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  LogOut,
+} from "lucide-react";
+
+import { AnimatePresence, motion } from "framer-motion";
+
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  rectIntersection,
+  useDroppable,
+  useDraggable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+
+import {
+  Bar,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts";
+
+import jsQR from "jsqr";
+
+import QRCode from "qrcode";
+
+import { toast } from "sonner";
+
+import { supabase } from "@/lib/supabase";
+
+import { recordAttendance } from "@/lib/attendance";
+import {
+  buildAttendanceSessionRecords,
+  type FineEventLike,
+  type FineRowLike,
+  type FineScanLike,
+} from "@/lib/attendance-fines";
+import { formatTime12Hour, formatTimeRange12Hour } from "@/lib/time";
 import { deleteImages, uploadImage } from "@/lib/uploadImage";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1791,22 +1799,22 @@ const Icons = {
     </svg>
   ),
 
-	  Bell: () => (
-	    <svg viewBox="0 0 24 24" className={ic} {...sv}>
-	      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
-	      <path d="M13.73 21a2 2 0 01-3.46 0" />
-	    </svg>
-	  ),
+  Bell: () => (
+    <svg viewBox="0 0 24 24" className={ic} {...sv}>
+      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 01-3.46 0" />
+    </svg>
+  ),
 
-	  Code: () => (
-	    <svg viewBox="0 0 24 24" className={ic} {...sv}>
-	      <polyline points="16 18 22 12 16 6" />
-	      <polyline points="8 6 2 12 8 18" />
-	      <line x1="14" y1="4" x2="10" y2="20" />
-	    </svg>
-	  ),
+  Code: () => (
+    <svg viewBox="0 0 24 24" className={ic} {...sv}>
+      <polyline points="16 18 22 12 16 6" />
+      <polyline points="8 6 2 12 8 18" />
+      <line x1="14" y1="4" x2="10" y2="20" />
+    </svg>
+  ),
 
-	  QrCode: () => (
+  QrCode: () => (
     <svg viewBox="0 0 24 24" className={ic} {...sv}>
       <rect x="3" y="3" width="7" height="7" rx="1" />
       <rect x="14" y="3" width="7" height="7" rx="1" />
@@ -2622,7 +2630,7 @@ function Avatar({
 
   if (photoUrl)
     return (
-      <img
+      <OptimizedImage
         src={photoUrl}
         alt={name}
         className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200`}
@@ -2715,7 +2723,7 @@ export function ProfileIcon({
   }[size];
 
   const content = photoUrl ? (
-    <img
+    <OptimizedImage
       src={photoUrl}
       alt="Profile"
       className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200 transition-transform duration-200 group-hover:scale-[1.02]`}
@@ -2760,7 +2768,7 @@ export function ProfileIcon({
             >
               ×
             </button>
-            <img
+            <OptimizedImage
               src={photoUrl}
               alt="Profile preview"
               className="max-h-[80vh] max-w-[80vw] rounded-2xl border border-white/20 object-contain bg-white/5 shadow-2xl"
@@ -2789,7 +2797,9 @@ export function Toast({
       }`}
       style={{ animation: "slideUp .25s ease" }}
     >
-      <span className={variant === "error" ? "text-red-300" : "text-emerald-400"}>
+      <span
+        className={variant === "error" ? "text-red-300" : "text-emerald-400"}
+      >
         {variant === "error" ? <Icons.X /> : <Icons.Check />}
       </span>
       {message}
@@ -2925,7 +2935,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export function AdesseMark({ className = "w-7 h-7" }: { className?: string }) {
   return (
-    <img
+    <OptimizedImage
       src={adesseLogoSrc}
       alt=""
       className={`${className} shrink-0 object-contain`}
@@ -2970,7 +2980,11 @@ export function AdesseWordmark({
       aria-label="Adesse"
     >
       <AdesseMark className={`${styles.mark} shrink-0`} />
-      <span className={`adesse-display leading-[0.9] ${styles.text} ${textClassName}`}>desse</span>
+      <span
+        className={`adesse-display leading-[0.9] ${styles.text} ${textClassName}`}
+      >
+        desse
+      </span>
     </span>
   );
 }
@@ -3013,7 +3027,7 @@ export function StudentQR({
     );
 
   return (
-    <img
+    <OptimizedImage
       src={dataUrl}
       width={size}
       height={size}
@@ -3081,7 +3095,10 @@ export function TopBar({
           >
             <div className="flex min-w-0 flex-col leading-none">
               <span className="hidden lg:inline-flex">
-                <AdesseWordmark variant="header" textClassName="text-slate-900" />
+                <AdesseWordmark
+                  variant="header"
+                  textClassName="text-slate-900"
+                />
               </span>
               <span className="text-[10px] text-slate-400 font-medium hidden sm:block leading-tight truncate">
                 {isMod ? "Administrator Portal" : "Student Attendance"}
@@ -3249,13 +3266,13 @@ export function Sidebar({
 
         { p: "admin-attendees" as Page, l: "Attendees", I: Icons.Users },
 
-	        { p: "admin-students" as Page, l: "Students", I: Icons.User },
+        { p: "admin-students" as Page, l: "Students", I: Icons.User },
 
-	        { p: "admin-announcements" as Page, l: "Announcements", I: Icons.Bell },
+        { p: "admin-announcements" as Page, l: "Announcements", I: Icons.Bell },
 
-	        { p: "dev-notes" as Page, l: "Dev Notes", I: Icons.Code },
+        { p: "dev-notes" as Page, l: "Dev Notes", I: Icons.Code },
 
-	        {
+        {
           p: "admin-excuse-requests" as Page,
 
           l: "Excuse Requests",
@@ -3272,13 +3289,13 @@ export function Sidebar({
 
         { p: "events" as Page, l: "Events", I: Icons.Calendar },
 
-	        { p: "my-qr" as Page, l: "My QR Code", I: Icons.QrCode },
+        { p: "my-qr" as Page, l: "My QR Code", I: Icons.QrCode },
 
-	        { p: "announcements" as Page, l: "Announcements", I: Icons.Bell },
+        { p: "announcements" as Page, l: "Announcements", I: Icons.Bell },
 
-	        { p: "dev-notes" as Page, l: "Dev Notes", I: Icons.Code },
+        { p: "dev-notes" as Page, l: "Dev Notes", I: Icons.Code },
 
-	        {
+        {
           p: "attendance-history" as Page,
 
           l: "Attendance",
@@ -3334,7 +3351,7 @@ export function Sidebar({
     "admin-settings": "/admin-settings",
   };
 
-	  const handleNav = (p: Page) => {
+  const handleNav = (p: Page) => {
     const target = routeFromPage[p] ?? "/dashboard";
 
     router.push(target);
@@ -3577,7 +3594,7 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
                 controls
               />
             ) : (
-              <img
+              <OptimizedImage
                 key={`${visibilityStamp}-img-${i}-${s.imageUrl}`}
                 src={s.imageUrl}
                 alt={s.caption}
@@ -3755,7 +3772,7 @@ function LandingPage({
                   width: `${100 / heroTotal}%`,
                 }}
               >
-                <img
+                <OptimizedImage
                   key={`${heroVisibilityStamp}-hero-${i}-${url}`}
                   src={url}
                   alt=""
@@ -4013,9 +4030,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
       !profile.first_name ||
       !profile.surname ||
       (profile.role !== "admin" &&
-        (!profile.student_id ||
-          !profile.program ||
-          !profile.year_level));
+        (!profile.student_id || !profile.program || !profile.year_level));
 
     if (incomplete) {
       router.push("/onboarding?freshLogin=1");
@@ -4492,10 +4507,7 @@ export function OnboardingPage({
     }
 
     if (step === 4) {
-      return (
-        f.program.trim().length > 0 &&
-        f.yearLevel.trim().length > 0
-      );
+      return f.program.trim().length > 0 && f.yearLevel.trim().length > 0;
     }
 
     if (step === 5) {
@@ -4690,7 +4702,7 @@ export function OnboardingPage({
                     className="relative w-full rounded-xl overflow-hidden border-2 border-emerald-400"
                     style={{ aspectRatio: "16/10" }}
                   >
-                    <img
+                    <OptimizedImage
                       src={f.idPhotoUrl}
                       alt="School ID"
                       className="w-full h-full object-cover"
@@ -4944,23 +4956,23 @@ function ExcuseModal({
               setSubmitting(true);
               try {
                 const succeeded = await onSubmit({
-                id: Date.now().toString(),
+                  id: Date.now().toString(),
 
-                studentName: "Maria Luisa Santos",
+                  studentName: "Maria Luisa Santos",
 
-                studentId: "2440014",
+                  studentId: "2440014",
 
-                event: record.event,
+                  event: record.event,
 
-                date: record.date,
+                  date: record.date,
 
-                reason,
+                  reason,
 
-                proofName: file ? file.name : null,
+                  proofName: file ? file.name : null,
 
-                status: "pending",
+                  status: "pending",
 
-                submittedDate: "Aug 22, 2026",
+                  submittedDate: "Aug 22, 2026",
                 });
                 if (succeeded) onClose();
               } finally {
@@ -5112,7 +5124,7 @@ function UpcomingEventCard({
           className="relative md:hidden overflow-hidden rounded-xl"
           style={{ height: 152 }}
         >
-          <img
+          <OptimizedImage
             src={cover}
             alt={ev.title}
             className="absolute inset-0 w-full h-full object-cover"
@@ -5182,7 +5194,7 @@ function UpcomingEventCard({
             className="absolute inset-y-0 right-0"
             style={{ width: "45%", clipPath: "url(#ec-photo-clip)" }}
           >
-            <img
+            <OptimizedImage
               src={cover}
               alt={ev.title}
               className="w-full h-full object-cover"
@@ -5555,7 +5567,7 @@ export function EventsPage({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <img
+                  <OptimizedImage
                     src={cover}
                     alt={e.title}
                     className="w-full h-full object-cover"
@@ -5657,7 +5669,7 @@ function EventDetailPage({
               className="w-full h-64 object-cover"
             />
           ) : (
-            <img
+            <OptimizedImage
               src={primaryMedia}
               alt={ev.title}
               className="w-full h-64 object-cover"
@@ -5750,7 +5762,7 @@ function EventDetailPage({
                   onClick={() => setLightbox(url)}
                   className="relative w-full aspect-video rounded-lg overflow-hidden group focus:outline-none"
                 >
-                  <img
+                  <OptimizedImage
                     src={url}
                     alt={`Event photo ${i + 1}`}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -5789,7 +5801,7 @@ function EventDetailPage({
           >
             <Icons.X />
           </button>
-          <img
+          <OptimizedImage
             src={lightbox}
             alt=""
             className="max-w-full max-h-full rounded-xl object-contain shadow-2xl"
@@ -5914,7 +5926,7 @@ function EventDetailPageView({
           >
             <div className="aspect-video overflow-hidden rounded-2xl bg-slate-50 shadow-sm">
               {event.highlightUrl ? (
-                <img
+                <OptimizedImage
                   src={event.highlightUrl}
                   alt={event.title}
                   className="h-full w-full object-cover"
@@ -6052,7 +6064,7 @@ function EventDetailPageView({
                       onClick={() => setLightbox(url)}
                       className="group relative aspect-video overflow-hidden rounded-xl border border-slate-100 bg-slate-50 text-left"
                     >
-                      <img
+                      <OptimizedImage
                         src={url}
                         alt={`Event photo ${index + 1}`}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -6087,7 +6099,7 @@ function EventDetailPageView({
           >
             <Icons.X />
           </button>
-          <img
+          <OptimizedImage
             src={lightbox}
             alt="Event gallery preview"
             className="max-h-full max-w-full rounded-xl object-contain shadow-2xl"
@@ -6143,13 +6155,13 @@ export function MyQRPage({
     const qrDataUrl = await QRCode.toDataURL(
       `ADESSE:${user.studentId}:v${qrVersion}`,
       {
-      width: size,
+        width: size,
 
-      margin: 0,
+        margin: 0,
 
-      color: { dark: "#111827", light: "#ffffff" },
+        color: { dark: "#111827", light: "#ffffff" },
 
-      errorCorrectionLevel: "H",
+        errorCorrectionLevel: "H",
       },
     );
 
@@ -6320,7 +6332,7 @@ export function AnnouncementsPage({
           >
             <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
               {a.photoUrl ? (
-                <img
+                <OptimizedImage
                   src={a.photoUrl}
                   alt={a.title}
                   className="w-full h-full object-cover"
@@ -6406,7 +6418,7 @@ function AnnouncementDetailPageView({
               className="group block aspect-video w-full overflow-hidden bg-slate-50"
               aria-label="View announcement image"
             >
-              <img
+              <OptimizedImage
                 src={announcement.photoUrl}
                 alt={announcement.title}
                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
@@ -6483,7 +6495,7 @@ function AnnouncementDetailPageView({
           >
             <Icons.X />
           </button>
-          <img
+          <OptimizedImage
             src={announcement.photoUrl}
             alt={`${announcement.title} preview`}
             className="max-h-full max-w-full rounded-xl object-contain shadow-2xl"
@@ -6535,98 +6547,112 @@ export function AttendanceHistoryPage({
               No attendance records yet
             </p>
             <p className="mt-1 text-xs text-slate-400">
-              Your event attendance will appear here after a session is recorded.
+              Your event attendance will appear here after a session is
+              recorded.
             </p>
           </div>
-        ) : attendanceRecords.map((r, i) => {
-          const rowSessionLabel =
-            "sessionLabel" in r ? r.sessionLabel : undefined;
-          const req = excuseRequests.find(
-            (x) =>
-              (x.eventId &&
-                x.eventId === r.eventId &&
-                (!x.sessionLabel || x.sessionLabel === rowSessionLabel)) ||
-              (!x.eventId && x.event === r.event),
-          );
+        ) : (
+          attendanceRecords.map((r, i) => {
+            const rowSessionLabel =
+              "sessionLabel" in r ? r.sessionLabel : undefined;
+            const req = excuseRequests.find(
+              (x) =>
+                (x.eventId &&
+                  x.eventId === r.eventId &&
+                  (!x.sessionLabel || x.sessionLabel === rowSessionLabel)) ||
+                (!x.eventId && x.event === r.event),
+            );
 
-          const eff =
-            req?.status === "approved"
-              ? "excused"
-              : req?.status === "pending"
-                ? "pending"
-                : r.status;
+            const eff =
+              req?.status === "approved"
+                ? "excused"
+                : req?.status === "pending"
+                  ? "pending"
+                  : r.status;
 
-          const fine = fines.find(
-            (f) =>
-              f.attendanceScanId === r.id ||
-              (f.eventId === r.eventId &&
-                (!f.sessionLabel || f.sessionLabel === rowSessionLabel)),
-          );
-          const cleared = fine?.status === "paid" || fine?.status === "excused";
+            const fine = fines.find(
+              (f) =>
+                f.attendanceScanId === r.id ||
+                (f.eventId === r.eventId &&
+                  (!f.sessionLabel || f.sessionLabel === rowSessionLabel)),
+            );
+            const cleared =
+              fine?.status === "paid" || fine?.status === "excused";
 
-          return (
-            <div
-              key={r.id}
-              className={`flex items-center gap-4 px-5 py-4 ${
-                i < attendanceRecords.length - 1
-                  ? "border-b border-slate-50"
-                  : ""
-              } ${cleared ? "opacity-60" : ""}`}
-            >
+            return (
               <div
-                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                    eff === "present" || eff === "late"
-                    ? "bg-emerald-50 text-emerald-500"
-                    : eff === "absent"
-                      ? "bg-red-50 text-red-400"
-                      : eff === "excused"
-                        ? "bg-violet-50 text-violet-500"
-                        : "bg-amber-50 text-amber-500"
-                }`}
+                key={r.id}
+                className={`flex items-center gap-4 px-5 py-4 ${
+                  i < attendanceRecords.length - 1
+                    ? "border-b border-slate-50"
+                    : ""
+                } ${cleared ? "opacity-60" : ""}`}
               >
-                {eff === "present" || eff === "late" ? (
-                  <Icons.Check />
-                ) : eff === "excused" ? (
-                  <Icons.CheckCircle />
-                ) : (
-                  <Icons.XCircle />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900 truncate">
-                  <span className={cleared ? "line-through" : ""}>{r.event}</span>
-                </p>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {r.date}
-                  {rowSessionLabel
-                    ? ` · ${rowSessionLabel === "morning" ? "Morning" : "Afternoon"}`
-                    : ""}
-                  {r.time !== "—" ? ` · ${r.time}` : ""}
-                </p>
-                {showFees && fine && !cleared && (eff === "absent" || eff === "late") && (
-                  <p className="text-xs text-red-500 font-semibold mt-0.5">
-                    Fee: ₱{fine.amount}
-                  </p>
-                )}
-              </div>
-              {cleared ? (
-                <Badge status="cleared" />
-              ) : eff === "absent" && !String(r.id).startsWith("inferred-") ? (
-                <button
-                  onClick={() => setModal(r)}
-                  className="h-10 shrink-0 rounded-lg bg-slate-900 px-3.5 text-[11px] font-semibold leading-none text-white transition-colors hover:bg-slate-800 md:h-8"
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    eff === "present" || eff === "late"
+                      ? "bg-emerald-50 text-emerald-500"
+                      : eff === "absent"
+                        ? "bg-red-50 text-red-400"
+                        : eff === "excused"
+                          ? "bg-violet-50 text-violet-500"
+                          : "bg-amber-50 text-amber-500"
+                  }`}
                 >
-                  <span className="flex items-center justify-center gap-1.5 whitespace-nowrap">
-                    <Icons.Send />
-                    <span>Excuse</span>
-                  </span>
-                </button>
-              ) : (
-                <Badge status={eff} />
-              )}
-            </div>
-          );
-        })}
+                  {eff === "present" || eff === "late" ? (
+                    <Icons.Check />
+                  ) : eff === "excused" ? (
+                    <Icons.CheckCircle />
+                  ) : (
+                    <Icons.XCircle />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 truncate">
+                    <span className={cleared ? "line-through" : ""}>
+                      {r.event}
+                    </span>
+                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {r.date}
+                    {rowSessionLabel
+                      ? ` · ${
+                          rowSessionLabel === "morning"
+                            ? "Morning"
+                            : "Afternoon"
+                        }`
+                      : ""}
+                    {r.time !== "—" ? ` · ${r.time}` : ""}
+                  </p>
+                  {showFees &&
+                    fine &&
+                    !cleared &&
+                    (eff === "absent" || eff === "late") && (
+                      <p className="text-xs text-red-500 font-semibold mt-0.5">
+                        Fee: ₱{fine.amount}
+                      </p>
+                    )}
+                </div>
+                {cleared ? (
+                  <Badge status="cleared" />
+                ) : eff === "absent" &&
+                  !String(r.id).startsWith("inferred-") ? (
+                  <button
+                    onClick={() => setModal(r)}
+                    className="h-10 shrink-0 rounded-lg bg-slate-900 px-3.5 text-[11px] font-semibold leading-none text-white transition-colors hover:bg-slate-800 md:h-8"
+                  >
+                    <span className="flex items-center justify-center gap-1.5 whitespace-nowrap">
+                      <Icons.Send />
+                      <span>Excuse</span>
+                    </span>
+                  </button>
+                ) : (
+                  <Badge status={eff} />
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
       {excuseRequests.length > 0 && (
         <>
@@ -6769,7 +6795,12 @@ export function MyFinesPage({
                   </p>
                   <p className="text-xs text-slate-400 mt-0.5">
                     {fine.eventDate}
-                    {fine.sessionLabel && ` · ${fine.sessionLabel === "afternoon" ? "Afternoon" : "Morning"}`}
+                    {fine.sessionLabel &&
+                      ` · ${
+                        fine.sessionLabel === "afternoon"
+                          ? "Afternoon"
+                          : "Morning"
+                      }`}
                     {fine.reason && ` · ${fine.reason}`}
                   </p>
                 </div>
@@ -6785,7 +6816,9 @@ export function MyFinesPage({
                   >
                     ₱{fine.amount}
                   </p>
-                  <Badge status={fine.status === "paid" ? "cleared" : fine.status} />
+                  <Badge
+                    status={fine.status === "paid" ? "cleared" : fine.status}
+                  />
                 </div>
               </div>
             ))}
@@ -6967,8 +7000,10 @@ export function ProfilePage({
           <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div className="relative h-36 w-full overflow-hidden rounded-t-2xl md:h-40">
               {(editing ? draft.coverPhotoUrl : user.coverPhotoUrl) ? (
-                <img
-                  src={editing ? draft.coverPhotoUrl : user.coverPhotoUrl}
+                <OptimizedImage
+                  src={
+                    (editing ? draft.coverPhotoUrl : user.coverPhotoUrl) ?? ""
+                  }
                   alt="Profile cover"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
@@ -7113,7 +7148,10 @@ export function ProfilePage({
               <div className="mt-1 divide-y divide-slate-100">
                 {[
                   { label: "Phone", value: profile.phone || "Not provided" },
-                  { label: "Email", value: profile.contactEmail || "Not provided" },
+                  {
+                    label: "Email",
+                    value: profile.contactEmail || "Not provided",
+                  },
                 ].map((item) => (
                   <div key={item.label} className="py-3 first:pt-0 last:pb-0">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
@@ -7316,7 +7354,11 @@ export function ProfilePage({
                 </summary>
                 <div className="border-t border-slate-100 p-5">
                   <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-slate-100 bg-slate-50/80">
-                    <img src={profile.idPhotoUrl} alt="School ID" className="h-full w-full object-contain" />
+                    <OptimizedImage
+                      src={profile.idPhotoUrl}
+                      alt="School ID"
+                      className="h-full w-full object-contain"
+                    />
                   </div>
                   <p className="mt-3 text-center text-[11px] text-slate-400">
                     Used for identity verification by moderators
@@ -7324,24 +7366,24 @@ export function ProfilePage({
                 </div>
               </details>
               <section className="hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:block md:p-6">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <p className="text-base font-semibold text-slate-900">
-                  School ID
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <p className="text-base font-semibold text-slate-900">
+                    School ID
+                  </p>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Verification
+                  </span>
+                </div>
+                <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-slate-100 bg-slate-50/80">
+                  <OptimizedImage
+                    src={profile.idPhotoUrl}
+                    alt="School ID"
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+                <p className="mt-3 text-center text-[11px] text-slate-400">
+                  Used for identity verification by moderators
                 </p>
-                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Verification
-                </span>
-              </div>
-              <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-slate-100 bg-slate-50/80">
-                <img
-                  src={profile.idPhotoUrl}
-                  alt="School ID"
-                  className="h-full w-full object-contain"
-                />
-              </div>
-              <p className="mt-3 text-center text-[11px] text-slate-400">
-                Used for identity verification by moderators
-              </p>
               </section>
             </>
           )}
@@ -7467,7 +7509,8 @@ export function AdminDashboard({
           </p>
           <h1 className="text-xl font-bold text-slate-900">Admin Overview</h1>
           <p className="text-sm text-slate-400 mt-0.5">
-            {featuredEventTitle || "Adesse overview"} {currentStatusMeta.message}
+            {featuredEventTitle || "Adesse overview"}{" "}
+            {currentStatusMeta.message}
           </p>
         </div>
         <span
@@ -7595,7 +7638,7 @@ export function AdminDashboard({
             }`}
           >
             {s.photoUrl ? (
-              <img
+              <OptimizedImage
                 src={s.photoUrl}
                 alt=""
                 className="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-slate-200"
@@ -7703,7 +7746,9 @@ function ArchiveDropZone({
     <div
       ref={setNodeRef}
       role="button"
-      aria-label={archived ? "Back to active events" : "Archive event drop zone"}
+      aria-label={
+        archived ? "Back to active events" : "Archive event drop zone"
+      }
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(event) => {
@@ -7728,7 +7773,11 @@ function ArchiveDropZone({
         <Archive className={`h-4 w-4 ${highlighted ? "animate-pulse" : ""}`} />
       )}
       <span>
-        {archived ? "Back to events" : highlighted ? "Release to archive" : "Archive"}
+        {archived
+          ? "Back to events"
+          : highlighted
+            ? "Release to archive"
+            : "Archive"}
       </span>
     </div>
   );
@@ -7745,13 +7794,8 @@ function DraggableEventCard({
   children: React.ReactNode;
   dragDisabled: boolean;
 }) {
-  const {
-    attributes,
-    listeners,
-    setActivatorNodeRef,
-    setNodeRef,
-    isDragging,
-  } = useDraggable({ id: event.id, disabled: dragDisabled });
+  const { attributes, listeners, setActivatorNodeRef, setNodeRef, isDragging } =
+    useDraggable({ id: event.id, disabled: dragDisabled });
 
   return (
     <motion.div
@@ -7783,14 +7827,16 @@ function EventDragPreview({ event }: { event: EventData }) {
     <div className="w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-50">
         {event.highlightUrl ? (
-          <img
+          <OptimizedImage
             src={event.highlightUrl}
             alt=""
             className="h-full w-full object-cover"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-            <span className="text-sm font-semibold text-slate-400">No media</span>
+            <span className="text-sm font-semibold text-slate-400">
+              No media
+            </span>
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/25 via-transparent to-slate-900/10" />
@@ -7821,14 +7867,16 @@ function ArchivedEventCard({
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-50 grayscale-[0.35]">
         {event.highlightUrl ? (
-          <img
+          <OptimizedImage
             src={event.highlightUrl}
             alt={event.title}
             className="h-full w-full object-cover"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-            <span className="text-sm font-semibold text-slate-400">No media</span>
+            <span className="text-sm font-semibold text-slate-400">
+              No media
+            </span>
           </div>
         )}
         <div className="absolute inset-0 bg-slate-900/10" />
@@ -7847,7 +7895,10 @@ function ArchivedEventCard({
             {event.date} · {event.location || "TBA"}
           </p>
           <p className="mt-2 text-[11px] text-slate-400">
-            Archived {event.archivedAt ? format(new Date(event.archivedAt), "MMM d, yyyy") : "recently"}
+            Archived{" "}
+            {event.archivedAt
+              ? format(new Date(event.archivedAt), "MMM d, yyyy")
+              : "recently"}
           </p>
         </div>
         <div className="flex gap-2 border-t border-slate-100 pt-3">
@@ -8367,7 +8418,9 @@ export function AdminEventsPage({
             ? parseInt(draft.morningAbsentFine) || 0
             : 0,
 
-          morningLateFine: finesEnabled ? parseInt(draft.morningLateFine) || 0 : 0,
+          morningLateFine: finesEnabled
+            ? parseInt(draft.morningLateFine) || 0
+            : 0,
 
           afternoonAbsentFine: finesEnabled
             ? parseInt(draft.afternoonAbsentFine) || 0
@@ -9119,1116 +9172,1155 @@ export function AdminEventsPage({
       onDragEnd={handleDragEnd}
     >
       <>
-      <PageHeader
-        title="Events"
-        subtitle="AY 2026-2027, 1st Semester"
-        action={
-          <div className="flex items-center gap-2">
-            <ArchiveDropZone
-              active={eventView === "active" && activeDragId !== null}
-              archived={eventView === "archived"}
-              onClick={() => {
-                if (eventView === "archived") {
-                  setEventView("active");
-                } else {
-                  setEventView("archived");
-                  void onLoadArchived();
-                }
-              }}
-            />
-            <button
-            onClick={() => {
-              setEventView("active");
-              setShowForm(true);
-
-              setActiveTab("basic");
-
-              setEditId(null);
-
-              setEditDraft(null);
-            }}
-            className="h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"
-          >
-            <Icons.Plus />
-            New event
-            </button>
-          </div>
-        }
-      />
-
-      {}
-      {eventView === "active" && showForm && (
-        <FormModal
-          title="Create New Event"
-          sidebar={
-            <nav className="space-y-1" aria-label="Create event sections">
-              {[
-                [
-                  "basic",
-                  "Basic Details",
-                  "Title, date, program, location, description",
-                ],
-                ["session", "Session & Timing", "Session mode, times, cutoffs"],
-                ["fines", "Fines & Rules", "Attendance fine settings"],
-                ["media", "Media & Assets", "Photos and event media"],
-              ].map(([value, label, description]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(value as CreateEventTab);
-                  }}
-                  className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
-                    activeTab === value
-                      ? "bg-white text-emerald-600 shadow-sm ring-1 ring-slate-200"
-                      : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
-                  }`}
-                >
-                  <span className="block text-xs font-bold">{label}</span>
-                  <span className="mt-1 block text-[10px] leading-relaxed text-slate-400">
-                    {description}
-                  </span>
-                </button>
-              ))}
-            </nav>
-          }
-          onClose={() => {
-            discardCreateMedia();
-
-            setShowForm(false);
-          }}
-          footer={
-            <>
-              <button
-                onClick={handleCreate}
-                disabled={!draft.title || !draft.date || isCreating}
-                className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40"
-              >
-                {isCreating ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                    Creating...
-                  </span>
-                ) : (
-                  "Create event"
-                )}
-              </button>
+        <PageHeader
+          title="Events"
+          subtitle="AY 2026-2027, 1st Semester"
+          action={
+            <div className="flex items-center gap-2">
+              <ArchiveDropZone
+                active={eventView === "active" && activeDragId !== null}
+                archived={eventView === "archived"}
+                onClick={() => {
+                  if (eventView === "archived") {
+                    setEventView("active");
+                  } else {
+                    setEventView("archived");
+                    void onLoadArchived();
+                  }
+                }}
+              />
               <button
                 onClick={() => {
-                  discardCreateMedia();
+                  setEventView("active");
+                  setShowForm(true);
 
-                  setShowForm(false);
+                  setActiveTab("basic");
+
+                  setEditId(null);
+
+                  setEditDraft(null);
                 }}
-                className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50"
+                className="h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"
               >
-                Cancel
+                <Icons.Plus />
+                New event
               </button>
-            </>
+            </div>
           }
-        >
-          {activeTab === "basic" && (
-            <>
-              <FieldInput
-                label="Event title *"
-                placeholder="e.g. Foundation Day Celebration"
-                value={draft.title}
-                onChange={setD("title")}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <FieldInput
-                  label="Date *"
-                  type="date"
-                  value={draft.date}
-                  onChange={setD("date")}
-                />
-                <FieldSelect
-                  label="Program"
-                  value={draft.program}
-                  onChange={setD("program")}
-                >
-                  <option>All Programs</option>
-                  <option>BSIT / BSCS</option>
-                  <option>BSIT</option>
-                  <option>BSCS</option>
-                  <option>BSBA</option>
-                </FieldSelect>
-              </div>
-              <FieldInput
-                label="Location"
-                placeholder="e.g. Main Gymnasium"
-                value={draft.location}
-                onChange={setD("location")}
-              />
-              <FieldTextarea
-                label="Description"
-                placeholder="What is this event about?"
-                rows={5}
-                value={draft.description}
-                onChange={setD("description")}
-              />
-            </>
-          )}
+        />
 
-          {}
-          {activeTab === "session" && (
-            <>
-              <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
-                <div className="flex items-center justify-between py-2.5">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-800">
-                      Multi-Session
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      Split into Morning &amp; Afternoon sessions
-                    </p>
-                  </div>
+        {}
+        {eventView === "active" && showForm && (
+          <FormModal
+            title="Create New Event"
+            sidebar={
+              <nav className="space-y-1" aria-label="Create event sections">
+                {[
+                  [
+                    "basic",
+                    "Basic Details",
+                    "Title, date, program, location, description",
+                  ],
+                  [
+                    "session",
+                    "Session & Timing",
+                    "Session mode, times, cutoffs",
+                  ],
+                  ["fines", "Fines & Rules", "Attendance fine settings"],
+                  ["media", "Media & Assets", "Photos and event media"],
+                ].map(([value, label, description]) => (
                   <button
-                    onClick={toggleD("multiSession")}
-                    role="switch"
-                    aria-checked={draft.multiSession}
-                    className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${
-                      draft.multiSession ? "bg-emerald-500" : "bg-slate-200"
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(value as CreateEventTab);
+                    }}
+                    className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
+                      activeTab === value
+                        ? "bg-white text-emerald-600 shadow-sm ring-1 ring-slate-200"
+                        : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
                     }`}
                   >
-                    <span
-                      className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${
-                        draft.multiSession ? "translate-x-4" : "translate-x-0"
-                      }`}
-                    />
+                    <span className="block text-xs font-bold">{label}</span>
+                    <span className="mt-1 block text-[10px] leading-relaxed text-slate-400">
+                      {description}
+                    </span>
                   </button>
-                </div>
-              </div>
+                ))}
+              </nav>
+            }
+            onClose={() => {
+              discardCreateMedia();
 
-              <div className="border border-violet-100 bg-violet-50/50 rounded-xl px-3">
-                <div className="flex items-center gap-2 pt-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
-                    <Icons.Shield />
-                  </span>
-                  <div>
-                    <p className="text-xs font-semibold text-violet-900">Disciplinary sanctions</p>
-                    <p className="text-[10px] text-violet-700/70">Independent from monetary fines</p>
-                  </div>
-                </div>
-                <InlineToggle
-                  on={draft.sanctionsEnabled}
-                  onToggle={toggleD("sanctionsEnabled")}
-                  label="Enable for this event"
-                />
-                <p className="pb-2 text-[10px] text-slate-500">
-                  Late and absent students receive a sanction indicator in attendance views.
-                </p>
-              </div>
-
-              {}
-              {!draft.multiSession ? (
-                <div className="space-y-2.5">
-                  <FieldInput
-                    label="Time"
-                    placeholder="e.g. 8:00 AM – 5:00 PM"
-                    value={draft.time}
-                    onChange={setD("time")}
-                  />
-                  <FieldInput
-                    label="Late cutoff time"
-                    type="time"
-                    value={draft.morningLateCutoff}
-                    onChange={setD("morningLateCutoff")}
-                  />
-                  <InlineToggle
-                    on={draft.strictMorning}
-                    onToggle={toggleD("strictMorning")}
-                    label="Strict attendance (require time-out scan)"
-                  />
-                </div>
-              ) : (
-                <div className="space-y-2.5">
-                  <SessionFields
-                    prefix="morning"
-                    label="Morning"
-                    start={draft.morningStart}
-                    onStart={(v) =>
-                      setDraft((d) => ({ ...d, morningStart: v }))
-                    }
-                    end={draft.morningEnd}
-                    onEnd={(v) => setDraft((d) => ({ ...d, morningEnd: v }))}
-                    cutoff={draft.morningLateCutoff}
-                    onCutoff={(v) =>
-                      setDraft((d) => ({ ...d, morningLateCutoff: v }))
-                    }
-                    strict={draft.strictMorning}
-                    onStrict={toggleD("strictMorning")}
-                  />
-                  <SessionFields
-                    prefix="afternoon"
-                    label="Afternoon"
-                    start={draft.afternoonStart}
-                    onStart={(v) =>
-                      setDraft((d) => ({ ...d, afternoonStart: v }))
-                    }
-                    end={draft.afternoonEnd}
-                    onEnd={(v) => setDraft((d) => ({ ...d, afternoonEnd: v }))}
-                    cutoff={draft.afternoonLateCutoff}
-                    onCutoff={(v) =>
-                      setDraft((d) => ({ ...d, afternoonLateCutoff: v }))
-                    }
-                    strict={draft.strictAfternoon}
-                    onStrict={toggleD("strictAfternoon")}
-                  />
-                </div>
-              )}
-            </>
-          )}
-
-          {activeTab === "fines" &&
-            (finesEnabled ? (
-              <FineFields
-                multi={draft.multiSession}
-                values={draft}
-                enabled={finesEnabled}
-                onChange={(k, v) => setDraft((d) => ({ ...d, [k]: v }))}
-              />
-            ) : (
-              <UnavailableFinesNotice />
-            ))}
-
-          {}
-          {activeTab === "media" && (
-            <>
-              <div>
-                <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
-                  Highlight Photo
-                </label>
-                <input
-                  ref={highlightRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const f = e.target.files?.[0];
-
-                    if (!f) return;
-
-                    setHighlightUploadState("uploading");
-
-                    const result = await uploadImage(f);
-
-                    if ("error" in result) {
-                      setHighlightUploadState("error");
-
-                      toast.error(result.error);
-
-                      return;
-                    }
-
-                    setHighlightUploadState("idle");
-
-                    setHighlightUrl(result.url);
-                  }}
-                />
-                {highlightUploadState === "uploading" ? (
-                  <Skeleton className="w-full h-36 rounded-xl" />
-                ) : highlightUploadState === "error" ? (
-                  <div className="w-full h-36 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
-                    <p className="text-sm font-semibold text-red-600">
-                      Upload failed
-                    </p>
-                    <button
-                      onClick={() => highlightRef.current?.click()}
-                      className="text-xs font-semibold text-red-700 underline"
-                    >
-                      Try again
-                    </button>
-                  </div>
-                ) : highlightUrl ? (
-                  <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                    <img
-                      src={highlightUrl}
-                      alt=""
-                      className="w-full h-36 object-cover"
-                    />
-                    <button
-                      onClick={() => {
-                        if (highlightUrl) {
-                          URL.revokeObjectURL(highlightUrl);
-                        }
-
-                        setHighlightUrl(null);
-                      }}
-                      className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
-                    >
-                      <Icons.X />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => highlightRef.current?.click()}
-                    className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <Icons.Image />
-                    Upload highlight photo
-                  </button>
-                )}
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block">
-                  Event media
-                </label>
-                <input
-                  ref={photoRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={async (e) => {
-                    await uploadEventMedia(Array.from(e.target.files ?? []));
-
-                    e.target.value = "";
-                  }}
-                />
-                <input
-                  ref={videoRef}
-                  type="file"
-                  accept="video/mp4,video/*"
-                  multiple
-                  className="hidden"
-                  onChange={async (e) => {
-                    await uploadEventMedia(Array.from(e.target.files ?? []));
-
-                    e.target.value = "";
-                  }}
-                />
-                {mediaUploadState === "uploading" ? (
-                  <Skeleton className="h-20 w-full rounded-xl" />
-                ) : mediaUploadState === "error" ? (
-                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold text-red-600 truncate">
-                      {mediaUploadError || "Media upload failed."}
-                    </p>
-                    <button
-                      onClick={() => photoRef.current?.click()}
-                      className="text-xs font-semibold text-red-700 underline shrink-0"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => photoRef.current?.click()}
-                      className="flex-1 h-10 border-2 border-dashed border-slate-200 rounded-xl text-xs font-semibold text-slate-400 hover:border-emerald-400 hover:text-emerald-500"
-                    >
-                      Add images
-                    </button>
-                    <button
-                      onClick={() => videoRef.current?.click()}
-                      className="flex-1 h-10 border-2 border-dashed border-slate-200 rounded-xl text-xs font-semibold text-slate-400 hover:border-emerald-400 hover:text-emerald-500"
-                    >
-                      Add MP4 video
-                    </button>
-                  </div>
-                )}
-                {(photoUrls.length > 0 || videoNames.length > 0) && (
-                  <div className="space-y-1 text-xs text-slate-500">
-                    {photoUrls.map((url) => (
-                      <div key={url} className="flex items-center gap-2">
-                        <img
-                          src={url}
-                          alt=""
-                          className="h-10 w-14 rounded object-cover"
-                        />
-                        <span className="truncate">Uploaded image</span>
-                      </div>
-                    ))}
-                    {videoNames.map((url) => (
-                      <div key={url} className="flex items-center gap-2">
-                        <video
-                          src={url}
-                          controls
-                          className="h-10 w-14 rounded object-cover"
-                        />
-                        <span className="truncate">Uploaded MP4 video</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </FormModal>
-      )}
-
-      {}
-      {editId && editDraft && (
-        <FormModal
-          title="Edit Event"
-          sidebar={
-            <nav className="space-y-1" aria-label="Edit event sections">
-              {[
-                [
-                  "basic",
-                  "Basic Details",
-                  "Title, date, program, location, description",
-                ],
-                ["session", "Session & Timing", "Session mode, times, cutoffs"],
-                ["fines", "Fines & Rules", "Attendance fine settings"],
-                ["media", "Media & Assets", "Photos and event media"],
-              ].map(([value, label, description]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => {
-                    setEditEventTab(value as CreateEventTab);
-                  }}
-                  className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
-                    editEventTab === value
-                      ? "bg-white text-emerald-600 shadow-sm ring-1 ring-slate-200"
-                      : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
-                  }`}
-                >
-                  <span className="block text-xs font-bold">{label}</span>
-                  <span className="mt-1 block text-[10px] leading-relaxed text-slate-400">
-                    {description}
-                  </span>
-                </button>
-              ))}
-            </nav>
-          }
-          onClose={discardEditMedia}
-          footer={
-            showSensitiveWarning ? (
+              setShowForm(false);
+            }}
+            footer={
               <>
                 <button
+                  onClick={handleCreate}
+                  disabled={!draft.title || !draft.date || isCreating}
+                  className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-40"
+                >
+                  {isCreating ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      Creating...
+                    </span>
+                  ) : (
+                    "Create event"
+                  )}
+                </button>
+                <button
                   onClick={() => {
-                    setShowSensitiveWarning(false);
+                    discardCreateMedia();
 
-                    void commitSave();
+                    setShowForm(false);
                   }}
-                  className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm"
-                >
-                  Confirm &amp; save
-                </button>
-                <button
-                  onClick={() => setShowSensitiveWarning(false)}
-                  className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50"
-                >
-                  Go back
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={handleSaveEdit}
-                  className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm"
-                >
-                  Save changes
-                </button>
-                <button
-                  onClick={discardEditMedia}
                   className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50"
                 >
                   Cancel
                 </button>
               </>
-            )
-          }
-        >
-          {showSensitiveWarning && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3 mb-1">
-              <span className="text-amber-500 shrink-0 mt-0.5">
-                <Icons.AlertCircle />
-              </span>
-              <p className="text-xs text-amber-800 leading-relaxed">
-                You changed session times, late cutoffs, or fine amounts. These
-                affect existing attendance records. Confirm to proceed.
-              </p>
-            </div>
-          )}
-
-          {editEventTab === "basic" && (
-            <>
-              <FieldInput
-                label="Title"
-                value={editDraft.title}
-                onChange={(e) =>
-                  setEditDraft((d) => (d ? { ...d, title: e.target.value } : d))
-                }
-              />
-              <div className="grid grid-cols-2 gap-3">
+            }
+          >
+            {activeTab === "basic" && (
+              <>
                 <FieldInput
-                  label="Date"
-                  type="date"
-                  value={editDraft.date}
-                  onChange={(e) =>
-                    setEditDraft((d) =>
-                      d ? { ...d, date: e.target.value } : d,
-                    )
-                  }
+                  label="Event title *"
+                  placeholder="e.g. Foundation Day Celebration"
+                  value={draft.title}
+                  onChange={setD("title")}
                 />
-                <FieldSelect
-                  label="Program"
-                  value={editDraft.program}
-                  onChange={(e) =>
-                    setEditDraft((d) =>
-                      d ? { ...d, program: e.target.value } : d,
-                    )
-                  }
-                >
-                  <option>All Programs</option>
-                  <option>BSIT / BSCS</option>
-                  <option>BSIT</option>
-                  <option>BSCS</option>
-                  <option>BSBA</option>
-                </FieldSelect>
-              </div>
-              <FieldInput
-                label="Location"
-                value={editDraft.location}
-                onChange={(e) =>
-                  setEditDraft((d) =>
-                    d ? { ...d, location: e.target.value } : d,
-                  )
-                }
-              />
-              <FieldTextarea
-                label="Description"
-                rows={4}
-                value={editDraft.description}
-                onChange={(e) =>
-                  setEditDraft((d) =>
-                    d ? { ...d, description: e.target.value } : d,
-                  )
-                }
-              />
-            </>
-          )}
-
-          {editEventTab === "session" && (
-            <>
-              <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
-                <div className="flex items-center justify-between py-2.5">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-800">
-                      Multi-Session
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      Split into Morning &amp; Afternoon sessions
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (eventHasScans) return;
-
-                      setEditDraft((d) =>
-                        d ? { ...d, multiSession: !d.multiSession } : d,
-                      );
-                    }}
-                    role="switch"
-                    aria-checked={!!editDraft.multiSession}
-                    disabled={eventHasScans}
-                    className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${
-                      eventHasScans ? "cursor-not-allowed opacity-50" : ""
-                    } ${editDraft.multiSession ? "bg-emerald-500" : "bg-slate-200"}`}
+                <div className="grid grid-cols-2 gap-3">
+                  <FieldInput
+                    label="Date *"
+                    type="date"
+                    value={draft.date}
+                    onChange={setD("date")}
+                  />
+                  <FieldSelect
+                    label="Program"
+                    value={draft.program}
+                    onChange={setD("program")}
                   >
-                    <span
-                      className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${
-                        editDraft.multiSession
-                          ? "translate-x-4"
-                          : "translate-x-0"
+                    <option>All Programs</option>
+                    <option>BSIT / BSCS</option>
+                    <option>BSIT</option>
+                    <option>BSCS</option>
+                    <option>BSBA</option>
+                  </FieldSelect>
+                </div>
+                <FieldInput
+                  label="Location"
+                  placeholder="e.g. Main Gymnasium"
+                  value={draft.location}
+                  onChange={setD("location")}
+                />
+                <FieldTextarea
+                  label="Description"
+                  placeholder="What is this event about?"
+                  rows={5}
+                  value={draft.description}
+                  onChange={setD("description")}
+                />
+              </>
+            )}
+
+            {}
+            {activeTab === "session" && (
+              <>
+                <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
+                  <div className="flex items-center justify-between py-2.5">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-800">
+                        Multi-Session
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Split into Morning &amp; Afternoon sessions
+                      </p>
+                    </div>
+                    <button
+                      onClick={toggleD("multiSession")}
+                      role="switch"
+                      aria-checked={draft.multiSession}
+                      className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${
+                        draft.multiSession ? "bg-emerald-500" : "bg-slate-200"
                       }`}
-                    />
-                  </button>
-                </div>
-                {eventHasScans && (
-                  <p className="px-1 pb-2 text-[10px] text-amber-700">
-                    Can't change session mode — this event already has recorded
-                    attendance.
-                  </p>
-                )}
-              </div>
-
-              <div className="border border-violet-100 bg-violet-50/50 rounded-xl px-3">
-                <div className="flex items-center gap-2 pt-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
-                    <Icons.Shield />
-                  </span>
-                  <div>
-                    <p className="text-xs font-semibold text-violet-900">Disciplinary sanctions</p>
-                    <p className="text-[10px] text-violet-700/70">Independent from monetary fines</p>
+                    >
+                      <span
+                        className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${
+                          draft.multiSession ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
                   </div>
                 </div>
-                <InlineToggle
-                  on={!!editDraft.sanctionsEnabled}
-                  onToggle={() =>
-                    setEditDraft((d) =>
-                      d ? { ...d, sanctionsEnabled: !d.sanctionsEnabled } : d,
-                    )
-                  }
-                  label="Enable for this event"
-                />
-                <p className="pb-2 text-[10px] text-slate-500">
-                  Late and absent students receive a sanction indicator in attendance views.
-                </p>
-              </div>
 
-              {!editDraft.multiSession ? (
-                <div className="space-y-2.5">
-                  <FieldInput
-                    label="Time"
-                    value={editDraft.time}
-                    onChange={(e) =>
-                      setEditDraft((d) =>
-                        d ? { ...d, time: e.target.value } : d,
-                      )
-                    }
-                  />
-                  <FieldInput
-                    label="Late cutoff time"
-                    type="time"
-                    value={editDraft.morningLateCutoff ?? ""}
-                    onChange={(e) =>
-                      setEditDraft((d) =>
-                        d ? { ...d, morningLateCutoff: e.target.value } : d,
-                      )
-                    }
-                  />
+                <div className="border border-violet-100 bg-violet-50/50 rounded-xl px-3">
+                  <div className="flex items-center gap-2 pt-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
+                      <Icons.Shield />
+                    </span>
+                    <div>
+                      <p className="text-xs font-semibold text-violet-900">
+                        Disciplinary sanctions
+                      </p>
+                      <p className="text-[10px] text-violet-700/70">
+                        Independent from monetary fines
+                      </p>
+                    </div>
+                  </div>
                   <InlineToggle
-                    on={!!editDraft.strictMorning}
-                    onToggle={() =>
-                      setEditDraft((d) =>
-                        d ? { ...d, strictMorning: !d.strictMorning } : d,
-                      )
-                    }
-                    label="Strict attendance (require time-out scan)"
+                    on={draft.sanctionsEnabled}
+                    onToggle={toggleD("sanctionsEnabled")}
+                    label="Enable for this event"
                   />
-                  <SessionExtensionControls
-                    label="Morning"
-                    end={editDraft.morningEnd}
-                    disabled={isExtendingSession}
-                    onRequest={(minutes) =>
-                      requestSessionExtension("morning", minutes)
-                    }
-                  />
+                  <p className="pb-2 text-[10px] text-slate-500">
+                    Late and absent students receive a sanction indicator in
+                    attendance views.
+                  </p>
                 </div>
-              ) : (
-                <div className="space-y-2.5">
-                  <SessionFields
-                    prefix="em"
-                    label="Morning"
-                    start={editDraft.morningStart ?? ""}
-                    onStart={(v) =>
-                      setEditDraft((d) => (d ? { ...d, morningStart: v } : d))
-                    }
-                    end={editDraft.morningEnd ?? ""}
-                    onEnd={(v) =>
-                      setEditDraft((d) => (d ? { ...d, morningEnd: v } : d))
-                    }
-                    cutoff={editDraft.morningLateCutoff ?? ""}
-                    onCutoff={(v) =>
-                      setEditDraft((d) =>
-                        d ? { ...d, morningLateCutoff: v } : d,
-                      )
-                    }
-                    strict={!!editDraft.strictMorning}
-                    onStrict={() =>
-                      setEditDraft((d) =>
-                        d ? { ...d, strictMorning: !d.strictMorning } : d,
-                      )
-                    }
-                  />
-                  <SessionExtensionControls
-                    label="Morning"
-                    end={editDraft.morningEnd}
-                    disabled={isExtendingSession}
-                    onRequest={(minutes) =>
-                      requestSessionExtension("morning", minutes)
-                    }
-                  />
-                  <SessionFields
-                    prefix="ea"
-                    label="Afternoon"
-                    start={editDraft.afternoonStart ?? ""}
-                    onStart={(v) =>
-                      setEditDraft((d) => (d ? { ...d, afternoonStart: v } : d))
-                    }
-                    end={editDraft.afternoonEnd ?? ""}
-                    onEnd={(v) =>
-                      setEditDraft((d) => (d ? { ...d, afternoonEnd: v } : d))
-                    }
-                    cutoff={editDraft.afternoonLateCutoff ?? ""}
-                    onCutoff={(v) =>
-                      setEditDraft((d) =>
-                        d ? { ...d, afternoonLateCutoff: v } : d,
-                      )
-                    }
-                    strict={!!editDraft.strictAfternoon}
-                    onStrict={() =>
-                      setEditDraft((d) =>
-                        d ? { ...d, strictAfternoon: !d.strictAfternoon } : d,
-                      )
-                    }
-                  />
-                  <SessionExtensionControls
-                    label="Afternoon"
-                    end={editDraft.afternoonEnd}
-                    disabled={isExtendingSession}
-                    onRequest={(minutes) =>
-                      requestSessionExtension("afternoon", minutes)
-                    }
-                  />
-                </div>
-              )}
-            </>
-          )}
 
-          {editEventTab === "fines" &&
-            (finesEnabled ? (
-              <FineFields
-                multi={!!editDraft.multiSession}
-                values={editFineValues}
-                enabled={finesEnabled}
-                onChange={(key, value) =>
-                  setEditFineValues((current) => ({
-                    ...current,
-
-                    [key]: value,
-                  }))
-                }
-              />
-            ) : (
-              <UnavailableFinesNotice />
-            ))}
-
-          {editEventTab === "media" && (
-            <>
-              <div>
-                <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
-                  Highlight Photo
-                </label>
-                <input
-                  ref={editHighlightRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const f = e.target.files?.[0];
-
-                    if (!f) return;
-
-                    setEditHighlightUploadState("uploading");
-
-                    const result = await uploadImage(f);
-
-                    if ("error" in result) {
-                      setEditHighlightUploadState("error");
-
-                      toast.error(result.error);
-
-                      return;
-                    }
-
-                    setEditHighlightUploadState("idle");
-
-                    setEditDraft((d) =>
-                      d ? { ...d, highlightUrl: result.url } : d,
-                    );
-                  }}
-                />
-                {editHighlightUploadState === "uploading" ? (
-                  <Skeleton className="w-full h-36 rounded-xl" />
-                ) : editHighlightUploadState === "error" ? (
-                  <div className="w-full h-36 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
-                    <p className="text-sm font-semibold text-red-600">
-                      Upload failed
-                    </p>
-                    <button
-                      onClick={() => editHighlightRef.current?.click()}
-                      className="text-xs font-semibold text-red-700 underline"
-                    >
-                      Try again
-                    </button>
-                  </div>
-                ) : editDraft.highlightUrl ? (
-                  <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                    <img
-                      src={editDraft.highlightUrl}
-                      alt=""
-                      className="w-full h-36 object-cover"
+                {}
+                {!draft.multiSession ? (
+                  <div className="space-y-2.5">
+                    <FieldInput
+                      label="Time"
+                      placeholder="e.g. 8:00 AM – 5:00 PM"
+                      value={draft.time}
+                      onChange={setD("time")}
                     />
-                    <button
-                      onClick={() =>
-                        setEditDraft((d) =>
-                          d ? { ...d, highlightUrl: undefined } : d,
-                        )
-                      }
-                      className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
-                    >
-                      <Icons.X />
-                    </button>
+                    <FieldInput
+                      label="Late cutoff time"
+                      type="time"
+                      value={draft.morningLateCutoff}
+                      onChange={setD("morningLateCutoff")}
+                    />
+                    <InlineToggle
+                      on={draft.strictMorning}
+                      onToggle={toggleD("strictMorning")}
+                      label="Strict attendance (require time-out scan)"
+                    />
                   </div>
                 ) : (
-                  <button
-                    onClick={() => editHighlightRef.current?.click()}
-                    className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <Icons.Image />
-                    Upload highlight photo
-                  </button>
+                  <div className="space-y-2.5">
+                    <SessionFields
+                      prefix="morning"
+                      label="Morning"
+                      start={draft.morningStart}
+                      onStart={(v) =>
+                        setDraft((d) => ({ ...d, morningStart: v }))
+                      }
+                      end={draft.morningEnd}
+                      onEnd={(v) => setDraft((d) => ({ ...d, morningEnd: v }))}
+                      cutoff={draft.morningLateCutoff}
+                      onCutoff={(v) =>
+                        setDraft((d) => ({ ...d, morningLateCutoff: v }))
+                      }
+                      strict={draft.strictMorning}
+                      onStrict={toggleD("strictMorning")}
+                    />
+                    <SessionFields
+                      prefix="afternoon"
+                      label="Afternoon"
+                      start={draft.afternoonStart}
+                      onStart={(v) =>
+                        setDraft((d) => ({ ...d, afternoonStart: v }))
+                      }
+                      end={draft.afternoonEnd}
+                      onEnd={(v) =>
+                        setDraft((d) => ({ ...d, afternoonEnd: v }))
+                      }
+                      cutoff={draft.afternoonLateCutoff}
+                      onCutoff={(v) =>
+                        setDraft((d) => ({ ...d, afternoonLateCutoff: v }))
+                      }
+                      strict={draft.strictAfternoon}
+                      onStrict={toggleD("strictAfternoon")}
+                    />
+                  </div>
                 )}
-              </div>
-            </>
-          )}
-        </FormModal>
-      )}
+              </>
+            )}
 
-      {pendingSessionExtension && editDraft && (
-        <FormModal
-          title="Confirm session extension"
-          onClose={() => {
-            if (!isExtendingSession) setPendingSessionExtension(null);
-          }}
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={() => void extendSession()}
-                disabled={isExtendingSession}
-                className="flex-1 h-10 rounded-lg bg-amber-600 text-sm font-semibold text-white shadow-sm hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isExtendingSession ? "Extending..." : "Confirm extension"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPendingSessionExtension(null)}
-                disabled={isExtendingSession}
-                className="h-10 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Cancel
-              </button>
-            </>
-          }
-        >
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <p className="text-sm font-semibold text-amber-950">
-              Extend the {pendingSessionExtension.sessionLabel} session by {" "}
-              {pendingSessionExtension.minutes} minutes?
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-amber-900">
-              Extending this session will move the late cutoff from{" "}
-              <strong>{pendingSessionExtension.oldEnd}</strong> to{" "}
-              <strong>{pendingSessionExtension.newEnd}</strong> and
-              retroactively upgrade eligible Late students to Present. This
-              action cannot be undone automatically.
-            </p>
-          </div>
-        </FormModal>
-      )}
-
-      {eventView === "active" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {events.map((e) => (
-          <DraggableEventCard
-            key={e.id}
-            event={e}
-            dragDisabled={isMobileViewport}
-            onClick={() => setSelectedEventId(e.id)}
-          >
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden h-full">
-            <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
-              {e.highlightUrl ? (
-                <img
-                  src={e.highlightUrl}
-                  alt={e.title}
-                  className="w-full h-full object-cover"
+            {activeTab === "fines" &&
+              (finesEnabled ? (
+                <FineFields
+                  multi={draft.multiSession}
+                  values={draft}
+                  enabled={finesEnabled}
+                  onChange={(k, v) => setDraft((d) => ({ ...d, [k]: v }))}
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                  <span className="text-sm font-semibold text-slate-400">
-                    No media
-                  </span>
-                </div>
-              )}
+                <UnavailableFinesNotice />
+              ))}
 
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/25 via-transparent to-slate-900/10" />
+            {}
+            {activeTab === "media" && (
+              <>
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Highlight Photo
+                  </label>
+                  <input
+                    ref={highlightRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
 
-              <div className="absolute top-3 left-3 z-10">
-                <Badge status={e.status} />
-              </div>
+                      if (!f) return;
 
-              <div className="absolute top-3 right-3 z-10 flex max-w-[78%] flex-wrap items-start justify-end gap-1.5">
-                <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/30 bg-slate-900/25 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm shadow-sm">
-                  <span>{e.date}</span>
-                </div>
-                <div
-                  className="rounded-full border border-white/30 bg-slate-900/25 p-1 text-white backdrop-blur-sm shadow-sm"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <DotMenu
-                    items={[
-                      ...statusOptions(e.status).map((o) => ({
-                        label: o.label,
+                      setHighlightUploadState("uploading");
 
-                        icon: o.icon,
+                      const result = await uploadImage(f);
 
-                        onClick: () => setStatus(e.id, o.status),
-                      })),
+                      if ("error" in result) {
+                        setHighlightUploadState("error");
 
-                      {
-                        label: "Edit",
+                        toast.error(result.error);
 
-                        icon: <Icons.Edit />,
+                        return;
+                      }
 
-                        onClick: () => startEdit(e),
-                      },
+                      setHighlightUploadState("idle");
 
-                      {
-                        label: "Move to archive",
-
-                        icon: <Archive />,
-
-                        danger: true,
-
-                        onClick: () => void archiveEvent(e.id),
-                      },
-                    ]}
+                      setHighlightUrl(result.url);
+                    }}
                   />
-                </div>
-              </div>
-            </div>
+                  {highlightUploadState === "uploading" ? (
+                    <Skeleton className="w-full h-36 rounded-xl" />
+                  ) : highlightUploadState === "error" ? (
+                    <div className="w-full h-36 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
+                      <p className="text-sm font-semibold text-red-600">
+                        Upload failed
+                      </p>
+                      <button
+                        onClick={() => highlightRef.current?.click()}
+                        className="text-xs font-semibold text-red-700 underline"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  ) : highlightUrl ? (
+                    <div className="relative rounded-xl overflow-hidden border border-slate-200">
+                      <OptimizedImage
+                        src={highlightUrl}
+                        alt=""
+                        className="w-full h-36 object-cover"
+                      />
+                      <button
+                        onClick={() => {
+                          if (highlightUrl) {
+                            URL.revokeObjectURL(highlightUrl);
+                          }
 
-            <div className="p-5 flex flex-col flex-1 justify-between gap-3">
-              <div className="space-y-2">
-                <h3 className="font-bold text-slate-900 text-base line-clamp-1">
-                  {e.title}
-                </h3>
-                <div className="text-xs text-slate-500 flex flex-col gap-1">
-                  <span className="flex items-center gap-1.5">
-                    <Icons.MapPin />
-                    {e.location || "TBA"}
-                  </span>
-                  {e.multiSession ? (
-                    <>
-                      <span className="flex items-center gap-1.5">
-                        <Icons.Clock />
-                        {e.morningStart && e.morningEnd
-                          ? formatTimeRange12Hour(`${e.morningStart}–${e.morningEnd}`)
-                          : "Morning TBA"}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Icons.Clock />
-                        {e.afternoonStart && e.afternoonEnd
-                          ? formatTimeRange12Hour(`${e.afternoonStart}–${e.afternoonEnd}`)
-                          : "Afternoon TBA"}
-                      </span>
-                    </>
+                          setHighlightUrl(null);
+                        }}
+                        className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                      >
+                        <Icons.X />
+                      </button>
+                    </div>
                   ) : (
-                    <span className="flex items-center gap-1.5">
-                      <Icons.Clock />
-                      {formatTimeRange12Hour(e.time) || "TBA"}
-                    </span>
+                    <button
+                      onClick={() => highlightRef.current?.click()}
+                      className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <Icons.Image />
+                      Upload highlight photo
+                    </button>
                   )}
                 </div>
-              </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block">
+                    Event media
+                  </label>
+                  <input
+                    ref={photoRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={async (e) => {
+                      await uploadEventMedia(Array.from(e.target.files ?? []));
 
-              <div className="pt-3 border-t border-slate-50 flex items-center justify-between gap-2">
-                {e.status === "active" && (
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onNav("admin-scanner");
+                      e.target.value = "";
                     }}
-                    className="flex-1 h-9 bg-emerald-500 text-white text-xs font-semibold rounded-lg hover:bg-emerald-600 flex items-center justify-center gap-1.5 shadow-sm"
+                  />
+                  <input
+                    ref={videoRef}
+                    type="file"
+                    accept="video/mp4,video/*"
+                    multiple
+                    className="hidden"
+                    onChange={async (e) => {
+                      await uploadEventMedia(Array.from(e.target.files ?? []));
+
+                      e.target.value = "";
+                    }}
+                  />
+                  {mediaUploadState === "uploading" ? (
+                    <Skeleton className="h-20 w-full rounded-xl" />
+                  ) : mediaUploadState === "error" ? (
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold text-red-600 truncate">
+                        {mediaUploadError || "Media upload failed."}
+                      </p>
+                      <button
+                        onClick={() => photoRef.current?.click()}
+                        className="text-xs font-semibold text-red-700 underline shrink-0"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => photoRef.current?.click()}
+                        className="flex-1 h-10 border-2 border-dashed border-slate-200 rounded-xl text-xs font-semibold text-slate-400 hover:border-emerald-400 hover:text-emerald-500"
+                      >
+                        Add images
+                      </button>
+                      <button
+                        onClick={() => videoRef.current?.click()}
+                        className="flex-1 h-10 border-2 border-dashed border-slate-200 rounded-xl text-xs font-semibold text-slate-400 hover:border-emerald-400 hover:text-emerald-500"
+                      >
+                        Add MP4 video
+                      </button>
+                    </div>
+                  )}
+                  {(photoUrls.length > 0 || videoNames.length > 0) && (
+                    <div className="space-y-1 text-xs text-slate-500">
+                      {photoUrls.map((url) => (
+                        <div key={url} className="flex items-center gap-2">
+                          <OptimizedImage
+                            src={url}
+                            alt=""
+                            className="h-10 w-14 rounded object-cover"
+                          />
+                          <span className="truncate">Uploaded image</span>
+                        </div>
+                      ))}
+                      {videoNames.map((url) => (
+                        <div key={url} className="flex items-center gap-2">
+                          <video
+                            src={url}
+                            controls
+                            className="h-10 w-14 rounded object-cover"
+                          />
+                          <span className="truncate">Uploaded MP4 video</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </FormModal>
+        )}
+
+        {}
+        {editId && editDraft && (
+          <FormModal
+            title="Edit Event"
+            sidebar={
+              <nav className="space-y-1" aria-label="Edit event sections">
+                {[
+                  [
+                    "basic",
+                    "Basic Details",
+                    "Title, date, program, location, description",
+                  ],
+                  [
+                    "session",
+                    "Session & Timing",
+                    "Session mode, times, cutoffs",
+                  ],
+                  ["fines", "Fines & Rules", "Attendance fine settings"],
+                  ["media", "Media & Assets", "Photos and event media"],
+                ].map(([value, label, description]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      setEditEventTab(value as CreateEventTab);
+                    }}
+                    className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
+                      editEventTab === value
+                        ? "bg-white text-emerald-600 shadow-sm ring-1 ring-slate-200"
+                        : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
+                    }`}
                   >
-                    <Icons.Scan />
-                    <span className="hidden sm:inline">Launch Scanner</span>
-                    <span className="sm:hidden">Scan QR</span>
+                    <span className="block text-xs font-bold">{label}</span>
+                    <span className="mt-1 block text-[10px] leading-relaxed text-slate-400">
+                      {description}
+                    </span>
                   </button>
-                )}
-                <button
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onNav("admin-attendees");
-                  }}
-                  className={`h-9 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1.5 ${
-                    e.status === "active" ? "flex-1" : "w-full"
-                  }`}
-                >
-                  <Icons.Users />
-                  Attendees
-                  {e.attendees > 0 ? ` (${e.attendees})` : ""}
-                </button>
+                ))}
+              </nav>
+            }
+            onClose={discardEditMedia}
+            footer={
+              showSensitiveWarning ? (
+                <>
+                  <button
+                    onClick={() => {
+                      setShowSensitiveWarning(false);
+
+                      void commitSave();
+                    }}
+                    className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm"
+                  >
+                    Confirm &amp; save
+                  </button>
+                  <button
+                    onClick={() => setShowSensitiveWarning(false)}
+                    className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50"
+                  >
+                    Go back
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleSaveEdit}
+                    className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm"
+                  >
+                    Save changes
+                  </button>
+                  <button
+                    onClick={discardEditMedia}
+                    className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )
+            }
+          >
+            {showSensitiveWarning && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3 mb-1">
+                <span className="text-amber-500 shrink-0 mt-0.5">
+                  <Icons.AlertCircle />
+                </span>
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  You changed session times, late cutoffs, or fine amounts.
+                  These affect existing attendance records. Confirm to proceed.
+                </p>
               </div>
-            </div>
-            </div>
-          </DraggableEventCard>
-        ))}
-        </div>
-      ) : (
-        <div>
-          {isArchivedLoading ? (
-            <ArchivedEventsSkeleton />
-          ) : archivedEvents.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
-              <p className="text-sm font-semibold text-slate-700">No archived events</p>
-              <p className="mt-1 text-xs text-slate-400">Archived events will appear here.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {archivedEvents.map((event) => (
-                <ArchivedEventCard
-                  key={event.id}
-                  event={event}
-                  onRestore={() => void restoreEvent(event.id)}
-                  onDelete={() => setPendingPermanentDelete(event)}
+            )}
+
+            {editEventTab === "basic" && (
+              <>
+                <FieldInput
+                  label="Title"
+                  value={editDraft.title}
+                  onChange={(e) =>
+                    setEditDraft((d) =>
+                      d ? { ...d, title: e.target.value } : d,
+                    )
+                  }
                 />
+                <div className="grid grid-cols-2 gap-3">
+                  <FieldInput
+                    label="Date"
+                    type="date"
+                    value={editDraft.date}
+                    onChange={(e) =>
+                      setEditDraft((d) =>
+                        d ? { ...d, date: e.target.value } : d,
+                      )
+                    }
+                  />
+                  <FieldSelect
+                    label="Program"
+                    value={editDraft.program}
+                    onChange={(e) =>
+                      setEditDraft((d) =>
+                        d ? { ...d, program: e.target.value } : d,
+                      )
+                    }
+                  >
+                    <option>All Programs</option>
+                    <option>BSIT / BSCS</option>
+                    <option>BSIT</option>
+                    <option>BSCS</option>
+                    <option>BSBA</option>
+                  </FieldSelect>
+                </div>
+                <FieldInput
+                  label="Location"
+                  value={editDraft.location}
+                  onChange={(e) =>
+                    setEditDraft((d) =>
+                      d ? { ...d, location: e.target.value } : d,
+                    )
+                  }
+                />
+                <FieldTextarea
+                  label="Description"
+                  rows={4}
+                  value={editDraft.description}
+                  onChange={(e) =>
+                    setEditDraft((d) =>
+                      d ? { ...d, description: e.target.value } : d,
+                    )
+                  }
+                />
+              </>
+            )}
+
+            {editEventTab === "session" && (
+              <>
+                <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
+                  <div className="flex items-center justify-between py-2.5">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-800">
+                        Multi-Session
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Split into Morning &amp; Afternoon sessions
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (eventHasScans) return;
+
+                        setEditDraft((d) =>
+                          d ? { ...d, multiSession: !d.multiSession } : d,
+                        );
+                      }}
+                      role="switch"
+                      aria-checked={!!editDraft.multiSession}
+                      disabled={eventHasScans}
+                      className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${
+                        eventHasScans ? "cursor-not-allowed opacity-50" : ""
+                      } ${
+                        editDraft.multiSession
+                          ? "bg-emerald-500"
+                          : "bg-slate-200"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${
+                          editDraft.multiSession
+                            ? "translate-x-4"
+                            : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {eventHasScans && (
+                    <p className="px-1 pb-2 text-[10px] text-amber-700">
+                      Can't change session mode — this event already has
+                      recorded attendance.
+                    </p>
+                  )}
+                </div>
+
+                <div className="border border-violet-100 bg-violet-50/50 rounded-xl px-3">
+                  <div className="flex items-center gap-2 pt-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
+                      <Icons.Shield />
+                    </span>
+                    <div>
+                      <p className="text-xs font-semibold text-violet-900">
+                        Disciplinary sanctions
+                      </p>
+                      <p className="text-[10px] text-violet-700/70">
+                        Independent from monetary fines
+                      </p>
+                    </div>
+                  </div>
+                  <InlineToggle
+                    on={!!editDraft.sanctionsEnabled}
+                    onToggle={() =>
+                      setEditDraft((d) =>
+                        d ? { ...d, sanctionsEnabled: !d.sanctionsEnabled } : d,
+                      )
+                    }
+                    label="Enable for this event"
+                  />
+                  <p className="pb-2 text-[10px] text-slate-500">
+                    Late and absent students receive a sanction indicator in
+                    attendance views.
+                  </p>
+                </div>
+
+                {!editDraft.multiSession ? (
+                  <div className="space-y-2.5">
+                    <FieldInput
+                      label="Time"
+                      value={editDraft.time}
+                      onChange={(e) =>
+                        setEditDraft((d) =>
+                          d ? { ...d, time: e.target.value } : d,
+                        )
+                      }
+                    />
+                    <FieldInput
+                      label="Late cutoff time"
+                      type="time"
+                      value={editDraft.morningLateCutoff ?? ""}
+                      onChange={(e) =>
+                        setEditDraft((d) =>
+                          d ? { ...d, morningLateCutoff: e.target.value } : d,
+                        )
+                      }
+                    />
+                    <InlineToggle
+                      on={!!editDraft.strictMorning}
+                      onToggle={() =>
+                        setEditDraft((d) =>
+                          d ? { ...d, strictMorning: !d.strictMorning } : d,
+                        )
+                      }
+                      label="Strict attendance (require time-out scan)"
+                    />
+                    <SessionExtensionControls
+                      label="Morning"
+                      end={editDraft.morningEnd}
+                      disabled={isExtendingSession}
+                      onRequest={(minutes) =>
+                        requestSessionExtension("morning", minutes)
+                      }
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    <SessionFields
+                      prefix="em"
+                      label="Morning"
+                      start={editDraft.morningStart ?? ""}
+                      onStart={(v) =>
+                        setEditDraft((d) => (d ? { ...d, morningStart: v } : d))
+                      }
+                      end={editDraft.morningEnd ?? ""}
+                      onEnd={(v) =>
+                        setEditDraft((d) => (d ? { ...d, morningEnd: v } : d))
+                      }
+                      cutoff={editDraft.morningLateCutoff ?? ""}
+                      onCutoff={(v) =>
+                        setEditDraft((d) =>
+                          d ? { ...d, morningLateCutoff: v } : d,
+                        )
+                      }
+                      strict={!!editDraft.strictMorning}
+                      onStrict={() =>
+                        setEditDraft((d) =>
+                          d ? { ...d, strictMorning: !d.strictMorning } : d,
+                        )
+                      }
+                    />
+                    <SessionExtensionControls
+                      label="Morning"
+                      end={editDraft.morningEnd}
+                      disabled={isExtendingSession}
+                      onRequest={(minutes) =>
+                        requestSessionExtension("morning", minutes)
+                      }
+                    />
+                    <SessionFields
+                      prefix="ea"
+                      label="Afternoon"
+                      start={editDraft.afternoonStart ?? ""}
+                      onStart={(v) =>
+                        setEditDraft((d) =>
+                          d ? { ...d, afternoonStart: v } : d,
+                        )
+                      }
+                      end={editDraft.afternoonEnd ?? ""}
+                      onEnd={(v) =>
+                        setEditDraft((d) => (d ? { ...d, afternoonEnd: v } : d))
+                      }
+                      cutoff={editDraft.afternoonLateCutoff ?? ""}
+                      onCutoff={(v) =>
+                        setEditDraft((d) =>
+                          d ? { ...d, afternoonLateCutoff: v } : d,
+                        )
+                      }
+                      strict={!!editDraft.strictAfternoon}
+                      onStrict={() =>
+                        setEditDraft((d) =>
+                          d ? { ...d, strictAfternoon: !d.strictAfternoon } : d,
+                        )
+                      }
+                    />
+                    <SessionExtensionControls
+                      label="Afternoon"
+                      end={editDraft.afternoonEnd}
+                      disabled={isExtendingSession}
+                      onRequest={(minutes) =>
+                        requestSessionExtension("afternoon", minutes)
+                      }
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
+            {editEventTab === "fines" &&
+              (finesEnabled ? (
+                <FineFields
+                  multi={!!editDraft.multiSession}
+                  values={editFineValues}
+                  enabled={finesEnabled}
+                  onChange={(key, value) =>
+                    setEditFineValues((current) => ({
+                      ...current,
+
+                      [key]: value,
+                    }))
+                  }
+                />
+              ) : (
+                <UnavailableFinesNotice />
               ))}
+
+            {editEventTab === "media" && (
+              <>
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Highlight Photo
+                  </label>
+                  <input
+                    ref={editHighlightRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+
+                      if (!f) return;
+
+                      setEditHighlightUploadState("uploading");
+
+                      const result = await uploadImage(f);
+
+                      if ("error" in result) {
+                        setEditHighlightUploadState("error");
+
+                        toast.error(result.error);
+
+                        return;
+                      }
+
+                      setEditHighlightUploadState("idle");
+
+                      setEditDraft((d) =>
+                        d ? { ...d, highlightUrl: result.url } : d,
+                      );
+                    }}
+                  />
+                  {editHighlightUploadState === "uploading" ? (
+                    <Skeleton className="w-full h-36 rounded-xl" />
+                  ) : editHighlightUploadState === "error" ? (
+                    <div className="w-full h-36 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2">
+                      <p className="text-sm font-semibold text-red-600">
+                        Upload failed
+                      </p>
+                      <button
+                        onClick={() => editHighlightRef.current?.click()}
+                        className="text-xs font-semibold text-red-700 underline"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  ) : editDraft.highlightUrl ? (
+                    <div className="relative rounded-xl overflow-hidden border border-slate-200">
+                      <OptimizedImage
+                        src={editDraft.highlightUrl}
+                        alt=""
+                        className="w-full h-36 object-cover"
+                      />
+                      <button
+                        onClick={() =>
+                          setEditDraft((d) =>
+                            d ? { ...d, highlightUrl: undefined } : d,
+                          )
+                        }
+                        className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                      >
+                        <Icons.X />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => editHighlightRef.current?.click()}
+                      className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <Icons.Image />
+                      Upload highlight photo
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </FormModal>
+        )}
+
+        {pendingSessionExtension && editDraft && (
+          <FormModal
+            title="Confirm session extension"
+            onClose={() => {
+              if (!isExtendingSession) setPendingSessionExtension(null);
+            }}
+            footer={
+              <>
+                <button
+                  type="button"
+                  onClick={() => void extendSession()}
+                  disabled={isExtendingSession}
+                  className="flex-1 h-10 rounded-lg bg-amber-600 text-sm font-semibold text-white shadow-sm hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isExtendingSession ? "Extending..." : "Confirm extension"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPendingSessionExtension(null)}
+                  disabled={isExtendingSession}
+                  className="h-10 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </>
+            }
+          >
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-semibold text-amber-950">
+                Extend the {pendingSessionExtension.sessionLabel} session by{" "}
+                {pendingSessionExtension.minutes} minutes?
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-amber-900">
+                Extending this session will move the late cutoff from{" "}
+                <strong>{pendingSessionExtension.oldEnd}</strong> to{" "}
+                <strong>{pendingSessionExtension.newEnd}</strong> and
+                retroactively upgrade eligible Late students to Present. This
+                action cannot be undone automatically.
+              </p>
             </div>
-          )}
-        </div>
-      )}
-      <DragOverlay dropAnimation={null}>
-        {eventView === "active" && activeDragEvent ? (
-          <EventDragPreview event={activeDragEvent} />
-        ) : null}
-      </DragOverlay>
-      {pendingPermanentDelete && (
-        <FormModal
-          title="Permanently delete event?"
-          onClose={() => {
-            if (!isPermanentlyDeleting) setPendingPermanentDelete(null);
-          }}
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={() => void permanentlyDeleteEvent()}
-                disabled={isPermanentlyDeleting}
-                className="flex-1 h-10 rounded-lg bg-red-600 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          </FormModal>
+        )}
+
+        {eventView === "active" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {events.map((e) => (
+              <DraggableEventCard
+                key={e.id}
+                event={e}
+                dragDisabled={isMobileViewport}
+                onClick={() => setSelectedEventId(e.id)}
               >
-                {isPermanentlyDeleting ? "Deleting..." : "Delete permanently"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPendingPermanentDelete(null)}
-                disabled={isPermanentlyDeleting}
-                className="h-10 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Cancel
-              </button>
-            </>
-          }
-        >
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-            <p className="text-sm font-semibold text-red-950">
-              Permanently delete “{pendingPermanentDelete.title}”?
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-red-900">
-              This action cannot be undone. The event row and its associated media will be deleted.
-              Attendance history may also be affected by your database foreign-key rules.
-            </p>
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden h-full">
+                  <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
+                    {e.highlightUrl ? (
+                      <OptimizedImage
+                        src={e.highlightUrl}
+                        alt={e.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                        <span className="text-sm font-semibold text-slate-400">
+                          No media
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/25 via-transparent to-slate-900/10" />
+
+                    <div className="absolute top-3 left-3 z-10">
+                      <Badge status={e.status} />
+                    </div>
+
+                    <div className="absolute top-3 right-3 z-10 flex max-w-[78%] flex-wrap items-start justify-end gap-1.5">
+                      <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/30 bg-slate-900/25 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm shadow-sm">
+                        <span>{e.date}</span>
+                      </div>
+                      <div
+                        className="rounded-full border border-white/30 bg-slate-900/25 p-1 text-white backdrop-blur-sm shadow-sm"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <DotMenu
+                          items={[
+                            ...statusOptions(e.status).map((o) => ({
+                              label: o.label,
+
+                              icon: o.icon,
+
+                              onClick: () => setStatus(e.id, o.status),
+                            })),
+
+                            {
+                              label: "Edit",
+
+                              icon: <Icons.Edit />,
+
+                              onClick: () => startEdit(e),
+                            },
+
+                            {
+                              label: "Move to archive",
+
+                              icon: <Archive />,
+
+                              danger: true,
+
+                              onClick: () => void archiveEvent(e.id),
+                            },
+                          ]}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-5 flex flex-col flex-1 justify-between gap-3">
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-slate-900 text-base line-clamp-1">
+                        {e.title}
+                      </h3>
+                      <div className="text-xs text-slate-500 flex flex-col gap-1">
+                        <span className="flex items-center gap-1.5">
+                          <Icons.MapPin />
+                          {e.location || "TBA"}
+                        </span>
+                        {e.multiSession ? (
+                          <>
+                            <span className="flex items-center gap-1.5">
+                              <Icons.Clock />
+                              {e.morningStart && e.morningEnd
+                                ? formatTimeRange12Hour(
+                                    `${e.morningStart}–${e.morningEnd}`,
+                                  )
+                                : "Morning TBA"}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Icons.Clock />
+                              {e.afternoonStart && e.afternoonEnd
+                                ? formatTimeRange12Hour(
+                                    `${e.afternoonStart}–${e.afternoonEnd}`,
+                                  )
+                                : "Afternoon TBA"}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="flex items-center gap-1.5">
+                            <Icons.Clock />
+                            {formatTimeRange12Hour(e.time) || "TBA"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-50 flex items-center justify-between gap-2">
+                      {e.status === "active" && (
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onNav("admin-scanner");
+                          }}
+                          className="flex-1 h-9 bg-emerald-500 text-white text-xs font-semibold rounded-lg hover:bg-emerald-600 flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <Icons.Scan />
+                          <span className="hidden sm:inline">
+                            Launch Scanner
+                          </span>
+                          <span className="sm:hidden">Scan QR</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onNav("admin-attendees");
+                        }}
+                        className={`h-9 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1.5 ${
+                          e.status === "active" ? "flex-1" : "w-full"
+                        }`}
+                      >
+                        <Icons.Users />
+                        Attendees
+                        {e.attendees > 0 ? ` (${e.attendees})` : ""}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </DraggableEventCard>
+            ))}
           </div>
-        </FormModal>
-      )}
-    </>
+        ) : (
+          <div>
+            {isArchivedLoading ? (
+              <ArchivedEventsSkeleton />
+            ) : archivedEvents.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
+                <p className="text-sm font-semibold text-slate-700">
+                  No archived events
+                </p>
+                <p className="mt-1 text-xs text-slate-400">
+                  Archived events will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {archivedEvents.map((event) => (
+                  <ArchivedEventCard
+                    key={event.id}
+                    event={event}
+                    onRestore={() => void restoreEvent(event.id)}
+                    onDelete={() => setPendingPermanentDelete(event)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        <DragOverlay dropAnimation={null}>
+          {eventView === "active" && activeDragEvent ? (
+            <EventDragPreview event={activeDragEvent} />
+          ) : null}
+        </DragOverlay>
+        {pendingPermanentDelete && (
+          <FormModal
+            title="Permanently delete event?"
+            onClose={() => {
+              if (!isPermanentlyDeleting) setPendingPermanentDelete(null);
+            }}
+            footer={
+              <>
+                <button
+                  type="button"
+                  onClick={() => void permanentlyDeleteEvent()}
+                  disabled={isPermanentlyDeleting}
+                  className="flex-1 h-10 rounded-lg bg-red-600 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isPermanentlyDeleting ? "Deleting..." : "Delete permanently"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPendingPermanentDelete(null)}
+                  disabled={isPermanentlyDeleting}
+                  className="h-10 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </>
+            }
+          >
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+              <p className="text-sm font-semibold text-red-950">
+                Permanently delete “{pendingPermanentDelete.title}”?
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-red-900">
+                This action cannot be undone. The event row and its associated
+                media will be deleted. Attendance history may also be affected
+                by your database foreign-key rules.
+              </p>
+            </div>
+          </FormModal>
+        )}
+      </>
     </DndContext>
   );
 }
@@ -10332,11 +10424,10 @@ function CameraScanner({
         );
       }
 
-      if (
-        qrVersion !== null &&
-        qrVersion !== Number(profile.qr_version ?? 1)
-      ) {
-        throw new Error("This QR code has expired. Ask the student to renew it.");
+      if (qrVersion !== null && qrVersion !== Number(profile.qr_version ?? 1)) {
+        throw new Error(
+          "This QR code has expired. Ask the student to renew it.",
+        );
       }
 
       const now = new Date();
@@ -10631,8 +10722,8 @@ function CameraScanner({
             <div className="scanner-frame relative w-[min(72vw,18rem)] aspect-square sm:w-[min(52vw,20rem)]">
               {}
               <div
-                  className={`absolute inset-x-0 h-[2px] rounded-full ${
-                    sweeping ? "scan-sweep" : "scanner-idle-sweep"
+                className={`absolute inset-x-0 h-[2px] rounded-full ${
+                  sweeping ? "scan-sweep" : "scanner-idle-sweep"
                 }`}
                 style={{
                   top: sweeping ? "8%" : "50%",
@@ -10794,10 +10885,10 @@ function CameraScanner({
                     : result.action === "event_not_active"
                       ? "Rejected: Event is not active."
                       : result.action === "time_out_rejected"
-                      ? "Rejected: QR already scanned, wait for time-out."
-                      : result.action === "time_out"
-                        ? "Time-out Recorded"
-                        : "Already Scanned for This Session"}
+                        ? "Rejected: QR already scanned, wait for time-out."
+                        : result.action === "time_out"
+                          ? "Time-out Recorded"
+                          : "Already Scanned for This Session"}
               </p>
               <p className="text-white text-base font-semibold mt-1">
                 {result.name}
@@ -11029,7 +11120,7 @@ export function AdminScannerPage({
                     {imageLoading && (
                       <Skeleton className="absolute inset-0 w-full h-full rounded-2xl" />
                     )}
-                    <img
+                    <OptimizedImage
                       src={primaryMedia}
                       alt={`${selectedEvent.title} cover`}
                       className={`w-full h-full object-cover transition-opacity duration-300 ${
@@ -11133,7 +11224,9 @@ export function AdminScannerPage({
                 }`}
               >
                 <Icons.Scan />
-                <span className="hidden sm:inline">Open QR Scanner on Desktop</span>
+                <span className="hidden sm:inline">
+                  Open QR Scanner on Desktop
+                </span>
                 <span className="sm:hidden">Open QR Scanner</span>
               </button>
             </div>
@@ -11162,10 +11255,18 @@ export function AdminScannerPage({
                   Event info & rules
                 </p>
                 <span className="text-slate-400 md:hidden">
-                  {showEventRules ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {showEventRules ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
                 </span>
               </button>
-              <div className={`${showEventRules ? "block" : "hidden"} border-t border-slate-50 p-5 space-y-4 md:block`}>
+              <div
+                className={`${
+                  showEventRules ? "block" : "hidden"
+                } border-t border-slate-50 p-5 space-y-4 md:block`}
+              >
                 <div>
                   <p className="text-sm font-bold text-slate-900">
                     {selectedEvent.title}
@@ -11203,12 +11304,19 @@ export function AdminScannerPage({
                         : "Standard scan"}
                     </span>
                   </div>
-                  {(selectedEvent.fineAmount > 0 || (selectedEvent.lateFine ?? 0) > 0) && (
+                  {(selectedEvent.fineAmount > 0 ||
+                    (selectedEvent.lateFine ?? 0) > 0) && (
                     <div className="flex items-start justify-between gap-4 border-t border-slate-100 pt-3">
-                      <span className="text-slate-400">Absence / late fine</span>
+                      <span className="text-slate-400">
+                        Absence / late fine
+                      </span>
                       <span className="text-right font-bold text-red-500">
-                        <span className="block">Absent ₱{selectedEvent.fineAmount}</span>
-                        <span className="block text-xs text-amber-600">Late ₱{selectedEvent.lateFine}</span>
+                        <span className="block">
+                          Absent ₱{selectedEvent.fineAmount}
+                        </span>
+                        <span className="block text-xs text-amber-600">
+                          Late ₱{selectedEvent.lateFine}
+                        </span>
                       </span>
                     </div>
                   )}
@@ -11293,7 +11401,9 @@ export function AdminAttendeesPage({
     initialScanState ?? {},
   );
 
-  const [tab, setTab] = useState<"present" | "late" | "absent" | "duplicates">("present");
+  const [tab, setTab] = useState<"present" | "late" | "absent" | "duplicates">(
+    "present",
+  );
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
   const [selectedSession, setSelectedSession] = useState<
     "morning" | "afternoon"
@@ -11318,7 +11428,7 @@ export function AdminAttendeesPage({
   const allEventsSelected = selectedEventId === ALL_EVENTS_ID;
   const selectedEvent = allEventsSelected
     ? null
-    : events.find((e) => e.id === selectedEventId) ?? events[0] ?? null;
+    : (events.find((e) => e.id === selectedEventId) ?? events[0] ?? null);
 
   useEffect(() => {
     setSelectedSession("morning");
@@ -11339,13 +11449,13 @@ export function AdminAttendeesPage({
 
   const sessionFine = selectedEvent
     ? selectedSession === "afternoon"
-      ? selectedEvent.afternoonAbsentFine ?? selectedEvent.absentFine ?? 0
-      : selectedEvent.morningAbsentFine ?? selectedEvent.absentFine ?? 0
+      ? (selectedEvent.afternoonAbsentFine ?? selectedEvent.absentFine ?? 0)
+      : (selectedEvent.morningAbsentFine ?? selectedEvent.absentFine ?? 0)
     : 0;
   const sessionLateFine = selectedEvent
     ? selectedSession === "afternoon"
-      ? selectedEvent.afternoonLateFine ?? selectedEvent.lateFine ?? 0
-      : selectedEvent.morningLateFine ?? selectedEvent.lateFine ?? 0
+      ? (selectedEvent.afternoonLateFine ?? selectedEvent.lateFine ?? 0)
+      : (selectedEvent.morningLateFine ?? selectedEvent.lateFine ?? 0)
     : 0;
 
   const presentScans = scans.filter(
@@ -11387,20 +11497,21 @@ export function AdminAttendeesPage({
   );
   const absentees: ScanRecord[] = visibleStudents
     .filter((student) => !presentIds.has(student.profileId ?? student.id))
-    .map((student) =>
-      absentScanByProfileId.get(student.profileId ?? student.id) ?? {
-        profileId: student.profileId,
-        name: student.name,
-        id: student.id,
-        program: student.program,
-        section: student.section,
-        photoUrl: student.photoUrl,
-        time: "",
-        status: "absent" as const,
-        sanctioned: Boolean(selectedEvent?.sanctionsEnabled),
-        sessionLabel: selectedSession,
-        dbId: `inferred-${selectedEvent?.id ?? "event"}-${student.profileId ?? student.id}`,
-      },
+    .map(
+      (student) =>
+        absentScanByProfileId.get(student.profileId ?? student.id) ?? {
+          profileId: student.profileId,
+          name: student.name,
+          id: student.id,
+          program: student.program,
+          section: student.section,
+          photoUrl: student.photoUrl,
+          time: "",
+          status: "absent" as const,
+          sanctioned: Boolean(selectedEvent?.sanctionsEnabled),
+          sessionLabel: selectedSession,
+          dbId: `inferred-${selectedEvent?.id ?? "event"}-${student.profileId ?? student.id}`,
+        },
     );
   const absentFineForStudent = (profileId: string) => {
     const absentScan = absentScanByProfileId.get(profileId);
@@ -11473,7 +11584,12 @@ export function AdminAttendeesPage({
 
   const deleteRecord = async (dbId: string | number) => {
     if (deletingId !== null) return;
-    if (!window.confirm("Delete this attendance record? This action cannot be undone.")) return;
+    if (
+      !window.confirm(
+        "Delete this attendance record? This action cannot be undone.",
+      )
+    )
+      return;
     setDeletingId(dbId);
     try {
       if (onDeleteAttendance && !(await onDeleteAttendance(dbId))) {
@@ -11589,7 +11705,9 @@ export function AdminAttendeesPage({
             type="checkbox"
             checked={allEventsSelected}
             onChange={(event) => {
-              setSelectedEventId(event.target.checked ? ALL_EVENTS_ID : events[0]?.id ?? "");
+              setSelectedEventId(
+                event.target.checked ? ALL_EVENTS_ID : (events[0]?.id ?? ""),
+              );
               setTab("present");
             }}
             className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
@@ -11616,12 +11734,28 @@ export function AdminAttendeesPage({
           <span className="mr-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
             Event policy
           </span>
-          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ${selectedEvent.sanctionsEnabled ? "bg-violet-50 text-violet-700 ring-violet-200" : "bg-slate-50 text-slate-500 ring-slate-200"}`}>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ${
+              selectedEvent.sanctionsEnabled
+                ? "bg-violet-50 text-violet-700 ring-violet-200"
+                : "bg-slate-50 text-slate-500 ring-slate-200"
+            }`}
+          >
             <Icons.Shield />
-            {selectedEvent.sanctionsEnabled ? "Sanctions enabled" : "Sanctions disabled"}
+            {selectedEvent.sanctionsEnabled
+              ? "Sanctions enabled"
+              : "Sanctions disabled"}
           </span>
-          <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ${monetaryPolicyActive ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-slate-50 text-slate-500 ring-slate-200"}`}>
-            {monetaryPolicyActive ? "Monetary fines enabled" : "Monetary fines disabled"}
+          <span
+            className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ${
+              monetaryPolicyActive
+                ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                : "bg-slate-50 text-slate-500 ring-slate-200"
+            }`}
+          >
+            {monetaryPolicyActive
+              ? "Monetary fines enabled"
+              : "Monetary fines disabled"}
           </span>
         </div>
       )}
@@ -11631,18 +11765,30 @@ export function AdminAttendeesPage({
             {(["morning", "afternoon"] as const).map((session) => {
               const amount =
                 session === "afternoon"
-                  ? selectedEvent.afternoonAbsentFine ?? selectedEvent.absentFine ?? 0
-                  : selectedEvent.morningAbsentFine ?? selectedEvent.absentFine ?? 0;
+                  ? (selectedEvent.afternoonAbsentFine ??
+                    selectedEvent.absentFine ??
+                    0)
+                  : (selectedEvent.morningAbsentFine ??
+                    selectedEvent.absentFine ??
+                    0);
               const lateAmount =
                 session === "afternoon"
-                  ? selectedEvent.afternoonLateFine ?? selectedEvent.lateFine ?? 0
-                  : selectedEvent.morningLateFine ?? selectedEvent.lateFine ?? 0;
+                  ? (selectedEvent.afternoonLateFine ??
+                    selectedEvent.lateFine ??
+                    0)
+                  : (selectedEvent.morningLateFine ??
+                    selectedEvent.lateFine ??
+                    0);
               return (
                 <button
                   key={session}
                   type="button"
                   onClick={() => setSelectedSession(session)}
-                  className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${selectedSession === session ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                  className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                    selectedSession === session
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
                 >
                   <span className="block">
                     {session === "morning" ? "Morning" : "Afternoon"}
@@ -11687,9 +11833,7 @@ export function AdminAttendeesPage({
         >
           Absent ({visibleAbsent.length})
           {monetaryPolicyActive && selectedEvent && sessionFine > 0 && (
-            <span className="text-red-500 ml-1">
-              · ₱{sessionFine}
-            </span>
+            <span className="text-red-500 ml-1">· ₱{sessionFine}</span>
           )}
         </button>
         <button
@@ -11717,36 +11861,82 @@ export function AdminAttendeesPage({
             <>
               <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
                 <div>
-                  <p className="text-sm font-bold text-slate-900">{matchedStudent.name}</p>
-                  <p className="text-xs text-slate-500">{matchedStudent.id} · {matchedStudent.program}</p>
+                  <p className="text-sm font-bold text-slate-900">
+                    {matchedStudent.name}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {matchedStudent.id} · {matchedStudent.program}
+                  </p>
                 </div>
                 <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                  {allEventRows.filter((row) => row.status === "present" || row.status === "late").length}/{allEventRows.length} recorded
+                  {
+                    allEventRows.filter(
+                      (row) =>
+                        row.status === "present" || row.status === "late",
+                    ).length
+                  }
+                  /{allEventRows.length} recorded
                 </span>
               </div>
               {allEventRows.length === 0 ? (
-                <p className="py-8 text-center text-sm text-slate-400">No completed applicable events.</p>
+                <p className="py-8 text-center text-sm text-slate-400">
+                  No completed applicable events.
+                </p>
               ) : (
                 <div className="divide-y divide-slate-100">
                   {allEventRows.map((row) => {
-                    const cleared = row.fineStatus === "paid" || row.fineStatus === "excused";
+                    const cleared =
+                      row.fineStatus === "paid" || row.fineStatus === "excused";
                     return (
-                    <div key={row.key} className={`flex items-center justify-between gap-3 py-3 ${cleared ? "opacity-60" : ""}`}>
-                      <div className="min-w-0">
-                        <p className={`truncate text-sm font-semibold text-slate-900 ${cleared ? "line-through" : ""}`}>{row.eventTitle}</p>
-                        <p className="text-xs text-slate-500">
-                          {row.eventDate} · {row.sessionLabel === "morning" ? "Morning" : "Afternoon"}
-                        </p>
+                      <div
+                        key={row.key}
+                        className={`flex items-center justify-between gap-3 py-3 ${
+                          cleared ? "opacity-60" : ""
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <p
+                            className={`truncate text-sm font-semibold text-slate-900 ${
+                              cleared ? "line-through" : ""
+                            }`}
+                          >
+                            {row.eventTitle}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {row.eventDate} ·{" "}
+                            {row.sessionLabel === "morning"
+                              ? "Morning"
+                              : "Afternoon"}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p
+                            className={`text-xs font-bold ${
+                              cleared
+                                ? "text-emerald-700"
+                                : row.status === "present"
+                                  ? "text-emerald-600"
+                                  : row.status === "late"
+                                    ? "text-amber-600"
+                                    : row.status === "absent" ||
+                                        row.status === "no_record"
+                                      ? "text-red-600"
+                                      : "text-slate-500"
+                            }`}
+                          >
+                            {cleared
+                              ? "Cleared"
+                              : row.status === "no_record"
+                                ? "Absent"
+                                : row.status}
+                          </p>
+                          {row.fineAmount > 0 && (
+                            <p className="text-xs font-semibold text-red-600">
+                              ₱{row.fineAmount}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div className="shrink-0 text-right">
-                        <p className={`text-xs font-bold ${cleared ? "text-emerald-700" : row.status === "present" ? "text-emerald-600" : row.status === "late" ? "text-amber-600" : row.status === "absent" || row.status === "no_record" ? "text-red-600" : "text-slate-500"}`}>
-                          {cleared ? "Cleared" : row.status === "no_record" ? "Absent" : row.status}
-                        </p>
-                        {row.fineAmount > 0 && (
-                          <p className="text-xs font-semibold text-red-600">₱{row.fineAmount}</p>
-                        )}
-                      </div>
-                    </div>
                     );
                   })}
                 </div>
@@ -11780,7 +11970,9 @@ export function AdminAttendeesPage({
                 <div
                   key={s.dbId}
                   className={`${
-                    i < visibleCurrentScans.length - 1 ? "border-b border-slate-50" : ""
+                    i < visibleCurrentScans.length - 1
+                      ? "border-b border-slate-50"
+                      : ""
                   }`}
                 >
                   <div className="block w-full px-3.5 py-3 md:hidden">
@@ -11791,7 +11983,8 @@ export function AdminAttendeesPage({
                           {s.name}
                         </p>
                         <p className="mt-0.5 text-[11px] text-slate-500">
-                          {s.id} • {s.program} • {s.sessionLabel ?? "Morning"} • {s.time}
+                          {s.id} • {s.program} • {s.sessionLabel ?? "Morning"} •{" "}
+                          {s.time}
                         </p>
                         {s.status === "late" && sessionLateFine > 0 && (
                           <p className="mt-0.5 text-[11px] font-semibold text-amber-600">
@@ -11818,7 +12011,10 @@ export function AdminAttendeesPage({
                       {s.program}
                     </span>
                     <span className="col-span-2 text-xs text-slate-500">
-                      {(s.sessionLabel ?? "morning").replace(/^./, (value) => value.toUpperCase())} · {s.time}
+                      {(s.sessionLabel ?? "morning").replace(/^./, (value) =>
+                        value.toUpperCase(),
+                      )}{" "}
+                      · {s.time}
                       {s.status === "late" && sessionLateFine > 0 && (
                         <span className="ml-1 font-semibold text-amber-600">
                           · ₱{sessionLateFine}
@@ -11899,23 +12095,36 @@ export function AdminAttendeesPage({
       ) : tab === "duplicates" ? (
         <div className="w-full overflow-hidden rounded-xl border border-red-100 bg-white">
           {duplicates.length === 0 ? (
-            <p className="px-5 py-10 text-center text-sm text-slate-400">No duplicate scans.</p>
-          ) : duplicates.map((s, i) => (
-            <div key={s.dbId} className={`flex items-center gap-3 px-5 py-3.5 ${i < duplicates.length - 1 ? "border-b border-slate-50" : ""}`}>
-              <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-slate-900">{s.name}</p>
-                <p className="text-[11px] text-slate-400">{s.id} · scanned {s.time}</p>
-              </div>
-              <Badge status={s.status} sanctioned={s.sanctioned} />
-              <button
-                onClick={() => void deleteRecord(s.dbId)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+            <p className="px-5 py-10 text-center text-sm text-slate-400">
+              No duplicate scans.
+            </p>
+          ) : (
+            duplicates.map((s, i) => (
+              <div
+                key={s.dbId}
+                className={`flex items-center gap-3 px-5 py-3.5 ${
+                  i < duplicates.length - 1 ? "border-b border-slate-50" : ""
+                }`}
               >
-                <Icons.Trash />
-              </button>
-            </div>
-          ))}
+                <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-900">
+                    {s.name}
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    {s.id} · scanned {s.time}
+                  </p>
+                </div>
+                <Badge status={s.status} sanctioned={s.sanctioned} />
+                <button
+                  onClick={() => void deleteRecord(s.dbId)}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                >
+                  <Icons.Trash />
+                </button>
+              </div>
+            ))
+          )}
         </div>
       ) : (
         <>
@@ -11945,75 +12154,99 @@ export function AdminAttendeesPage({
               <div className="hidden md:grid px-5 py-3 bg-slate-50 border-b border-slate-100 grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 <span className="col-span-5">Student</span>
                 <span className="col-span-4">Program</span>
-                {policyColumn && <span className="col-span-3 text-right">{policyColumn}</span>}
+                {policyColumn && (
+                  <span className="col-span-3 text-right">{policyColumn}</span>
+                )}
               </div>
               {visibleAbsent.map((s, i) => {
                 const profileId = s.profileId ?? s.id;
                 const fine = fineForScan(s)?.amount ?? sessionFine;
                 const cleared = isAbsentCleared(profileId);
                 return (
-                <div
-                  key={s.profileId ?? s.id}
-                  className={`${cleared ? "opacity-60" : ""} ${
-                    i < visibleAbsent.length - 1 ? "border-b border-slate-50" : ""
-                  }`}
-                >
-                  <div className="block w-full px-3.5 py-3 md:hidden">
-                    <div className="flex items-center justify-between gap-3">
-                      <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
-                      <div className="min-w-0 flex-1">
-                        <p className={`truncate text-sm font-semibold text-slate-900 ${cleared ? "line-through" : ""}`}>
-                          {s.name}
-                        </p>
-                        <p className="mt-0.5 text-[11px] text-slate-500">
-                          {s.id} • {s.program} • {s.section}
-                        </p>
-                      </div>
-                      {policyColumn && <div className="shrink-0 text-right">
-                        {cleared ? (
-                          <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">Cleared</span>
-                        ) : monetaryPolicyActive ? (
-                          <>
-                            <span className="text-sm font-bold text-red-600">₱{fine}</span>
-                            {s.sanctioned && <Badge status="absent" sanctioned />}
-                          </>
-                        ) : selectedEvent?.sanctionsEnabled ? (
-                          <Badge status="absent" sanctioned />
-                        ) : (
-                          <span className="text-xs text-slate-400">—</span>
+                  <div
+                    key={s.profileId ?? s.id}
+                    className={`${cleared ? "opacity-60" : ""} ${
+                      i < visibleAbsent.length - 1
+                        ? "border-b border-slate-50"
+                        : ""
+                    }`}
+                  >
+                    <div className="block w-full px-3.5 py-3 md:hidden">
+                      <div className="flex items-center justify-between gap-3">
+                        <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={`truncate text-sm font-semibold text-slate-900 ${
+                              cleared ? "line-through" : ""
+                            }`}
+                          >
+                            {s.name}
+                          </p>
+                          <p className="mt-0.5 text-[11px] text-slate-500">
+                            {s.id} • {s.program} • {s.section}
+                          </p>
+                        </div>
+                        {policyColumn && (
+                          <div className="shrink-0 text-right">
+                            {cleared ? (
+                              <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
+                                Cleared
+                              </span>
+                            ) : monetaryPolicyActive ? (
+                              <>
+                                <span className="text-sm font-bold text-red-600">
+                                  ₱{fine}
+                                </span>
+                                {s.sanctioned && (
+                                  <Badge status="absent" sanctioned />
+                                )}
+                              </>
+                            ) : selectedEvent?.sanctionsEnabled ? (
+                              <Badge status="absent" sanctioned />
+                            ) : (
+                              <span className="text-xs text-slate-400">—</span>
+                            )}
+                          </div>
                         )}
-                      </div>}
-                    </div>
-                  </div>
-                  <div className="hidden md:grid px-5 py-3.5 md:grid-cols-12 md:items-center">
-                    <div className="col-span-5 flex items-center gap-3 min-w-0">
-                      <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 truncate">
-                          {s.name}
-                        </p>
-                        <p className="text-[11px] text-slate-400">{s.id}</p>
                       </div>
                     </div>
-                    <span className="col-span-4 text-xs text-slate-500">
-                      {s.program} · {s.section}
-                    </span>
-                    {policyColumn && <div className="col-span-3 flex justify-end">
-                      {cleared ? (
-                        <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">Cleared</span>
-                      ) : monetaryPolicyActive ? (
-                        <>
-                          <span className="text-sm font-bold text-red-600">₱{fine}</span>
-                          {s.sanctioned && <Badge status="absent" sanctioned />}
-                        </>
-                      ) : selectedEvent?.sanctionsEnabled ? (
-                        <Badge status="absent" sanctioned />
-                      ) : (
-                        <span className="text-xs text-slate-400">—</span>
+                    <div className="hidden md:grid px-5 py-3.5 md:grid-cols-12 md:items-center">
+                      <div className="col-span-5 flex items-center gap-3 min-w-0">
+                        <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 truncate">
+                            {s.name}
+                          </p>
+                          <p className="text-[11px] text-slate-400">{s.id}</p>
+                        </div>
+                      </div>
+                      <span className="col-span-4 text-xs text-slate-500">
+                        {s.program} · {s.section}
+                      </span>
+                      {policyColumn && (
+                        <div className="col-span-3 flex justify-end">
+                          {cleared ? (
+                            <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
+                              Cleared
+                            </span>
+                          ) : monetaryPolicyActive ? (
+                            <>
+                              <span className="text-sm font-bold text-red-600">
+                                ₱{fine}
+                              </span>
+                              {s.sanctioned && (
+                                <Badge status="absent" sanctioned />
+                              )}
+                            </>
+                          ) : selectedEvent?.sanctionsEnabled ? (
+                            <Badge status="absent" sanctioned />
+                          ) : (
+                            <span className="text-xs text-slate-400">—</span>
+                          )}
+                        </div>
                       )}
-                    </div>}
+                    </div>
                   </div>
-                </div>
                 );
               })}
             </div>
@@ -12265,7 +12498,11 @@ export function AdminStudentsPage({
                     key={option}
                     type="button"
                     onClick={() => setSessionLabel(option)}
-                    className={`rounded-md px-3 py-1.5 text-xs font-semibold ${sessionLabel === option ? "bg-emerald-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
+                      sessionLabel === option
+                        ? "bg-emerald-600 text-white"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
                   >
                     {option === "morning" ? "Morning" : "Afternoon"}
                   </button>
@@ -12420,7 +12657,9 @@ export function AdminStudentsPage({
                 <button
                   type="button"
                   onClick={() => openStudent(s)}
-                  className={`${bulkSelectionEnabled ? "col-span-4" : "col-span-5"} flex min-w-0 items-center gap-3 text-left`}
+                  className={`${
+                    bulkSelectionEnabled ? "col-span-4" : "col-span-5"
+                  } flex min-w-0 items-center gap-3 text-left`}
                 >
                   <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
                   <div className="min-w-0">
@@ -12709,7 +12948,9 @@ export function AdminAnnouncementsPage({
 
   const deletePost = async (id: string) => {
     if (deletingId) return false;
-    if (!window.confirm("Delete this announcement? This action cannot be undone.")) {
+    if (
+      !window.confirm("Delete this announcement? This action cannot be undone.")
+    ) {
       return false;
     }
     const currentPost = posts.find((post) => post.id === id);
@@ -12895,7 +13136,7 @@ export function AdminAnnouncementsPage({
                 </div>
               ) : newPhoto ? (
                 <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                  <img
+                  <OptimizedImage
                     src={newPhoto}
                     alt=""
                     className="w-full h-40 object-cover"
@@ -13045,7 +13286,7 @@ export function AdminAnnouncementsPage({
                 </div>
               ) : editDraft.photoUrl ? (
                 <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                  <img
+                  <OptimizedImage
                     src={editDraft.photoUrl}
                     alt=""
                     className="w-full h-40 object-cover"
@@ -13081,7 +13322,7 @@ export function AdminAnnouncementsPage({
           >
             <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
               {a.photoUrl ? (
-                <img
+                <OptimizedImage
                   src={a.photoUrl}
                   alt={a.title}
                   className="w-full h-full object-cover"
@@ -13237,7 +13478,9 @@ export function AdminExcuseRequestsPage({
                 </div>
                 <p
                   className={`text-sm text-slate-600 leading-relaxed mb-1 ${
-                    expandedReasonIds.has(r.id) ? "whitespace-pre-wrap" : "line-clamp-3"
+                    expandedReasonIds.has(r.id)
+                      ? "whitespace-pre-wrap"
+                      : "line-clamp-3"
                   }`}
                 >
                   {r.reason}
@@ -13678,7 +13921,11 @@ export function AdminReportsPage({
 
           { t: e.date, x: W - pad - 200 },
 
-          { t: `₱${e.fineAmount} / ₱${e.lateFine ?? 0}`, x: W - pad - 100, align: "right" },
+          {
+            t: `₱${e.fineAmount} / ₱${e.lateFine ?? 0}`,
+            x: W - pad - 100,
+            align: "right",
+          },
 
           {
             t: e.attendees.toString(),
@@ -13868,7 +14115,9 @@ export function AdminReportsPage({
           ].map(([value, label]) => (
             <div key={label}>
               <p className="text-xl font-bold text-violet-700">{value}</p>
-              <p className="mt-1 text-[11px] font-semibold text-violet-700/70">{label}</p>
+              <p className="mt-1 text-[11px] font-semibold text-violet-700/70">
+                {label}
+              </p>
             </div>
           ))}
         </div>
@@ -13914,41 +14163,51 @@ export function AdminReportsPage({
               Upcoming events are excluded until attendance can be evaluated.
             </p>
           </div>
-        ) : eventRows.map((e, i, arr) => (
-          <div
-            key={e.id}
-            className={`flex items-center justify-between px-5 py-4 ${
-              i < arr.length - 1 ? "border-b border-slate-50" : ""
-            }`}
-          >
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-slate-900">{e.title}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                {e.date} · {formatTimeRange12Hour(e.time) || "Time TBA"} · Fees ₱{e.reportFineTotal ?? 0} · {e.attendees} students attended
-              </p>
-              <details className="mt-2 group">
-                <summary className="flex cursor-pointer list-none items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700">
-                  See details
-                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
-                </summary>
-                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 border-t border-slate-100 pt-2 text-[10px] font-semibold text-slate-400">
-                  <span>Absent fine: ₱{e.fineAmount}</span>
-                  <span>Late fine: ₱{e.lateFine ?? 0}</span>
-                  <span>Present/late: {e.reportAttendedSessions ?? e.attendees}</span>
-                  <span>Absent sessions: {e.reportAbsentSessions ?? 0}</span>
-                  <span>Late sessions: {e.reportLateSessions ?? 0}</span>
-                  <span>Sanctioned: {e.reportSanctionedSessions ?? 0}</span>
-                </div>
-              </details>
+        ) : (
+          eventRows.map((e, i, arr) => (
+            <div
+              key={e.id}
+              className={`flex items-center justify-between px-5 py-4 ${
+                i < arr.length - 1 ? "border-b border-slate-50" : ""
+              }`}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-slate-900">
+                  {e.title}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  {e.date} · {formatTimeRange12Hour(e.time) || "Time TBA"} ·
+                  Fees ₱{e.reportFineTotal ?? 0} · {e.attendees} students
+                  attended
+                </p>
+                <details className="mt-2 group">
+                  <summary className="flex cursor-pointer list-none items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700">
+                    See details
+                    <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 border-t border-slate-100 pt-2 text-[10px] font-semibold text-slate-400">
+                    <span>Absent fine: ₱{e.fineAmount}</span>
+                    <span>Late fine: ₱{e.lateFine ?? 0}</span>
+                    <span>
+                      Present/late: {e.reportAttendedSessions ?? e.attendees}
+                    </span>
+                    <span>Absent sessions: {e.reportAbsentSessions ?? 0}</span>
+                    <span>Late sessions: {e.reportLateSessions ?? 0}</span>
+                    <span>Sanctioned: {e.reportSanctionedSessions ?? 0}</span>
+                  </div>
+                </details>
+              </div>
+              <div className="text-right">
+                <p className="font-bold text-emerald-500 text-lg">
+                  {e.attendees}
+                </p>
+                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
+                  attended
+                </p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="font-bold text-emerald-500 text-lg">{e.attendees}</p>
-              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
-                attended
-              </p>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
       <p className="mt-3 text-[11px] text-slate-400">
         Attendance rate counts present and late sessions as attended. “Students
@@ -14128,8 +14387,7 @@ export function AdminSettingsPage({
 
   const toggle = (
     k: "finesEnabled" | "showFees" | "allowExcuseRequests" | "requirePhotoId",
-  ) =>
-    onSave({ ...settings, [k]: !settings[k] });
+  ) => onSave({ ...settings, [k]: !settings[k] });
 
   const heroRef = useRef<HTMLInputElement>(null);
 
@@ -14212,21 +14470,32 @@ export function AdminSettingsPage({
         >
           <span
             className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-              settings.finesEnabled && settings.showFees ? "bg-emerald-500" : "bg-slate-400"
+              settings.finesEnabled && settings.showFees
+                ? "bg-emerald-500"
+                : "bg-slate-400"
             }`}
-            style={settings.finesEnabled && settings.showFees ? { animation: "pulse 2s infinite" } : {}}
+            style={
+              settings.finesEnabled && settings.showFees
+                ? { animation: "pulse 2s infinite" }
+                : {}
+            }
           />
           <p
             className={`text-xs font-medium leading-relaxed ${
-              settings.finesEnabled && settings.showFees ? "text-emerald-700" : "text-slate-500"
+              settings.finesEnabled && settings.showFees
+                ? "text-emerald-700"
+                : "text-slate-500"
             }`}
           >
             Fees are{" "}
             <span className="font-bold">
-              {settings.finesEnabled && settings.showFees ? "visible" : "hidden"}
+              {settings.finesEnabled && settings.showFees
+                ? "visible"
+                : "hidden"}
             </span>{" "}
             to students
-            {!(settings.finesEnabled && settings.showFees) && " — enable fines and fee visibility when the payment period opens"}
+            {!(settings.finesEnabled && settings.showFees) &&
+              " — enable fines and fee visibility when the payment period opens"}
           </p>
         </div>
       </div>
@@ -14328,7 +14597,7 @@ export function AdminSettingsPage({
                   key={i}
                   className="relative rounded-xl overflow-hidden border border-slate-200 aspect-video"
                 >
-                  <img
+                  <OptimizedImage
                     src={url}
                     alt={`Hero ${i + 1}`}
                     className="w-full h-full object-cover"
@@ -14512,7 +14781,7 @@ export function AdminSettingsPage({
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <img
+                            <OptimizedImage
                               src={slide.imageUrl}
                               alt=""
                               className="w-full h-full object-cover"
@@ -14746,9 +15015,9 @@ export default function LandingExperienceClient({
 
       "event-detail": "/events",
 
-	    announcements: "/announcements",
+      announcements: "/announcements",
 
-	    "dev-notes": "/dev-notes",
+      "dev-notes": "/dev-notes",
 
       "attendance-history": "/attendance-history",
 
@@ -14766,8 +15035,7 @@ export default function LandingExperienceClient({
 
       "admin-students": "/admin-students",
 
-	    "admin-announcements": "/admin-announcements",
-
+      "admin-announcements": "/admin-announcements",
 
       "admin-reports": "/admin-reports",
 
@@ -14814,7 +15082,7 @@ export default function LandingExperienceClient({
             }}
             className="flex flex-col items-center justify-center"
           >
-            <img
+            <OptimizedImage
               src={adesseLogoSrc}
               alt="Adesse logo"
               className="h-16 w-16 md:h-20 md:w-20 object-contain"

@@ -1,6 +1,129 @@
 "use client";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+// attendance settings
+// fine settings
+// optimistic concurrency version for multi-admin conflict detection
+
+// ─── Data ─────────────────────────────────────────────────────────────────────
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
+
+// ─── Toggle ───────────────────────────────────────────────────────────────────
+
+// ─── Shared primitives ────────────────────────────────────────────────────────
+
+// ─── Avatar / ProfileIcon ─────────────────────────────────────────────────────
+
+// ─── Layout ───────────────────────────────────────────────────────────────────
+
+// ─── Adesse Logomark ───────────────────────────────────────────────────────────
+
+// ─── QR Code ──────────────────────────────────────────────────────────────────
+
+// ─── Top Bar ──────────────────────────────────────────────────────────────────
+/* Left — hamburger + brand */ /* Right — user actions */ /* Three-dot menu */
+
+// ─── Sidebar (desktop + mobile drawer) ───────────────────────────────────────
+/* Mobile header inside drawer */ /* Nav items */ /* Sidebar footer */ /* ── Desktop: persistent sidebar ── */ /* ── Mobile: fade overlay ── */
+
+// ─── LANDING CAROUSEL ─────────────────────────────────────────────────────────
+// trackIdx can go 0…n (n = clone of slide 0)
+// items: real slides + clone of first
+
+// advance one step forward
+
+// manual jump (dots/arrows) — always jumps to real slide
+
+// after sliding onto the clone (trackIdx === n), silently snap to real slide 0
+/* Slide strip */ /* Arrow controls */ /* Dot indicators — keyed to realIdx */
+
+// ─── LANDING ──────────────────────────────────────────────────────────────────
+// clone-trick state for hero
+/* ── Hero ──────────────────────────────────────────────────── */ /* Background images — sliding clone-loop track */ /* Dot indicators */ /* Hero content */ /* ── Feature cards ─────────────────────────────────────────── */ /* ── Event carousel ────────────────────────────────────────── */
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+
+// ─── ONBOARDING ───────────────────────────────────────────────────────────────
+
+// Cleanup: revoke blob URL when component unmounts
+
+// ─── EXCUSE MODAL ─────────────────────────────────────────────────────────────
+
+// ─── Shared Form Modal ────────────────────────────────────────────────────────
+
+// ─── Student Profile Modal (Moderator view, with QR) ─────────────────────────
+
+// ─── Upcoming Event Card (adaptive: photo or green fallback) ──────────────────
+
+/* Shared text content */ /* ── Mobile ── */
+/* Photo full-bleed */
+/* Green fallback */ /* ── Desktop ── */
+/* Split card: green left + concave photo right */ /* SVG clip definition — concave left boundary for photo pane */ /* left edge bows leftward at midpoint creating a crescent notch */ /* Green background full-bleed */ /* Green content pane — left 62% */ /* Photo pane — right 45%, clipped with concave left arc */ /* Subtle left-edge blend into green */
+/* Green fallback */
+
+// ─── STUDENT: Dashboard ───────────────────────────────────────────────────────
+
+// ─── STUDENT: Events ──────────────────────────────────────────────────────────
+
+// ─── STUDENT: Event Detail ────────────────────────────────────────────────────
+/* Gradient overlay */ /* Badge — top-left */ /* Bottom content — pinned with explicit bottom padding */ /* Lightbox */
+
+// ─── STUDENT: My QR ───────────────────────────────────────────────────────────
+
+// ─── STUDENT: Announcements ───────────────────────────────────────────────────
+
+// ─── STUDENT: Attendance ──────────────────────────────────────────────────────
+
+// ─── STUDENT: My Fines ────────────────────────────────────────────────────────
+
+// ─── Profile (shared: student + moderator) ────────────────────────────────────
+
+// Cleanup: revoke blob URLs when component unmounts or editing is cancelled
+// Revoke blob URL if present before resetting
+
+// ─── MODERATOR: Dashboard ─────────────────────────────────────────────────────
+
+// ─── MODERATOR: Events ────────────────────────────────────────────────────────
+
+// Map UI camelCase to database snake_case
+// Map returned database row back to EventData shape
+
+// multi-admin conflict check: compare version in current state
+
+// Map to database snake_case
+/* ── Create event modal ── */ /* Multi-session toggle */ /* Single-session time OR multi-session blocks */ /* Highlight photo */ /* ── Edit event modal ── */ /* Multi-session toggle */
+
+// ─── MODERATOR: Attendees ─────────────────────────────────────────────────────
+
+// ─── MODERATOR: Students ──────────────────────────────────────────────────────
+
+// ─── MODERATOR: Announcements ─────────────────────────────────────────────────
+
+// ─── MODERATOR: Excuse Requests ───────────────────────────────────────────────
+
+// ─── MODERATOR: Reports ───────────────────────────────────────────────────────
+
+// estimate height
+// ── Header bar
+
+// generated date
+
+// ── Attendance by program
+
+// ── Fees summary
+
+// ── By event
+
+// ── Footer
+
+// Open as PDF-like image
+
+// ─── MODERATOR: Management & Settings ────────────────────────────────────────
+/* Fee Visibility */ /* Attendance & Requests */ /* Academic Information */ /* Landing Page */ /* Hero images */ /* Carousel slides */ /* Thumbnail */ /* Fields */ /* Controls */ /* System Info */
+
 import { useState, useRef, useEffect } from "react";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { usePathname, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,8 +149,6 @@ import { formatTimeRange12Hour } from "@/lib/time";
 const adesseLogoSrc = "/adesse-a.svg";
 const DEFAULT_HERO_IMAGE = "/adesse-default-hero.webp";
 const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 export type Page = string;
 
 export type Role = "student" | "admin" | null;
@@ -63,7 +184,6 @@ export interface EventData {
   fineAmount: number;
   mediaUrls?: string[];
   highlightUrl?: string;
-  // attendance settings
   multiSession?: boolean;
   strictMorning?: boolean;
   strictAfternoon?: boolean;
@@ -73,14 +193,12 @@ export interface EventData {
   afternoonStart?: string;
   afternoonEnd?: string;
   afternoonLateCutoff?: string;
-  // fine settings
   absentFine?: number;
   lateFine?: number;
   morningAbsentFine?: number;
   morningLateFine?: number;
   afternoonAbsentFine?: number;
   afternoonLateFine?: number;
-  // optimistic concurrency version for multi-admin conflict detection
   version?: number;
 }
 
@@ -165,8 +283,6 @@ function parseEventTimeRange(value: string): {
   if (!start || (parts[1] && !end)) return null;
   return { start, end };
 }
-
-// ─── Data ─────────────────────────────────────────────────────────────────────
 export const INITIAL_EVENTS: EventData[] = [
   {
     id: "1",
@@ -550,8 +666,6 @@ const STUDENT_FINES: FineRecord[] = [
     status: "unpaid",
   },
 ];
-
-// ─── Icons ────────────────────────────────────────────────────────────────────
 const sv = {
   fill: "none",
   stroke: "currentColor",
@@ -848,8 +962,6 @@ const Icons = {
     </svg>
   ),
 };
-
-// ─── Toggle ───────────────────────────────────────────────────────────────────
 function Toggle({
   on,
   onToggle,
@@ -873,17 +985,21 @@ function Toggle({
         onClick={onToggle}
         role="switch"
         aria-checked={on}
-        className={`relative w-11 h-6 rounded-full transition-all duration-200 shrink-0 focus:outline-none focus:ring-2 focus:ring-offset-2 ${on ? "bg-emerald-500 focus:ring-emerald-500" : "bg-slate-200 focus:ring-slate-400"}`}
+        className={`relative w-11 h-6 rounded-full transition-all duration-200 shrink-0 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+          on
+            ? "bg-emerald-500 focus:ring-emerald-500"
+            : "bg-slate-200 focus:ring-slate-400"
+        }`}
       >
         <span
-          className={`absolute top-[3px] left-[3px] w-[18px] h-[18px] bg-white rounded-full shadow-md transition-transform duration-200 ${on ? "translate-x-5" : "translate-x-0"}`}
+          className={`absolute top-[3px] left-[3px] w-[18px] h-[18px] bg-white rounded-full shadow-md transition-transform duration-200 ${
+            on ? "translate-x-5" : "translate-x-0"
+          }`}
         />
       </button>
     </div>
   );
 }
-
-// ─── Shared primitives ────────────────────────────────────────────────────────
 function FieldInput({
   label,
   required,
@@ -1059,10 +1175,14 @@ function InlineToggle({
         onClick={onToggle}
         role="switch"
         aria-checked={on}
-        className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 focus:outline-none ${on ? "bg-emerald-500" : "bg-slate-200"}`}
+        className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 focus:outline-none ${
+          on ? "bg-emerald-500" : "bg-slate-200"
+        }`}
       >
         <span
-          className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${on ? "translate-x-4" : "translate-x-0"}`}
+          className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${
+            on ? "translate-x-4" : "translate-x-0"
+          }`}
         />
       </button>
     </div>
@@ -1207,8 +1327,6 @@ function FineFields({
     </div>
   );
 }
-
-// ─── Avatar / ProfileIcon ─────────────────────────────────────────────────────
 function Avatar({
   name,
   photoUrl,
@@ -1223,7 +1341,7 @@ function Avatar({
   ];
   if (photoUrl)
     return (
-      <img
+      <OptimizedImage
         src={photoUrl}
         alt={name}
         className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200`}
@@ -1299,7 +1417,7 @@ export function ProfileIcon({
   }[size];
 
   const content = photoUrl ? (
-    <img
+    <OptimizedImage
       src={photoUrl}
       alt="Profile"
       className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200 transition-transform duration-200`}
@@ -1344,7 +1462,7 @@ export function ProfileIcon({
             >
               ×
             </button>
-            <img
+            <OptimizedImage
               src={photoUrl}
               alt="Profile preview"
               className="max-h-[80vh] max-w-[80vw] rounded-2xl border border-white/20 object-contain bg-white/5 shadow-2xl"
@@ -1366,10 +1484,14 @@ export function Toast({
 }) {
   return (
     <div
-      className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-50 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 ${variant === "error" ? "bg-red-600" : "bg-slate-900"}`}
+      className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-50 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 ${
+        variant === "error" ? "bg-red-600" : "bg-slate-900"
+      }`}
       style={{ animation: "slideUp .25s ease" }}
     >
-      <span className={variant === "error" ? "text-red-300" : "text-emerald-400"}>
+      <span
+        className={variant === "error" ? "text-red-300" : "text-emerald-400"}
+      >
         {variant === "error" ? <Icons.X /> : <Icons.Check />}
       </span>
       {message}
@@ -1410,7 +1532,9 @@ export function DotMenu({
                   it.onClick();
                   setOpen(false);
                 }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium hover:bg-slate-50 transition-colors text-left ${it.danger ? "text-red-500" : "text-slate-700"}`}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium hover:bg-slate-50 transition-colors text-left ${
+                  it.danger ? "text-red-500" : "text-slate-700"
+                }`}
               >
                 {it.icon && (
                   <span
@@ -1448,8 +1572,6 @@ export function BackButton({
     </button>
   );
 }
-
-// ─── Layout ───────────────────────────────────────────────────────────────────
 export function PageShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="px-3.5 py-3 md:max-w-6xl md:mx-auto md:px-6 md:py-6">
@@ -1489,11 +1611,9 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     </p>
   );
 }
-
-// ─── Adesse Logomark ───────────────────────────────────────────────────────────
 export function AdesseMark({ className = "w-7 h-7" }: { className?: string }) {
   return (
-    <img
+    <OptimizedImage
       src={adesseLogoSrc}
       alt=""
       className={`${className} shrink-0 object-contain`}
@@ -1538,12 +1658,14 @@ export function AdesseWordmark({
       aria-label="Adesse"
     >
       <AdesseMark className={`${styles.mark} shrink-0`} />
-      <span className={`adesse-display leading-[0.9] ${styles.text} ${textClassName}`}>desse</span>
+      <span
+        className={`adesse-display leading-[0.9] ${styles.text} ${textClassName}`}
+      >
+        desse
+      </span>
     </span>
   );
 }
-
-// ─── QR Code ──────────────────────────────────────────────────────────────────
 function StudentQR({ studentId, size }: { studentId: string; size: number }) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -1564,7 +1686,7 @@ function StudentQR({ studentId, size }: { studentId: string; size: number }) {
       />
     );
   return (
-    <img
+    <OptimizedImage
       src={dataUrl}
       width={size}
       height={size}
@@ -1573,8 +1695,6 @@ function StudentQR({ studentId, size }: { studentId: string; size: number }) {
     />
   );
 }
-
-// ─── Top Bar ──────────────────────────────────────────────────────────────────
 export function TopBar({
   user,
   onNav,
@@ -1605,7 +1725,7 @@ export function TopBar({
         className="flex items-center justify-between px-4 lg:px-5 gap-3"
         style={{ height: "56px" }}
       >
-        {/* Left — hamburger + brand */}
+        {}
         <div className="flex items-center gap-2 min-w-0">
           {user && (
             <button
@@ -1622,7 +1742,10 @@ export function TopBar({
           >
             <div className="flex flex-col leading-none min-w-0">
               <span className="hidden lg:inline-flex">
-                <AdesseWordmark variant="header" textClassName="text-slate-900" />
+                <AdesseWordmark
+                  variant="header"
+                  textClassName="text-slate-900"
+                />
               </span>
               <span className="text-[10px] text-slate-400 font-medium hidden sm:block leading-tight truncate">
                 {isMod ? "Moderator Portal" : "Student Attendance"}
@@ -1631,7 +1754,7 @@ export function TopBar({
           </button>
         </div>
 
-        {/* Right — user actions */}
+        {}
         <div className="flex items-center gap-1 shrink-0">
           {user ? (
             <>
@@ -1649,7 +1772,7 @@ export function TopBar({
                   {user.firstName || (isMod ? "Admin" : "My Profile")}
                 </span>
               </button>
-              {/* Three-dot menu */}
+              {}
               <div className="relative">
                 <button
                   onClick={() => setDotOpen((o) => !o)}
@@ -1744,8 +1867,6 @@ export function TopBar({
     </header>
   );
 }
-
-// ─── Sidebar (desktop + mobile drawer) ───────────────────────────────────────
 export function Sidebar({
   page,
   user,
@@ -1832,7 +1953,7 @@ export function Sidebar({
 
   const inner = (
     <div className="flex flex-col h-full bg-white">
-      {/* Mobile header inside drawer */}
+      {}
       <div className="flex items-center justify-between px-4 h-[52px] border-b border-slate-100 lg:hidden shrink-0">
         <AdesseWordmark variant="mobile" textClassName="text-slate-900" />
         <button
@@ -1844,7 +1965,7 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* Nav items */}
+      {}
       <nav className="flex-1 px-2 pt-3 pb-2 space-y-0.5 overflow-y-auto">
         {nav.map(({ p, l, I }) => {
           const active = page === p;
@@ -1857,10 +1978,16 @@ export function Sidebar({
               onMouseEnter={() => prefetchRoute(p)}
               onFocus={() => prefetchRoute(p)}
               onClick={() => handleNav(p)}
-              className={`w-full flex items-center gap-3 border-l-[3px] px-3 h-10 rounded-lg text-sm transition-colors duration-150 ease-in-out ${active ? "border-emerald-500 bg-emerald-50/70 text-emerald-700 font-medium" : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-normal"}`}
+              className={`w-full flex items-center gap-3 border-l-[3px] px-3 h-10 rounded-lg text-sm transition-colors duration-150 ease-in-out ${
+                active
+                  ? "border-emerald-500 bg-emerald-50/70 text-emerald-700 font-medium"
+                  : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-normal"
+              }`}
             >
               <span
-                className={`relative shrink-0 ${active ? "text-emerald-500" : "text-slate-400"}`}
+                className={`relative shrink-0 ${
+                  active ? "text-emerald-500" : "text-slate-400"
+                }`}
               >
                 <I />
                 {badgeLabel && (
@@ -1875,7 +2002,7 @@ export function Sidebar({
         })}
       </nav>
 
-      {/* Sidebar footer */}
+      {}
       <div className="mt-auto border-t border-slate-200/70 px-2 py-4 shrink-0">
         <div className="space-y-2">
           <button
@@ -1903,12 +2030,12 @@ export function Sidebar({
 
   return (
     <>
-      {/* ── Desktop: persistent sidebar ── */}
+      {}
       <aside className="hidden lg:flex flex-col w-60 shrink-0 border-r border-slate-100 sticky top-[56px] h-[calc(100vh-56px)] self-start overflow-hidden bg-white">
         {inner}
       </aside>
 
-      {/* ── Mobile: fade overlay ── */}
+      {}
       {open && (
         <div className="lg:hidden">
           <div
@@ -1927,28 +2054,20 @@ export function Sidebar({
     </>
   );
 }
-
-// ─── LANDING CAROUSEL ─────────────────────────────────────────────────────────
 function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
   const n = slides.length;
-  // trackIdx can go 0…n (n = clone of slide 0)
   const [trackIdx, setTrackIdx] = useState(0);
   const [animated, setAnimated] = useState(true);
   const [paused, setPaused] = useState(false);
   const [visibilityStamp, setVisibilityStamp] = useState(0);
   const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const realIdx = trackIdx % n;
-  // items: real slides + clone of first
   const items = n > 1 ? [...slides, slides[0]] : slides;
   const total = items.length;
-
-  // advance one step forward
   const advance = () => {
     setAnimated(true);
     setTrackIdx((i) => i + 1);
   };
-
-  // manual jump (dots/arrows) — always jumps to real slide
   const go = (next: number) => {
     const target = ((next % n) + n) % n;
     setAnimated(true);
@@ -1957,8 +2076,6 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
     if (pauseTimer.current) clearTimeout(pauseTimer.current);
     pauseTimer.current = setTimeout(() => setPaused(false), 8000);
   };
-
-  // after sliding onto the clone (trackIdx === n), silently snap to real slide 0
   const handleTransitionEnd = () => {
     if (trackIdx === n) {
       setAnimated(false);
@@ -1996,7 +2113,7 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Slide strip */}
+      {}
       <div
         className="flex h-full"
         style={{
@@ -2012,7 +2129,9 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
           <div
             key={`${visibilityStamp}-${i}-${s.imageUrl}`}
             className="relative h-full flex-shrink-0"
-            style={{ width: `${100 / total}%` }}
+            style={{
+              width: `${100 / total}%`,
+            }}
           >
             {/\.mp4($|\?)/i.test(s.imageUrl) ? (
               <video
@@ -2027,7 +2146,7 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
                 controls
               />
             ) : (
-              <img
+              <OptimizedImage
                 key={`${visibilityStamp}-img-${i}-${s.imageUrl}`}
                 src={s.imageUrl}
                 alt={s.caption}
@@ -2054,7 +2173,7 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
         ))}
       </div>
 
-      {/* Arrow controls */}
+      {}
       {n > 1 && (
         <>
           <button
@@ -2072,14 +2191,18 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
         </>
       )}
 
-      {/* Dot indicators — keyed to realIdx */}
+      {}
       {n > 1 && (
         <div className="absolute bottom-3 right-5 z-10 flex gap-1.5">
           {slides.map((_, i) => (
             <button
               key={i}
               onClick={() => go(i)}
-              className={`rounded-full transition-all ${i === realIdx ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/45 hover:bg-white/70"}`}
+              className={`rounded-full transition-all ${
+                i === realIdx
+                  ? "w-5 h-2 bg-white"
+                  : "w-2 h-2 bg-white/45 hover:bg-white/70"
+              }`}
             />
           ))}
         </div>
@@ -2087,8 +2210,6 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
     </div>
   );
 }
-
-// ─── LANDING ──────────────────────────────────────────────────────────────────
 function LandingPage({
   onNav,
   settings,
@@ -2102,14 +2223,15 @@ function LandingPage({
     (url) => !!url && !url.startsWith("blob:"),
   );
   const hasConfiguredHero = configuredHeroUrls.length > 0;
-  const heroUrls = hasConfiguredHero ? configuredHeroUrls : [DEFAULT_HERO_IMAGE];
+  const heroUrls = hasConfiguredHero
+    ? configuredHeroUrls
+    : [DEFAULT_HERO_IMAGE];
   const carouselSlides = settings.carouselSlides.filter(
     (slide) => !!slide.imageUrl && !slide.imageUrl.startsWith("blob:"),
   );
   const hasHero = heroUrls.length > 0;
   const isDefaultHero = !hasConfiguredHero;
   const hn = heroUrls.length;
-  // clone-trick state for hero
   const [heroTrack, setHeroTrack] = useState(0);
   const [heroAnim, setHeroAnim] = useState(true);
   const [heroVisibilityStamp, setHeroVisibilityStamp] = useState(0);
@@ -2155,11 +2277,13 @@ function LandingPage({
 
   return (
     <div className="min-h-screen bg-white">
-      {/* ── Hero ──────────────────────────────────────────────────── */}
+      {}
       <div
-        className={`relative overflow-hidden ${hasHero ? "min-h-[520px] lg:min-h-[580px]" : ""}`}
+        className={`relative overflow-hidden ${
+          hasHero ? "min-h-[520px] lg:min-h-[580px]" : ""
+        }`}
       >
-        {/* Background images — sliding clone-loop track */}
+        {}
         {hasHero && (
           <div
             className="absolute inset-y-0 left-0 flex"
@@ -2176,9 +2300,11 @@ function LandingPage({
               <div
                 key={`${heroVisibilityStamp}-${i}-${url}`}
                 className="relative h-full flex-shrink-0"
-                style={{ width: `${100 / heroTotal}%` }}
+                style={{
+                  width: `${100 / heroTotal}%`,
+                }}
               >
-                <img
+                <OptimizedImage
                   key={`${heroVisibilityStamp}-hero-${i}-${url}`}
                   src={url}
                   alt=""
@@ -2189,7 +2315,9 @@ function LandingPage({
                   onError={(event) => {
                     event.currentTarget.style.display = "none";
                   }}
-                  className={`w-full h-full object-cover ${isDefaultHero ? "opacity-25" : ""}`}
+                  className={`w-full h-full object-cover ${
+                    isDefaultHero ? "opacity-25" : ""
+                  }`}
                 />
               </div>
             ))}
@@ -2238,13 +2366,15 @@ function LandingPage({
             }}
           />
         )}
-        {/* Dot indicators */}
+        {}
         {hn > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
             {heroUrls.map((_, i) => (
               <span
                 key={i}
-                className={`rounded-full transition-all duration-300 ${i === heroRealIdx ? "w-4 h-2 bg-white" : "w-2 h-2 bg-white/40"}`}
+                className={`rounded-full transition-all duration-300 ${
+                  i === heroRealIdx ? "w-4 h-2 bg-white" : "w-2 h-2 bg-white/40"
+                }`}
               />
             ))}
           </div>
@@ -2252,7 +2382,13 @@ function LandingPage({
         {user && (
           <div className="absolute top-3 right-3 sm:top-5 sm:right-6 z-20 flex items-center gap-2">
             <div
-              className={`inline-flex items-center gap-1.5 text-[9px] sm:text-[11px] font-bold tracking-[0.08em] uppercase px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-full ${isDefaultHero ? "text-emerald-800 bg-white/60 border border-white/80 backdrop-blur-sm shadow-sm" : hasHero ? "text-emerald-100 bg-white/10 border border-white/25 backdrop-blur-sm shadow-sm" : "text-emerald-700 bg-emerald-50 border border-emerald-200"}`}
+              className={`inline-flex items-center gap-1.5 text-[9px] sm:text-[11px] font-bold tracking-[0.08em] uppercase px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-full ${
+                isDefaultHero
+                  ? "text-emerald-800 bg-white/60 border border-white/80 backdrop-blur-sm shadow-sm"
+                  : hasHero
+                    ? "text-emerald-100 bg-white/10 border border-white/25 backdrop-blur-sm shadow-sm"
+                    : "text-emerald-700 bg-emerald-50 border border-emerald-200"
+              }`}
             >
               <span
                 className="w-1.5 h-1.5 bg-emerald-400 rounded-full shrink-0"
@@ -2262,7 +2398,13 @@ function LandingPage({
             </div>
             <button
               onClick={() => onNav("profile")}
-              className={`flex items-center justify-center rounded-full p-1.5 transition-colors duration-150 ${isDefaultHero ? "bg-white/55 text-slate-700 shadow-sm backdrop-blur-sm hover:bg-white/75" : hasHero ? "bg-black/20 text-white shadow-sm backdrop-blur-sm hover:bg-black/30" : "bg-slate-900/5 text-slate-700 hover:bg-slate-900/10"}`}
+              className={`flex items-center justify-center rounded-full p-1.5 transition-colors duration-150 ${
+                isDefaultHero
+                  ? "bg-white/55 text-slate-700 shadow-sm backdrop-blur-sm hover:bg-white/75"
+                  : hasHero
+                    ? "bg-black/20 text-white shadow-sm backdrop-blur-sm hover:bg-black/30"
+                    : "bg-slate-900/5 text-slate-700 hover:bg-slate-900/10"
+              }`}
               aria-label="Open profile"
             >
               <ProfileIcon
@@ -2274,29 +2416,53 @@ function LandingPage({
           </div>
         )}
 
-        {/* Hero content */}
+        {}
         <div
-          className={`relative w-full mx-auto px-5 flex flex-col md:max-w-6xl md:px-6 ${hasHero ? "items-start text-left pt-24 pb-16 md:pt-20 md:pb-20" : "items-center text-center pt-24 pb-16 md:pt-20 md:pb-20"}`}
+          className={`relative w-full mx-auto px-5 flex flex-col md:max-w-6xl md:px-6 ${
+            hasHero
+              ? "items-start text-left pt-24 pb-16 md:pt-20 md:pb-20"
+              : "items-center text-center pt-24 pb-16 md:pt-20 md:pb-20"
+          }`}
         >
           <AdesseWordmark
             variant="hero"
             className={`mb-4 ${hasHero ? "" : "justify-center"}`}
-            textClassName={isDefaultHero ? "text-slate-900" : hasHero ? "text-white" : "text-slate-900"}
+            textClassName={
+              isDefaultHero
+                ? "text-slate-900"
+                : hasHero
+                  ? "text-white"
+                  : "text-slate-900"
+            }
           />
           <h1 className="sr-only">Adesse</h1>
           <p
-            className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.14em] mb-8 sm:mb-9 leading-[1.6] ${isDefaultHero ? "text-slate-600" : hasHero ? "text-white/75" : "text-slate-400"}`}
+            className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.14em] mb-8 sm:mb-9 leading-[1.6] ${
+              isDefaultHero
+                ? "text-slate-600"
+                : hasHero
+                  ? "text-white/75"
+                  : "text-slate-400"
+            }`}
           >
             Student Event Attendance &amp; Records System
           </p>
           <p
-            className={`text-[15px] sm:text-[17px] mb-0 leading-[1.95] sm:leading-[2] max-w-[22rem] sm:max-w-md ${isDefaultHero ? "text-slate-700" : hasHero ? "text-white/80" : "text-slate-500"}`}
+            className={`text-[15px] sm:text-[17px] mb-0 leading-[1.95] sm:leading-[2] max-w-[22rem] sm:max-w-md ${
+              isDefaultHero
+                ? "text-slate-700"
+                : hasHero
+                  ? "text-white/80"
+                  : "text-slate-500"
+            }`}
           >
             One QR code per student. Real-time attendance logging. Clear event
             records for students and moderators.
           </p>
           <div
-            className={`mt-16 sm:mt-20 flex flex-wrap items-center gap-3 ${hasHero ? "" : "justify-center"}`}
+            className={`mt-16 sm:mt-20 flex flex-wrap items-center gap-3 ${
+              hasHero ? "" : "justify-center"
+            }`}
           >
             <button
               onClick={() => {
@@ -2319,7 +2485,13 @@ function LandingPage({
             </button>
             <button
               onClick={() => onNav("events")}
-              className={`h-12 px-7 text-[13px] font-bold rounded-full transition-all ${isDefaultHero ? "bg-white/60 text-slate-700 border border-white/80 hover:bg-white/80 backdrop-blur-sm" : hasHero ? "bg-white/10 text-white border border-white/35 hover:bg-white/20 backdrop-blur-sm" : "border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"}`}
+              className={`h-12 px-7 text-[13px] font-bold rounded-full transition-all ${
+                isDefaultHero
+                  ? "bg-white/60 text-slate-700 border border-white/80 hover:bg-white/80 backdrop-blur-sm"
+                  : hasHero
+                    ? "bg-white/10 text-white border border-white/35 hover:bg-white/20 backdrop-blur-sm"
+                    : "border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
+              }`}
             >
               Browse Events
             </button>
@@ -2327,7 +2499,7 @@ function LandingPage({
         </div>
       </div>
 
-      {/* ── Feature cards ─────────────────────────────────────────── */}
+      {}
       <div className="w-full mx-auto px-3.5 py-6 md:max-w-6xl md:px-6 md:py-10">
         <div className="grid md:grid-cols-3 gap-4">
           {[
@@ -2363,7 +2535,7 @@ function LandingPage({
         </div>
       </div>
 
-      {/* ── Event carousel ────────────────────────────────────────── */}
+      {}
       {carouselSlides.length > 0 && (
         <div className="max-w-5xl mx-auto px-6 pb-20">
           <div className="flex items-center justify-between mb-4">
@@ -2377,8 +2549,6 @@ function LandingPage({
     </div>
   );
 }
-
-// ─── LOGIN ────────────────────────────────────────────────────────────────────
 export function LoginPage({ onBack }: { onBack: () => void }) {
   const router = useRouter();
   const [showEmailFlow, setShowEmailFlow] = useState(false);
@@ -2416,9 +2586,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
       !profile.first_name ||
       !profile.surname ||
       (profile.role !== "admin" &&
-        (!profile.student_id ||
-          !profile.program ||
-          !profile.year_level));
+        (!profile.student_id || !profile.program || !profile.year_level));
 
     if (incomplete) {
       router.push("/onboarding?freshLogin=1");
@@ -2750,8 +2918,6 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
     </div>
   );
 }
-
-// ─── ONBOARDING ───────────────────────────────────────────────────────────────
 export interface OBForm {
   firstName: string;
   middleInitial: string;
@@ -2788,8 +2954,6 @@ export function OnboardingPage({
   });
   const [agreed, setAgreed] = useState(false);
   const idPhotoRef = useRef<HTMLInputElement>(null);
-
-  // Cleanup: revoke blob URL when component unmounts
   useEffect(() => {
     return () => {
       if (f.idPhotoUrl) {
@@ -2835,10 +2999,7 @@ export function OnboardingPage({
       return /^\d{7,}$/.test(f.studentId.trim());
     }
     if (step === 4) {
-      return (
-        f.program.trim().length > 0 &&
-        f.yearLevel.trim().length > 0
-      );
+      return f.program.trim().length > 0 && f.yearLevel.trim().length > 0;
     }
     if (step === 5) {
       return !!f.idPhotoUrl;
@@ -2856,7 +3017,9 @@ export function OnboardingPage({
             {steps.map((_, i) => (
               <div
                 key={i}
-                className={`h-1 flex-1 rounded-full transition-all ${i < step ? "bg-emerald-500" : "bg-slate-200"}`}
+                className={`h-1 flex-1 rounded-full transition-all ${
+                  i < step ? "bg-emerald-500" : "bg-slate-200"
+                }`}
               />
             ))}
           </div>
@@ -2960,9 +3123,9 @@ export function OnboardingPage({
                   <option>3rd Year</option>
                   <option>4th Year</option>
                 </FieldSelect>
-                  <FieldInput
-                    label="Section (optional)"
-                    placeholder="e.g. IT-2A"
+                <FieldInput
+                  label="Section (optional)"
+                  placeholder="e.g. IT-2A"
                   value={f.section}
                   onChange={set("section")}
                 />
@@ -3022,7 +3185,7 @@ export function OnboardingPage({
                     className="relative w-full rounded-xl overflow-hidden border-2 border-emerald-400"
                     style={{ aspectRatio: "16/10" }}
                   >
-                    <img
+                    <OptimizedImage
                       src={f.idPhotoUrl}
                       alt="School ID"
                       className="w-full h-full object-cover"
@@ -3098,7 +3261,11 @@ export function OnboardingPage({
                 </div>
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <div
-                    className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${agreed ? "bg-emerald-500 border-emerald-500" : "border-slate-300 group-hover:border-emerald-400"}`}
+                    className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
+                      agreed
+                        ? "bg-emerald-500 border-emerald-500"
+                        : "border-slate-300 group-hover:border-emerald-400"
+                    }`}
                     onClick={() => setAgreed((v) => !v)}
                   >
                     {agreed && (
@@ -3150,7 +3317,11 @@ export function OnboardingPage({
                   ? setStep((s) => s + 1)
                   : onComplete({ ...f, agreedToTerms: agreed })
               }
-              className={`flex-1 h-10 text-white text-sm font-semibold rounded-lg transition-all shadow-sm ${canContinue() ? "bg-emerald-500 hover:bg-emerald-600" : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"}`}
+              className={`flex-1 h-10 text-white text-sm font-semibold rounded-lg transition-all shadow-sm ${
+                canContinue()
+                  ? "bg-emerald-500 hover:bg-emerald-600"
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+              }`}
             >
               {step === TOTAL ? "Complete setup" : "Continue"}
             </button>
@@ -3160,8 +3331,6 @@ export function OnboardingPage({
     </div>
   );
 }
-
-// ─── EXCUSE MODAL ─────────────────────────────────────────────────────────────
 function ExcuseModal({
   record,
   onClose,
@@ -3270,8 +3439,6 @@ function ExcuseModal({
     </div>
   );
 }
-
-// ─── Shared Form Modal ────────────────────────────────────────────────────────
 function FormModal({
   title,
   onClose,
@@ -3314,8 +3481,6 @@ function FormModal({
     </div>
   );
 }
-
-// ─── Student Profile Modal (Moderator view, with QR) ─────────────────────────
 function StudentProfileModal({
   student,
   onClose,
@@ -3366,13 +3531,21 @@ function StudentProfileModal({
         <div className="flex gap-1 mx-5 mb-4 bg-slate-100 p-1 rounded-xl">
           <button
             onClick={() => setTab("info")}
-            className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-all ${tab === "info" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+            className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-all ${
+              tab === "info"
+                ? "bg-white shadow-sm text-slate-900"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
           >
             Profile Info
           </button>
           <button
             onClick={() => setTab("qr")}
-            className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${tab === "qr" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+            className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+              tab === "qr"
+                ? "bg-white shadow-sm text-slate-900"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
           >
             <Icons.QrCode />
             QR Code
@@ -3388,7 +3561,9 @@ function StudentProfileModal({
               ].map((f, i, arr) => (
                 <div
                   key={f.l}
-                  className={`flex items-center justify-between px-4 py-3 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}
+                  className={`flex items-center justify-between px-4 py-3 ${
+                    i < arr.length - 1 ? "border-b border-slate-50" : ""
+                  }`}
                 >
                   <span className="text-xs font-semibold text-slate-400">
                     {f.l}
@@ -3421,8 +3596,6 @@ function StudentProfileModal({
     </div>
   );
 }
-
-// ─── Upcoming Event Card (adaptive: photo or green fallback) ──────────────────
 function UpcomingEventCard({
   event: ev,
   onClick,
@@ -3431,25 +3604,29 @@ function UpcomingEventCard({
   onClick: () => void;
 }) {
   const cover = ev.mediaUrls?.[0] ?? null;
-
-  /* Shared text content */
   const greenText = (dim?: boolean) => (
     <>
       <div className="flex items-center justify-between mb-3">
         <Badge status={ev.status} />
         <span
-          className={`text-xs font-medium ${dim ? "text-white/70" : "text-emerald-300"}`}
+          className={`text-xs font-medium ${
+            dim ? "text-white/70" : "text-emerald-300"
+          }`}
         >
           Up next
         </span>
       </div>
       <h2
-        className={`font-semibold text-base leading-snug mb-3 ${dim ? "text-white" : "text-white"}`}
+        className={`font-semibold text-base leading-snug mb-3 ${
+          dim ? "text-white" : "text-white"
+        }`}
       >
         {ev.title}
       </h2>
       <div
-        className={`flex flex-wrap gap-3 text-sm font-medium ${dim ? "text-white/75" : "text-emerald-200"}`}
+        className={`flex flex-wrap gap-3 text-sm font-medium ${
+          dim ? "text-white/75" : "text-emerald-200"
+        }`}
       >
         <span className="flex items-center gap-1.5">
           <Icons.Calendar />
@@ -3465,14 +3642,13 @@ function UpcomingEventCard({
 
   return (
     <button onClick={onClick} className="w-full text-left mb-5 block group">
-      {/* ── Mobile ── */}
+      {}
       {cover ? (
-        /* Photo full-bleed */
         <div
           className="relative md:hidden overflow-hidden rounded-xl"
           style={{ height: 152 }}
         >
-          <img
+          <OptimizedImage
             src={cover}
             alt={ev.title}
             className="absolute inset-0 w-full h-full object-cover"
@@ -3505,33 +3681,31 @@ function UpcomingEventCard({
           </div>
         </div>
       ) : (
-        /* Green fallback */
         <div className="md:hidden bg-emerald-500 group-hover:bg-emerald-600 rounded-xl p-5 text-white transition-colors shadow-sm">
           {greenText()}
         </div>
       )}
 
-      {/* ── Desktop ── */}
+      {}
       {cover ? (
-        /* Split card: green left + concave photo right */
         <div
           className="relative hidden md:block overflow-hidden rounded-xl shadow-sm group-hover:shadow-md transition-shadow"
           style={{ height: 160 }}
         >
-          {/* SVG clip definition — concave left boundary for photo pane */}
+          {}
           <svg width="0" height="0" style={{ position: "absolute" }}>
             <defs>
               <clipPath id="ec-photo-clip" clipPathUnits="objectBoundingBox">
-                {/* left edge bows leftward at midpoint creating a crescent notch */}
+                {}
                 <path d="M 0.2,0 C 0,0.28 0,0.72 0.2,1 L 1,1 L 1,0 Z" />
               </clipPath>
             </defs>
           </svg>
 
-          {/* Green background full-bleed */}
+          {}
           <div className="absolute inset-0 bg-emerald-500 group-hover:bg-emerald-600 transition-colors" />
 
-          {/* Green content pane — left 62% */}
+          {}
           <div
             className="absolute inset-y-0 left-0 z-10 flex flex-col justify-between px-5 py-5 text-white"
             style={{ width: "62%" }}
@@ -3539,17 +3713,17 @@ function UpcomingEventCard({
             {greenText()}
           </div>
 
-          {/* Photo pane — right 45%, clipped with concave left arc */}
+          {}
           <div
             className="absolute inset-y-0 right-0"
             style={{ width: "45%", clipPath: "url(#ec-photo-clip)" }}
           >
-            <img
+            <OptimizedImage
               src={cover}
               alt={ev.title}
               className="w-full h-full object-cover"
             />
-            {/* Subtle left-edge blend into green */}
+            {}
             <div
               className="absolute inset-0"
               style={{
@@ -3560,7 +3734,6 @@ function UpcomingEventCard({
           </div>
         </div>
       ) : (
-        /* Green fallback */
         <div className="hidden md:block bg-emerald-500 group-hover:bg-emerald-600 rounded-xl p-5 text-white transition-colors shadow-sm">
           {greenText()}
         </div>
@@ -3568,8 +3741,6 @@ function UpcomingEventCard({
     </button>
   );
 }
-
-// ─── STUDENT: Dashboard ───────────────────────────────────────────────────────
 export function DashboardPage({
   user,
   onNav,
@@ -3776,7 +3947,10 @@ export function DashboardPage({
             className="bg-white border border-slate-100 rounded-xl px-4 py-3.5"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: 0.02 * Number(a.id) }}
+            transition={{
+              duration: 0.2,
+              delay: 0.02 * Number(a.id),
+            }}
           >
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-wide">
@@ -3791,8 +3965,6 @@ export function DashboardPage({
     </PageShell>
   );
 }
-
-// ─── STUDENT: Events ──────────────────────────────────────────────────────────
 export function EventsPage({
   onNav,
   onSelectEvent,
@@ -3823,7 +3995,11 @@ export function EventsPage({
           <button
             key={f.k}
             onClick={() => setFilter(f.k)}
-            className={`shrink-0 h-8 px-3.5 rounded-lg text-xs font-semibold transition-all ${filter === f.k ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300"}`}
+            className={`shrink-0 h-8 px-3.5 rounded-lg text-xs font-semibold transition-all ${
+              filter === f.k
+                ? "bg-slate-900 text-white"
+                : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300"
+            }`}
           >
             {f.l}
           </button>
@@ -3850,7 +4026,7 @@ export function EventsPage({
                   className="w-full h-40 object-cover rounded-lg mb-4"
                 />
               ) : (
-                <img
+                <OptimizedImage
                   src={cover}
                   alt={e.title}
                   className="w-full h-40 object-cover rounded-lg mb-4"
@@ -3896,8 +4072,6 @@ export function EventsPage({
     </PageShell>
   );
 }
-
-// ─── STUDENT: Event Detail ────────────────────────────────────────────────────
 function EventDetailPage({
   eventId,
   user,
@@ -3928,7 +4102,7 @@ function EventDetailPage({
               className="w-full h-64 object-cover"
             />
           ) : (
-            <img
+            <OptimizedImage
               src={primaryMedia}
               alt={ev.title}
               className="w-full h-64 object-cover"
@@ -3937,13 +4111,13 @@ function EventDetailPage({
         ) : (
           <div className="w-full h-64 bg-emerald-500" />
         )}
-        {/* Gradient overlay */}
+        {}
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
-        {/* Badge — top-left */}
+        {}
         <div className="absolute top-4 left-4">
           <Badge status={ev.status} />
         </div>
-        {/* Bottom content — pinned with explicit bottom padding */}
+        {}
         <div className="absolute left-0 right-0 bottom-0 px-4 pb-4">
           <h1 className="font-bold text-lg text-white mb-2.5 leading-snug drop-shadow">
             {ev.title}
@@ -4020,7 +4194,7 @@ function EventDetailPage({
                   onClick={() => setLightbox(url)}
                   className="relative w-full aspect-video rounded-lg overflow-hidden group focus:outline-none"
                 >
-                  <img
+                  <OptimizedImage
                     src={url}
                     alt={`Event photo ${i + 1}`}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -4047,7 +4221,7 @@ function EventDetailPage({
           </div>
         </div>
       )}
-      {/* Lightbox */}
+      {}
       {lightbox && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
@@ -4059,7 +4233,7 @@ function EventDetailPage({
           >
             <Icons.X />
           </button>
-          <img
+          <OptimizedImage
             src={lightbox}
             alt=""
             className="max-w-full max-h-full rounded-xl object-contain shadow-2xl"
@@ -4085,8 +4259,6 @@ function EventDetailPage({
     </PageShell>
   );
 }
-
-// ─── STUDENT: My QR ───────────────────────────────────────────────────────────
 export function MyQRPage({
   user,
   qrVersion,
@@ -4214,8 +4386,6 @@ export function MyQRPage({
     </PageShell>
   );
 }
-
-// ─── STUDENT: Announcements ───────────────────────────────────────────────────
 export function AnnouncementsPage({
   onBack,
   announcements,
@@ -4234,7 +4404,7 @@ export function AnnouncementsPage({
             className="bg-white border border-slate-100 rounded-xl overflow-hidden"
           >
             {a.photoUrl && (
-              <img
+              <OptimizedImage
                 src={a.photoUrl}
                 alt=""
                 className="w-full h-44 object-cover"
@@ -4259,8 +4429,6 @@ export function AnnouncementsPage({
     </PageShell>
   );
 }
-
-// ─── STUDENT: Attendance ──────────────────────────────────────────────────────
 export function AttendanceHistoryPage({
   excuseRequests,
   fines,
@@ -4292,10 +4460,22 @@ export function AttendanceHistoryPage({
           return (
             <div
               key={r.id}
-              className={`flex items-center gap-4 px-5 py-4 ${i < ATTENDANCE_RECORDS.length - 1 ? "border-b border-slate-50" : ""}`}
+              className={`flex items-center gap-4 px-5 py-4 ${
+                i < ATTENDANCE_RECORDS.length - 1
+                  ? "border-b border-slate-50"
+                  : ""
+              }`}
             >
               <div
-                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${eff === "present" ? "bg-emerald-50 text-emerald-500" : eff === "absent" ? "bg-red-50 text-red-400" : eff === "excused" ? "bg-violet-50 text-violet-500" : "bg-amber-50 text-amber-500"}`}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                  eff === "present"
+                    ? "bg-emerald-50 text-emerald-500"
+                    : eff === "absent"
+                      ? "bg-red-50 text-red-400"
+                      : eff === "excused"
+                        ? "bg-violet-50 text-violet-500"
+                        : "bg-amber-50 text-amber-500"
+                }`}
               >
                 {eff === "present" ? (
                   <Icons.Check />
@@ -4375,8 +4555,6 @@ export function AttendanceHistoryPage({
     </PageShell>
   );
 }
-
-// ─── STUDENT: My Fines ────────────────────────────────────────────────────────
 export function MyFinesPage({
   fines,
   showFees,
@@ -4434,7 +4612,8 @@ export function MyFinesPage({
               <div>
                 <p className="font-bold text-red-800">Total outstanding</p>
                 <p className="text-xs text-red-600 mt-0.5">
-                  {unpaid.length} unpaid fine{unpaid.length > 1 ? "s" : ""}
+                  {unpaid.length} unpaid fine
+                  {unpaid.length > 1 ? "s" : ""}
                 </p>
               </div>
               <p className="text-2xl font-extrabold text-red-700">
@@ -4446,10 +4625,18 @@ export function MyFinesPage({
             {fines.map((fine, i) => (
               <div
                 key={fine.id}
-                className={`flex items-center gap-4 px-5 py-4 ${i < fines.length - 1 ? "border-b border-slate-50" : ""}`}
+                className={`flex items-center gap-4 px-5 py-4 ${
+                  i < fines.length - 1 ? "border-b border-slate-50" : ""
+                }`}
               >
                 <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${fine.status === "unpaid" ? "bg-red-50 text-red-400" : fine.status === "excused" ? "bg-violet-50 text-violet-500" : "bg-emerald-50 text-emerald-500"}`}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    fine.status === "unpaid"
+                      ? "bg-red-50 text-red-400"
+                      : fine.status === "excused"
+                        ? "bg-violet-50 text-violet-500"
+                        : "bg-emerald-50 text-emerald-500"
+                  }`}
                 >
                   <Icons.Peso />
                 </div>
@@ -4463,7 +4650,13 @@ export function MyFinesPage({
                 </div>
                 <div className="text-right shrink-0">
                   <p
-                    className={`text-sm font-bold ${fine.status === "unpaid" ? "text-red-600" : fine.status === "excused" ? "text-violet-600" : "text-emerald-500"}`}
+                    className={`text-sm font-bold ${
+                      fine.status === "unpaid"
+                        ? "text-red-600"
+                        : fine.status === "excused"
+                          ? "text-violet-600"
+                          : "text-emerald-500"
+                    }`}
                   >
                     ₱{fine.amount}
                   </p>
@@ -4487,8 +4680,6 @@ export function MyFinesPage({
     </PageShell>
   );
 }
-
-// ─── Profile (shared: student + moderator) ────────────────────────────────────
 export function ProfilePage({
   user,
   onSave,
@@ -4533,8 +4724,6 @@ export function ProfilePage({
     setPhotoUploadState("idle");
     setDraft((d) => ({ ...d, photoUrl: result.url }));
   };
-
-  // Cleanup: revoke blob URLs when component unmounts or editing is cancelled
   useEffect(() => {
     return () => {
       if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
@@ -4556,7 +4745,6 @@ export function ProfilePage({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
-                  // Revoke blob URL if present before resetting
                   if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
                     URL.revokeObjectURL(draft.photoUrl);
                   }
@@ -4669,15 +4857,26 @@ export function ProfilePage({
               ...(!isMod
                 ? [
                     { l: "Year level", v: user.yearLevel },
-                    { l: "Section", v: user.section || "—" },
+                    {
+                      l: "Section",
+                      v: user.section || "—",
+                    },
                   ]
                 : []),
-              { l: "Phone", v: user.phone || "—" },
-              { l: "Email", v: user.contactEmail || "—" },
+              {
+                l: "Phone",
+                v: user.phone || "—",
+              },
+              {
+                l: "Email",
+                v: user.contactEmail || "—",
+              },
             ].map((f, i, arr) => (
               <div
                 key={f.l}
-                className={`flex items-center justify-between px-5 py-3 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}
+                className={`flex items-center justify-between px-5 py-3 ${
+                  i < arr.length - 1 ? "border-b border-slate-50" : ""
+                }`}
               >
                 <span className="text-xs font-semibold text-slate-400">
                   {f.l}
@@ -4798,7 +4997,7 @@ export function ProfilePage({
               </span>
             </div>
             <div className="p-4">
-              <img
+              <OptimizedImage
                 src={user.idPhotoUrl}
                 alt="School ID"
                 className="w-full rounded-lg object-cover max-h-48"
@@ -4813,8 +5012,6 @@ export function ProfilePage({
     </PageShell>
   );
 }
-
-// ─── MODERATOR: Dashboard ─────────────────────────────────────────────────────
 export function AdminDashboard({
   onNav,
   excuseRequests,
@@ -4919,16 +5116,24 @@ export function AdminDashboard({
         </button>
         <button
           onClick={() => onNav("admin-excuse-requests")}
-          className={`border rounded-xl p-5 text-left transition-all relative ${pending > 0 ? "bg-amber-50 border-amber-200" : "bg-white border-slate-100"}`}
+          className={`border rounded-xl p-5 text-left transition-all relative ${
+            pending > 0
+              ? "bg-amber-50 border-amber-200"
+              : "bg-white border-slate-100"
+          }`}
         >
           <Icons.FileText />
           <p
-            className={`font-semibold text-sm mt-3 mb-0.5 ${pending > 0 ? "text-amber-800" : "text-slate-900"}`}
+            className={`font-semibold text-sm mt-3 mb-0.5 ${
+              pending > 0 ? "text-amber-800" : "text-slate-900"
+            }`}
           >
             Excuse Requests
           </p>
           <p
-            className={`text-xs ${pending > 0 ? "text-amber-600" : "text-slate-400"}`}
+            className={`text-xs ${
+              pending > 0 ? "text-amber-600" : "text-slate-400"
+            }`}
           >
             {pending > 0 ? `${pending} pending review` : "No pending"}
           </p>
@@ -4955,7 +5160,9 @@ export function AdminDashboard({
         {liveRecentScans.map((s, i) => (
           <div
             key={i}
-            className={`flex items-center gap-3 px-5 py-3.5 ${i < 4 ? "border-b border-slate-50" : ""}`}
+            className={`flex items-center gap-3 px-5 py-3.5 ${
+              i < 4 ? "border-b border-slate-50" : ""
+            }`}
           >
             <Avatar name={s.name} size="sm" />
             <div className="flex-1 min-w-0">
@@ -4978,8 +5185,6 @@ export function AdminDashboard({
     </PageShell>
   );
 }
-
-// ─── MODERATOR: Events ────────────────────────────────────────────────────────
 interface NewEventDraft {
   title: string;
   date: string;
@@ -5136,8 +5341,6 @@ export function AdminEventsPage({
 
       const persistedHighlightUrl =
         highlightUrl && !highlightUrl.startsWith("blob:") ? highlightUrl : null;
-
-      // Map UI camelCase to database snake_case
       const payload = {
         title: draft.title,
         event_date: draft.date,
@@ -5194,7 +5397,6 @@ export function AdminEventsPage({
       }
 
       if (data && data.length > 0) {
-        // Map returned database row back to EventData shape
         const row = data[0];
         const newEvent: EventData = {
           id: row.id,
@@ -5337,8 +5539,6 @@ export function AdminEventsPage({
         editDraft.highlightUrl && !editDraft.highlightUrl.startsWith("blob:")
           ? editDraft.highlightUrl
           : null;
-
-      // multi-admin conflict check: compare version in current state
       const current = events.find((e) => e.id === editDraft.id);
       if (
         current &&
@@ -5372,8 +5572,6 @@ export function AdminEventsPage({
             afternoonAbsent: editOriginal?.afternoonAbsentFine ?? 0,
             afternoonLate: editOriginal?.afternoonLateFine ?? 0,
           };
-
-      // Map to database snake_case
       const payload = {
         title: editDraft.title,
         event_date: editDraft.date,
@@ -5493,7 +5691,13 @@ export function AdminEventsPage({
 
       setEvents((ev) =>
         ev.map((e) =>
-          e.id === id ? { ...e, status, version: (e.version ?? 1) + 1 } : e,
+          e.id === id
+            ? {
+                ...e,
+                status,
+                version: (e.version ?? 1) + 1,
+              }
+            : e,
         ),
       );
       toast.success(`Event marked as ${status}`);
@@ -5505,7 +5709,11 @@ export function AdminEventsPage({
 
   const statusOptions = (
     current: EventStatus,
-  ): { status: EventStatus; label: string; icon: React.ReactNode }[] =>
+  ): {
+    status: EventStatus;
+    label: string;
+    icon: React.ReactNode;
+  }[] =>
     [
       {
         status: "active" as EventStatus,
@@ -5544,7 +5752,7 @@ export function AdminEventsPage({
         }
       />
 
-      {/* ── Create event modal ── */}
+      {}
       {showForm && (
         <FormModal
           title="Create New Event"
@@ -5599,7 +5807,7 @@ export function AdminEventsPage({
             onChange={setD("location")}
           />
 
-          {/* Multi-session toggle */}
+          {}
           <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
             <div className="flex items-center justify-between py-2.5">
               <div>
@@ -5614,16 +5822,20 @@ export function AdminEventsPage({
                 onClick={toggleD("multiSession")}
                 role="switch"
                 aria-checked={draft.multiSession}
-                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${draft.multiSession ? "bg-emerald-500" : "bg-slate-200"}`}
+                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${
+                  draft.multiSession ? "bg-emerald-500" : "bg-slate-200"
+                }`}
               >
                 <span
-                  className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${draft.multiSession ? "translate-x-4" : "translate-x-0"}`}
+                  className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${
+                    draft.multiSession ? "translate-x-4" : "translate-x-0"
+                  }`}
                 />
               </button>
             </div>
           </div>
 
-          {/* Single-session time OR multi-session blocks */}
+          {}
           {!draft.multiSession ? (
             <FieldInput
               label="Time"
@@ -5679,7 +5891,7 @@ export function AdminEventsPage({
             onChange={setD("description")}
           />
 
-          {/* Highlight photo */}
+          {}
           <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
               Highlight Photo
@@ -5723,7 +5935,7 @@ export function AdminEventsPage({
               </div>
             ) : highlightUrl ? (
               <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                <img
+                <OptimizedImage
                   src={highlightUrl}
                   alt=""
                   className="w-full h-36 object-cover"
@@ -5810,7 +6022,7 @@ export function AdminEventsPage({
               <div className="space-y-1 text-xs text-slate-500">
                 {photoUrls.map((url) => (
                   <div key={url} className="flex items-center gap-2">
-                    <img
+                    <OptimizedImage
                       src={url}
                       alt=""
                       className="h-10 w-14 rounded object-cover"
@@ -5834,7 +6046,7 @@ export function AdminEventsPage({
         </FormModal>
       )}
 
-      {/* ── Edit event modal ── */}
+      {}
       {editId && editDraft && (
         <FormModal
           title="Edit Event"
@@ -5934,7 +6146,7 @@ export function AdminEventsPage({
             }
           />
 
-          {/* Multi-session toggle */}
+          {}
           <div className="border border-slate-100 rounded-xl px-3 divide-y divide-slate-50">
             <div className="flex items-center justify-between py-2.5">
               <div>
@@ -5955,10 +6167,16 @@ export function AdminEventsPage({
                 role="switch"
                 aria-checked={!!editDraft.multiSession}
                 disabled={eventHasScans}
-                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${eventHasScans ? "cursor-not-allowed opacity-50" : ""} ${editDraft.multiSession ? "bg-emerald-500" : "bg-slate-200"}`}
+                className={`relative w-9 h-5 rounded-full transition-all duration-200 shrink-0 ${
+                  eventHasScans ? "cursor-not-allowed opacity-50" : ""
+                } ${
+                  editDraft.multiSession ? "bg-emerald-500" : "bg-slate-200"
+                }`}
               >
                 <span
-                  className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${editDraft.multiSession ? "translate-x-4" : "translate-x-0"}`}
+                  className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-transform duration-200 ${
+                    editDraft.multiSession ? "translate-x-4" : "translate-x-0"
+                  }`}
                 />
               </button>
             </div>
@@ -6097,7 +6315,7 @@ export function AdminEventsPage({
               </div>
             ) : editDraft.highlightUrl ? (
               <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                <img
+                <OptimizedImage
                   src={editDraft.highlightUrl}
                   alt=""
                   className="w-full h-36 object-cover"
@@ -6146,7 +6364,7 @@ export function AdminEventsPage({
                       }}
                     />
                   ) : (
-                    <img
+                    <OptimizedImage
                       key={i}
                       src={url}
                       alt=""
@@ -6207,13 +6425,17 @@ export function AdminEventsPage({
                     <span className="flex items-center gap-1.5">
                       <Icons.Clock />
                       {e.morningStart && e.morningEnd
-                        ? formatTimeRange12Hour(`${e.morningStart}–${e.morningEnd}`)
+                        ? formatTimeRange12Hour(
+                            `${e.morningStart}–${e.morningEnd}`,
+                          )
                         : "Morning TBA"}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Icons.Clock />
                       {e.afternoonStart && e.afternoonEnd
-                        ? formatTimeRange12Hour(`${e.afternoonStart}–${e.afternoonEnd}`)
+                        ? formatTimeRange12Hour(
+                            `${e.afternoonStart}–${e.afternoonEnd}`,
+                          )
                         : "Afternoon TBA"}
                     </span>
                   </>
@@ -6239,7 +6461,8 @@ export function AdminEventsPage({
                   className="flex-1 h-9 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1.5"
                 >
                   <Icons.Users />
-                  Attendees{e.attendees > 0 ? ` (${e.attendees})` : ""}
+                  Attendees
+                  {e.attendees > 0 ? ` (${e.attendees})` : ""}
                 </button>
               </div>
             </div>
@@ -6249,8 +6472,6 @@ export function AdminEventsPage({
     </PageShell>
   );
 }
-
-// ─── MODERATOR: Attendees ─────────────────────────────────────────────────────
 export function AdminAttendeesPage({
   onNav,
   events = [],
@@ -6366,19 +6587,29 @@ export function AdminAttendeesPage({
       </div>
       <p className="text-xs text-slate-400 font-medium mb-4">
         {selectedEvent
-          ? `${selectedEvent.location} · ${formatTimeRange12Hour(selectedEvent.time) || "TBA"}`
+          ? `${selectedEvent.location} · ${
+              formatTimeRange12Hour(selectedEvent.time) || "TBA"
+            }`
           : "No event selected"}
       </p>
       <div className="flex gap-1 mb-5 bg-slate-100 p-1 rounded-xl">
         <button
           onClick={() => setTab("present")}
-          className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${tab === "present" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+          className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${
+            tab === "present"
+              ? "bg-white shadow-sm text-slate-900"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
         >
           Present ({confirmed.length})
         </button>
         <button
           onClick={() => setTab("absent")}
-          className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${tab === "absent" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+          className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${
+            tab === "absent"
+              ? "bg-white shadow-sm text-slate-900"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
         >
           Absent ({absentees.length})
           {selectedEvent && selectedEvent.fineAmount > 0 && (
@@ -6413,7 +6644,9 @@ export function AdminAttendeesPage({
               {confirmed.map((s, i) => (
                 <div
                   key={s.dbId}
-                  className={`px-5 py-3.5 grid grid-cols-12 items-center ${i < confirmed.length - 1 ? "border-b border-slate-50" : ""}`}
+                  className={`px-5 py-3.5 grid grid-cols-12 items-center ${
+                    i < confirmed.length - 1 ? "border-b border-slate-50" : ""
+                  }`}
                 >
                   <div className="col-span-5 flex items-center gap-3 min-w-0">
                     <Avatar name={s.name} size="sm" />
@@ -6444,7 +6677,11 @@ export function AdminAttendeesPage({
                 {duplicates.map((s, i) => (
                   <div
                     key={s.dbId}
-                    className={`px-5 py-3.5 flex items-center gap-3 ${i < duplicates.length - 1 ? "border-b border-slate-50" : ""}`}
+                    className={`px-5 py-3.5 flex items-center gap-3 ${
+                      i < duplicates.length - 1
+                        ? "border-b border-slate-50"
+                        : ""
+                    }`}
                   >
                     <Avatar name={s.name} size="sm" />
                     <div className="flex-1 min-w-0">
@@ -6501,7 +6738,9 @@ export function AdminAttendeesPage({
               {absentees.map((s, i) => (
                 <div
                   key={s.id}
-                  className={`px-5 py-3.5 grid grid-cols-12 items-center ${i < absentees.length - 1 ? "border-b border-slate-50" : ""}`}
+                  className={`px-5 py-3.5 grid grid-cols-12 items-center ${
+                    i < absentees.length - 1 ? "border-b border-slate-50" : ""
+                  }`}
                 >
                   <div className="col-span-5 flex items-center gap-3 min-w-0">
                     <Avatar name={s.name} size="sm" />
@@ -6533,8 +6772,6 @@ export function AdminAttendeesPage({
     </PageShell>
   );
 }
-
-// ─── MODERATOR: Students ──────────────────────────────────────────────────────
 export function AdminStudentsPage({
   students = [],
 }: {
@@ -6592,7 +6829,9 @@ export function AdminStudentsPage({
             <button
               key={s.id}
               onClick={() => setSelected(s)}
-              className={`w-full px-5 py-3.5 grid grid-cols-12 items-center text-left hover:bg-slate-50 transition-colors ${i < filtered.length - 1 ? "border-b border-slate-50" : ""}`}
+              className={`w-full px-5 py-3.5 grid grid-cols-12 items-center text-left hover:bg-slate-50 transition-colors ${
+                i < filtered.length - 1 ? "border-b border-slate-50" : ""
+              }`}
             >
               <div className="col-span-5 flex items-center gap-3 min-w-0">
                 <Avatar name={s.name} size="sm" />
@@ -6625,8 +6864,6 @@ export function AdminStudentsPage({
     </PageShell>
   );
 }
-
-// ─── MODERATOR: Announcements ─────────────────────────────────────────────────
 export function AdminAnnouncementsPage({
   posts,
   setPosts,
@@ -6894,7 +7131,7 @@ export function AdminAnnouncementsPage({
               </div>
             ) : newPhoto ? (
               <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                <img
+                <OptimizedImage
                   src={newPhoto}
                   alt=""
                   className="w-full h-40 object-cover"
@@ -7007,7 +7244,7 @@ export function AdminAnnouncementsPage({
               </div>
             ) : editDraft.photoUrl ? (
               <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                <img
+                <OptimizedImage
                   src={editDraft.photoUrl}
                   alt=""
                   className="w-full h-40 object-cover"
@@ -7040,7 +7277,7 @@ export function AdminAnnouncementsPage({
             className="bg-white border border-slate-100 rounded-xl overflow-hidden hover:border-slate-200 hover:shadow-sm transition-all"
           >
             {a.photoUrl && (
-              <img
+              <OptimizedImage
                 src={a.photoUrl}
                 alt=""
                 className="w-full h-40 object-cover"
@@ -7081,8 +7318,6 @@ export function AdminAnnouncementsPage({
     </PageShell>
   );
 }
-
-// ─── MODERATOR: Excuse Requests ───────────────────────────────────────────────
 export function AdminExcuseRequestsPage({
   requests,
   onAction,
@@ -7210,8 +7445,6 @@ export function AdminExcuseRequestsPage({
     </PageShell>
   );
 }
-
-// ─── MODERATOR: Reports ───────────────────────────────────────────────────────
 export function AdminReportsPage({
   events = [],
   reportData,
@@ -7241,8 +7474,6 @@ export function AdminReportsPage({
     const W = 794,
       pad = 48,
       dpr = 2;
-
-    // estimate height
     const H =
       80 +
       32 +
@@ -7265,7 +7496,6 @@ export function AdminReportsPage({
     ctx.fillRect(0, 0, W, H);
 
     let y = 0;
-    // ── Header bar
     ctx.fillStyle = "#10b981";
     ctx.fillRect(0, 0, W, 60);
     ctx.fillStyle = "#fff";
@@ -7276,8 +7506,6 @@ export function AdminReportsPage({
     ctx.textAlign = "right";
     ctx.fillText(`AY 2026-2027 · 1st Semester`, W - pad, 38);
     y = 60;
-
-    // generated date
     ctx.fillStyle = "#94a3b8";
     ctx.font = "10px system-ui, sans-serif";
     ctx.textAlign = "left";
@@ -7330,12 +7558,13 @@ export function AdminReportsPage({
       });
       y += 24;
     };
-
-    // ── Attendance by program
     y += 14;
     sectionTitle("Attendance by Program");
     tableHeader([
-      { t: "Program", x: pad + 8 },
+      {
+        t: "Program",
+        x: pad + 8,
+      },
       { t: "Present", x: W - pad - 200, align: "right" },
       { t: "Total", x: W - pad - 120, align: "right" },
       { t: "Rate", x: W - pad - 8, align: "right" },
@@ -7343,7 +7572,10 @@ export function AdminReportsPage({
     programRows.forEach((r, i) =>
       tableRow(
         [
-          { t: r.label, x: pad + 8 },
+          {
+            t: r.label,
+            x: pad + 8,
+          },
           { t: r.present.toString(), x: W - pad - 200, align: "right" },
           { t: r.total.toString(), x: W - pad - 120, align: "right" },
           {
@@ -7358,11 +7590,12 @@ export function AdminReportsPage({
       ),
     );
     y += 14;
-
-    // ── Fees summary
     sectionTitle("Fees Summary");
     tableHeader([
-      { t: "Category", x: pad + 8 },
+      {
+        t: "Category",
+        x: pad + 8,
+      },
       { t: "Amount", x: W - pad - 8, align: "right" },
     ]);
     const feeColors: Record<string, string> = {
@@ -7373,7 +7606,10 @@ export function AdminReportsPage({
     fees.forEach((f, i) =>
       tableRow(
         [
-          { t: f.label, x: pad + 8 },
+          {
+            t: f.label,
+            x: pad + 8,
+          },
           {
             t: f.value,
             x: W - pad - 8,
@@ -7385,11 +7621,12 @@ export function AdminReportsPage({
       ),
     );
     y += 14;
-
-    // ── By event
     sectionTitle("By Event");
     tableHeader([
-      { t: "Event", x: pad + 8 },
+      {
+        t: "Event",
+        x: pad + 8,
+      },
       { t: "Date", x: W - pad - 200 },
       { t: "Fee", x: W - pad - 100, align: "right" },
       { t: "Attended", x: W - pad - 8, align: "right" },
@@ -7414,8 +7651,6 @@ export function AdminReportsPage({
       ),
     );
     y += 20;
-
-    // ── Footer
     ctx.fillStyle = "#e2e8f0";
     ctx.fillRect(pad, y, W - pad * 2, 1);
     ctx.fillStyle = "#94a3b8";
@@ -7426,8 +7661,6 @@ export function AdminReportsPage({
       W / 2,
       y + 18,
     );
-
-    // Open as PDF-like image
     canvas.toBlob((blob) => {
       if (!blob) return;
       const url = URL.createObjectURL(blob);
@@ -7478,7 +7711,9 @@ export function AdminReportsPage({
               </div>
               <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
                 <div
-                  className={`h-full ${colors[index % colors.length]} rounded-full`}
+                  className={`h-full ${
+                    colors[index % colors.length]
+                  } rounded-full`}
                   style={{ width: `${r.rate}%` }}
                 />
               </div>
@@ -7494,7 +7729,9 @@ export function AdminReportsPage({
         {fees.map((s, i) => (
           <div
             key={s.label}
-            className={`bg-white border border-slate-100 rounded-xl px-4 py-4 ${i === 0 ? "sm:col-span-1" : ""}`}
+            className={`bg-white border border-slate-100 rounded-xl px-4 py-4 ${
+              i === 0 ? "sm:col-span-1" : ""
+            }`}
           >
             <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
             <p className="text-[11px] text-slate-400 font-semibold mt-1 leading-tight">
@@ -7508,7 +7745,9 @@ export function AdminReportsPage({
         {eventRows.map((e, i, arr) => (
           <div
             key={e.id}
-            className={`flex items-center justify-between px-5 py-4 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}
+            className={`flex items-center justify-between px-5 py-4 ${
+              i < arr.length - 1 ? "border-b border-slate-50" : ""
+            }`}
           >
             <div>
               <p className="text-sm font-semibold text-slate-900">{e.title}</p>
@@ -7517,7 +7756,9 @@ export function AdminReportsPage({
               </p>
             </div>
             <div className="text-right">
-              <p className="font-bold text-emerald-500 text-lg">{e.attendees}</p>
+              <p className="font-bold text-emerald-500 text-lg">
+                {e.attendees}
+              </p>
               <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
                 attended
               </p>
@@ -7528,8 +7769,6 @@ export function AdminReportsPage({
     </PageShell>
   );
 }
-
-// ─── MODERATOR: Management & Settings ────────────────────────────────────────
 export interface CarouselSlide {
   imageUrl: string;
   caption: string;
@@ -7696,7 +7935,7 @@ export function AdminSettingsPage({
         subtitle="Changes are saved automatically"
       />
 
-      {/* Fee Visibility */}
+      {}
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
         Fee Visibility
       </p>
@@ -7710,14 +7949,22 @@ export function AdminSettingsPage({
           />
         </div>
         <div
-          className={`mx-5 mb-4 rounded-lg px-3.5 py-2.5 flex items-center gap-2.5 transition-colors ${settings.showFees ? "bg-emerald-50 border border-emerald-200" : "bg-slate-50 border border-slate-200"}`}
+          className={`mx-5 mb-4 rounded-lg px-3.5 py-2.5 flex items-center gap-2.5 transition-colors ${
+            settings.showFees
+              ? "bg-emerald-50 border border-emerald-200"
+              : "bg-slate-50 border border-slate-200"
+          }`}
         >
           <span
-            className={`w-1.5 h-1.5 rounded-full shrink-0 ${settings.showFees ? "bg-emerald-500" : "bg-slate-400"}`}
+            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+              settings.showFees ? "bg-emerald-500" : "bg-slate-400"
+            }`}
             style={settings.showFees ? { animation: "pulse 2s infinite" } : {}}
           />
           <p
-            className={`text-xs font-medium leading-relaxed ${settings.showFees ? "text-emerald-700" : "text-slate-500"}`}
+            className={`text-xs font-medium leading-relaxed ${
+              settings.showFees ? "text-emerald-700" : "text-slate-500"
+            }`}
           >
             Fees are{" "}
             <span className="font-bold">
@@ -7729,7 +7976,7 @@ export function AdminSettingsPage({
         </div>
       </div>
 
-      {/* Attendance & Requests */}
+      {}
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
         Attendance &amp; Requests
       </p>
@@ -7750,7 +7997,7 @@ export function AdminSettingsPage({
         </div>
       </div>
 
-      {/* Academic Information */}
+      {}
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
         Academic Information
       </p>
@@ -7781,12 +8028,12 @@ export function AdminSettingsPage({
         </div>
       </div>
 
-      {/* Landing Page */}
+      {}
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
         Landing Page
       </p>
 
-      {/* Hero images */}
+      {}
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-3">
         <div className="px-5 py-4">
           <div className="flex items-center justify-between mb-0.5">
@@ -7824,7 +8071,7 @@ export function AdminSettingsPage({
                   key={i}
                   className="relative rounded-xl overflow-hidden border border-slate-200 aspect-video"
                 >
-                  <img
+                  <OptimizedImage
                     src={url}
                     alt={`Hero ${i + 1}`}
                     className="w-full h-full object-cover"
@@ -7917,7 +8164,7 @@ export function AdminSettingsPage({
         </div>
       </div>
 
-      {/* Carousel slides */}
+      {}
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
         <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
           <div>
@@ -7953,7 +8200,7 @@ export function AdminSettingsPage({
               return (
                 <div key={i} className="px-5 py-4">
                   <div className="flex items-start gap-3">
-                    {/* Thumbnail */}
+                    {}
                     <div className="shrink-0">
                       <input
                         ref={ref}
@@ -7999,7 +8246,7 @@ export function AdminSettingsPage({
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <img
+                            <OptimizedImage
                               src={slide.imageUrl}
                               alt=""
                               className="w-full h-full object-cover"
@@ -8018,7 +8265,7 @@ export function AdminSettingsPage({
                         </button>
                       )}
                     </div>
-                    {/* Fields */}
+                    {}
                     <div className="flex-1 space-y-2 min-w-0">
                       <FieldInput
                         label="Caption"
@@ -8037,7 +8284,7 @@ export function AdminSettingsPage({
                         }
                       />
                     </div>
-                    {/* Controls */}
+                    {}
                     <div className="flex flex-col gap-1 shrink-0">
                       <button
                         onClick={() => moveSlide(i, -1)}
@@ -8068,7 +8315,7 @@ export function AdminSettingsPage({
         )}
       </div>
 
-      {/* System Info */}
+      {}
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
         System
       </p>
@@ -8080,7 +8327,9 @@ export function AdminSettingsPage({
         ].map((r, i, arr) => (
           <div
             key={r.l}
-            className={`flex items-center justify-between px-5 py-3.5 ${i < arr.length - 1 ? "border-b border-slate-50" : ""}`}
+            className={`flex items-center justify-between px-5 py-3.5 ${
+              i < arr.length - 1 ? "border-b border-slate-50" : ""
+            }`}
           >
             <span className="text-sm text-slate-500">{r.l}</span>
             <span className="text-sm font-semibold text-slate-900">{r.v}</span>
@@ -8182,7 +8431,7 @@ export default function LandingExperienceClient({
     };
   }, []);
 
-	  const handleLandingNav = (page: Page) => {
+  const handleLandingNav = (page: Page) => {
     const routeFromPage: Record<Page, string> = {
       landing: "/",
       login: "/login",
@@ -8200,8 +8449,8 @@ export default function LandingExperienceClient({
       "admin-scanner": "/admin-scanner",
       "admin-attendees": "/admin-attendees",
       "admin-students": "/admin-students",
-	      "admin-announcements": "/admin-announcements",
-	      "dev-notes": "/dev-notes",
+      "admin-announcements": "/admin-announcements",
+      "dev-notes": "/dev-notes",
       "admin-reports": "/admin-reports",
       "admin-excuse-requests": "/admin-excuse-requests",
       "admin-settings": "/admin-settings",
