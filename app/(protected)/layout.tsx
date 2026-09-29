@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 // Role-based redirect: prevent admins from accessing student pages and vice versa
 
@@ -11,9 +11,9 @@ import {
   type Dispatch,
   type ReactNode,
   type SetStateAction,
-} from "react"
+} from "react";
 
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation";
 
 import {
   TopBar,
@@ -22,48 +22,48 @@ import {
   PageShell,
   type Page,
   type User,
-} from "../shared-page"
+} from "../shared-page";
 
-import { DevNotesProvider, useDevNotes } from "../DevNotesPage"
+import { DevNotesProvider, useDevNotes } from "../DevNotesPage";
 
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase";
 
-import { FeedbackState } from "@/components/ui/feedback"
+import { FeedbackState } from "@/components/ui/feedback";
 
-import { toast } from "sonner"
+import { toast } from "sonner";
 
 type ProtectedUserContextValue = {
-  user: User | null
+  user: User | null;
 
-  setUser: Dispatch<SetStateAction<User | null>>
+  setUser: Dispatch<SetStateAction<User | null>>;
 
-  authUserId: string | null
+  authUserId: string | null;
 
-  setAuthUserId: Dispatch<SetStateAction<string | null>>
+  setAuthUserId: Dispatch<SetStateAction<string | null>>;
 
-  showFees: boolean
-}
+  showFees: boolean;
+};
 
 const ProtectedUserContext = createContext<ProtectedUserContextValue | null>(
   null,
-)
+);
 
 export function useProtectedUser() {
-  const value = useContext(ProtectedUserContext)
+  const value = useContext(ProtectedUserContext);
 
   if (!value) {
-    throw new Error("useProtectedUser must be used inside ProtectedLayout")
+    throw new Error("useProtectedUser must be used inside ProtectedLayout");
   }
 
-  return value
+  return value;
 }
 
-type ProtectedSidebarProps = ComponentProps<typeof Sidebar>
+type ProtectedSidebarProps = ComponentProps<typeof Sidebar>;
 
 function ProtectedSidebar(props: ProtectedSidebarProps) {
-  const { unreadCount } = useDevNotes()
+  const { unreadCount } = useDevNotes();
 
-  return <Sidebar {...props} badges={{ "dev-notes": unreadCount }} />
+  return <Sidebar {...props} badges={{ "dev-notes": unreadCount }} />;
 }
 
 const pathToPage: Partial<Record<string, Page>> = {
@@ -102,73 +102,73 @@ const pathToPage: Partial<Record<string, Page>> = {
   "/admin-reports": "admin-reports",
 
   "/admin-settings": "admin-settings",
-}
+};
 
 export default function ProtectedLayout({ children }: { children: ReactNode }) {
-  const router = useRouter()
+  const router = useRouter();
 
-  const pathname = usePathname()
+  const pathname = usePathname();
 
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(null);
 
-  const [authUserId, setAuthUserId] = useState<string | null>(null)
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
 
-  const [page, setPage] = useState<Page>("landing")
-  const [open, setOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [sessionReady, setSessionReady] = useState(false)
-  const [hasSession, setHasSession] = useState(false)
+  const [page, setPage] = useState<Page>("landing");
+  const [open, setOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
 
-  const [settingsReady, setSettingsReady] = useState(false)
+  const [settingsReady, setSettingsReady] = useState(false);
 
-  const [showFees, setShowFees] = useState(false)
+  const [showFees, setShowFees] = useState(false);
 
-  const [sessionError, setSessionError] = useState<string | null>(null)
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
-  const [settingsError, setSettingsError] = useState<string | null>(null)
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function hydrateSession() {
-      if (!cancelled) setSessionError(null)
+      if (!cancelled) setSessionError(null);
 
       try {
         const {
           data: { session },
 
           error: sessionError,
-        } = await supabase.auth.getSession()
+        } = await supabase.auth.getSession();
 
         if (sessionError) {
-          console.error(sessionError)
+          console.error(sessionError);
 
           if (!cancelled)
             setSessionError(
               "We could not verify your session. Please try again.",
-            )
+            );
 
-          return
+          return;
         }
 
         if (!session?.user) {
           if (!cancelled) {
-            setHasSession(false)
+            setHasSession(false);
           }
 
-          router.replace("/login")
+          router.replace("/login");
 
-          return
+          return;
         }
 
         if (!cancelled) {
-          setHasSession(true)
+          setHasSession(true);
         }
 
-        const uid = session.user.id
+        const uid = session.user.id;
 
         if (!cancelled) {
-          setAuthUserId(uid)
+          setAuthUserId(uid);
         }
 
         const { data: profile, error: profileError } = await supabase
@@ -179,26 +179,22 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
           .eq("id", uid)
 
-          .maybeSingle()
+          .maybeSingle();
 
-        if (
-          profileError &&
-          profileError.code !==
-            "PGRST116"
-        ) {
-          console.error(profileError)
+        if (profileError && profileError.code !== "PGRST116") {
+          console.error(profileError);
         }
 
         const googleAvatarUrl =
-          session.user.user_metadata?.avatar_url as string | undefined ??
-          session.user.user_metadata?.picture as string | undefined ??
-          session.user.user_metadata?.image_url as string | undefined ??
-          null
+          (session.user.user_metadata?.avatar_url as string | undefined) ??
+          (session.user.user_metadata?.picture as string | undefined) ??
+          (session.user.user_metadata?.image_url as string | undefined) ??
+          null;
 
         if (!profile) {
-          router.push("/onboarding")
+          router.push("/onboarding");
 
-          return
+          return;
         }
 
         if (!profile.photo_url && googleAvatarUrl) {
@@ -208,114 +204,88 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
             .update({ photo_url: googleAvatarUrl })
 
-            .eq("id", uid)
+            .eq("id", uid);
 
           if (avatarUpdateError) {
             console.error(
               "Failed to set Google avatar as default photo",
 
               avatarUpdateError,
-            )
+            );
           }
         }
 
         const profileIsIncomplete =
           !profile.first_name ||
           !profile.surname ||
-          (profile.role !==
-            "admin" &&
-            (!profile.student_id || !profile.program || !profile.year_level))
+          (profile.role !== "admin" &&
+            (!profile.student_id || !profile.program || !profile.year_level));
 
         if (profileIsIncomplete) {
-          router.push("/onboarding")
+          router.push("/onboarding");
 
-          return
+          return;
         }
 
         const hydratedUser: User = {
-          firstName:
-            profile.first_name ??
-            "",
+          firstName: profile.first_name ?? "",
 
-          middleInitial:
-            profile.middle_initial ??
-            "",
+          middleInitial: profile.middle_initial ?? "",
 
-          surname:
-            profile.surname ??
-            "",
+          surname: profile.surname ?? "",
 
-          studentId:
-            profile.student_id ??
-            "",
+          studentId: profile.student_id ?? "",
 
-          program:
-            profile.program ??
-            "",
+          program: profile.program ?? "",
 
-          yearLevel:
-            profile.year_level ??
-            "",
+          yearLevel: profile.year_level ?? "",
 
-          section:
-            profile.section ??
-            "",
+          section: profile.section ?? "",
 
-          phone:
-            profile.phone ??
-            "",
+          phone: profile.phone ?? "",
 
           contactEmail: profile.contact_email ?? profile.email ?? "",
 
-          role:
-            profile.role ??
-            "student",
+          role: profile.role ?? "student",
 
           photoUrl: profile.photo_url ?? googleAvatarUrl ?? undefined,
 
-          coverPhotoUrl:
-            profile.cover_photo_url ??
-            undefined,
+          coverPhotoUrl: profile.cover_photo_url ?? undefined,
 
-          idPhotoUrl:
-            profile.id_photo_url ??
-            undefined,
+          idPhotoUrl: profile.id_photo_url ?? undefined,
 
-          qrVersion: Number(
-            profile.qr_version ??
-              1,
-          ),
-        }
+          qrVersion: Number(profile.qr_version ?? 1),
+        };
 
         if (!cancelled) {
-          setUser(hydratedUser)
+          setUser(hydratedUser);
         }
       } catch (caught) {
-        console.error(caught)
+        console.error(caught);
 
         if (!cancelled)
           setSessionError(
             "We could not load your account. Check your connection and try again.",
-          )
+          );
       } finally {
         if (!cancelled) {
-          setSessionReady(true)
+          setSessionReady(true);
         }
       }
     }
 
-    void hydrateSession()
+    void hydrateSession();
 
     return () => {
-      cancelled = true
-    }
-  }, [router])
+      cancelled = true;
+    };
+  }, [router]);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function hydrateSettings() {
-      if (!cancelled) setSettingsError(null)
+      if (!cancelled) setSettingsError(null);
 
       try {
         const { data, error } = await supabase
@@ -326,78 +296,74 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
           .eq("id", 1)
 
-          .maybeSingle()
+          .maybeSingle();
 
         if (error) {
-          console.error("Failed to load protected settings", error)
+          console.error("Failed to load protected settings", error);
 
           if (!cancelled)
-            setSettingsError("System settings are temporarily unavailable.")
+            setSettingsError("System settings are temporarily unavailable.");
 
-          return
+          return;
         }
 
         if (!cancelled) {
-          const savedSettings = data?.settings as {
-            finesEnabled?: boolean
-            showFees?: boolean
-          } | null | undefined
+          const savedSettings = data?.settings as
+            | {
+                finesEnabled?: boolean;
+                showFees?: boolean;
+              }
+            | null
+            | undefined;
 
           setShowFees(
-            savedSettings?.finesEnabled ===
-              true &&
-              savedSettings.showFees ===
-                true,
-          )
+            savedSettings?.finesEnabled === true &&
+              savedSettings.showFees === true,
+          );
 
-          setSettingsReady(true)
+          setSettingsReady(true);
         }
       } catch (caught) {
-        console.error(caught)
+        console.error(caught);
 
         if (!cancelled)
-          setSettingsError("System settings are temporarily unavailable.")
+          setSettingsError("System settings are temporarily unavailable.");
       } finally {
-        if (!cancelled) setSettingsReady(true)
+        if (!cancelled) setSettingsReady(true);
       }
     }
 
-    void hydrateSettings()
+    void hydrateSettings();
 
     return () => {
-      cancelled = true
-    }
-  }, [])
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
-    void router.prefetch("/")
+    void router.prefetch("/");
 
     void router.prefetch(
-      user?.role ===
-        "admin"
-        ? "/admin-dashboard"
-        : "/dashboard",
-    )
-  }, [router, user?.role])
+      user?.role === "admin" ? "/admin-dashboard" : "/dashboard",
+    );
+  }, [router, user?.role]);
 
   useEffect(() => {
-    const routePage =
-      pathToPage[pathname] ??
-      "dashboard"
+    const routePage = pathToPage[pathname] ?? "dashboard";
 
-    setPage(routePage)
+    setPage(routePage);
 
-    window.scrollTo({ top: 0, behavior: "auto" })
+    window.scrollTo({ top: 0, behavior: "auto" });
 
     document.getElementById("protected-main-content")?.scrollTo({
       top: 0,
 
       behavior: "auto",
-    })
+    });
 
     if (user) {
       const isAdminRoute =
-        pathname.startsWith("/admin-") || pathname === "/admin-dashboard"
+        pathname.startsWith("/admin-") || pathname === "/admin-dashboard";
 
       const isStudentRoute =
         pathname === "/dashboard" ||
@@ -406,55 +372,55 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
         pathname === "/announcements" ||
         pathname === "/my-qr" ||
         pathname === "/my-fines" ||
-        pathname === "/attendance-history"
+        pathname === "/attendance-history";
 
       if (isAdminRoute && user.role !== "admin") {
-        router.push("/dashboard")
+        router.push("/dashboard");
       } else if (isStudentRoute && user.role === "admin") {
-        router.push("/admin-dashboard")
+        router.push("/admin-dashboard");
       }
     }
-  }, [pathname, user, router])
+  }, [pathname, user, router]);
 
   const resetProtectedAuthState = () => {
-    setUser(null)
+    setUser(null);
 
-    setAuthUserId(null)
+    setAuthUserId(null);
 
-    setHasSession(false)
+    setHasSession(false);
 
-    setSessionReady(false)
+    setSessionReady(false);
 
-    setSettingsReady(false)
+    setSettingsReady(false);
 
-    setShowFees(false)
+    setShowFees(false);
 
-    setPage("landing")
+    setPage("landing");
 
-    setOpen(false)
-  }
+    setOpen(false);
+  };
 
   const onLogout = async () => {
-    toast.loading("Signing you out...", { id: "adesse-logout" })
+    toast.loading("Signing you out...", { id: "adesse-logout" });
 
     try {
-      const { error } = await supabase.auth.signOut()
+      const { error } = await supabase.auth.signOut();
 
-      if (error) throw error
+      if (error) throw error;
 
-      toast.success("You have been signed out.", { id: "adesse-logout" })
+      toast.success("You have been signed out.", { id: "adesse-logout" });
 
-      resetProtectedAuthState()
+      resetProtectedAuthState();
 
-      router.push("/login")
+      router.push("/login");
     } catch (caughtError) {
-      console.error(caughtError)
+      console.error(caughtError);
 
       toast.error("We could not sign you out. Please try again.", {
         id: "adesse-logout",
-      })
+      });
     }
-  }
+  };
 
   const onNav = (p: Page) => {
     const routeFromPage: Record<Page, string> = {
@@ -499,16 +465,16 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
       "admin-excuse-requests": "/admin-excuse-requests",
 
       "admin-settings": "/admin-settings",
-    }
+    };
 
-    const target = routeFromPage[p] ?? "/dashboard"
+    const target = routeFromPage[p] ?? "/dashboard";
 
-    router.push(target)
+    router.push(target);
 
-    setOpen(false)
-  }
+    setOpen(false);
+  };
 
-  const showGlobalLoading = !sessionReady || !settingsReady || !user
+  const showGlobalLoading = !sessionReady || !settingsReady || !user;
 
   if (sessionError || settingsError) {
     return (
@@ -525,7 +491,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           />
         </div>
       </div>
-    )
+    );
   }
 
   if (showGlobalLoading) {
@@ -536,7 +502,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           Loading Adesse...
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -559,6 +525,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
             onMenuOpen={() => setOpen(true)}
             sidebarCollapsed={sidebarCollapsed}
             onSidebarToggle={() => setSidebarCollapsed((value) => !value)}
+            showFees={showFees}
           />
           <div className="w-full md:flex md:min-h-0 md:h-[calc(100vh-56px)]">
             <ProtectedSidebar
@@ -570,6 +537,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
               onLogout={onLogout}
               collapsed={sidebarCollapsed}
               onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
+              showFees={showFees}
             />
             <main
               id="protected-main-content"
@@ -581,5 +549,5 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
         </div>
       </DevNotesProvider>
     </ProtectedUserContext.Provider>
-  )
+  );
 }

@@ -112,7 +112,7 @@ export default function AttendanceHistoryRoutePage() {
           supabase
             .from("events")
             .select(
-              "id, title, event_date, status, program, multi_session, start_time, end_time, morning_end, afternoon_end, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+              "id, title, event_date, status, program, multi_session, sanctions_enabled, start_time, end_time, morning_end, afternoon_end, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
             ),
           supabase
             .from("system_settings")
@@ -299,8 +299,21 @@ export default function AttendanceHistoryRoutePage() {
         const historicalFines = storedFines.filter(
           (fine) => fine.status !== "unpaid",
         );
+        const sanctionedBySession = new Map(
+          records.map((record) => [record.key, record.sanctioned]),
+        );
+        const attendanceWithSanctions = [
+          ...storedAttendance,
+          ...inferredAttendance,
+        ].map((record) => ({
+          ...record,
+          sanctioned:
+            sanctionedBySession.get(
+              `${record.eventId}:${record.sessionLabel ?? "morning"}`,
+            ) ?? false,
+        }));
         setFines([...canonicalFines, ...historicalFines]);
-        setAttendanceRecords([...storedAttendance, ...inferredAttendance]);
+        setAttendanceRecords(attendanceWithSanctions);
       } catch (caughtError) {
         console.error(caughtError);
         if (!cancelled)

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FeedbackState } from "@/components/ui/feedback";
 import { MyFinesPage, type FineRecord } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
@@ -19,12 +20,21 @@ export default function MyFinesRoutePage() {
   const { authUserId, showFees } = useProtectedUser();
   const [fines, setFines] = useState<FineRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
+    if (!showFees) {
+      setIsLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     async function loadFines() {
       try {
+        if (!cancelled) setLoadError(null);
         if (!authUserId) {
           return;
         }
@@ -70,28 +80,18 @@ export default function MyFinesRoutePage() {
             .eq("status", "approved"),
         ]);
 
-        if (error) {
-          console.error(error);
-          return;
-        }
-        if (scansError) {
-          console.error(scansError);
-          return;
-        }
-        if (profileError) {
-          console.error(profileError);
-          return;
-        }
-        if (eventsError) {
-          console.error(eventsError);
-          return;
-        }
-        if (settingsError) {
-          console.error(settingsError);
-          return;
-        }
-        if (excusesError) {
-          console.error(excusesError);
+        const queryError =
+          error ||
+          scansError ||
+          profileError ||
+          eventsError ||
+          settingsError ||
+          excusesError;
+        if (queryError) {
+          console.error(queryError);
+          if (!cancelled) {
+            setLoadError("Attendance charge records could not be loaded.");
+          }
           return;
         }
 
@@ -156,6 +156,9 @@ export default function MyFinesRoutePage() {
         }
       } catch (caughtError) {
         console.error(caughtError);
+        if (!cancelled) {
+          setLoadError("Attendance charge records could not be loaded.");
+        }
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -175,7 +178,7 @@ export default function MyFinesRoutePage() {
       cancelled = true;
       void finesChannel.unsubscribe();
     };
-  }, [authUserId]);
+  }, [authUserId, showFees]);
 
   if (isLoading) {
     return (
@@ -185,6 +188,16 @@ export default function MyFinesRoutePage() {
           <Skeleton key={item} className="h-20 w-full rounded-xl" />
         ))}
       </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <FeedbackState
+        title="Attendance charges unavailable"
+        message={loadError}
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 

@@ -3423,6 +3423,8 @@ export function TopBar({
   sidebarCollapsed,
 
   onSidebarToggle,
+
+  showFees,
 }: {
   user: User | null;
 
@@ -3433,6 +3435,8 @@ export function TopBar({
   sidebarCollapsed: boolean;
 
   onSidebarToggle: () => void;
+
+  showFees: boolean;
 }) {
   const router = useRouter();
 
@@ -3662,11 +3666,17 @@ export function TopBar({
           kind: "page",
         },
         {
-          label: "My Fines",
+          label: "Attendance Charges",
           path: "/my-fines",
-          keywords: ["fines", "fine", "payments", "balance"],
-          hint: "Account balances",
-          show: !isMod,
+          keywords: [
+            "attendance charges",
+            "charges",
+            "fees",
+            "payments",
+            "balance",
+          ],
+          hint: "Outstanding attendance charges",
+          show: !isMod && showFees,
           kind: "page",
         },
         {
@@ -3701,7 +3711,7 @@ export function TopBar({
           kind: "page",
         },
       ].filter((item) => item.show !== false),
-    [isMod],
+    [isMod, showFees],
   );
 
   const filteredResults = useMemo(() => {
@@ -4147,6 +4157,8 @@ export function Sidebar({
   collapsed,
 
   onToggleCollapse,
+
+  showFees,
 }: {
   page: Page;
 
@@ -4165,6 +4177,8 @@ export function Sidebar({
   collapsed: boolean;
 
   onToggleCollapse: () => void;
+
+  showFees: boolean;
 }) {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
@@ -4220,7 +4234,7 @@ export function Sidebar({
           I: Icons.CheckCircle,
         },
 
-        { p: "my-fines" as Page, l: "My Fines", I: Icons.Peso },
+        { p: "my-fines" as Page, l: "Attendance Charges", I: Icons.Peso },
 
         { p: "profile" as Page, l: "Profile", I: Icons.User },
       ];
@@ -4305,71 +4319,73 @@ export function Sidebar({
 
       {}
       <nav className="flex-1 px-2 pt-3 pb-2 space-y-0.5 overflow-y-auto">
-        {nav.map(({ p, l, I }) => {
-          const active = page === p;
+        {nav
+          .filter(({ p }) => p !== "my-fines" || showFees)
+          .map(({ p, l, I }) => {
+            const active = page === p;
 
-          const count = badges?.[p] ?? 0;
+            const count = badges?.[p] ?? 0;
 
-          const badgeLabel =
-            count > 9 ? "9+" : count > 0 ? String(count) : null;
+            const badgeLabel =
+              count > 9 ? "9+" : count > 0 ? String(count) : null;
 
-          const target = routeFromPage[p] ?? "/dashboard";
+            const target = routeFromPage[p] ?? "/dashboard";
 
-          return (
-            <Link
-              key={p}
-              href={target}
-              prefetch
-              onMouseEnter={() => prefetchRoute(p)}
-              onFocus={() => prefetchRoute(p)}
-              onClick={onClose}
-              title={collapsed ? l : undefined}
-              aria-label={l}
-              className={`relative w-full flex items-center gap-3 border-l-[3px] px-3 h-10 rounded-lg text-sm transition-[background-color,color,border-color] duration-150 ease-out lg:gap-0 ${
-                collapsed ? "lg:justify-center" : "lg:justify-start"
-              } ${
-                active
-                  ? "border-emerald-500 bg-emerald-50/70 text-emerald-700 font-medium"
-                  : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-normal"
-              }`}
-            >
-              <motion.span
-                layout="position"
-                transition={{
-                  layout: prefersReducedMotion
-                    ? { duration: 0 }
-                    : { duration: 0.24, ease: [0.22, 1, 0.36, 1] },
-                }}
-                className={`relative z-10 shrink-0 ${
-                  active ? "text-emerald-500" : "text-slate-400"
-                }}`}
+            return (
+              <Link
+                key={p}
+                href={target}
+                prefetch
+                onMouseEnter={() => prefetchRoute(p)}
+                onFocus={() => prefetchRoute(p)}
+                onClick={onClose}
+                title={collapsed ? l : undefined}
+                aria-label={l}
+                className={`relative w-full flex items-center gap-3 border-l-[3px] px-3 h-10 rounded-lg text-sm transition-[background-color,color,border-color] duration-150 ease-out lg:gap-0 ${
+                  collapsed ? "lg:justify-center" : "lg:justify-start"
+                } ${
+                  active
+                    ? "border-emerald-500 bg-emerald-50/70 text-emerald-700 font-medium"
+                    : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-normal"
+                }`}
               >
-                <I />
-                {badgeLabel && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-[3px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
-                    {badgeLabel}
-                  </span>
-                )}
-              </motion.span>
-              <span className="truncate lg:hidden">{l}</span>
-              <motion.span
-                className="sidebar-motion pointer-events-none absolute left-[42px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
-                initial={false}
-                animate={
-                  collapsed ? { opacity: 0, x: -6 } : { opacity: 1, x: 0 }
-                }
-                transition={
-                  prefersReducedMotion
-                    ? { duration: 0 }
-                    : { duration: 0.18, ease: [0.22, 1, 0.36, 1] }
-                }
-                style={{ willChange: "opacity, transform" }}
-              >
-                {l}
-              </motion.span>
-            </Link>
-          );
-        })}
+                <motion.span
+                  layout="position"
+                  transition={{
+                    layout: prefersReducedMotion
+                      ? { duration: 0 }
+                      : { duration: 0.24, ease: [0.22, 1, 0.36, 1] },
+                  }}
+                  className={`relative z-10 shrink-0 ${
+                    active ? "text-emerald-500" : "text-slate-400"
+                  }}`}
+                >
+                  <I />
+                  {badgeLabel && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-[3px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+                      {badgeLabel}
+                    </span>
+                  )}
+                </motion.span>
+                <span className="truncate lg:hidden">{l}</span>
+                <motion.span
+                  className="sidebar-motion pointer-events-none absolute left-[42px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
+                  initial={false}
+                  animate={
+                    collapsed ? { opacity: 0, x: -6 } : { opacity: 1, x: 0 }
+                  }
+                  transition={
+                    prefersReducedMotion
+                      ? { duration: 0 }
+                      : { duration: 0.18, ease: [0.22, 1, 0.36, 1] }
+                  }
+                  style={{ willChange: "opacity, transform" }}
+                >
+                  {l}
+                </motion.span>
+              </Link>
+            );
+          })}
       </nav>
 
       {}
@@ -4493,7 +4509,10 @@ export function Sidebar({
             key="mobile-sidebar-backdrop"
             initial={prefersReducedMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{
+              opacity: 0,
+              transition: { duration: prefersReducedMotion ? 0 : 0.16 },
+            }}
             transition={{ duration: prefersReducedMotion ? 0 : 0.16 }}
             onClick={onClose}
             className="fixed inset-0 z-40 bg-black/40 lg:hidden"
@@ -4505,7 +4524,17 @@ export function Sidebar({
             key="mobile-sidebar-panel"
             initial={prefersReducedMotion ? false : { x: "-100%" }}
             animate={{ x: 0 }}
-            exit={prefersReducedMotion ? { x: 0 } : { x: "-100%" }}
+            exit={
+              prefersReducedMotion
+                ? { x: 0 }
+                : {
+                    x: "-100%",
+                    transition: {
+                      duration: 0.16,
+                      ease: [0.64, 0, 0.78, 0],
+                    },
+                  }
+            }
             transition={{
               duration: prefersReducedMotion ? 0 : 0.2,
               ease: [0.22, 1, 0.36, 1],
@@ -6596,10 +6625,10 @@ export function DashboardPage({
             </div>
             <div className="text-left">
               <p className="text-sm font-bold text-red-700">
-                Unpaid fines — ₱{total.toLocaleString()}
+                Outstanding charges — ₱{total.toLocaleString()}
               </p>
               <p className="text-xs text-red-500 mt-0.5">
-                {unpaidFines.length} outstanding fine
+                {unpaidFines.length} outstanding charge
                 {unpaidFines.length > 1 ? "s" : ""}
               </p>
             </div>
@@ -7841,7 +7870,9 @@ export function AttendanceHistoryPage({
 
   onBack: () => void;
 
-  attendanceRecords?: typeof ATTENDANCE_RECORDS;
+  attendanceRecords?: Array<
+    (typeof ATTENDANCE_RECORDS)[number] & { sanctioned?: boolean }
+  >;
 }) {
   const [modal, setModal] = useState<(typeof ATTENDANCE_RECORDS)[0] | null>(
     null,
@@ -7938,6 +7969,11 @@ export function AttendanceHistoryPage({
                       : ""}
                     {r.time !== "—" ? ` · ${r.time}` : ""}
                   </p>
+                  {r.sanctioned && (
+                    <div className="mt-1">
+                      <Badge status={r.status} sanctioned />
+                    </div>
+                  )}
                   {req && (
                     <p
                       role="status"
@@ -7993,7 +8029,7 @@ export function AttendanceHistoryPage({
                       Requests closed
                     </span>
                   )
-                ) : (
+                ) : r.sanctioned ? null : (
                   <Badge status={eff} />
                 )}
               </div>
@@ -8067,17 +8103,16 @@ export function MyFinesPage({
     return (
       <>
         <BackButton onClick={onBack} label="Back to Home" />
-        <PageHeader title="My Fines" />
+        <PageHeader title="Attendance Charges" />
         <div className="rounded-xl border border-slate-100 bg-white px-5 py-8 text-center md:py-12">
           <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3 text-slate-400">
             <Icons.Peso />
           </div>
           <p className="font-semibold text-slate-900 text-sm">
-            Fee information not yet available
+            Attendance charges are not currently available
           </p>
           <p className="text-xs text-slate-400 mt-1.5 max-w-[220px] mx-auto leading-relaxed">
-            Fee details will be shown when the payment period opens. Check back
-            soon.
+            Your school is not currently showing monetary attendance charges.
           </p>
         </div>
       </>
@@ -8088,37 +8123,41 @@ export function MyFinesPage({
     <>
       <BackButton onClick={onBack} label="Back to Home" />
       <PageHeader
-        title="My Fines"
-        subtitle="Outstanding fees from missed events."
+        title="Attendance Charges"
+        subtitle="Monetary charges from missed event sessions."
       />
-      {unpaid.length === 0 ? (
+      {unpaid.length === 0 && (
         <div className="rounded-xl border border-slate-100 bg-white px-5 py-8 text-center md:py-12">
           <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mx-auto mb-3 text-emerald-500">
             <Icons.Check />
           </div>
           <p className="font-semibold text-slate-900 text-sm">
-            No outstanding fines
+            No outstanding charges
           </p>
           <p className="text-xs text-slate-400 mt-1">
-            Your attendance record is clean.
+            {fines.length > 0
+              ? "You have no current balance. Past charge records are listed below."
+              : "No monetary attendance charges have been recorded for your account."}
           </p>
         </div>
-      ) : (
+      )}
+      {unpaid.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 mb-5 flex items-center justify-between">
+          <div>
+            <p className="font-bold text-red-800">Total outstanding</p>
+            <p className="text-xs text-red-600 mt-0.5">
+              {unpaid.length} unpaid charge
+              {unpaid.length > 1 ? "s" : ""}
+            </p>
+          </div>
+          <p className="text-2xl font-extrabold text-red-700">
+            ₱{total.toLocaleString()}
+          </p>
+        </div>
+      )}
+      {fines.length > 0 && (
         <>
-          {unpaid.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 mb-5 flex items-center justify-between">
-              <div>
-                <p className="font-bold text-red-800">Total outstanding</p>
-                <p className="text-xs text-red-600 mt-0.5">
-                  {unpaid.length} unpaid fine
-                  {unpaid.length > 1 ? "s" : ""}
-                </p>
-              </div>
-              <p className="text-2xl font-extrabold text-red-700">
-                ₱{total.toLocaleString()}
-              </p>
-            </div>
-          )}
+          <SectionLabel>Charge history</SectionLabel>
           <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
             {fines.map((fine, i) => (
               <div
@@ -8177,9 +8216,9 @@ export function MyFinesPage({
               <Icons.AlertCircle />
             </span>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Pay fines at the SSG office or Accounting window. Bring your
-              student ID. Approved excuse requests automatically waive the
-              corresponding fee.
+              Pay outstanding charges at the SSG office or Accounting window.
+              Bring your student ID. Approved excuse requests automatically
+              waive the corresponding charge.
             </p>
           </div>
         </>
@@ -16398,7 +16437,7 @@ export function AdminSettingsPage({
             onToggle={() => toggle("showFees")}
             disabled={!settings.finesEnabled}
             label="Show fees to students"
-            desc="Enable during fee-paying week so students can see absence fine amounts across events, attendance history, and their Fines page."
+            desc="Enable during fee-paying week so students can see attendance charge amounts across events, attendance history, and their Attendance Charges page."
           />
         </div>
         <div
