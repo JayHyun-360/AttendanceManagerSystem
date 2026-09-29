@@ -756,14 +756,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 
-import {
-  Bar,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
+import { Bar } from "recharts";
 
 import jsQR from "jsqr";
 
@@ -6442,7 +6435,7 @@ export function DashboardPage({
 
     upcoming: number;
 
-    rate: number;
+    totalSessions: number;
   };
 }) {
   const unpaidFines = fines.filter((f) => f.status === "unpaid");
@@ -6458,16 +6451,21 @@ export function DashboardPage({
 
     upcoming: 0,
 
-    rate: 0,
+    totalSessions: 0,
   };
 
-  const attendanceData = [
-    { name: "Present", value: statValues.present, fill: "#10b981" },
-
-    { name: "Absent", value: statValues.absent, fill: "#94a3b8" },
-
-    { name: "Upcoming", value: statValues.upcoming, fill: "#a7f3d0" },
-  ];
+  const attendedSessions = Math.min(
+    statValues.present,
+    statValues.totalSessions,
+  );
+  const notAttendedSessions = Math.max(
+    statValues.totalSessions - attendedSessions,
+    0,
+  );
+  const attendanceRate =
+    statValues.totalSessions > 0
+      ? Math.round((attendedSessions / statValues.totalSessions) * 100)
+      : null;
 
   return (
     <>
@@ -6533,38 +6531,57 @@ export function DashboardPage({
       </div>
 
       <motion.div
-        className="bg-white border border-slate-100 rounded-xl px-4 py-3 mb-5"
+        className="mb-5 rounded-xl border border-slate-100 bg-white px-4 py-4 md:px-5"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.28, delay: 0.2 }}
       >
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-            Attendance rate
-          </span>
-          <span className="text-[11px] font-semibold text-emerald-600">
-            {statValues.rate}%
-          </span>
-        </div>
-        <div className="h-24">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={attendanceData}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={16}
-                outerRadius={34}
-                paddingAngle={2}
-                strokeWidth={0}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8">
+          <div className="shrink-0 sm:w-36">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
+              Attendance rate
+            </p>
+            <p className="mt-1 text-4xl font-bold leading-none text-slate-900">
+              {attendanceRate === null ? "—" : `${attendanceRate}%`}
+            </p>
+          </div>
+          {statValues.totalSessions > 0 ? (
+            <div className="min-w-0 flex-1">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs">
+                <span className="font-medium text-slate-600">
+                  Attended{" "}
+                  <span className="font-bold text-emerald-700">
+                    {attendedSessions}
+                  </span>
+                </span>
+                <span className="font-medium text-slate-500">
+                  Not attended{" "}
+                  <span className="font-bold text-slate-700">
+                    {notAttendedSessions}
+                  </span>
+                </span>
+              </div>
+              <div
+                role="progressbar"
+                aria-label="Attendance rate"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={attendanceRate ?? 0}
+                className="h-3 overflow-hidden rounded-full bg-slate-100"
               >
-                {attendanceData.map((entry) => (
-                  <Cell key={entry.name} fill={entry.fill} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-[width] duration-500"
+                  style={{ width: `${attendanceRate}%` }}
+                />
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+                {attendedSessions} of {statValues.totalSessions} completed
+                sessions; present and late count as attended.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">No completed sessions yet.</p>
+          )}
         </div>
       </motion.div>
 

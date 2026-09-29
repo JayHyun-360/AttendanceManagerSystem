@@ -22,7 +22,7 @@ export default function DashboardRoute() {
     present: 0,
     absent: 0,
     upcoming: 0,
-    rate: 0,
+    totalSessions: 0,
   });
 
   useEffect(() => {
@@ -47,7 +47,8 @@ export default function DashboardRoute() {
 
         if (error) {
           console.error(error);
-          if (!cancelled) setLoadError("Announcements are temporarily unavailable.");
+          if (!cancelled)
+            setLoadError("Announcements are temporarily unavailable.");
           return;
         }
 
@@ -188,9 +189,7 @@ export default function DashboardRoute() {
           present: presentCount,
           absent: Math.max(absentCount, totalSessions - presentCount),
           upcoming: upcomingCount,
-          rate: totalSessions > 0
-            ? Math.round((presentCount / totalSessions) * 100)
-            : 0,
+          totalSessions,
         });
       } catch (caughtError) {
         console.error(caughtError);
@@ -350,17 +349,19 @@ export default function DashboardRoute() {
   }
 
   const nextEvent: EventData | undefined = (() => {
-      const today = new Date();
-      const todayKey = [
-        today.getFullYear(),
-        String(today.getMonth() + 1).padStart(2, "0"),
-        String(today.getDate()).padStart(2, "0"),
-      ].join("-");
-      const row = events.find((event: any) => {
-        return event.event_date >= todayKey &&
+    const today = new Date();
+    const todayKey = [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, "0"),
+      String(today.getDate()).padStart(2, "0"),
+    ].join("-");
+    const row = events.find((event: any) => {
+      return (
+        event.event_date >= todayKey &&
         event.status !== "closed" &&
-        event.status !== "cancelled";
-      });
+        event.status !== "cancelled"
+      );
+    });
 
     if (!row) {
       return undefined;
@@ -391,7 +392,7 @@ export default function DashboardRoute() {
           (row.multi_session
             ? Number(row.morning_absent_fine ?? 0) +
               Number(row.afternoon_absent_fine ?? 0)
-            : row.absent_fine ?? 0),
+            : (row.absent_fine ?? 0)),
       ),
       mediaUrls: Array.isArray(row.mediaUrls)
         ? row.mediaUrls
