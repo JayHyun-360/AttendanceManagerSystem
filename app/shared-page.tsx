@@ -15131,40 +15131,38 @@ export function AdminExcuseRequestsPage({
             {pending.map((r) => (
               <div
                 key={r.id}
-                className="bg-white border border-amber-100 rounded-xl p-5 shadow-sm"
+                className="rounded-xl border border-slate-100 bg-white p-3.5 shadow-sm sm:p-4"
               >
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <Avatar
                       name={r.studentName}
                       photoUrl={r.photoUrl}
                       size="sm"
                     />
-                    <div>
+                    <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
                       <p className="text-sm font-semibold text-slate-900">
                         {r.studentName}
                       </p>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-[11px] text-slate-500">
                         {r.studentId}
                       </p>
                     </div>
                   </div>
                   <Badge status={r.status} />
                 </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2.5 mb-3">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                    Event
-                  </p>
-                  <p className="text-sm font-semibold text-slate-900">
+                <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 text-xs">
+                  <p className="max-w-full truncate font-semibold text-slate-800">
                     {r.event}
                   </p>
-                  <p className="text-xs text-slate-400 mt-0.5">{r.date}</p>
+                  <span className="text-slate-300">·</span>
+                  <p className="text-slate-500">{r.date}</p>
                 </div>
                 <p
-                  className={`text-sm text-slate-600 leading-relaxed mb-1 ${
+                  className={`mt-2 text-sm leading-relaxed text-slate-600 ${
                     expandedReasonIds.has(r.id)
                       ? "whitespace-pre-wrap"
-                      : "line-clamp-3"
+                      : "line-clamp-2"
                   }`}
                 >
                   {r.reason}
@@ -15183,7 +15181,7 @@ export function AdminExcuseRequestsPage({
                       })
                     }
                     aria-expanded={expandedReasonIds.has(r.id)}
-                    className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 transition-colors hover:text-emerald-700"
+                    className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 transition-colors hover:text-emerald-700"
                   >
                     {expandedReasonIds.has(r.id) ? "Show less" : "See details"}
                     {expandedReasonIds.has(r.id) ? (
@@ -15193,62 +15191,68 @@ export function AdminExcuseRequestsPage({
                     )}
                   </button>
                 )}
-                {r.proofName && r.attachmentPath && (
-                  <button
-                    type="button"
-                    onClick={() => void viewAttachment(r)}
-                    disabled={attachmentLoadingId !== null}
-                    className="mb-3 inline-flex max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 transition-colors hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-wait disabled:opacity-60"
-                  >
-                    <Icons.Paperclip />
-                    <span className="truncate">{r.proofName}</span>
-                    <span className="shrink-0 text-emerald-700">
-                      {attachmentLoadingId === r.id
-                        ? "Opening..."
-                        : "View attachment"}
-                    </span>
-                  </button>
-                )}
-                <p className="text-[11px] text-slate-400 mb-4">
-                  Submitted {r.submittedDate}
-                </p>
-                <div className="flex gap-2 pt-4 border-t border-slate-50">
-                  <button
-                    onClick={async () => {
-                      if (actionId) return;
+                <div className="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                    {r.proofName && r.attachmentPath && (
+                      <button
+                        type="button"
+                        onClick={() => void viewAttachment(r)}
+                        disabled={attachmentLoadingId !== null}
+                        className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-800 transition-colors hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-wait disabled:opacity-60"
+                      >
+                        <Icons.Paperclip />
+                        <span className="truncate">{r.proofName}</span>
+                        <span className="shrink-0 text-emerald-700">
+                          {attachmentLoadingId === r.id
+                            ? "Opening..."
+                            : "View attachment"}
+                        </span>
+                      </button>
+                    )}
+                    <p className="text-[11px] text-slate-400">
+                      Submitted {r.submittedDate}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 sm:shrink-0">
+                    <button
+                      onClick={async () => {
+                        if (actionId) return;
 
-                      setActionId(r.id);
+                        setActionId(r.id);
 
-                      try {
-                        await onAction(r.id, "approved");
-                      } finally {
-                        setActionId(null);
-                      }
-                    }}
-                    disabled={actionId === r.id}
-                    className="flex-1 h-9 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center justify-center gap-1.5"
-                  >
-                    <Icons.Check />
-                    {actionId === r.id ? "Updating..." : "Approve & waive fee"}
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (actionId) return;
+                        try {
+                          await onAction(r.id, "approved");
+                        } finally {
+                          setActionId(null);
+                        }
+                      }}
+                      disabled={actionId === r.id}
+                      className="flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 sm:flex-none"
+                    >
+                      <Icons.Check />
+                      {actionId === r.id
+                        ? "Updating..."
+                        : "Approve & waive fee"}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (actionId) return;
 
-                      setActionId(r.id);
+                        setActionId(r.id);
 
-                      try {
-                        await onAction(r.id, "denied");
-                      } finally {
-                        setActionId(null);
-                      }
-                    }}
-                    disabled={actionId === r.id}
-                    className="flex-1 h-9 border border-red-200 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-50 flex items-center justify-center gap-1.5"
-                  >
-                    <Icons.X />
-                    {actionId === r.id ? "Updating..." : "Deny"}
-                  </button>
+                        try {
+                          await onAction(r.id, "denied");
+                        } finally {
+                          setActionId(null);
+                        }
+                      }}
+                      disabled={actionId === r.id}
+                      className="flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 text-xs font-semibold text-red-600 hover:bg-red-50 sm:flex-none"
+                    >
+                      <Icons.X />
+                      {actionId === r.id ? "Updating..." : "Deny"}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
