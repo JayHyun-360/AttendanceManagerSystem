@@ -54,6 +54,7 @@ export default function AdminExcuseRequestsRoutePage() {
               }),
               reason: row.reason,
               proofName: row.document_url ? "Supporting document" : null,
+              attachmentPath: row.document_url ?? undefined,
               status: row.status,
               submittedDate: new Date(row.created_at).toLocaleDateString(
                 "en-US",
@@ -89,8 +90,39 @@ export default function AdminExcuseRequestsRoutePage() {
     };
   }, [router, user]);
 
+  const handleViewAttachment = async (path: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("excuse-documents")
+        .createSignedUrl(path, 300);
+
+      if (error || !data?.signedUrl) {
+        console.error(error);
+        toast.error(
+          "The attachment could not be opened. It may have been submitted before file uploads were available.",
+        );
+        return null;
+      }
+
+      return data.signedUrl;
+    } catch (caughtError) {
+      console.error(caughtError);
+      toast.error(
+        "The attachment could not be opened. Check your connection and try again.",
+      );
+      return null;
+    }
+  };
+
   const handleAction = async (id: string, action: "approved" | "denied") => {
-    if (!window.confirm(action === "approved" ? "Approve this excuse and waive the linked fee?" : "Deny this excuse request?")) return;
+    if (
+      !window.confirm(
+        action === "approved"
+          ? "Approve this excuse and waive the linked fee?"
+          : "Deny this excuse request?",
+      )
+    )
+      return;
     const { error } = await supabase
       .from("excuse_requests")
       .update({ status: action })
@@ -107,7 +139,11 @@ export default function AdminExcuseRequestsRoutePage() {
         request.id === id ? { ...request, status: action } : request,
       ),
     );
-    toast.success(action === "approved" ? "Excuse approved and fee waived." : "Excuse request denied.");
+    toast.success(
+      action === "approved"
+        ? "Excuse approved and fee waived."
+        : "Excuse request denied.",
+    );
   };
 
   if (isLoading) {
@@ -125,6 +161,7 @@ export default function AdminExcuseRequestsRoutePage() {
     <AdminExcuseRequestsPage
       requests={requests}
       onAction={handleAction}
+      onViewAttachment={handleViewAttachment}
       onBack={() => router.push("/admin-dashboard")}
     />
   );

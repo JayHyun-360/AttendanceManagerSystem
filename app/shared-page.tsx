@@ -725,9 +725,16 @@ import { format } from "date-fns";
 import {
   Archive,
   ArrowLeft,
+  CalendarDays,
   ChevronDown,
   ChevronUp,
+  FileText,
+  ImagePlus,
   LogOut,
+  Send,
+  Trash2,
+  Upload,
+  X,
 } from "lucide-react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -1303,6 +1310,10 @@ interface ScanRecord {
 
 export interface ExcuseRequest {
   id: string;
+
+  attendanceScanId?: string;
+
+  attachmentPath?: string;
 
   studentName: string;
 
@@ -5876,121 +5887,250 @@ export function OnboardingPage({
 
 function ExcuseModal({
   record,
-
   onClose,
-
   onSubmit,
 }: {
-  record: (typeof ATTENDANCE_RECORDS)[0];
-
+  record: (typeof ATTENDANCE_RECORDS)[0] & {
+    sessionLabel?: "morning" | "afternoon";
+  };
   onClose: () => void;
-
   onSubmit: (r: ExcuseRequest) => Promise<boolean> | boolean;
 }) {
   const [reason, setReason] = useState("");
-
   const [file, setFile] = useState<File | null>(null);
-
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
   const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!file?.type.startsWith("image/")) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 backdrop-blur-sm sm:items-center sm:p-4"
+      onClick={() => !submitting && onClose()}
     >
       <div
-        className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="excuse-modal-title"
+        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-h-[min(88dvh,780px)] sm:rounded-2xl"
+        onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <div>
-            <p className="font-bold text-slate-900 text-base">Request Excuse</p>
-            <p className="text-xs text-slate-400 mt-0.5 truncate max-w-[240px]">
-              {record.event}
-            </p>
-          </div>
-          <button
-            onClick={() => !submitting && onClose()}
-            disabled={submitting}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
-          >
-            <Icons.X />
-          </button>
-        </div>
-        <div className="px-5 py-4 space-y-4">
-          <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 flex items-center gap-3">
-            <span className="text-red-400 shrink-0">
-              <Icons.XCircle />
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 bg-emerald-950 px-5 py-5 text-white sm:px-7 sm:py-6">
+          <div className="flex min-w-0 items-start gap-3.5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-emerald-100">
+              <FileText className="h-5 w-5" aria-hidden="true" />
             </span>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">
-                Marked Absent
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200">
+                Attendance review
               </p>
-              <p className="text-xs text-slate-400">{record.date}</p>
+              <h2
+                id="excuse-modal-title"
+                className="mt-1 text-lg font-bold sm:text-xl"
+              >
+                Request an excuse
+              </h2>
+              <p className="mt-1 truncate text-sm text-emerald-100/75">
+                {record.event}
+              </p>
             </div>
           </div>
-          <FieldTextarea
-            label="Reason"
-            placeholder="Describe why you were unable to attend..."
-            rows={4}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
-          <div>
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">
-              Document (optional)
-            </label>
-            <input
-              ref={ref}
-              type="file"
-              accept="image/*,.pdf"
-              className="hidden"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+          <button
+            type="button"
+            aria-label="Close excuse request"
+            onClick={onClose}
+            disabled={submitting}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-emerald-100 transition-colors hover:bg-white/10 disabled:opacity-50"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </header>
+
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto bg-slate-50/70 px-4 py-5 sm:px-7 sm:py-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                <Icons.XCircle />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-900">
+                  Marked absent
+                </p>
+                <p className="mt-0.5 truncate text-xs text-slate-500">
+                  {record.event}
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5 text-xs font-semibold text-slate-600">
+              <CalendarDays
+                className="h-4 w-4 text-emerald-700"
+                aria-hidden="true"
+              />
+              <span>{record.date}</span>
+              {record.sessionLabel && (
+                <span className="ml-1 border-l border-slate-200 pl-2 text-slate-500">
+                  {record.sessionLabel === "morning" ? "Morning" : "Afternoon"}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(220px,0.8fr)] md:gap-6">
+            <FieldTextarea
+              label="Reason for absence"
+              placeholder="Explain why you were unable to attend..."
+              rows={5}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
             />
-            <button
-              onClick={() => ref.current?.click()}
-              disabled={submitting}
-              className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm font-medium text-slate-400 hover:border-emerald-400 hover:text-emerald-500 transition-all flex items-center justify-center gap-2"
-            >
-              <Icons.Paperclip />
-              {file ? file.name : "Attach photo or PDF"}
-            </button>
+
+            <div className="min-w-0">
+              <label className="mb-2 block text-xs font-bold text-slate-700">
+                Supporting document{" "}
+                <span className="font-medium text-slate-400">(optional)</span>
+              </label>
+              <input
+                ref={ref}
+                type="file"
+                accept="image/*,.pdf"
+                className="hidden"
+                onChange={(event) => {
+                  setFile(event.currentTarget.files?.[0] ?? null);
+                  event.currentTarget.value = "";
+                }}
+              />
+
+              {file ? (
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                  {previewUrl ? (
+                    <div className="flex h-36 items-center justify-center bg-slate-100 p-2 sm:h-40">
+                      <img
+                        src={previewUrl}
+                        alt={`Preview of ${file.name}`}
+                        className="h-full w-full rounded-lg object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-36 items-center justify-center bg-emerald-50 text-emerald-800 sm:h-40">
+                      <div className="flex flex-col items-center gap-2">
+                        <FileText className="h-9 w-9" aria-hidden="true" />
+                        <span className="text-xs font-bold uppercase tracking-wide">
+                          PDF document
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex min-w-0 items-center justify-between gap-3 px-3.5 py-3">
+                    <div className="min-w-0">
+                      <p
+                        className="truncate text-xs font-semibold text-slate-800"
+                        title={file.name}
+                      >
+                        {file.name}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-slate-500">
+                        {(file.size / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => ref.current?.click()}
+                        disabled={submitting}
+                        aria-label="Replace attachment"
+                        title="Replace attachment"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
+                      >
+                        <Upload className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFile(null)}
+                        disabled={submitting}
+                        aria-label="Remove attachment"
+                        title="Remove attachment"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => ref.current?.click()}
+                  disabled={submitting}
+                  className="flex min-h-36 w-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white px-4 py-5 text-center transition-colors hover:border-emerald-600 hover:bg-emerald-50/50 disabled:opacity-50 sm:min-h-40"
+                >
+                  <span className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-800">
+                    <ImagePlus className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <span className="text-sm font-bold text-slate-800">
+                    Add a document
+                  </span>
+                  <span className="mt-1 text-xs text-slate-500">
+                    Image or PDF
+                  </span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
-        <div className="px-5 pb-5 flex gap-2.5">
+
+        <footer className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 bg-white px-4 py-4 sm:flex-row sm:justify-end sm:px-7">
           <button
+            type="button"
             onClick={() => !submitting && onClose()}
             disabled={submitting}
-            className="h-10 px-4 border border-slate-200 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-50"
+            className="h-11 rounded-lg border border-slate-200 px-5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 sm:h-10"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={async () => {
               if (!reason.trim()) return;
 
               setSubmitting(true);
 
               try {
+                let attachmentPath: string | undefined;
+
+                if (file) {
+                  const uploaded = await uploadImage(file, "excuse-documents");
+
+                  if ("error" in uploaded) {
+                    toast.error(uploaded.error);
+                    return;
+                  }
+
+                  attachmentPath = uploaded.path;
+                }
+
                 const succeeded = await onSubmit({
                   id: Date.now().toString(),
-
                   studentName: "Maria Luisa Santos",
-
                   studentId: "2440014",
-
                   event: record.event,
-
+                  eventId: record.eventId,
+                  attendanceScanId: record.id,
+                  attachmentPath,
+                  sessionLabel: record.sessionLabel,
                   date: record.date,
-
                   reason,
-
                   proofName: file ? file.name : null,
-
                   status: "pending",
-
                   submittedDate: "Aug 22, 2026",
                 });
 
@@ -6000,12 +6140,12 @@ function ExcuseModal({
               }
             }}
             disabled={!reason.trim() || submitting}
-            className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg disabled:opacity-40 flex items-center justify-center gap-2"
+            className="flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-800 px-5 text-sm font-bold text-white transition-colors hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-45 sm:h-10"
           >
-            <Icons.Send />
-            {submitting ? "Submitting..." : "Submit"}
+            <Send className="h-4 w-4" aria-hidden="true" />
+            {submitting ? "Submitting..." : "Submit request"}
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );
@@ -14890,11 +15030,15 @@ export function AdminExcuseRequestsPage({
 
   onAction,
 
+  onViewAttachment,
+
   onBack,
 }: {
   requests: ExcuseRequest[];
 
   onAction: (id: string, a: "approved" | "denied") => Promise<void> | void;
+
+  onViewAttachment: (path: string) => Promise<string | null>;
 
   onBack: () => void;
 }) {
@@ -14906,7 +15050,37 @@ export function AdminExcuseRequestsPage({
     new Set(),
   );
 
+  const [attachmentLoadingId, setAttachmentLoadingId] = useState<string | null>(
+    null,
+  );
+
+  const [viewingAttachment, setViewingAttachment] = useState<{
+    url: string;
+    name: string;
+    isPdf: boolean;
+  } | null>(null);
+
   const reviewed = requests.filter((r) => r.status !== "pending");
+
+  const viewAttachment = async (request: ExcuseRequest) => {
+    if (!request.attachmentPath || attachmentLoadingId) return;
+
+    setAttachmentLoadingId(request.id);
+
+    try {
+      const url = await onViewAttachment(request.attachmentPath);
+
+      if (url) {
+        setViewingAttachment({
+          url,
+          name: request.proofName ?? "Supporting document",
+          isPdf: request.attachmentPath.toLowerCase().endsWith(".pdf"),
+        });
+      }
+    } finally {
+      setAttachmentLoadingId(null);
+    }
+  };
 
   return (
     <>
@@ -14997,11 +15171,21 @@ export function AdminExcuseRequestsPage({
                     )}
                   </button>
                 )}
-                {r.proofName && (
-                  <p className="text-[11px] text-slate-400 mb-3 flex items-center gap-1">
+                {r.proofName && r.attachmentPath && (
+                  <button
+                    type="button"
+                    onClick={() => void viewAttachment(r)}
+                    disabled={attachmentLoadingId !== null}
+                    className="mb-3 inline-flex max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 transition-colors hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-wait disabled:opacity-60"
+                  >
                     <Icons.Paperclip />
-                    {r.proofName}
-                  </p>
+                    <span className="truncate">{r.proofName}</span>
+                    <span className="shrink-0 text-emerald-700">
+                      {attachmentLoadingId === r.id
+                        ? "Opening..."
+                        : "View attachment"}
+                    </span>
+                  </button>
                 )}
                 <p className="text-[11px] text-slate-400 mb-4">
                   Submitted {r.submittedDate}
@@ -15080,6 +15264,54 @@ export function AdminExcuseRequestsPage({
             ))}
           </div>
         </>
+      )}
+      {viewingAttachment && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/75 p-3 backdrop-blur-sm sm:p-6"
+          onClick={() => setViewingAttachment(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Excuse request attachment"
+            className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  Excuse attachment
+                </p>
+                <p className="mt-0.5 truncate text-sm font-semibold text-slate-800">
+                  {viewingAttachment.name}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close attachment preview"
+                onClick={() => setViewingAttachment(null)}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              >
+                <Icons.X />
+              </button>
+            </div>
+            <div className="min-h-0 overflow-auto bg-slate-100 p-2 sm:p-4">
+              {viewingAttachment.isPdf ? (
+                <iframe
+                  src={viewingAttachment.url}
+                  title={viewingAttachment.name}
+                  className="h-[78dvh] min-h-[320px] w-full rounded-lg border-0 bg-white"
+                />
+              ) : (
+                <img
+                  src={viewingAttachment.url}
+                  alt={viewingAttachment.name}
+                  className="mx-auto max-h-[78dvh] max-w-full object-contain"
+                />
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
