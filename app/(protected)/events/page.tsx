@@ -71,24 +71,40 @@ export default function EventsRoutePage() {
     async function loadEvents() {
       try {
         if (!cancelled) setLoadError(null);
-        const [{ data, error }, { data: scans, error: scansError }] =
-          await Promise.all([
-            supabase
+        const eventColumns = [
+          "id",
+          "title",
+          "description",
+          "location",
+          "event_date",
+          "start_time",
+          "end_time",
+          "image_url",
+          "media_urls",
+          "program",
+          "status",
+          "multi_session",
+          "morning_start",
+          "morning_end",
+          "afternoon_start",
+          "afternoon_end",
+          ...(user?.role === "student" && showFees
+            ? ["absent_fine", "morning_absent_fine", "afternoon_absent_fine"]
+            : []),
+        ].join(",");
+        const { data, error } = user
+          ? await supabase
               .from("events")
-              .select("*")
+              .select(eventColumns)
               .is("archived_at", null)
-              .order("event_date", { ascending: false }),
-            supabase
-              .from("attendance_scans")
-              .select("event_id, student_id, status, scan_in_at"),
-          ]);
+              .order("event_date", { ascending: false })
+          : await supabase.rpc("get_public_events");
 
         if (error) {
           console.error(error);
           if (!cancelled) setLoadError("Events could not be loaded.");
           return;
         }
-        if (scansError) console.error(scansError);
 
         if (!cancelled) {
           setEvents(
@@ -103,26 +119,25 @@ export default function EventsRoutePage() {
               location: row.location,
               description: row.description,
               program: row.program || "All Programs",
-              fineAmount: row.multi_session
-                ? Number(row.morning_absent_fine ?? 0) +
-                  Number(row.afternoon_absent_fine ?? 0)
-                : Number(row.absent_fine ?? 0),
+              fineAmount:
+                user?.role === "student" && showFees
+                  ? row.multi_session
+                    ? Number(row.morning_absent_fine ?? 0) +
+                      Number(row.afternoon_absent_fine ?? 0)
+                    : Number(row.absent_fine ?? 0)
+                  : 0,
               status: row.status || "upcoming",
-              attendees: new Set(
-                (scans ?? [])
-                  .filter(
-                    (scan: any) =>
-                      scan.event_id === row.id &&
-                      (scan.status === "present" || scan.status === "late") &&
-                      !!scan.scan_in_at,
-                  )
-                  .map((scan: any) => scan.student_id),
-              ).size,
+              attendees: 0,
               highlightUrl:
                 row.image_url && !row.image_url.startsWith("blob:")
                   ? row.image_url
                   : undefined,
               mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
+              multiSession: Boolean(row.multi_session),
+              morningStart: row.morning_start ?? undefined,
+              morningEnd: row.morning_end ?? undefined,
+              afternoonStart: row.afternoon_start ?? undefined,
+              afternoonEnd: row.afternoon_end ?? undefined,
             })),
           );
         }
@@ -138,26 +153,24 @@ export default function EventsRoutePage() {
 
     void loadEvents();
 
-    const eventsChannel = subscribeToTableChanges("events", () => {
-      if (!cancelled) {
-        void loadEvents();
-      }
-    });
-    const attendanceChannel = subscribeToTableChanges(
-      "attendance_scans",
-      () => {
-        if (!cancelled) void loadEvents();
-      },
-    );
+    const eventsChannel = user
+      ? subscribeToTableChanges("events", () => {
+          if (!cancelled) void loadEvents();
+        })
+      : null;
 
     return () => {
       cancelled = true;
-      void eventsChannel.unsubscribe();
-      void attendanceChannel.unsubscribe();
+      if (eventsChannel) void eventsChannel.unsubscribe();
     };
-  }, []);
+  }, [showFees, user]);
 
   const onNav = (page: Page) => {
+    if (page === "login") {
+      router.push("/login");
+      return;
+    }
+
     if (page === "event-detail") {
       router.push("/events");
       return;

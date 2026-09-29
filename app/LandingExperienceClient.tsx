@@ -2361,7 +2361,6 @@ function LandingPage({
             <div className="absolute right-[34%] top-[41%] h-16 w-16 -rotate-12 rounded-2xl bg-emerald-500/20 shadow-[0_16px_32px_rgba(16,185,129,.1)] sm:right-[40%] sm:top-[42%] sm:h-20 sm:w-20" />
             <div className="absolute -bottom-28 right-[1%] h-72 w-72 -rotate-[22deg] rounded-[3.5rem] border border-teal-100/90 bg-teal-100/30 shadow-[0_30px_75px_rgba(13,148,136,.12)] sm:-bottom-40 sm:right-[8%] sm:h-[28rem] sm:w-[28rem]" />
             <div className="absolute bottom-[13%] left-[8%] h-28 w-28 -rotate-[14deg] rounded-[2rem] border border-white/90 bg-white/45 shadow-[0_20px_45px_rgba(15,118,110,.08)] sm:left-[17%] sm:h-40 sm:w-40" />
-            <div className="absolute bottom-[18%] right-[47%] h-3 w-3 rounded-full bg-emerald-500/70 shadow-[18px_-12px_0_rgba(16,185,129,.4),36px_4px_0_rgba(20,184,166,.32)] sm:right-[48%] sm:h-4 sm:w-4" />
           </div>
         )}
         {hasHero && (
@@ -2468,7 +2467,7 @@ function LandingPage({
             records for students and moderators.
           </p>
           <div
-            className={`mt-16 grid w-full max-w-sm grid-cols-2 items-center gap-3 sm:mt-20 sm:flex sm:w-auto sm:max-w-none ${
+            className={`mt-20 grid w-full max-w-sm grid-cols-2 items-center gap-3 sm:mt-20 sm:flex sm:w-auto sm:max-w-none ${
               hasHero ? "" : "sm:justify-center"
             }`}
           >

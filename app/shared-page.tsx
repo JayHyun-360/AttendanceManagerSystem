@@ -6802,7 +6802,7 @@ export function EventsPage({
         showFees={showFees}
         onClose={() => setSelectedEventId(null, true)}
         onPrimaryAction={() => {
-          onNav("my-qr");
+          onNav(user ? "my-qr" : "login");
         }}
       />
     );
@@ -7299,7 +7299,9 @@ function EventDetailPageView({
 
               <div className="space-y-2 rounded-xl border border-slate-100 p-4">
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                  Session & fines
+                  {canSeeFees || role === "admin"
+                    ? "Session & fines"
+                    : "Session details"}
                 </p>
                 <p className="text-sm text-slate-600">
                   {event.multiSession
@@ -7329,6 +7331,15 @@ function EventDetailPageView({
                   className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
                 >
                   {role === "admin" ? "View attendees" : "Open My QR Code"}
+                </button>
+              )}
+              {!user && event.status === "active" && (
+                <button
+                  type="button"
+                  onClick={onPrimaryAction}
+                  className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+                >
+                  Sign in to attend
                 </button>
               )}
             </div>

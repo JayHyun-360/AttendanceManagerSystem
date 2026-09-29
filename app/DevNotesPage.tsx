@@ -89,7 +89,13 @@ function writeReadIds(ids: Set<string>) {
   }
 }
 
-export function DevNotesProvider({ children }: { children: ReactNode }) {
+export function DevNotesProvider({
+  children,
+  enabled = true,
+}: {
+  children: ReactNode;
+  enabled?: boolean;
+}) {
   const [notes, setNotes] = useState<DevNote[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(() => new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -121,6 +127,13 @@ export function DevNotesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!enabled) {
+      setNotes([]);
+      setIsConnected(false);
+      setIsLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     const refresh = async () => {
@@ -156,7 +169,7 @@ export function DevNotesProvider({ children }: { children: ReactNode }) {
       document.removeEventListener("visibilitychange", handleVisibility);
       void supabase.removeChannel(channel);
     };
-  }, [loadNotes]);
+  }, [enabled, loadNotes]);
 
   const markAllRead = useCallback(() => {
     setReadIds((current) => {
@@ -168,7 +181,8 @@ export function DevNotesProvider({ children }: { children: ReactNode }) {
   }, [notes]);
 
   const unreadCount = useMemo(
-    () => notes.reduce((count, note) => count + (readIds.has(note.id) ? 0 : 1), 0),
+    () =>
+      notes.reduce((count, note) => count + (readIds.has(note.id) ? 0 : 1), 0),
     [notes, readIds],
   );
 
@@ -183,7 +197,11 @@ export function DevNotesProvider({ children }: { children: ReactNode }) {
     [isConnected, isLoading, markAllRead, notes, unreadCount],
   );
 
-  return <DevNotesContext.Provider value={value}>{children}</DevNotesContext.Provider>;
+  return (
+    <DevNotesContext.Provider value={value}>
+      {children}
+    </DevNotesContext.Provider>
+  );
 }
 
 export function useDevNotes() {
@@ -234,14 +252,18 @@ function DevNotesSkeleton() {
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1 space-y-2">
-              <Skeleton className={`h-4 rounded-md ${item === 1 ? "w-2/3" : "w-1/2"}`} />
+              <Skeleton
+                className={`h-4 rounded-md ${item === 1 ? "w-2/3" : "w-1/2"}`}
+              />
               <Skeleton className="h-3 w-20 rounded-md" />
             </div>
             <Skeleton className="h-5 w-16 shrink-0 rounded-full" />
           </div>
           <div className="mt-4 space-y-2">
             <Skeleton className="h-3.5 w-full rounded-md" />
-            <Skeleton className={`h-3.5 rounded-md ${item === 2 ? "w-3/4" : "w-5/6"}`} />
+            <Skeleton
+              className={`h-3.5 rounded-md ${item === 2 ? "w-3/4" : "w-5/6"}`}
+            />
           </div>
         </article>
       ))}
@@ -288,7 +310,9 @@ export default function DevNotesPage() {
 
           {notes.length === 0 ? (
             <div className="rounded-xl border border-slate-100 bg-white px-5 py-12 text-center">
-              <p className="text-sm font-semibold text-slate-900">No active Dev Notes</p>
+              <p className="text-sm font-semibold text-slate-900">
+                No active Dev Notes
+              </p>
               <p className="mt-1 text-xs text-slate-400">
                 New developer notifications will appear here automatically.
               </p>
@@ -304,7 +328,9 @@ export default function DevNotesPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h2 className="text-sm font-bold text-slate-900">{note.title}</h2>
+                        <h2 className="text-sm font-bold text-slate-900">
+                          {note.title}
+                        </h2>
                         <p className="mt-1 text-[11px] font-medium text-slate-400">
                           {formatDate(note.createdAt)}
                         </p>
@@ -336,7 +362,9 @@ export default function DevNotesPage() {
                         aria-expanded={expandedNoteIds.has(note.id)}
                         className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 transition-colors hover:text-emerald-700"
                       >
-                        {expandedNoteIds.has(note.id) ? "Show less" : "See more"}
+                        {expandedNoteIds.has(note.id)
+                          ? "Show less"
+                          : "See more"}
                         {expandedNoteIds.has(note.id) ? (
                           <ChevronUp className="h-3.5 w-3.5" />
                         ) : (
@@ -351,7 +379,6 @@ export default function DevNotesPage() {
           )}
         </>
       )}
-
     </PageShell>
   );
 }

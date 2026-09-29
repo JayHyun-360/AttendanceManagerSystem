@@ -108,6 +108,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   const pathname = usePathname();
+  const isPublicEventsRoute = pathname === "/events";
 
   const [user, setUser] = useState<User | null>(null);
 
@@ -143,10 +144,15 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
         if (sessionError) {
           console.error(sessionError);
 
-          if (!cancelled)
-            setSessionError(
-              "We could not verify your session. Please try again.",
-            );
+          if (!cancelled) {
+            if (isPublicEventsRoute) {
+              setHasSession(false);
+            } else {
+              setSessionError(
+                "We could not verify your session. Please try again.",
+              );
+            }
+          }
 
           return;
         }
@@ -156,7 +162,9 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
             setHasSession(false);
           }
 
-          router.replace("/login");
+          if (!isPublicEventsRoute) {
+            router.replace("/login");
+          }
 
           return;
         }
@@ -279,10 +287,29 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [isPublicEventsRoute, router]);
 
   useEffect(() => {
     let cancelled = false;
+
+    if (!sessionReady) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!hasSession) {
+      if (isPublicEventsRoute) {
+        setShowFees(false);
+        setSettingsReady(true);
+      }
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setSettingsReady(false);
 
     async function hydrateSettings() {
       if (!cancelled) setSettingsError(null);
@@ -338,7 +365,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [hasSession, isPublicEventsRoute, sessionReady]);
 
   useEffect(() => {
     void router.prefetch("/");
@@ -474,9 +501,10 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     setOpen(false);
   };
 
-  const showGlobalLoading = !sessionReady || !settingsReady || !user;
+  const showGlobalLoading =
+    !sessionReady || !settingsReady || (!user && !isPublicEventsRoute);
 
-  if (sessionError || settingsError) {
+  if (!isPublicEventsRoute && (sessionError || settingsError)) {
     return (
       <div className="min-h-screen bg-[#f8faf9] px-4 flex items-center justify-center">
         <div className="w-full max-w-md">
@@ -509,7 +537,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     <ProtectedUserContext.Provider
       value={{ user, setUser, authUserId, setAuthUserId, showFees }}
     >
-      <DevNotesProvider>
+      <DevNotesProvider enabled={Boolean(user)}>
         <div className="w-full min-h-screen m-0 p-0 bg-white md:h-screen md:overflow-hidden md:bg-[#f8faf9] md:relative">
           {showGlobalLoading && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#f8faf9]/85 backdrop-blur-[1px]">
