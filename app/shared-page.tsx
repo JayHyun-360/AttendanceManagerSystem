@@ -7437,8 +7437,11 @@ export function MyQRPage({
 
     const img = new Image();
 
-    await new Promise((r) => {
-      img.onload = r;
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () =>
+        reject(new Error("Could not load generated QR code."));
+      img.src = qrDataUrl;
     });
 
     ctx.drawImage(img, pad, pad, size, size);
