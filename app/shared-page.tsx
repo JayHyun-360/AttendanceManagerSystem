@@ -3675,8 +3675,10 @@ export function TopBar({
             "payments",
             "balance",
           ],
-          hint: "Outstanding attendance charges",
-          show: !isMod && showFees,
+          hint: showFees
+            ? "Outstanding attendance charges"
+            : "Not currently available",
+          show: !isMod,
           kind: "page",
         },
         {
@@ -4319,73 +4321,71 @@ export function Sidebar({
 
       {}
       <nav className="flex-1 px-2 pt-3 pb-2 space-y-0.5 overflow-y-auto">
-        {nav
-          .filter(({ p }) => p !== "my-fines" || showFees)
-          .map(({ p, l, I }) => {
-            const active = page === p;
+        {nav.map(({ p, l, I }) => {
+          const active = page === p;
 
-            const count = badges?.[p] ?? 0;
+          const count = badges?.[p] ?? 0;
 
-            const badgeLabel =
-              count > 9 ? "9+" : count > 0 ? String(count) : null;
+          const badgeLabel =
+            count > 9 ? "9+" : count > 0 ? String(count) : null;
 
-            const target = routeFromPage[p] ?? "/dashboard";
+          const target = routeFromPage[p] ?? "/dashboard";
 
-            return (
-              <Link
-                key={p}
-                href={target}
-                prefetch
-                onMouseEnter={() => prefetchRoute(p)}
-                onFocus={() => prefetchRoute(p)}
-                onClick={onClose}
-                title={collapsed ? l : undefined}
-                aria-label={l}
-                className={`relative w-full flex items-center gap-3 border-l-[3px] px-3 h-10 rounded-lg text-sm transition-[background-color,color,border-color] duration-150 ease-out lg:gap-0 ${
-                  collapsed ? "lg:justify-center" : "lg:justify-start"
-                } ${
-                  active
-                    ? "border-emerald-500 bg-emerald-50/70 text-emerald-700 font-medium"
-                    : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-normal"
-                }`}
+          return (
+            <Link
+              key={p}
+              href={target}
+              prefetch
+              onMouseEnter={() => prefetchRoute(p)}
+              onFocus={() => prefetchRoute(p)}
+              onClick={onClose}
+              title={collapsed ? l : undefined}
+              aria-label={l}
+              className={`relative w-full flex items-center gap-3 border-l-[3px] px-3 h-10 rounded-lg text-sm transition-[background-color,color,border-color] duration-150 ease-out lg:gap-0 ${
+                collapsed ? "lg:justify-center" : "lg:justify-start"
+              } ${
+                active
+                  ? "border-emerald-500 bg-emerald-50/70 text-emerald-700 font-medium"
+                  : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-normal"
+              }`}
+            >
+              <motion.span
+                layout="position"
+                transition={{
+                  layout: prefersReducedMotion
+                    ? { duration: 0 }
+                    : { duration: 0.24, ease: [0.22, 1, 0.36, 1] },
+                }}
+                className={`relative z-10 shrink-0 ${
+                  active ? "text-emerald-500" : "text-slate-400"
+                }}`}
               >
-                <motion.span
-                  layout="position"
-                  transition={{
-                    layout: prefersReducedMotion
-                      ? { duration: 0 }
-                      : { duration: 0.24, ease: [0.22, 1, 0.36, 1] },
-                  }}
-                  className={`relative z-10 shrink-0 ${
-                    active ? "text-emerald-500" : "text-slate-400"
-                  }}`}
-                >
-                  <I />
-                  {badgeLabel && (
-                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-[3px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
-                      {badgeLabel}
-                    </span>
-                  )}
-                </motion.span>
-                <span className="truncate lg:hidden">{l}</span>
-                <motion.span
-                  className="sidebar-motion pointer-events-none absolute left-[42px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
-                  initial={false}
-                  animate={
-                    collapsed ? { opacity: 0, x: -6 } : { opacity: 1, x: 0 }
-                  }
-                  transition={
-                    prefersReducedMotion
-                      ? { duration: 0 }
-                      : { duration: 0.18, ease: [0.22, 1, 0.36, 1] }
-                  }
-                  style={{ willChange: "opacity, transform" }}
-                >
-                  {l}
-                </motion.span>
-              </Link>
-            );
-          })}
+                <I />
+                {badgeLabel && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-[3px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+                    {badgeLabel}
+                  </span>
+                )}
+              </motion.span>
+              <span className="truncate lg:hidden">{l}</span>
+              <motion.span
+                className="sidebar-motion pointer-events-none absolute left-[42px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
+                initial={false}
+                animate={
+                  collapsed ? { opacity: 0, x: -6 } : { opacity: 1, x: 0 }
+                }
+                transition={
+                  prefersReducedMotion
+                    ? { duration: 0 }
+                    : { duration: 0.18, ease: [0.22, 1, 0.36, 1] }
+                }
+                style={{ willChange: "opacity, transform" }}
+              >
+                {l}
+              </motion.span>
+            </Link>
+          );
+        })}
       </nav>
 
       {}
