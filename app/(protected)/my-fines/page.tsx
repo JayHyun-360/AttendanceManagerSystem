@@ -35,31 +35,40 @@ export default function MyFinesRoutePage() {
           { data: profile, error: profileError },
           { data: events, error: eventsError },
           { data: settings, error: settingsError },
-        ] =
-          await Promise.all([
-            supabase
-              .from("fines")
-              .select("*, events(title, event_date)")
-              .eq("student_id", authUserId)
-              .order("created_at", { ascending: false }),
-            supabase
-              .from("attendance_scans")
-              .select(
-                "id, event_id, session_label, status, scan_in_at, events(title, event_date, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine)",
-              )
-              .eq("student_id", authUserId),
-            supabase.from("profiles").select("program").eq("id", authUserId).single(),
-            supabase
-              .from("events")
-              .select(
-                "id, title, event_date, status, program, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
-              ),
-            supabase
-              .from("system_settings")
-              .select("settings")
-              .eq("id", 1)
-              .maybeSingle(),
-          ]);
+          { data: excuses, error: excusesError },
+        ] = await Promise.all([
+          supabase
+            .from("fines")
+            .select("*, events(title, event_date)")
+            .eq("student_id", authUserId)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("attendance_scans")
+            .select(
+              "id, event_id, session_label, status, scan_in_at, events(title, event_date, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine)",
+            )
+            .eq("student_id", authUserId),
+          supabase
+            .from("profiles")
+            .select("program")
+            .eq("id", authUserId)
+            .single(),
+          supabase
+            .from("events")
+            .select(
+              "id, title, event_date, status, program, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+            ),
+          supabase
+            .from("system_settings")
+            .select("settings")
+            .eq("id", 1)
+            .maybeSingle(),
+          supabase
+            .from("excuse_requests")
+            .select("event_id, session_label, status")
+            .eq("student_id", authUserId)
+            .eq("status", "approved"),
+        ]);
 
         if (error) {
           console.error(error);
@@ -81,6 +90,10 @@ export default function MyFinesRoutePage() {
           console.error(settingsError);
           return;
         }
+        if (excusesError) {
+          console.error(excusesError);
+          return;
+        }
 
         if (!cancelled) {
           const storedFines = (data ?? []).map((row: any) => ({
@@ -100,25 +113,45 @@ export default function MyFinesRoutePage() {
             (data ?? []) as FineRowLike[],
             profile?.program,
             new Date().toISOString().slice(0, 10),
-            Boolean((settings?.settings as { finesEnabled?: boolean } | null)?.finesEnabled),
+            Boolean(
+              (settings?.settings as { finesEnabled?: boolean } | null)
+                ?.finesEnabled,
+            ),
+            new Set(
+              (excuses ?? [])
+                .filter(
+                  (request: any) => request.event_id && request.session_label,
+                )
+                .map(
+                  (request: any) =>
+                    `${request.event_id}:${request.session_label}`,
+                ),
+            ),
           );
           const canonicalFines = records
             .filter((record) => record.fineId && record.fineAmount > 0)
             .map((record) => {
-              const event = (events ?? []).find((item: any) => item.id === record.eventId);
+              const event = (events ?? []).find(
+                (item: any) => item.id === record.eventId,
+              );
               return {
                 id: record.fineId ?? `inferred-${record.key}`,
                 eventId: record.eventId,
                 attendanceScanId: record.scan?.id,
                 sessionLabel: record.sessionLabel,
-                reason: record.status === "late" ? "Late attendance" : "Absent attendance",
+                reason:
+                  record.status === "late"
+                    ? "Late attendance"
+                    : "Absent attendance",
                 eventTitle: event?.title ?? "Event",
                 eventDate: event?.event_date ?? "",
                 amount: record.fineAmount,
                 status: "unpaid" as const,
               };
             });
-          const historicalFines = storedFines.filter((fine) => fine.status !== "unpaid");
+          const historicalFines = storedFines.filter(
+            (fine) => fine.status !== "unpaid",
+          );
           setFines([...canonicalFines, ...historicalFines]);
         }
       } catch (caughtError) {

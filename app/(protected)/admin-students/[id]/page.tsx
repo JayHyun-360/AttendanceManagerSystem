@@ -1,88 +1,88 @@
-"use client"
-import { OptimizedImage } from "@/components/OptimizedImage"
+"use client";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
-import { useEffect, useMemo, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { toast } from "sonner"
-import { ChevronDown } from "lucide-react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { ChevronDown } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   PageHeader,
   ProfileIcon,
   StudentQR,
   type FineRecord,
-} from "../../../shared-page"
-import { supabase } from "@/lib/supabase"
-import { recordAttendance, type AttendanceStatus } from "@/lib/attendance"
-import { useProtectedUser } from "../../layout"
-import { buildAttendanceSessionRecords } from "@/lib/attendance-fines"
+} from "../../../shared-page";
+import { supabase } from "@/lib/supabase";
+import { recordAttendance, type AttendanceStatus } from "@/lib/attendance";
+import { useProtectedUser } from "../../layout";
+import { buildAttendanceSessionRecords } from "@/lib/attendance-fines";
 
 interface StudentDetail {
-  id: string
-  profileId: string
-  name: string
-  studentId: string
-  program: string
-  yearLevel: string
-  section: string
-  phone: string
-  email: string
-  photoUrl?: string
-  coverPhotoUrl?: string
-  idPhotoUrl?: string
-  joinedDate: string
+  id: string;
+  profileId: string;
+  name: string;
+  studentId: string;
+  program: string;
+  yearLevel: string;
+  section: string;
+  phone: string;
+  email: string;
+  photoUrl?: string;
+  coverPhotoUrl?: string;
+  idPhotoUrl?: string;
+  joinedDate: string;
 }
 
 interface AttendanceEvent {
-  id: string
-  title: string
-  date: string
-  multiSession: boolean
-  sanctionsEnabled: boolean
-  morningStart?: string | null
-  morningEnd?: string | null
-  afternoonStart?: string | null
-  afternoonEnd?: string | null
-  endTime?: string | null
+  id: string;
+  title: string;
+  date: string;
+  multiSession: boolean;
+  sanctionsEnabled: boolean;
+  morningStart?: string | null;
+  morningEnd?: string | null;
+  afternoonStart?: string | null;
+  afternoonEnd?: string | null;
+  endTime?: string | null;
 }
 
 interface ExistingAttendance {
-  id: string
-  status: AttendanceStatus
-  session_label: "morning" | "afternoon"
-  scan_in_at: string | null
-  scan_out_at: string | null
-  method: "qr_scan" | "manual"
-  scanned_by: string | null
+  id: string;
+  status: AttendanceStatus;
+  session_label: "morning" | "afternoon";
+  scan_in_at: string | null;
+  scan_out_at: string | null;
+  method: "qr_scan" | "manual";
+  scanned_by: string | null;
 }
 
 interface StudentMetrics {
-  attendanceRate: number | null
-  recordedSessions: number
-  fineBalance: number
+  attendanceRate: number | null;
+  recordedSessions: number;
+  fineBalance: number;
 }
 
 function toMinutes(value?: string | null) {
-  if (!value) return null
-  const match = value.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i)
-  if (!match) return null
+  if (!value) return null;
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!match) return null;
 
-  let hour = Number(match[1])
-  const minute = Number(match[2])
-  const meridiem = match[3]?.toUpperCase()
-  if (hour > 23 || minute > 59) return null
-  if (meridiem === "AM" && hour === 12) hour = 0
-  if (meridiem === "PM" && hour !== 12) hour += 12
-  return hour * 60 + minute
+  let hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const meridiem = match[3]?.toUpperCase();
+  if (hour > 23 || minute > 59) return null;
+  if (meridiem === "AM" && hour === 12) hour = 0;
+  if (meridiem === "PM" && hour !== 12) hour += 12;
+  return hour * 60 + minute;
 }
 
 function suggestedSession(event: AttendanceEvent) {
-  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes()
-  const morningStart = toMinutes(event.morningStart)
-  const morningEnd = toMinutes(event.morningEnd)
-  const afternoonStart = toMinutes(event.afternoonStart)
-  const afternoonEnd = toMinutes(event.afternoonEnd)
+  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const morningStart = toMinutes(event.morningStart);
+  const morningEnd = toMinutes(event.morningEnd);
+  const afternoonStart = toMinutes(event.afternoonStart);
+  const afternoonEnd = toMinutes(event.afternoonEnd);
 
   if (
     morningStart !== null &&
@@ -90,7 +90,7 @@ function suggestedSession(event: AttendanceEvent) {
     nowMinutes >= morningStart &&
     nowMinutes <= morningEnd
   ) {
-    return "morning" as const
+    return "morning" as const;
   }
 
   if (
@@ -99,65 +99,68 @@ function suggestedSession(event: AttendanceEvent) {
     nowMinutes >= afternoonStart &&
     nowMinutes <= afternoonEnd
   ) {
-    return "afternoon" as const
+    return "afternoon" as const;
   }
 
-  return null
+  return null;
 }
 
 function sessionHasEnded(
   event: AttendanceEvent,
   session: "morning" | "afternoon",
 ) {
-  const eventDate = new Date(`${event.date}T00:00:00`)
-  const now = new Date()
-  const eventDay = eventDate.toISOString().slice(0, 10)
-  const today = now.toISOString().slice(0, 10)
-  if (eventDay < today) return true
-  if (eventDay > today) return false
+  const eventDate = new Date(`${event.date}T00:00:00`);
+  const now = new Date();
+  const eventDay = eventDate.toISOString().slice(0, 10);
+  const today = now.toISOString().slice(0, 10);
+  if (eventDay < today) return true;
+  if (eventDay > today) return false;
   const end =
     session === "afternoon"
       ? event.afternoonEnd
-      : (event.morningEnd ?? event.endTime)
-  const endMinutes = toMinutes(end)
+      : (event.morningEnd ?? event.endTime);
+  const endMinutes = toMinutes(end);
   return (
     endMinutes !== null && now.getHours() * 60 + now.getMinutes() >= endMinutes
-  )
+  );
 }
 
 export default function StudentDetailRoutePage() {
-  const router = useRouter()
-  const params = useParams<{ id: string }>()
-  const routeId = params?.id ?? null
-  const { authUserId, user } = useProtectedUser()
-  const [student, setStudent] = useState<StudentDetail | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [events, setEvents] = useState<AttendanceEvent[]>([])
-  const [selectedEventId, setSelectedEventId] = useState("")
+  const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const routeId = params?.id ?? null;
+  const { authUserId, user } = useProtectedUser();
+  const [student, setStudent] = useState<StudentDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [events, setEvents] = useState<AttendanceEvent[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState("");
   const [sessionLabel, setSessionLabel] = useState<"morning" | "afternoon">(
     "morning",
-  )
+  );
   const [attendanceStatus, setAttendanceStatus] =
-    useState<AttendanceStatus>("present")
+    useState<AttendanceStatus>("present");
   const [existingAttendance, setExistingAttendance] =
-    useState<ExistingAttendance | null>(null)
-  const [isCheckingAttendance, setIsCheckingAttendance] = useState(false)
-  const [isSavingAttendance, setIsSavingAttendance] = useState(false)
+    useState<ExistingAttendance | null>(null);
+  const [isCheckingAttendance, setIsCheckingAttendance] = useState(false);
+  const [isSavingAttendance, setIsSavingAttendance] = useState(false);
   const [metrics, setMetrics] = useState<StudentMetrics>({
     attendanceRate: null,
     recordedSessions: 0,
     fineBalance: 0,
-  })
-  const [metricsRefreshKey, setMetricsRefreshKey] = useState(0)
-  const [finesEnabled, setFinesEnabled] = useState(false)
-  const [studentFines, setStudentFines] = useState<FineRecord[]>([])
-  const [selectedFineIds, setSelectedFineIds] = useState<string[]>([])
-  const [isClearingFines, setIsClearingFines] = useState(false)
+  });
+  const [metricsRefreshKey, setMetricsRefreshKey] = useState(0);
+  const [finesEnabled, setFinesEnabled] = useState(false);
+  const [approvedExcuseKeys, setApprovedExcuseKeys] = useState<Set<string>>(
+    new Set(),
+  );
+  const [studentFines, setStudentFines] = useState<FineRecord[]>([]);
+  const [selectedFineIds, setSelectedFineIds] = useState<string[]>([]);
+  const [isClearingFines, setIsClearingFines] = useState(false);
 
   useEffect(() => {
-    if (!routeId) return
+    if (!routeId) return;
 
-    let cancelled = false
+    let cancelled = false;
 
     async function loadStudent() {
       try {
@@ -165,15 +168,15 @@ export default function StudentDetailRoutePage() {
           .from("profiles")
           .select("*")
           .eq("id", routeId)
-          .maybeSingle()
+          .maybeSingle();
 
         if (error) {
-          console.error(error)
-          return
+          console.error(error);
+          return;
         }
 
         if (!data || cancelled) {
-          return
+          return;
         }
 
         setStudent({
@@ -197,59 +200,77 @@ export default function StudentDetailRoutePage() {
             day: "numeric",
             year: "numeric",
           }),
-        })
+        });
       } catch (caughtError) {
-        console.error(caughtError)
+        console.error(caughtError);
       } finally {
         if (!cancelled) {
-          setIsLoading(false)
+          setIsLoading(false);
         }
       }
     }
 
-    void loadStudent()
+    void loadStudent();
 
     return () => {
-      cancelled = true
-    }
-  }, [routeId])
+      cancelled = true;
+    };
+  }, [routeId]);
 
   useEffect(() => {
-    if (!routeId || user?.role !== "admin") return
+    if (!routeId || user?.role !== "admin") return;
 
-    let cancelled = false
+    let cancelled = false;
 
     async function loadStudentMetrics() {
-      const [eventsResult, scansResult, finesResult, settingsResult] =
-        await Promise.all([
-          supabase
-            .from("events")
-            .select(
-              "id, title, event_date, program, status, multi_session, sanctions_enabled, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
-            ),
-          supabase
-            .from("attendance_scans")
-            .select("id, event_id, session_label, status, scan_in_at")
-            .eq("student_id", routeId),
-          supabase
-            .from("fines")
-            .select(
-              "id, attendance_scan_id, event_id, session_label, amount, status",
-            )
-            .eq("student_id", routeId),
-          supabase
-            .from("system_settings")
-            .select("settings")
-            .eq("id", 1)
-            .maybeSingle(),
-        ])
+      const [
+        eventsResult,
+        scansResult,
+        finesResult,
+        settingsResult,
+        excusesResult,
+      ] = await Promise.all([
+        supabase
+          .from("events")
+          .select(
+            "id, title, event_date, program, status, multi_session, sanctions_enabled, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+          ),
+        supabase
+          .from("attendance_scans")
+          .select("id, event_id, session_label, status, scan_in_at")
+          .eq("student_id", routeId),
+        supabase
+          .from("fines")
+          .select(
+            "id, attendance_scan_id, event_id, session_label, amount, status",
+          )
+          .eq("student_id", routeId),
+        supabase
+          .from("system_settings")
+          .select("settings")
+          .eq("id", 1)
+          .maybeSingle(),
+        supabase
+          .from("excuse_requests")
+          .select("event_id, session_label")
+          .eq("student_id", routeId)
+          .eq("status", "approved"),
+      ]);
 
-      if (eventsResult.error) console.error(eventsResult.error)
-      if (scansResult.error) console.error(scansResult.error)
-      if (finesResult.error) console.error(finesResult.error)
-      if (settingsResult.error) console.error(settingsResult.error)
+      if (eventsResult.error) console.error(eventsResult.error);
+      if (scansResult.error) console.error(scansResult.error);
+      if (finesResult.error) console.error(finesResult.error);
+      if (settingsResult.error) console.error(settingsResult.error);
+      if (excusesResult.error) console.error(excusesResult.error);
 
-      if (cancelled) return
+      if (cancelled) return;
+
+      const approvedKeys = new Set(
+        (excusesResult.data ?? [])
+          .filter((request) => request.event_id && request.session_label)
+          .map((request) => `${request.event_id}:${request.session_label}`),
+      );
+      setApprovedExcuseKeys(approvedKeys);
 
       const records = buildAttendanceSessionRecords(
         eventsResult.data ?? [],
@@ -261,29 +282,30 @@ export default function StudentDetailRoutePage() {
           (settingsResult.data?.settings as { finesEnabled?: boolean } | null)
             ?.finesEnabled,
         ),
-      )
+        approvedKeys,
+      );
       const finesEnabled = Boolean(
         (settingsResult.data?.settings as { finesEnabled?: boolean } | null)
           ?.finesEnabled,
-      )
-      setFinesEnabled(finesEnabled)
-      const totalSessions = records.length
+      );
+      setFinesEnabled(finesEnabled);
+      const totalSessions = records.length;
       const attendedSessions = records.filter(
         (record) =>
           (record.status === "present" || record.status === "late") &&
           !!record.scan?.scan_in_at,
-      ).length
-      const fineRows = finesResult.data ?? []
+      ).length;
+      const fineRows = finesResult.data ?? [];
       const fineBalance = fineRows.reduce(
         (total: number, fine: any) =>
           fine.status === "unpaid" ? total + Number(fine.amount ?? 0) : total,
         0,
-      )
+      );
       setStudentFines(
         fineRows.map((fine: any) => {
           const event = (eventsResult.data ?? []).find(
             (item: any) => item.id === fine.event_id,
-          )
+          );
           return {
             id: String(fine.id),
             eventId: String(fine.event_id ?? ""),
@@ -293,10 +315,10 @@ export default function StudentDetailRoutePage() {
             eventDate: event?.event_date ?? "",
             amount: Number(fine.amount ?? 0),
             status: fine.status ?? "unpaid",
-          }
+          };
         }),
-      )
-      setSelectedFineIds([])
+      );
+      setSelectedFineIds([]);
 
       setMetrics({
         attendanceRate:
@@ -305,18 +327,18 @@ export default function StudentDetailRoutePage() {
             : null,
         recordedSessions: records.filter((record) => record.scan).length,
         fineBalance,
-      })
+      });
     }
 
-    void loadStudentMetrics()
+    void loadStudentMetrics();
 
     return () => {
-      cancelled = true
-    }
-  }, [metricsRefreshKey, routeId, student?.program, user?.role])
+      cancelled = true;
+    };
+  }, [metricsRefreshKey, routeId, student?.program, user?.role]);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function loadEvents() {
       const { data, error } = await supabase
@@ -324,11 +346,11 @@ export default function StudentDetailRoutePage() {
         .select(
           "id, title, event_date, multi_session, sanctions_enabled, end_time, morning_start, morning_end, afternoon_start, afternoon_end",
         )
-        .order("event_date", { ascending: false })
+        .order("event_date", { ascending: false });
 
       if (error) {
-        console.error(error)
-        return
+        console.error(error);
+        return;
       }
 
       if (!cancelled) {
@@ -343,46 +365,46 @@ export default function StudentDetailRoutePage() {
           afternoonStart: event.afternoon_start,
           afternoonEnd: event.afternoon_end,
           endTime: event.end_time,
-        }))
-        setEvents(nextEvents)
-        setSelectedEventId((current) => current || nextEvents[0]?.id || "")
+        }));
+        setEvents(nextEvents);
+        setSelectedEventId((current) => current || nextEvents[0]?.id || "");
       }
     }
 
     if (user?.role === "admin") {
-      void loadEvents()
+      void loadEvents();
     }
 
     return () => {
-      cancelled = true
-    }
-  }, [user])
+      cancelled = true;
+    };
+  }, [user]);
 
-  const selectedEvent = events.find((event) => event.id === selectedEventId)
+  const selectedEvent = events.find((event) => event.id === selectedEventId);
 
   useEffect(() => {
     if (!selectedEvent) {
-      setExistingAttendance(null)
-      return
+      setExistingAttendance(null);
+      return;
     }
 
     if (!selectedEvent.multiSession) {
-      setSessionLabel("morning")
+      setSessionLabel("morning");
     } else {
       setSessionLabel(
         suggestedSession(selectedEvent) ??
           (sessionHasEnded(selectedEvent, "afternoon")
             ? "afternoon"
             : "morning"),
-      )
+      );
     }
-  }, [selectedEvent])
+  }, [selectedEvent]);
 
   useEffect(() => {
-    if (!routeId || !selectedEventId || !sessionLabel) return
+    if (!routeId || !selectedEventId || !sessionLabel) return;
 
-    let cancelled = false
-    setIsCheckingAttendance(true)
+    let cancelled = false;
+    setIsCheckingAttendance(true);
 
     async function loadExistingAttendance() {
       const { data, error } = await supabase
@@ -393,59 +415,65 @@ export default function StudentDetailRoutePage() {
         .eq("event_id", selectedEventId)
         .eq("student_id", routeId)
         .eq("session_label", sessionLabel)
-        .maybeSingle()
+        .maybeSingle();
 
       if (error) {
-        console.error(error)
-        if (!cancelled) toast.error("Could not check existing attendance.")
+        console.error(error);
+        if (!cancelled) toast.error("Could not check existing attendance.");
       } else if (!cancelled) {
-        setExistingAttendance(data as ExistingAttendance | null)
+        setExistingAttendance(data as ExistingAttendance | null);
       }
 
-      if (!cancelled) setIsCheckingAttendance(false)
+      if (!cancelled) setIsCheckingAttendance(false);
     }
 
-    void loadExistingAttendance()
+    void loadExistingAttendance();
 
     return () => {
-      cancelled = true
-    }
-  }, [routeId, selectedEventId, sessionLabel])
+      cancelled = true;
+    };
+  }, [routeId, selectedEventId, sessionLabel]);
 
   const sessionMismatch =
     selectedEvent?.multiSession &&
     suggestedSession(selectedEvent) !== null &&
-    suggestedSession(selectedEvent) !== sessionLabel
+    suggestedSession(selectedEvent) !== sessionLabel;
 
   const isInferredAbsence =
     existingAttendance?.status === "absent" &&
     !existingAttendance.scan_in_at &&
     !existingAttendance.scan_out_at &&
-    !existingAttendance.scanned_by
+    !existingAttendance.scanned_by;
+  const approvedExcuseForSession = approvedExcuseKeys.has(
+    `${selectedEventId}:${sessionLabel}`,
+  );
   const sanctionStatus =
     !selectedEvent?.sanctionsEnabled || isCheckingAttendance
       ? null
-      : existingAttendance?.status === "late" ||
-          existingAttendance?.status === "absent" ||
-          (!existingAttendance && sessionHasEnded(selectedEvent, sessionLabel))
-        ? "Sanctioned"
-        : existingAttendance?.status === "present" ||
-            existingAttendance?.status === "confirmed"
-          ? "No Sanction"
-          : "Awaiting attendance"
+      : approvedExcuseForSession
+        ? "Excused"
+        : existingAttendance?.status === "late" ||
+            existingAttendance?.status === "absent" ||
+            (!existingAttendance &&
+              sessionHasEnded(selectedEvent, sessionLabel))
+          ? "Sanctioned"
+          : existingAttendance?.status === "present" ||
+              existingAttendance?.status === "confirmed"
+            ? "No Sanction"
+            : "Awaiting attendance";
 
   const markAttendance = async (overwrite = false) => {
     if (!routeId || !authUserId || !selectedEventId || !selectedEvent) {
-      toast.error("Select an event before marking attendance.")
-      return
+      toast.error("Select an event before marking attendance.");
+      return;
     }
 
     if (existingAttendance && !isInferredAbsence && !overwrite) {
-      toast.error("Choose Overwrite or Cancel for the existing record.")
-      return
+      toast.error("Choose Overwrite or Cancel for the existing record.");
+      return;
     }
 
-    setIsSavingAttendance(true)
+    setIsSavingAttendance(true);
     const result = await recordAttendance({
       eventId: selectedEventId,
       studentId: routeId,
@@ -456,27 +484,27 @@ export default function StudentDetailRoutePage() {
       canTimeOut: false,
       method: "manual",
       overwrite: overwrite || isInferredAbsence,
-    })
+    });
 
-    setIsSavingAttendance(false)
+    setIsSavingAttendance(false);
 
     if (result.outcome === "error") {
-      console.error(result.error)
-      toast.error("Attendance could not be saved.")
-      return
+      console.error(result.error);
+      toast.error("Attendance could not be saved.");
+      return;
     }
 
     if (result.outcome !== "success") {
-      toast.error("Attendance already exists. Review it before overwriting.")
-      return
+      toast.error("Attendance already exists. Review it before overwriting.");
+      return;
     }
 
     toast.success(
       `${
         overwrite ? "Attendance overwritten" : "Attendance marked"
       } for ${selectedEvent.title}.`,
-    )
-    setExistingAttendance(null)
+    );
+    setExistingAttendance(null);
     const { data } = await supabase
       .from("attendance_scans")
       .select(
@@ -485,48 +513,48 @@ export default function StudentDetailRoutePage() {
       .eq("event_id", selectedEventId)
       .eq("student_id", routeId)
       .eq("session_label", sessionLabel)
-      .maybeSingle()
-    setExistingAttendance(data as ExistingAttendance | null)
-    setMetricsRefreshKey((current) => current + 1)
-  }
+      .maybeSingle();
+    setExistingAttendance(data as ExistingAttendance | null);
+    setMetricsRefreshKey((current) => current + 1);
+  };
 
   const clearFineIds = async (fineIds: string[]) => {
-    const ids = Array.from(new Set(fineIds)).filter(Boolean)
+    const ids = Array.from(new Set(fineIds)).filter(Boolean);
     if (!ids.length) {
-      toast.error("Select at least one pending fine.")
-      return
+      toast.error("Select at least one pending fine.");
+      return;
     }
-    setIsClearingFines(true)
+    setIsClearingFines(true);
     const { error } = await supabase
       .from("fines")
       .update({ status: "paid" })
       .in("id", ids)
       .eq("student_id", routeId)
-      .eq("status", "unpaid")
-    setIsClearingFines(false)
+      .eq("status", "unpaid");
+    setIsClearingFines(false);
     if (error) {
-      console.error(error)
-      toast.error("Could not clear the selected fines.")
-      return
+      console.error(error);
+      toast.error("Could not clear the selected fines.");
+      return;
     }
-    toast.success(`${ids.length} fine${ids.length === 1 ? "" : "s"} cleared.`)
-    setMetricsRefreshKey((current) => current + 1)
-  }
+    toast.success(`${ids.length} fine${ids.length === 1 ? "" : "s"} cleared.`);
+    setMetricsRefreshKey((current) => current + 1);
+  };
 
-  const pendingFines = studentFines.filter((fine) => fine.status === "unpaid")
+  const pendingFines = studentFines.filter((fine) => fine.status === "unpaid");
   const toggleFine = (fineId: string) => {
     setSelectedFineIds((current) =>
       current.includes(fineId)
         ? current.filter((id) => id !== fineId)
         : [...current, fineId],
-    )
-  }
+    );
+  };
 
   const badges = useMemo(
     () =>
       [student?.program, student?.yearLevel, student?.section].filter(Boolean),
     [student],
-  )
+  );
 
   if (isLoading) {
     return (
@@ -545,7 +573,7 @@ export default function StudentDetailRoutePage() {
           <Skeleton className="h-48 w-full rounded-2xl" />
         </div>
       </>
-    )
+    );
   }
 
   if (!student) {
@@ -564,7 +592,7 @@ export default function StudentDetailRoutePage() {
           </button>
         </div>
       </>
-    )
+    );
   }
 
   return (
@@ -683,7 +711,7 @@ export default function StudentDetailRoutePage() {
                 </p>
               ) : (
                 studentFines.map((fine) => {
-                  const cleared = fine.status !== "unpaid"
+                  const cleared = fine.status !== "unpaid";
                   return (
                     <div
                       key={fine.id}
@@ -724,7 +752,7 @@ export default function StudentDetailRoutePage() {
                         {cleared ? "Cleared" : "Pending"}
                       </span>
                     </div>
-                  )
+                  );
                 })
               )}
             </div>
@@ -870,8 +898,8 @@ export default function StudentDetailRoutePage() {
                       type="button"
                       disabled={isSavingAttendance}
                       onClick={() => {
-                        setExistingAttendance(null)
-                        setSelectedEventId("")
+                        setExistingAttendance(null);
+                        setSelectedEventId("");
                       }}
                       className="h-9 rounded-lg border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
                     >
@@ -1032,5 +1060,5 @@ export default function StudentDetailRoutePage() {
         </aside>
       </div>
     </>
-  )
+  );
 }

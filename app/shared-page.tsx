@@ -1268,6 +1268,8 @@ export interface EventData {
 
   reportAbsentSessions?: number;
 
+  reportExcusedSessions?: number;
+
   reportLateSessions?: number;
 
   reportFineTotal?: number;
@@ -1294,6 +1296,8 @@ interface ScanRecord {
 
   sanctioned?: boolean;
 
+  excused?: boolean;
+
   sessionLabel?: "morning" | "afternoon";
 
   action?:
@@ -1317,6 +1321,8 @@ export interface ExcuseRequest {
 
   attachmentPath?: string;
 
+  attachmentFile?: File;
+
   studentName: string;
 
   studentId: string;
@@ -1330,6 +1336,10 @@ export interface ExcuseRequest {
   fineId?: string;
 
   sessionLabel?: "morning" | "afternoon";
+
+  reviewedBy?: string;
+
+  reviewedAt?: string;
 
   date: string;
 
@@ -6098,19 +6108,6 @@ function ExcuseModal({
               setSubmitting(true);
 
               try {
-                let attachmentPath: string | undefined;
-
-                if (file) {
-                  const uploaded = await uploadImage(file, "excuse-documents");
-
-                  if ("error" in uploaded) {
-                    toast.error(uploaded.error);
-                    return;
-                  }
-
-                  attachmentPath = uploaded.path;
-                }
-
                 const succeeded = await onSubmit({
                   id: Date.now().toString(),
                   studentName: "Maria Luisa Santos",
@@ -6118,7 +6115,7 @@ function ExcuseModal({
                   event: record.event,
                   eventId: record.eventId,
                   attendanceScanId: record.id,
-                  attachmentPath,
+                  attachmentFile: file ?? undefined,
                   sessionLabel: record.sessionLabel,
                   date: record.date,
                   reason,
@@ -7764,6 +7761,8 @@ export function AttendanceHistoryPage({
 
   showFees,
 
+  allowExcuseRequests = true,
+
   onSubmitExcuse,
 
   onBack,
@@ -7775,6 +7774,8 @@ export function AttendanceHistoryPage({
   fines: FineRecord[];
 
   showFees: boolean;
+
+  allowExcuseRequests?: boolean;
 
   onSubmitExcuse: (r: ExcuseRequest) => Promise<boolean> | boolean;
 
@@ -7810,8 +7811,10 @@ export function AttendanceHistoryPage({
               (x) =>
                 (x.eventId &&
                   x.eventId === r.eventId &&
-                  (!x.sessionLabel || x.sessionLabel === rowSessionLabel)) ||
-                (!x.eventId && x.event === r.event),
+                  x.sessionLabel === rowSessionLabel) ||
+                (!x.eventId &&
+                  x.event === r.event &&
+                  x.sessionLabel === rowSessionLabel),
             );
 
             const eff =
@@ -7824,8 +7827,7 @@ export function AttendanceHistoryPage({
             const fine = fines.find(
               (f) =>
                 f.attendanceScanId === r.id ||
-                (f.eventId === r.eventId &&
-                  (!f.sessionLabel || f.sessionLabel === rowSessionLabel)),
+                (f.eventId === r.eventId && f.sessionLabel === rowSessionLabel),
             );
 
             const cleared =
@@ -7914,17 +7916,23 @@ export function AttendanceHistoryPage({
                 </div>
                 {cleared ? (
                   <Badge status="cleared" />
-                ) : eff === "absent" &&
-                  !String(r.id).startsWith("inferred-") ? (
-                  <button
-                    onClick={() => setModal(r)}
-                    className="h-10 shrink-0 rounded-lg bg-slate-900 px-3.5 text-[11px] font-semibold leading-none text-white transition-colors hover:bg-slate-800 md:h-8"
-                  >
-                    <span className="flex items-center justify-center gap-1.5 whitespace-nowrap">
-                      <Icons.Send />
-                      <span>Excuse</span>
+                ) : eff === "absent" ? (
+                  allowExcuseRequests ? (
+                    <button
+                      type="button"
+                      onClick={() => setModal(r)}
+                      className="h-10 shrink-0 rounded-lg bg-slate-900 px-3.5 text-[11px] font-semibold leading-none text-white transition-colors hover:bg-slate-800 md:h-8"
+                    >
+                      <span className="flex items-center justify-center gap-1.5 whitespace-nowrap">
+                        <Icons.Send />
+                        <span>Excuse</span>
+                      </span>
+                    </button>
+                  ) : (
+                    <span className="shrink-0 text-[11px] font-medium text-slate-400">
+                      Requests closed
                     </span>
-                  </button>
+                  )
                 ) : (
                   <Badge status={eff} />
                 )}
@@ -12853,6 +12861,8 @@ export function AdminAttendeesPage({
 
   fineRows = [],
 
+  approvedExcuseKeys = new Set(),
+
   onDeleteAttendance,
 }: {
   onNav: (p: Page) => void;
@@ -12864,6 +12874,8 @@ export function AdminAttendeesPage({
   scanState?: Record<string, ScanRecord[]>;
 
   fineRows?: FineRowLike[];
+
+  approvedExcuseKeys?: ReadonlySet<string>;
 
   onDeleteAttendance?: (dbId: string | number) => Promise<boolean>;
 }) {
@@ -13009,7 +13021,15 @@ export function AdminAttendeesPage({
 
           status: "absent" as const,
 
-          sanctioned: Boolean(selectedEvent?.sanctionsEnabled),
+          excused: approvedExcuseKeys.has(
+            `${selectedEvent?.id ?? ""}:${student.profileId ?? student.id}:${selectedSession}`,
+          ),
+
+          sanctioned:
+            Boolean(selectedEvent?.sanctionsEnabled) &&
+            !approvedExcuseKeys.has(
+              `${selectedEvent?.id ?? ""}:${student.profileId ?? student.id}:${selectedSession}`,
+            ),
 
           sessionLabel: selectedSession,
 
@@ -13063,6 +13083,23 @@ export function AdminAttendeesPage({
       .some((value) => value.toLowerCase().includes(searchQuery));
   });
 
+  const matchedStudentExcuseKeys = new Set(
+    matchedStudent
+      ? events.flatMap((event) =>
+          (event.multiSession
+            ? (["morning", "afternoon"] as const)
+            : (["morning"] as const)
+          )
+            .filter((sessionLabel) =>
+              approvedExcuseKeys.has(
+                `${event.id}:${matchedStudent.profileId ?? matchedStudent.id}:${sessionLabel}`,
+              ),
+            )
+            .map((sessionLabel) => `${event.id}:${sessionLabel}`),
+        )
+      : [],
+  );
+
   const allEventRows = matchedStudent
     ? buildAttendanceSessionRecords(
         events.map((event) => ({
@@ -13110,6 +13147,12 @@ export function AdminAttendeesPage({
         fineRows,
 
         matchedStudent.program,
+
+        undefined,
+
+        false,
+
+        matchedStudentExcuseKeys,
       ).map((record) => {
         const event = events.find((item) => item.id === record.eventId);
 
@@ -13749,6 +13792,7 @@ export function AdminAttendeesPage({
                           <p className="mt-0.5 text-[11px] text-slate-500">
                             {s.id} • {s.program} • {s.section}
                           </p>
+                          {s.excused && <Badge status="excused" />}
                         </div>
                         {policyColumn && (
                           <div className="shrink-0 text-right">
@@ -13782,6 +13826,7 @@ export function AdminAttendeesPage({
                             {s.name}
                           </p>
                           <p className="text-[11px] text-slate-400">{s.id}</p>
+                          {s.excused && <Badge status="excused" />}
                         </div>
                       </div>
                       <span className="col-span-4 text-xs text-slate-500">
@@ -15230,9 +15275,7 @@ export function AdminExcuseRequestsPage({
                       className="flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 sm:flex-none"
                     >
                       <Icons.Check />
-                      {actionId === r.id
-                        ? "Updating..."
-                        : "Approve & waive fee"}
+                      {actionId === r.id ? "Updating..." : "Approve excuse"}
                     </button>
                     <button
                       onClick={async () => {
@@ -15281,7 +15324,21 @@ export function AdminExcuseRequestsPage({
                       </p>
                       <p className="text-xs text-slate-400 truncate">
                         {r.event}
+                        {r.sessionLabel
+                          ? ` · ${r.sessionLabel === "morning" ? "Morning" : "Afternoon"}`
+                          : ""}
                       </p>
+                      {r.reviewedAt && (
+                        <p className="mt-0.5 text-[11px] text-slate-400">
+                          Reviewed{" "}
+                          {new Date(r.reviewedAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                          {r.reviewedBy ? ` by ${r.reviewedBy}` : ""}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <Badge status={r.status} />
@@ -15400,6 +15457,8 @@ export function AdminReportsPage({
       rate: number;
 
       absent?: number;
+
+      excused?: number;
 
       late?: number;
 
@@ -15888,7 +15947,8 @@ export function AdminReportsPage({
                 {r.rate}% attendance rate
               </p>
               <p className="mt-1 text-[11px] font-semibold text-slate-500">
-                Present/late {r.present} · Absent {r.absent ?? 0}
+                Present/late {r.present} · Absent {r.absent ?? 0} · Excused{" "}
+                {r.excused ?? 0}
                 {(r.fineTotal ?? 0) > 0 && ` · Fees ₱${r.fineTotal}`}
                 {(r.sanctioned ?? 0) > 0 && ` · Sanctioned ${r.sanctioned}`}
               </p>
@@ -15900,6 +15960,7 @@ export function AdminReportsPage({
                 <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 border-t border-slate-100 pt-2 text-[11px] text-slate-500">
                   <span>Late sessions: {r.late ?? 0}</span>
                   <span>Absent sessions: {r.absent ?? 0}</span>
+                  <span>Excused sessions: {r.excused ?? 0}</span>
                   <span>Fees assessed: ₱{r.fineTotal ?? 0}</span>
                   <span>Sanctioned: {r.sanctioned ?? 0}</span>
                   <span>Sanctioned late: {r.sanctionedLate ?? 0}</span>
@@ -15999,6 +16060,9 @@ export function AdminReportsPage({
                       Present/late: {e.reportAttendedSessions ?? e.attendees}
                     </span>
                     <span>Absent sessions: {e.reportAbsentSessions ?? 0}</span>
+                    <span>
+                      Excused sessions: {e.reportExcusedSessions ?? 0}
+                    </span>
                     <span>Late sessions: {e.reportLateSessions ?? 0}</span>
                     <span>Sanctioned: {e.reportSanctionedSessions ?? 0}</span>
                   </div>

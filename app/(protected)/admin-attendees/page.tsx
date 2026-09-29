@@ -21,6 +21,9 @@ export default function AdminAttendeesRoutePage() {
   const [students, setStudents] = useState<any[]>([]);
   const [scanState, setScanState] = useState<Record<string, any[]>>({});
   const [fineRows, setFineRows] = useState<any[]>([]);
+  const [approvedExcuseKeys, setApprovedExcuseKeys] = useState<Set<string>>(
+    new Set(),
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -35,23 +38,28 @@ export default function AdminAttendeesRoutePage() {
           return;
         }
 
-        const [eventsResult, studentsResult, settingsResult] = await Promise.all([
-          supabase
-            .from("events")
-            .select("*")
-            .is("archived_at", null)
-            .order("event_date", { ascending: false }),
-          supabase
-            .from("profiles")
-            .select("*")
-            .eq("role", "student")
-            .order("surname", { ascending: true }),
-          supabase
-            .from("system_settings")
-            .select("settings")
-            .eq("id", 1)
-            .maybeSingle(),
-        ]);
+        const [eventsResult, studentsResult, settingsResult, excusesResult] =
+          await Promise.all([
+            supabase
+              .from("events")
+              .select("*")
+              .is("archived_at", null)
+              .order("event_date", { ascending: false }),
+            supabase
+              .from("profiles")
+              .select("*")
+              .eq("role", "student")
+              .order("surname", { ascending: true }),
+            supabase
+              .from("system_settings")
+              .select("settings")
+              .eq("id", 1)
+              .maybeSingle(),
+            supabase
+              .from("excuse_requests")
+              .select("event_id, student_id, session_label")
+              .eq("status", "approved"),
+          ]);
 
         if (eventsResult.error) {
           console.error(eventsResult.error);
@@ -65,6 +73,18 @@ export default function AdminAttendeesRoutePage() {
         if (settingsResult.error) {
           console.error(settingsResult.error);
         }
+        if (excusesResult.error) {
+          console.error(excusesResult.error);
+          throw new Error("Excuse decisions could not be loaded.");
+        }
+
+        const nextApprovedExcuseKeys = new Set(
+          (excusesResult.data ?? []).map(
+            (request) =>
+              `${request.event_id}:${request.student_id}:${request.session_label}`,
+          ),
+        );
+        setApprovedExcuseKeys(nextApprovedExcuseKeys);
 
         const finesEnabled = Boolean(
           (settingsResult.data?.settings as { finesEnabled?: boolean } | null)
@@ -86,12 +106,13 @@ export default function AdminAttendeesRoutePage() {
           location: row.location,
           description: row.description,
           program: row.program || "All Programs",
-          fineAmount: finesEnabled && row.multi_session
-            ? Number(row.morning_absent_fine ?? 0) +
-              Number(row.afternoon_absent_fine ?? 0)
-            : finesEnabled
-              ? Number(row.absent_fine ?? 0)
-              : 0,
+          fineAmount:
+            finesEnabled && row.multi_session
+              ? Number(row.morning_absent_fine ?? 0) +
+                Number(row.afternoon_absent_fine ?? 0)
+              : finesEnabled
+                ? Number(row.absent_fine ?? 0)
+                : 0,
           status: row.status || "upcoming",
           attendees: 0,
           mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
@@ -103,10 +124,18 @@ export default function AdminAttendeesRoutePage() {
           sanctionsEnabled: Boolean(row.sanctions_enabled),
           absentFine: finesEnabled ? Number(row.absent_fine ?? 0) : 0,
           lateFine: finesEnabled ? Number(row.late_fine ?? 0) : 0,
-          morningAbsentFine: finesEnabled ? Number(row.morning_absent_fine ?? row.absent_fine ?? 0) : 0,
-          morningLateFine: finesEnabled ? Number(row.morning_late_fine ?? row.late_fine ?? 0) : 0,
-          afternoonAbsentFine: finesEnabled ? Number(row.afternoon_absent_fine ?? row.absent_fine ?? 0) : 0,
-          afternoonLateFine: finesEnabled ? Number(row.afternoon_late_fine ?? row.late_fine ?? 0) : 0,
+          morningAbsentFine: finesEnabled
+            ? Number(row.morning_absent_fine ?? row.absent_fine ?? 0)
+            : 0,
+          morningLateFine: finesEnabled
+            ? Number(row.morning_late_fine ?? row.late_fine ?? 0)
+            : 0,
+          afternoonAbsentFine: finesEnabled
+            ? Number(row.afternoon_absent_fine ?? row.absent_fine ?? 0)
+            : 0,
+          afternoonLateFine: finesEnabled
+            ? Number(row.afternoon_late_fine ?? row.late_fine ?? 0)
+            : 0,
         }));
 
         setEvents(mappedEvents);
@@ -143,7 +172,9 @@ export default function AdminAttendeesRoutePage() {
 
         const finesResult = await supabase
           .from("fines")
-          .select("id, attendance_scan_id, event_id, session_label, amount, status")
+          .select(
+            "id, attendance_scan_id, event_id, session_label, amount, status",
+          )
           .in("status", ["unpaid", "paid", "excused"]);
         if (!finesResult.error) {
           setFineRows(finesResult.data ?? []);
@@ -193,17 +224,30 @@ export default function AdminAttendeesRoutePage() {
                     : row.status === "duplicate"
                       ? "duplicate"
                       : "present",
+              excused: nextApprovedExcuseKeys.has(
+                `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`,
+              ),
               sanctioned:
-                Boolean(mappedEvents.find((event) => event.id === eventId)?.sanctionsEnabled) &&
-                (row.status === "late" || row.status === "absent"),
-              sessionLabel: row.session_label === "afternoon" ? "afternoon" : "morning",
+                Boolean(
+                  mappedEvents.find((event) => event.id === eventId)
+                    ?.sanctionsEnabled,
+                ) &&
+                (row.status === "late" || row.status === "absent") &&
+                !nextApprovedExcuseKeys.has(
+                  `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`,
+                ),
+              sessionLabel:
+                row.session_label === "afternoon" ? "afternoon" : "morning",
               dbId: String(row.id),
               fineStatus: undefined,
             });
           }
 
           const fineByScan = new Map(
-            (finesResult.data ?? []).map((fine: any) => [String(fine.attendance_scan_id), fine]),
+            (finesResult.data ?? []).map((fine: any) => [
+              String(fine.attendance_scan_id),
+              fine,
+            ]),
           );
           for (const records of Object.values(byEvent)) {
             for (const record of records) {
@@ -251,6 +295,11 @@ export default function AdminAttendeesRoutePage() {
         }
       },
     );
+    const excusesChannel = subscribeToTableChanges("excuse_requests", () => {
+      if (!cancelled) {
+        void loadData();
+      }
+    });
 
     return () => {
       cancelled = true;
@@ -258,6 +307,7 @@ export default function AdminAttendeesRoutePage() {
       void profilesChannel.unsubscribe();
       void finesChannel.unsubscribe();
       void attendanceChannel.unsubscribe();
+      void excusesChannel.unsubscribe();
     };
   }, [router, user]);
 
@@ -337,6 +387,7 @@ export default function AdminAttendeesRoutePage() {
       students={students}
       scanState={scanState}
       fineRows={fineRows}
+      approvedExcuseKeys={approvedExcuseKeys}
       onDeleteAttendance={deleteAttendance}
     />
   );

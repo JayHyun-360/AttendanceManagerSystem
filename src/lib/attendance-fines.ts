@@ -1,5 +1,10 @@
 export type SessionLabel = "morning" | "afternoon";
-export type AttendanceStatus = "present" | "late" | "absent" | "confirmed" | "duplicate";
+export type AttendanceStatus =
+  | "present"
+  | "late"
+  | "absent"
+  | "confirmed"
+  | "duplicate";
 
 export interface FineEventLike {
   id: string;
@@ -38,6 +43,7 @@ export interface AttendanceSessionRecord {
   eventId: string;
   sessionLabel: SessionLabel;
   status: AttendanceStatus | "no_record";
+  excused: boolean;
   scan?: FineScanLike;
   fineId?: string;
   fineAmount: number;
@@ -49,14 +55,17 @@ export interface AttendanceSessionRecord {
 export function getAttendanceDisplayState(
   status: AttendanceStatus | "no_record",
   sanctionsEnabled = false,
+  excused = false,
 ): { sanctioned: boolean; label: string } {
   const sanctioned =
-    sanctionsEnabled && (status === "late" || status === "absent");
-  const label = status === "no_record"
-    ? "No record"
-    : status === "confirmed"
-      ? "Present"
-      : status.charAt(0).toUpperCase() + status.slice(1);
+    !excused && sanctionsEnabled && (status === "late" || status === "absent");
+  const label = excused
+    ? "Excused"
+    : status === "no_record"
+      ? "No record"
+      : status === "confirmed"
+        ? "Present"
+        : status.charAt(0).toUpperCase() + status.slice(1);
   return { sanctioned, label: sanctioned ? `Sanctioned — ${label}` : label };
 }
 
@@ -69,15 +78,16 @@ export function sessionFineAmount(
   session: SessionLabel,
   status: AttendanceStatus | "no_record",
 ): number {
-  if (status !== "absent" && status !== "late" && status !== "no_record") return 0;
+  if (status !== "absent" && status !== "late" && status !== "no_record")
+    return 0;
   const value =
     status === "late"
       ? session === "afternoon"
-        ? event.afternoon_late_fine ?? event.late_fine
-        : event.morning_late_fine ?? event.late_fine
+        ? (event.afternoon_late_fine ?? event.late_fine)
+        : (event.morning_late_fine ?? event.late_fine)
       : session === "afternoon"
-        ? event.afternoon_absent_fine ?? event.absent_fine
-        : event.morning_absent_fine ?? event.absent_fine;
+        ? (event.afternoon_absent_fine ?? event.absent_fine)
+        : (event.morning_absent_fine ?? event.absent_fine);
   return Number(value ?? 0);
 }
 
@@ -88,45 +98,61 @@ export function buildAttendanceSessionRecords(
   studentProgram?: string | null,
   today = new Date().toISOString().slice(0, 10),
   finesEnabled = false,
+  approvedExcuseKeys: ReadonlySet<string> = new Set(),
 ): AttendanceSessionRecord[] {
   const applicableEvents = events.filter(
     (event) =>
       event.event_date <= today &&
       event.status !== "upcoming" &&
-      (!event.program || event.program === "All Programs" || event.program === studentProgram),
+      (!event.program ||
+        event.program === "All Programs" ||
+        event.program === studentProgram),
   );
   const scanByKey = new Map(
-    scans.map((scan) => [`${scan.event_id}:${scan.session_label ?? "morning"}`, scan]),
+    scans.map((scan) => [
+      `${scan.event_id}:${scan.session_label ?? "morning"}`,
+      scan,
+    ]),
   );
   const fineByScan = new Map(
-    fines.filter((fine) => fine.attendance_scan_id).map((fine) => [fine.attendance_scan_id as string, fine]),
+    fines
+      .filter((fine) => fine.attendance_scan_id)
+      .map((fine) => [fine.attendance_scan_id as string, fine]),
   );
   const fineByKey = new Map(
-    fines.filter((fine) => fine.event_id && fine.session_label).map((fine) => [`${fine.event_id}:${fine.session_label}`, fine]),
+    fines
+      .filter((fine) => fine.event_id && fine.session_label)
+      .map((fine) => [`${fine.event_id}:${fine.session_label}`, fine]),
   );
 
   return applicableEvents.flatMap((event) =>
     eventSessions(event).map((sessionLabel) => {
       const key = `${event.id}:${sessionLabel}`;
       const scan = scanByKey.get(key);
-      const linkedFine = (scan && fineByScan.get(scan.id)) ?? fineByKey.get(key);
+      const linkedFine =
+        (scan && fineByScan.get(scan.id)) ?? fineByKey.get(key);
       const status = scan?.status ?? "no_record";
+      const excused = approvedExcuseKeys.has(key);
       const display = getAttendanceDisplayState(
         status,
         !!event.sanctions_enabled,
+        excused,
       );
-      const countedFine = linkedFine
-        ? linkedFine.status === "unpaid"
-          ? Number(linkedFine.amount ?? 0)
-          : 0
-        : finesEnabled
-          ? sessionFineAmount(event, sessionLabel, status)
-          : 0;
+      const countedFine = excused
+        ? 0
+        : linkedFine
+          ? linkedFine.status === "unpaid"
+            ? Number(linkedFine.amount ?? 0)
+            : 0
+          : finesEnabled
+            ? sessionFineAmount(event, sessionLabel, status)
+            : 0;
       return {
         key,
         eventId: event.id,
         sessionLabel,
         status,
+        excused,
         scan,
         fineId: linkedFine?.id,
         fineAmount: countedFine,

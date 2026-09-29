@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 import { toast } from "sonner";
+import { uploadImage } from "@/lib/uploadImage";
 import {
   buildAttendanceSessionRecords,
   type FineEventLike,
@@ -27,6 +28,7 @@ export default function AttendanceHistoryRoutePage() {
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [allowExcuseRequests, setAllowExcuseRequests] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,6 +111,11 @@ export default function AttendanceHistoryRoutePage() {
         if (cancelled) {
           return;
         }
+
+        const settings = settingsResult.data?.settings as {
+          allowExcuseRequests?: boolean;
+        } | null;
+        setAllowExcuseRequests(settings?.allowExcuseRequests ?? true);
 
         const storedFines = (finesResult.data ?? []).map((row: any) => ({
           id: String(row.id),
@@ -208,6 +215,16 @@ export default function AttendanceHistoryRoutePage() {
             (settingsResult.data?.settings as { finesEnabled?: boolean } | null)
               ?.finesEnabled,
           ),
+          new Set(
+            (excuseResult.data ?? [])
+              .filter(
+                (row: any) =>
+                  row.status === "approved" &&
+                  row.event_id &&
+                  row.session_label,
+              )
+              .map((row: any) => `${row.event_id}:${row.session_label}`),
+          ),
         );
         const canonicalFines = records
           .filter((record) => record.fineId && record.fineAmount > 0)
@@ -283,22 +300,35 @@ export default function AttendanceHistoryRoutePage() {
       return false;
     }
 
-    const { error } = await supabase.from("excuse_requests").insert({
-      student_id: authUserId,
-      event_id: record.eventId,
-      attendance_scan_id: record.attendanceScanId ?? null,
-      fine_id:
-        fines.find(
-          (fine) =>
-            (fine.attendanceScanId === record.attendanceScanId ||
-              (fine.eventId === record.eventId &&
-                (!fine.sessionLabel ||
-                  fine.sessionLabel === record.sessionLabel))) &&
-            fine.status === "unpaid",
-        )?.id ?? null,
-      reason: record.reason,
-      status: "pending",
-      document_url: record.attachmentPath ?? null,
+    if (!record.eventId || !record.sessionLabel) {
+      toast.error(
+        "The event session could not be identified. Please refresh and try again.",
+      );
+      return false;
+    }
+
+    let documentPath: string | null = null;
+    if (record.attachmentFile) {
+      const uploaded = await uploadImage(
+        record.attachmentFile,
+        "excuse-documents",
+        authUserId,
+      );
+
+      if ("error" in uploaded) {
+        console.error(uploaded.error);
+        toast.error("The attachment could not be uploaded. Please try again.");
+        return false;
+      }
+
+      documentPath = uploaded.path;
+    }
+
+    const { error } = await supabase.rpc("submit_excuse_request", {
+      p_event_id: record.eventId,
+      p_session_label: record.sessionLabel,
+      p_reason: record.reason,
+      p_document_path: documentPath,
     });
 
     if (error) {
@@ -346,6 +376,7 @@ export default function AttendanceHistoryRoutePage() {
       excuseRequests={excuseRequests}
       fines={fines}
       showFees={showFees}
+      allowExcuseRequests={allowExcuseRequests}
       onSubmitExcuse={handleSubmitExcuse}
       onBack={() => router.push("/dashboard")}
       attendanceRecords={attendanceRecords}

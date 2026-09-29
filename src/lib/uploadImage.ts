@@ -1,30 +1,32 @@
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase";
 
-export type UploadImageResult = { url: string; path: string } | { error: string }
+export type UploadImageResult =
+  | { url: string; path: string }
+  | { error: string };
 
 function getOwnedObjectPath(value: string, bucketName: string) {
-  if (!value || value.startsWith("blob:")) return null
+  if (!value || value.startsWith("blob:")) return null;
 
   if (!value.includes("://")) {
-    return value.replace(/^\/+/, "") || null
+    return value.replace(/^\/+/, "") || null;
   }
 
   try {
-    const url = new URL(value)
+    const url = new URL(value);
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
     if (!supabaseUrl || url.origin !== new URL(supabaseUrl).origin) {
-      return null
+      return null;
     }
 
-    const prefix = `/storage/v1/object/public/${bucketName}/`
+    const prefix = `/storage/v1/object/public/${bucketName}/`;
 
-    if (!url.pathname.startsWith(prefix)) return null
+    if (!url.pathname.startsWith(prefix)) return null;
 
-    return decodeURIComponent(url.pathname.slice(prefix.length)) || null
+    return decodeURIComponent(url.pathname.slice(prefix.length)) || null;
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -34,23 +36,23 @@ export async function deleteImage(
   bucketName = "public-images",
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const objectPath = getOwnedObjectPath(value, bucketName)
+    const objectPath = getOwnedObjectPath(value, bucketName);
 
     if (!objectPath) {
-      return { success: true }
+      return { success: true };
     }
 
     const { error } = await supabase.storage
 
       .from(bucketName)
 
-      .remove([objectPath])
+      .remove([objectPath]);
 
     if (error) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.message };
     }
 
-    return { success: true }
+    return { success: true };
   } catch (caughtError) {
     return {
       success: false,
@@ -59,7 +61,7 @@ export async function deleteImage(
         caughtError instanceof Error
           ? caughtError.message
           : "Image deletion failed.",
-    }
+    };
   }
 }
 
@@ -68,55 +70,57 @@ export async function deleteImages(
 
   bucketName = "public-images",
 ) {
-  const uniqueValues = [...new Set(values.filter(Boolean))]
+  const uniqueValues = [...new Set(values.filter(Boolean))];
 
   return Promise.all(
     uniqueValues.map((value) => deleteImage(value, bucketName)),
-  )
+  );
 }
 
 export async function uploadImage(
   file: File,
 
   bucketName = "public-images",
+  folderPrefix?: string,
 ): Promise<UploadImageResult> {
   if (!file) {
-    return { error: "No file was provided." }
+    return { error: "No file was provided." };
   }
 
-  const lastDot = file.name.lastIndexOf(".")
+  const lastDot = file.name.lastIndexOf(".");
 
-  const extension = lastDot >= 0 ? file.name.slice(lastDot) : ""
+  const extension = lastDot >= 0 ? file.name.slice(lastDot) : "";
 
-  const fileName = `${Date.now()}-${crypto.randomUUID()}${extension}`
+  const fileName = `${Date.now()}-${crypto.randomUUID()}${extension}`;
+  const objectPath = folderPrefix ? `${folderPrefix}/${fileName}` : fileName;
 
   const { error } = await supabase.storage
 
     .from(bucketName)
 
-    .upload(fileName, file, {
+    .upload(objectPath, file, {
       cacheControl: "31536000",
 
       upsert: false,
-    })
+    });
 
   if (error) {
     return {
       error: error.message || "Image upload failed.",
-    }
+    };
   }
 
-  const { data } = supabase.storage.from(bucketName).getPublicUrl(fileName)
+  const { data } = supabase.storage.from(bucketName).getPublicUrl(objectPath);
 
   if (!data?.publicUrl) {
     return {
       error: "Image upload succeeded, but a public URL could not be generated.",
-    }
+    };
   }
 
   return {
     url: data.publicUrl,
 
-    path: fileName,
-  }
+    path: objectPath,
+  };
 }

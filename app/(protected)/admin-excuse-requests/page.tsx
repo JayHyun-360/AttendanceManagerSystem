@@ -28,7 +28,7 @@ export default function AdminExcuseRequestsRoutePage() {
         const { data, error } = await supabase
           .from("excuse_requests")
           .select(
-            "*, student_profile:profiles!excuse_requests_student_id_fkey(first_name, surname, student_id, photo_url)",
+            "*, events(title), student_profile:profiles!excuse_requests_student_id_fkey(first_name, surname, student_id, photo_url), reviewer:profiles!excuse_requests_reviewed_by_fkey(first_name, surname)",
           )
           .order("created_at", { ascending: false });
 
@@ -46,7 +46,9 @@ export default function AdminExcuseRequestsRoutePage() {
                 "Student",
               studentId: row.student_profile?.student_id || "",
               photoUrl: row.student_profile?.photo_url || undefined,
-              event: row.fine_id ? "Attendance exception" : "Excuse request",
+              event: row.events?.title ?? "Attendance exception",
+              eventId: row.event_id ?? undefined,
+              sessionLabel: row.session_label ?? undefined,
               date: new Date(row.created_at).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
@@ -56,6 +58,10 @@ export default function AdminExcuseRequestsRoutePage() {
               proofName: row.document_url ? "Supporting document" : null,
               attachmentPath: row.document_url ?? undefined,
               status: row.status,
+              reviewedBy:
+                `${row.reviewer?.first_name ?? ""} ${row.reviewer?.surname ?? ""}`.trim() ||
+                undefined,
+              reviewedAt: row.reviewed_at ?? undefined,
               submittedDate: new Date(row.created_at).toLocaleDateString(
                 "en-US",
                 {
@@ -118,15 +124,15 @@ export default function AdminExcuseRequestsRoutePage() {
     if (
       !window.confirm(
         action === "approved"
-          ? "Approve this excuse and waive the linked fee?"
+          ? "Approve this excuse? It will clear the event sanction and waive any linked unpaid fine."
           : "Deny this excuse request?",
       )
     )
       return;
-    const { error } = await supabase
-      .from("excuse_requests")
-      .update({ status: action })
-      .eq("id", id);
+    const { error } = await supabase.rpc("review_excuse_request", {
+      p_request_id: id,
+      p_decision: action,
+    });
 
     if (error) {
       console.error(error);
@@ -141,7 +147,7 @@ export default function AdminExcuseRequestsRoutePage() {
     );
     toast.success(
       action === "approved"
-        ? "Excuse approved and fee waived."
+        ? "Excuse approved. The event sanction was cleared and any linked unpaid fine was waived."
         : "Excuse request denied.",
     );
   };

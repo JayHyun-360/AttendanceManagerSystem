@@ -23,6 +23,7 @@ type ReportPayload = {
     total: number;
     rate: number;
     absent: number;
+    excused: number;
     late: number;
     fineTotal: number;
     sanctioned: number;
@@ -52,25 +53,39 @@ export default function AdminReportsRoutePage() {
         return;
       }
 
-      const [eventsResult, profilesResult, attendanceResult, finesResult, settingsResult] =
-        await Promise.all([
-          supabase
-            .from("events")
-            .select("*")
-            .order("event_date", { ascending: false }),
-          supabase.from("profiles").select("id, role, program"),
-          supabase
-            .from("attendance_scans")
-            .select("id, event_id, student_id, session_label, status, scan_in_at"),
-          supabase
-            .from("fines")
-            .select("id, student_id, event_id, attendance_scan_id, session_label, amount, status"),
-          supabase
-            .from("system_settings")
-            .select("settings")
-            .eq("id", 1)
-            .maybeSingle(),
-        ]);
+      const [
+        eventsResult,
+        profilesResult,
+        attendanceResult,
+        finesResult,
+        settingsResult,
+        excusesResult,
+      ] = await Promise.all([
+        supabase
+          .from("events")
+          .select("*")
+          .order("event_date", { ascending: false }),
+        supabase.from("profiles").select("id, role, program"),
+        supabase
+          .from("attendance_scans")
+          .select(
+            "id, event_id, student_id, session_label, status, scan_in_at",
+          ),
+        supabase
+          .from("fines")
+          .select(
+            "id, student_id, event_id, attendance_scan_id, session_label, amount, status",
+          ),
+        supabase
+          .from("system_settings")
+          .select("settings")
+          .eq("id", 1)
+          .maybeSingle(),
+        supabase
+          .from("excuse_requests")
+          .select("student_id, event_id, session_label")
+          .eq("status", "approved"),
+      ]);
 
       if (eventsResult.error) {
         console.error(eventsResult.error);
@@ -90,53 +105,113 @@ export default function AdminReportsRoutePage() {
       if (settingsResult.error) {
         console.error(settingsResult.error);
       }
+      if (excusesResult.error) {
+        console.error(excusesResult.error);
+      }
 
       if (cancelled) {
         return;
       }
 
       const allEventRows = eventsResult.data ?? [];
-      const eventRows = allEventRows.filter((row: any) =>
-        (!dateFrom || row.event_date >= dateFrom) &&
-        (!dateTo || row.event_date <= dateTo),
+      const eventRows = allEventRows.filter(
+        (row: any) =>
+          (!dateFrom || row.event_date >= dateFrom) &&
+          (!dateTo || row.event_date <= dateTo),
       );
-      const scopedEventIds = new Set(eventRows.map((row: any) => String(row.id)));
+      const scopedEventIds = new Set(
+        eventRows.map((row: any) => String(row.id)),
+      );
       const profileRows = profilesResult.data ?? [];
       const attendanceRows = attendanceResult.data ?? [];
       const fineRows = finesResult.data ?? [];
+      const approvedExcuseRows = excusesResult.data ?? [];
       const finesEnabled = Boolean(
         (settingsResult.data?.settings as { finesEnabled?: boolean } | null)
           ?.finesEnabled,
       );
 
-      const studentRows = profileRows.filter((row: any) => row.role === "student");
-      const recordsByStudent = new Map<string, ReturnType<typeof buildAttendanceSessionRecords>>();
+      const studentRows = profileRows.filter(
+        (row: any) => row.role === "student",
+      );
+      const recordsByStudent = new Map<
+        string,
+        ReturnType<typeof buildAttendanceSessionRecords>
+      >();
       for (const student of studentRows) {
+        const approvedExcuseKeys = new Set(
+          approvedExcuseRows
+            .filter(
+              (request: any) =>
+                request.student_id === student.id &&
+                request.event_id &&
+                request.session_label,
+            )
+            .map(
+              (request: any) => `${request.event_id}:${request.session_label}`,
+            ),
+        );
         recordsByStudent.set(
           student.id,
           buildAttendanceSessionRecords(
             eventRows as FineEventLike[],
-            attendanceRows.filter((scan: any) => scan.student_id === student.id) as FineScanLike[],
-            fineRows.filter((fine: any) => fine.student_id === student.id) as FineRowLike[],
+            attendanceRows.filter(
+              (scan: any) => scan.student_id === student.id,
+            ) as FineScanLike[],
+            fineRows.filter(
+              (fine: any) => fine.student_id === student.id,
+            ) as FineRowLike[],
             student.program,
             new Date().toISOString().slice(0, 10),
             finesEnabled,
+            approvedExcuseKeys,
           ),
         );
       }
 
-      const programTotals = new Map<string, { total: number; present: number; absent: number; late: number; fineTotal: number; sanctioned: number; sanctionedLate: number; sanctionedAbsent: number }>();
+      const programTotals = new Map<
+        string,
+        {
+          total: number;
+          present: number;
+          absent: number;
+          excused: number;
+          late: number;
+          fineTotal: number;
+          sanctioned: number;
+          sanctionedLate: number;
+          sanctionedAbsent: number;
+        }
+      >();
       for (const student of studentRows) {
         const program = student.program || "Unassigned";
-        const stats = programTotals.get(program) ?? { total: 0, present: 0, absent: 0, late: 0, fineTotal: 0, sanctioned: 0, sanctionedLate: 0, sanctionedAbsent: 0 };
+        const stats = programTotals.get(program) ?? {
+          total: 0,
+          present: 0,
+          absent: 0,
+          excused: 0,
+          late: 0,
+          fineTotal: 0,
+          sanctioned: 0,
+          sanctionedLate: 0,
+          sanctionedAbsent: 0,
+        };
         for (const record of recordsByStudent.get(student.id) ?? []) {
           stats.total += 1;
-          if (record.status === "present" && !!record.scan?.scan_in_at) stats.present += 1;
+          if (record.status === "present" && !!record.scan?.scan_in_at)
+            stats.present += 1;
           if (record.status === "late" && !!record.scan?.scan_in_at) {
             stats.present += 1;
             stats.late += 1;
           }
-          if (record.status === "absent" || record.status === "no_record") stats.absent += 1;
+          if (record.excused) {
+            stats.excused += 1;
+          } else if (
+            record.status === "absent" ||
+            record.status === "no_record"
+          ) {
+            stats.absent += 1;
+          }
           if (record.sanctioned) {
             stats.sanctioned += 1;
             if (record.status === "late") stats.sanctionedLate += 1;
@@ -149,7 +224,10 @@ export default function AdminReportsRoutePage() {
               fine.student_id === student.id &&
               scopedEventIds.has(String(fine.event_id)),
           )
-          .reduce((sum: number, fine: any) => sum + Number(fine.amount ?? 0), 0);
+          .reduce(
+            (sum: number, fine: any) => sum + Number(fine.amount ?? 0),
+            0,
+          );
         programTotals.set(program, stats);
       }
 
@@ -158,8 +236,12 @@ export default function AdminReportsRoutePage() {
           label,
           present: stats.present,
           total: stats.total,
-          rate: stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0,
+          rate:
+            stats.total > 0
+              ? Math.round((stats.present / stats.total) * 100)
+              : 0,
           absent: stats.absent,
+          excused: stats.excused,
           late: stats.late,
           fineTotal: stats.fineTotal,
           sanctioned: stats.sanctioned,
@@ -171,7 +253,9 @@ export default function AdminReportsRoutePage() {
       const eventData: EventData[] = eventRows.map((row: any) => {
         const eventId = String(row.id);
         const eventRecords = studentRows.flatMap((student: any) =>
-          (recordsByStudent.get(student.id) ?? []).filter((record) => record.eventId === eventId),
+          (recordsByStudent.get(student.id) ?? []).filter(
+            (record) => record.eventId === eventId,
+          ),
         );
         const attendeeIds = new Set(
           attendanceRows
@@ -208,27 +292,46 @@ export default function AdminReportsRoutePage() {
               (row.multi_session
                 ? Number(row.morning_absent_fine ?? 0) +
                   Number(row.afternoon_absent_fine ?? 0)
-                : row.absent_fine ?? 0),
+                : (row.absent_fine ?? 0)),
           ),
           absentFine: Number(row.absent_fine ?? 0),
           lateFine: Number(row.late_fine ?? 0),
-          morningAbsentFine: Number(row.morning_absent_fine ?? row.absent_fine ?? 0),
+          morningAbsentFine: Number(
+            row.morning_absent_fine ?? row.absent_fine ?? 0,
+          ),
           morningLateFine: Number(row.morning_late_fine ?? row.late_fine ?? 0),
-          afternoonAbsentFine: Number(row.afternoon_absent_fine ?? row.absent_fine ?? 0),
-          afternoonLateFine: Number(row.afternoon_late_fine ?? row.late_fine ?? 0),
+          afternoonAbsentFine: Number(
+            row.afternoon_absent_fine ?? row.absent_fine ?? 0,
+          ),
+          afternoonLateFine: Number(
+            row.afternoon_late_fine ?? row.late_fine ?? 0,
+          ),
           status: row.status ?? "upcoming",
           attendees: attendeeIds.size,
-          reportAttendedSessions: eventRecords.filter((record) =>
-            (record.status === "present" || record.status === "late") && !!record.scan?.scan_in_at,
+          reportAttendedSessions: eventRecords.filter(
+            (record) =>
+              (record.status === "present" || record.status === "late") &&
+              !!record.scan?.scan_in_at,
           ).length,
-          reportAbsentSessions: eventRecords.filter((record) =>
-            record.status === "absent" || record.status === "no_record",
+          reportAbsentSessions: eventRecords.filter(
+            (record) =>
+              !record.excused &&
+              (record.status === "absent" || record.status === "no_record"),
           ).length,
-          reportLateSessions: eventRecords.filter((record) => record.status === "late").length,
+          reportExcusedSessions: eventRecords.filter((record) => record.excused)
+            .length,
+          reportLateSessions: eventRecords.filter(
+            (record) => record.status === "late",
+          ).length,
           reportFineTotal: fineRows
             .filter((fine: any) => String(fine.event_id) === eventId)
-            .reduce((total: number, fine: any) => total + Number(fine.amount ?? 0), 0),
-          reportSanctionedSessions: eventRecords.filter((record) => record.sanctioned).length,
+            .reduce(
+              (total: number, fine: any) => total + Number(fine.amount ?? 0),
+              0,
+            ),
+          reportSanctionedSessions: eventRecords.filter(
+            (record) => record.sanctioned,
+          ).length,
           mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
           highlightUrl:
             row.image_url && !row.image_url.startsWith("blob:")
@@ -237,7 +340,9 @@ export default function AdminReportsRoutePage() {
         };
       });
 
-      const scopedFineRows = fineRows.filter((row: any) => scopedEventIds.has(String(row.event_id)));
+      const scopedFineRows = fineRows.filter((row: any) =>
+        scopedEventIds.has(String(row.event_id)),
+      );
       const totalFeesIssued = scopedFineRows.reduce(
         (sum, row: any) => sum + Number(row.amount ?? 0),
         0,
@@ -255,32 +360,36 @@ export default function AdminReportsRoutePage() {
       if (!cancelled) {
         setReportData({
           events: eventData,
-          periodLabel: dateFrom || dateTo
-            ? `${dateFrom || "Beginning"} – ${dateTo || "Today"}`
-            : "All recorded events",
+          periodLabel:
+            dateFrom || dateTo
+              ? `${dateFrom || "Beginning"} – ${dateTo || "Today"}`
+              : "All recorded events",
           programStats,
-          feeSummary: scopedFineRows.length === 0 ? [] : [
-            {
-              label: "Total assessed",
-              value: `₱${totalFeesIssued.toLocaleString()}`,
-              color: "text-red-600",
-            },
-            {
-              label: "Collected",
-              value: `₱${collectedFees.toLocaleString()}`,
-              color: "text-emerald-500",
-            },
-            {
-              label: "Outstanding",
-              value: `₱${pendingFees.toLocaleString()}`,
-              color: "text-amber-600",
-            },
-            {
-              label: "Waived / excused",
-              value: `₱${excusedFees.toLocaleString()}`,
-              color: "text-violet-600",
-            },
-          ],
+          feeSummary:
+            scopedFineRows.length === 0
+              ? []
+              : [
+                  {
+                    label: "Total assessed",
+                    value: `₱${totalFeesIssued.toLocaleString()}`,
+                    color: "text-red-600",
+                  },
+                  {
+                    label: "Collected",
+                    value: `₱${collectedFees.toLocaleString()}`,
+                    color: "text-emerald-500",
+                  },
+                  {
+                    label: "Outstanding",
+                    value: `₱${pendingFees.toLocaleString()}`,
+                    color: "text-amber-600",
+                  },
+                  {
+                    label: "Waived / excused",
+                    value: `₱${excusedFees.toLocaleString()}`,
+                    color: "text-violet-600",
+                  },
+                ],
         });
       }
     }
@@ -310,6 +419,11 @@ export default function AdminReportsRoutePage() {
         void loadReports();
       }
     });
+    const excusesChannel = subscribeToTableChanges("excuse_requests", () => {
+      if (!cancelled) {
+        void loadReports();
+      }
+    });
 
     return () => {
       cancelled = true;
@@ -317,6 +431,7 @@ export default function AdminReportsRoutePage() {
       void profilesChannel.unsubscribe();
       void attendanceChannel.unsubscribe();
       void finesChannel.unsubscribe();
+      void excusesChannel.unsubscribe();
     };
   }, [dateFrom, dateTo, router, user]);
 
