@@ -731,6 +731,8 @@ import {
   FileText,
   ImagePlus,
   LogOut,
+  Maximize2,
+  Minimize2,
   Send,
   Trash2,
   Upload,
@@ -7874,6 +7876,33 @@ export function AttendanceHistoryPage({
                       : ""}
                     {r.time !== "—" ? ` · ${r.time}` : ""}
                   </p>
+                  {req && (
+                    <p
+                      role="status"
+                      className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold ${
+                        req.status === "denied"
+                          ? "text-rose-700"
+                          : req.status === "approved"
+                            ? "text-emerald-700"
+                            : "text-amber-700"
+                      }`}
+                    >
+                      {req.status === "denied" ? (
+                        <Icons.XCircle />
+                      ) : req.status === "approved" ? (
+                        <Icons.CheckCircle />
+                      ) : (
+                        <Icons.Clock />
+                      )}
+                      <span>
+                        {req.status === "denied"
+                          ? "Your previous excuse request was denied."
+                          : req.status === "approved"
+                            ? "Your excuse request was approved."
+                            : "You have submitted an excuse request for this event."}
+                      </span>
+                    </p>
+                  )}
                   {showFees &&
                     fine &&
                     !cleared &&
@@ -15050,6 +15079,7 @@ export function AdminExcuseRequestsPage({
     name: string;
     isPdf: boolean;
   } | null>(null);
+  const [attachmentExpanded, setAttachmentExpanded] = useState(false);
 
   const reviewed = requests.filter((r) => r.status !== "pending");
 
@@ -15062,6 +15092,7 @@ export function AdminExcuseRequestsPage({
       const url = await onViewAttachment(request.attachmentPath);
 
       if (url) {
+        setAttachmentExpanded(false);
         setViewingAttachment({
           url,
           name: request.proofName ?? "Supporting document",
@@ -15265,7 +15296,11 @@ export function AdminExcuseRequestsPage({
             role="dialog"
             aria-modal="true"
             aria-label="Excuse request attachment"
-            className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+            className={`flex w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl ${
+              attachmentExpanded
+                ? "max-h-[94dvh] max-w-5xl"
+                : "max-h-[84dvh] max-w-3xl"
+            }`}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
@@ -15277,27 +15312,54 @@ export function AdminExcuseRequestsPage({
                   {viewingAttachment.name}
                 </p>
               </div>
-              <button
-                type="button"
-                aria-label="Close attachment preview"
-                onClick={() => setViewingAttachment(null)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-              >
-                <Icons.X />
-              </button>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  aria-label={
+                    attachmentExpanded
+                      ? "Use compact preview"
+                      : "Expand preview"
+                  }
+                  title={
+                    attachmentExpanded
+                      ? "Use compact preview"
+                      : "Expand preview"
+                  }
+                  onClick={() => setAttachmentExpanded((expanded) => !expanded)}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                >
+                  {attachmentExpanded ? (
+                    <Minimize2 className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Maximize2 className="h-4 w-4" aria-hidden="true" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  aria-label="Close attachment preview"
+                  onClick={() => setViewingAttachment(null)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                >
+                  <Icons.X />
+                </button>
+              </div>
             </div>
             <div className="min-h-0 overflow-auto bg-slate-100 p-2 sm:p-4">
               {viewingAttachment.isPdf ? (
                 <iframe
                   src={viewingAttachment.url}
                   title={viewingAttachment.name}
-                  className="h-[78dvh] min-h-[320px] w-full rounded-lg border-0 bg-white"
+                  className={`min-h-[280px] w-full rounded-lg border-0 bg-white ${
+                    attachmentExpanded ? "h-[82dvh]" : "h-[66dvh]"
+                  }`}
                 />
               ) : (
                 <img
                   src={viewingAttachment.url}
                   alt={viewingAttachment.name}
-                  className="mx-auto max-h-[78dvh] max-w-full object-contain"
+                  className={`mx-auto max-w-full object-contain ${
+                    attachmentExpanded ? "max-h-[84dvh]" : "max-h-[64dvh]"
+                  }`}
                 />
               )}
             </div>
