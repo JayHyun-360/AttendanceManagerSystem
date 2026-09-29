@@ -3912,7 +3912,11 @@ export function TopBar({
                       setSearchOpen(false);
                     }
                   }}
-                  placeholder="Search students, events, announcements..."
+                  placeholder={
+                    isMod
+                      ? "Search students, events, announcements..."
+                      : "Search events, announcements..."
+                  }
                   aria-label="Search within the app"
                   role="combobox"
                   aria-autocomplete="list"
