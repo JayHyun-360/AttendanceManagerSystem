@@ -4497,35 +4497,31 @@ export function Sidebar({
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
-            className="lg:hidden"
-            key="mobile-sidebar"
-            initial={false}
+            key="mobile-sidebar-backdrop"
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: prefersReducedMotion ? 0 : 0.16 }}
+            onClick={onClose}
+            className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+            aria-hidden="true"
+          />
+        )}
+        {open && (
+          <motion.aside
+            key="mobile-sidebar-panel"
+            initial={prefersReducedMotion ? false : { x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={prefersReducedMotion ? { x: 0 } : { x: "-100%" }}
+            transition={{
+              duration: prefersReducedMotion ? 0 : 0.2,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="fixed top-0 left-0 z-50 h-full w-72 shadow-2xl lg:hidden"
+            aria-label="Navigation menu"
           >
-            <motion.div
-              initial={prefersReducedMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: prefersReducedMotion ? 0 : 0.16 }}
-              onClick={onClose}
-              className="fixed inset-0 z-40 bg-black/40"
-              aria-hidden="true"
-            />
-            <motion.aside
-              initial={prefersReducedMotion ? false : { x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={prefersReducedMotion ? { x: 0 } : { x: "-100%" }}
-              transition={{
-                duration: prefersReducedMotion ? 0 : 0.2,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-              className="fixed top-0 left-0 z-50 h-full w-72 shadow-2xl"
-              aria-label="Navigation menu"
-            >
-              {inner}
-            </motion.aside>
-          </motion.div>
+            {inner}
+          </motion.aside>
         )}
       </AnimatePresence>
     </>
