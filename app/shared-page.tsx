@@ -15202,6 +15202,15 @@ export function AdminExcuseRequestsPage({
                   </p>
                   <span className="text-slate-300">·</span>
                   <p className="text-slate-500">{r.date}</p>
+                  {r.sessionLabel && (
+                    <>
+                      <span className="text-slate-300">·</span>
+                      <p className="text-slate-500">
+                        {r.sessionLabel === "morning" ? "Morning" : "Afternoon"}{" "}
+                        session
+                      </p>
+                    </>
+                  )}
                 </div>
                 <p
                   className={`mt-2 text-sm leading-relaxed text-slate-600 ${

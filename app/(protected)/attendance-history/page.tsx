@@ -20,6 +20,46 @@ import {
   type FineScanLike,
 } from "@/lib/attendance-fines";
 
+type ManilaClock = {
+  date: string;
+  minutes: number;
+};
+
+function getManilaClock(now: Date): ManilaClock {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const value = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  const hour = Number(value("hour"));
+
+  return {
+    date: `${value("year")}-${value("month")}-${value("day")}`,
+    minutes: hour * 60 + Number(value("minute")),
+  };
+}
+
+function hasSessionEnded(
+  eventDate: string | null | undefined,
+  sessionEnd: string | null | undefined,
+  manilaNow: ManilaClock,
+) {
+  if (!eventDate) return false;
+  if (eventDate < manilaNow.date) return true;
+  if (eventDate > manilaNow.date || !sessionEnd) return false;
+
+  const match = sessionEnd.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return false;
+
+  return Number(match[1]) * 60 + Number(match[2]) <= manilaNow.minutes;
+}
+
 export default function AttendanceHistoryRoutePage() {
   const router = useRouter();
   const { authUserId, showFees } = useProtectedUser();
@@ -72,7 +112,7 @@ export default function AttendanceHistoryRoutePage() {
           supabase
             .from("events")
             .select(
-              "id, title, event_date, status, program, multi_session, start_time, end_time, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+              "id, title, event_date, status, program, multi_session, start_time, end_time, morning_end, afternoon_end, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
             ),
           supabase
             .from("system_settings")
@@ -174,7 +214,8 @@ export default function AttendanceHistoryRoutePage() {
             (row: any) => `${row.event_id}:${row.session_label}`,
           ),
         );
-        const todayKey = new Date().toISOString().slice(0, 10);
+        const manilaNow = getManilaClock(new Date());
+        const todayKey = manilaNow.date;
         const inferredAttendance = (eventsResult.data ?? []).flatMap(
           (event: any) => {
             if (
@@ -190,10 +231,18 @@ export default function AttendanceHistoryRoutePage() {
               ? ["morning", "afternoon"]
               : ["morning"];
             return sessions
-              .filter(
-                (sessionLabel) =>
-                  !scannedSessionKeys.has(`${event.id}:${sessionLabel}`),
-              )
+              .filter((sessionLabel) => {
+                const sessionEnd = event.multi_session
+                  ? sessionLabel === "morning"
+                    ? event.morning_end
+                    : event.afternoon_end
+                  : (event.morning_end ?? event.end_time);
+
+                return (
+                  !scannedSessionKeys.has(`${event.id}:${sessionLabel}`) &&
+                  hasSessionEnded(event.event_date, sessionEnd, manilaNow)
+                );
+              })
               .map((sessionLabel) => ({
                 id: `inferred-${event.id}-${sessionLabel}`,
                 eventId: event.id,

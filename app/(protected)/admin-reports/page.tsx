@@ -197,7 +197,7 @@ export default function AdminReportsRoutePage() {
           sanctionedAbsent: 0,
         };
         for (const record of recordsByStudent.get(student.id) ?? []) {
-          stats.total += 1;
+          if (!record.excused) stats.total += 1;
           if (record.status === "present" && !!record.scan?.scan_in_at)
             stats.present += 1;
           if (record.status === "late" && !!record.scan?.scan_in_at) {

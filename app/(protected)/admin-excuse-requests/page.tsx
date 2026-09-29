@@ -28,7 +28,7 @@ export default function AdminExcuseRequestsRoutePage() {
         const { data, error } = await supabase
           .from("excuse_requests")
           .select(
-            "*, events(title), student_profile:profiles!excuse_requests_student_id_fkey(first_name, surname, student_id, photo_url), reviewer:profiles!excuse_requests_reviewed_by_fkey(first_name, surname)",
+            "*, events(title, event_date), student_profile:profiles!excuse_requests_student_id_fkey(first_name, surname, student_id, photo_url), reviewer:profiles!excuse_requests_reviewed_by_fkey(first_name, surname)",
           )
           .order("created_at", { ascending: false });
 
@@ -49,11 +49,16 @@ export default function AdminExcuseRequestsRoutePage() {
               event: row.events?.title ?? "Attendance exception",
               eventId: row.event_id ?? undefined,
               sessionLabel: row.session_label ?? undefined,
-              date: new Date(row.created_at).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              }),
+              date: row.events?.event_date
+                ? new Date(
+                    `${row.events.event_date}T00:00:00Z`,
+                  ).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    timeZone: "UTC",
+                  })
+                : "Event date unavailable",
               reason: row.reason,
               proofName: row.document_url ? "Supporting document" : null,
               attachmentPath: row.document_url ?? undefined,

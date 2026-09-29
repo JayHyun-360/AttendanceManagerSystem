@@ -289,9 +289,11 @@ export default function StudentDetailRoutePage() {
           ?.finesEnabled,
       );
       setFinesEnabled(finesEnabled);
-      const totalSessions = records.length;
+      const rateEligibleRecords = records.filter((record) => !record.excused);
+      const totalSessions = rateEligibleRecords.length;
       const attendedSessions = records.filter(
         (record) =>
+          !record.excused &&
           (record.status === "present" || record.status === "late") &&
           !!record.scan?.scan_in_at,
       ).length;
