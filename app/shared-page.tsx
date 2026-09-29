@@ -8112,7 +8112,7 @@ export function MyFinesPage({
             Attendance charges are not currently available
           </p>
           <p className="text-xs text-slate-400 mt-1.5 max-w-[220px] mx-auto leading-relaxed">
-            Your school is not currently showing monetary attendance charges.
+            Details will appear here when available.
           </p>
         </div>
       </>
