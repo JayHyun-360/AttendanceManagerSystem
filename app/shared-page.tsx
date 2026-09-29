@@ -4399,7 +4399,7 @@ export function Sidebar({
             </motion.span>
             <span className="truncate lg:hidden">Back to Home</span>
             <motion.span
-              className="sidebar-motion pointer-events-none absolute left-[36px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
+              className="sidebar-motion pointer-events-none absolute inset-y-0 left-[42px] right-3 hidden min-w-0 items-center truncate whitespace-nowrap lg:flex"
               initial={false}
               animate={collapsed ? { opacity: 0, x: -6 } : { opacity: 1, x: 0 }}
               transition={
@@ -4433,7 +4433,7 @@ export function Sidebar({
             </motion.span>
             <span className="truncate lg:hidden">Sign out</span>
             <motion.span
-              className="sidebar-motion pointer-events-none absolute left-[36px] right-3 hidden min-w-0 truncate whitespace-nowrap lg:block"
+              className="sidebar-motion pointer-events-none absolute inset-y-0 left-[42px] right-3 hidden min-w-0 items-center truncate whitespace-nowrap lg:flex"
               initial={false}
               animate={collapsed ? { opacity: 0, x: -6 } : { opacity: 1, x: 0 }}
               transition={
