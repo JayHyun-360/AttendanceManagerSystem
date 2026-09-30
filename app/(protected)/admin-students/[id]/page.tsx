@@ -980,6 +980,7 @@ export default function StudentDetailRoutePage() {
                   <OptimizedImage
                     src={student.idPhotoUrl}
                     alt="Student ID"
+                    sizes="(max-width: 768px) 100vw, 33vw"
                     className="h-full w-full object-contain"
                   />
                 ) : (
@@ -999,6 +1000,7 @@ export default function StudentDetailRoutePage() {
                 <OptimizedImage
                   src={student.idPhotoUrl}
                   alt="Student ID"
+                  sizes="(max-width: 768px) 100vw, 33vw"
                   className="h-full w-full object-contain"
                 />
               ) : (

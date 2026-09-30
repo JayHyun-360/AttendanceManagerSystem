@@ -6,6 +6,9 @@ export type UploadImageResult =
 
 const MAX_PROMOTIONAL_IMAGE_INPUT_BYTES = 20 * 1024 * 1024;
 const MAX_PROMOTIONAL_IMAGE_OUTPUT_BYTES = 5 * 1024 * 1024;
+const MAX_PROFILE_IMAGE_OUTPUT_BYTES = 4 * 1024 * 1024;
+const MAX_USER_IMAGE_INPUT_BYTES = 20 * 1024 * 1024;
+const MAX_EXCUSE_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 const MAX_EVENT_VIDEO_BYTES = 50 * 1024 * 1024;
 const PROMOTIONAL_IMAGE_TYPES = new Set([
   "image/jpeg",
@@ -13,7 +16,14 @@ const PROMOTIONAL_IMAGE_TYPES = new Set([
   "image/webp",
 ]);
 
-async function compressPromotionalImage(file: File): Promise<File | string> {
+async function compressImage(
+  file: File,
+  options: {
+    maxDimension: number;
+    quality: number;
+    maxOutputBytes: number;
+  },
+): Promise<File | string> {
   if (!PROMOTIONAL_IMAGE_TYPES.has(file.type)) {
     return "Choose a JPEG, PNG, or WebP image.";
   }
@@ -24,7 +34,10 @@ async function compressPromotionalImage(file: File): Promise<File | string> {
 
   try {
     const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const scale = Math.min(
+      1,
+      options.maxDimension / Math.max(bitmap.width, bitmap.height),
+    );
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(bitmap.width * scale));
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
@@ -39,7 +52,7 @@ async function compressPromotionalImage(file: File): Promise<File | string> {
     bitmap.close();
 
     const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/webp", 0.8),
+      canvas.toBlob(resolve, "image/webp", options.quality),
     );
 
     if (!blob) {
@@ -50,9 +63,12 @@ async function compressPromotionalImage(file: File): Promise<File | string> {
       return "WebP image compression is not supported in this browser.";
     }
 
-    if (blob.size > MAX_PROMOTIONAL_IMAGE_OUTPUT_BYTES) {
-      return "The compressed image is still larger than 5 MB. Choose a smaller image.";
+    if (blob.size > options.maxOutputBytes) {
+      const maxOutputMb = Math.floor(options.maxOutputBytes / (1024 * 1024));
+      return `The compressed image is still larger than ${maxOutputMb} MB. Choose a smaller image.`;
     }
+
+    if (blob.size >= file.size) return file;
 
     const baseName = file.name.replace(/\.[^.]+$/, "") || "promotion";
     return new File([blob], `${baseName}.webp`, {
@@ -67,13 +83,76 @@ async function compressPromotionalImage(file: File): Promise<File | string> {
 export async function uploadPromotionalImage(
   file: File,
 ): Promise<UploadImageResult> {
-  const compressed = await compressPromotionalImage(file);
+  const compressed = await compressImage(file, {
+    maxDimension: 1600,
+    quality: 0.8,
+    maxOutputBytes: MAX_PROMOTIONAL_IMAGE_OUTPUT_BYTES,
+  });
 
   if (typeof compressed === "string") {
     return { error: compressed };
   }
 
   return uploadImage(compressed);
+}
+
+export async function uploadProfileImage(
+  file: File,
+): Promise<UploadImageResult> {
+  if (!file.type.startsWith("image/")) {
+    return { error: "Choose an image file." };
+  }
+
+  if (file.size > MAX_USER_IMAGE_INPUT_BYTES) {
+    return { error: "Profile and cover photos must be 20 MB or smaller." };
+  }
+
+  if (!PROMOTIONAL_IMAGE_TYPES.has(file.type)) {
+    return uploadImage(file);
+  }
+
+  const compressed = await compressImage(file, {
+    maxDimension: 1200,
+    quality: 0.86,
+    maxOutputBytes: MAX_PROFILE_IMAGE_OUTPUT_BYTES,
+  });
+
+  if (typeof compressed === "string") {
+    return { error: compressed };
+  }
+
+  return uploadImage(compressed);
+}
+
+export async function uploadVerificationImage(
+  file: File,
+): Promise<UploadImageResult> {
+  if (!file.type.startsWith("image/")) {
+    return { error: "Choose an image file." };
+  }
+
+  if (file.size > MAX_USER_IMAGE_INPUT_BYTES) {
+    return { error: "ID photos must be 20 MB or smaller." };
+  }
+
+  return uploadImage(file);
+}
+
+export async function uploadExcuseAttachment(
+  file: File,
+  folderPrefix: string,
+): Promise<UploadImageResult> {
+  const isPdf =
+    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  if (!file.type.startsWith("image/") && !isPdf) {
+    return { error: "Supporting documents must be an image or PDF." };
+  }
+
+  if (file.size > MAX_EXCUSE_ATTACHMENT_BYTES) {
+    return { error: "Supporting documents must be 20 MB or smaller." };
+  }
+
+  return uploadImage(file, "excuse-documents", folderPrefix, "300");
 }
 
 export async function uploadEventVideo(file: File): Promise<UploadImageResult> {
@@ -166,6 +245,7 @@ export async function uploadImage(
 
   bucketName = "public-images",
   folderPrefix?: string,
+  cacheControl = "31536000",
 ): Promise<UploadImageResult> {
   if (!file) {
     return { error: "No file was provided." };
@@ -183,7 +263,12 @@ export async function uploadImage(
     .from(bucketName)
 
     .upload(objectPath, file, {
-      cacheControl: "31536000",
+      cacheControl,
+      contentType:
+        file.type ||
+        (file.name.toLowerCase().endsWith(".pdf")
+          ? "application/pdf"
+          : undefined),
 
       upsert: false,
     });

@@ -780,8 +780,9 @@ import { formatTime12Hour, formatTimeRange12Hour } from "@/lib/time";
 import {
   deleteImages,
   uploadEventVideo,
-  uploadImage,
+  uploadProfileImage,
   uploadPromotionalImage,
+  uploadVerificationImage,
 } from "@/lib/uploadImage";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -2998,12 +2999,14 @@ function Avatar({
   const sz = { xs: "w-6 h-6", sm: "w-7 h-7", md: "w-9 h-9", lg: "w-14 h-14" }[
     size
   ];
+  const imageSize = { xs: 24, sm: 28, md: 36, lg: 56 }[size];
 
   if (photoUrl)
     return (
       <OptimizedImage
         src={photoUrl}
         alt={name}
+        sizes={`${imageSize}px`}
         className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200`}
       />
     );
@@ -3095,11 +3098,13 @@ export function ProfileIcon({
 
     lg: "w-16 h-16",
   }[size];
+  const imageSize = { xs: 28, sm: 36, md: 44, lg: 64 }[size];
 
   const content = photoUrl ? (
     <OptimizedImage
       src={photoUrl}
       alt="Profile"
+      sizes={`${imageSize}px`}
       className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200 transition-transform duration-200 group-hover:scale-[1.02]`}
     />
   ) : (
@@ -3145,6 +3150,7 @@ export function ProfileIcon({
             <OptimizedImage
               src={photoUrl}
               alt="Profile preview"
+              sizes="(max-width: 768px) 100vw, 80vw"
               className="max-h-[80vh] max-w-[80vw] rounded-2xl border border-white/20 object-contain bg-white/5 shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             />
@@ -4679,6 +4685,7 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
               <OptimizedImage
                 src={s.imageUrl}
                 alt={s.caption}
+                sizes="(max-width: 768px) 100vw, 1200px"
                 loading={i === trackIdx ? "eager" : "lazy"}
                 decoding="async"
                 fetchPriority={i === trackIdx ? "high" : "auto"}
@@ -4860,6 +4867,7 @@ function LandingPage({
                   src={url}
                   alt=""
                   aria-hidden
+                  sizes="100vw"
                   loading={i === heroTrack ? "eager" : "lazy"}
                   decoding="async"
                   fetchPriority={i === heroTrack ? "high" : "auto"}
@@ -5745,7 +5753,7 @@ export function OnboardingPage({
 
                     setIdPhotoUploadState("uploading");
 
-                    const result = await uploadImage(file);
+                    const result = await uploadVerificationImage(file);
 
                     if ("error" in result) {
                       setIdPhotoUploadState("error");
@@ -6868,6 +6876,7 @@ export function EventsPage({
                   <OptimizedImage
                     src={cover}
                     alt={e.title}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
                     className="w-full h-full object-cover"
                   />
                 );
@@ -6985,6 +6994,7 @@ function EventDetailPage({
           <OptimizedImage
             src={primaryMedia}
             alt={ev.title}
+            sizes="(max-width: 768px) 100vw, 768px"
             className="w-full h-64 object-cover"
           />
         ) : (
@@ -7072,6 +7082,7 @@ function EventDetailPage({
                   <OptimizedImage
                     src={url}
                     alt={`Event photo ${i + 1}`}
+                    sizes="(max-width: 640px) 50vw, 384px"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
@@ -7253,6 +7264,7 @@ function EventDetailPageView({
                 <OptimizedImage
                   src={event.highlightUrl}
                   alt={event.title}
+                  sizes="(max-width: 768px) 100vw, 60vw"
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -7404,6 +7416,7 @@ function EventDetailPageView({
                       <OptimizedImage
                         src={url}
                         alt={`Event photo ${index + 1}`}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/0 transition-colors group-hover:bg-slate-950/20">
@@ -8300,7 +8313,7 @@ export function ProfilePage({
 
     setPhotoUploadState("uploading");
 
-    const result = await uploadImage(file);
+    const result = await uploadProfileImage(file);
 
     if ("error" in result) {
       setPhotoUploadState("error");
@@ -8328,7 +8341,7 @@ export function ProfilePage({
 
     setCoverPhotoUploadState("uploading");
 
-    const result = await uploadImage(file);
+    const result = await uploadProfileImage(file);
 
     if ("error" in result) {
       setCoverPhotoUploadState("error");
@@ -16839,6 +16852,7 @@ export function AdminSettingsPage({
                             <OptimizedImage
                               src={slide.imageUrl}
                               alt=""
+                              sizes="80px"
                               className="w-full h-full object-cover"
                             />
                           )}

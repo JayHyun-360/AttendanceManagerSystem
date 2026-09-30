@@ -13,7 +13,7 @@ import { getPublicSystemSettings } from "@/lib/systemSettings";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 import { toast } from "sonner";
-import { uploadImage } from "@/lib/uploadImage";
+import { uploadExcuseAttachment } from "@/lib/uploadImage";
 import {
   buildAttendanceSessionRecords,
   type FineEventLike,
@@ -368,15 +368,13 @@ export default function AttendanceHistoryRoutePage() {
 
     let documentPath: string | null = null;
     if (record.attachmentFile) {
-      const uploaded = await uploadImage(
+      const uploaded = await uploadExcuseAttachment(
         record.attachmentFile,
-        "excuse-documents",
         authUserId,
       );
 
       if ("error" in uploaded) {
-        console.error(uploaded.error);
-        toast.error("The attachment could not be uploaded. Please try again.");
+        toast.error(uploaded.error);
         return false;
       }
 
