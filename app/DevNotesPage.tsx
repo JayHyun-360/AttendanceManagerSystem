@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader, PageShell } from "./shared-page";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
-export type DevNoteType = "info" | "warning" | "feature";
+export type DevNoteType = "info" | "warning" | "feature" | "update";
 
 export type DevNote = {
   id: string;
@@ -39,7 +39,12 @@ const READ_NOTES_STORAGE_KEY = "adesse:dev-notes:read";
 
 function normalizeNote(row: Record<string, unknown>): DevNote | null {
   const type = row.type;
-  if (type !== "info" && type !== "warning" && type !== "feature") {
+  if (
+    type !== "info" &&
+    type !== "warning" &&
+    type !== "feature" &&
+    type !== "update"
+  ) {
     return null;
   }
 
@@ -221,6 +226,10 @@ const typeStyles: Record<DevNoteType, { label: string; className: string }> = {
   feature: {
     label: "Feature",
     className: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  },
+  update: {
+    label: "Update",
+    className: "bg-slate-100 text-slate-700 ring-slate-200",
   },
 };
 
