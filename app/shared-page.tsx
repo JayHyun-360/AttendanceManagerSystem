@@ -16405,6 +16405,7 @@ export function AdminSettingsPage({
         [i]: { file, status: "error", error },
       }));
 
+      toast.error(error);
       return;
     }
 

@@ -7924,6 +7924,7 @@ export function AdminSettingsPage({
         ...current,
         [i]: { file, status: "error", error },
       }));
+      toast.error(error);
       return;
     }
 
