@@ -69,6 +69,15 @@ const normalizeSettings = (
   })),
 });
 
+const withoutEmptySlides = (settings: SystemSettings): SystemSettings => ({
+  ...settings,
+  carouselSlides: settings.carouselSlides.filter((slide) =>
+    [slide.imageUrl, slide.posterUrl, slide.caption, slide.date].some(
+      (value) => typeof value === "string" && value.trim().length > 0,
+    ),
+  ),
+});
+
 export default function AdminSettingsRoutePage() {
   const [settings, setSettings] = useState<SystemSettings>(defaultSettings);
 
@@ -85,6 +94,8 @@ export default function AdminSettingsRoutePage() {
   const pendingSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+  const writesInFlightRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,26 +128,9 @@ export default function AdminSettingsRoutePage() {
 
         settingsRef.current = cleanedSettings;
 
-        persistedSettingsRef.current = cleanedSettings;
+        persistedSettingsRef.current = withoutEmptySlides(cleanedSettings);
 
         setSettings(cleanedSettings);
-
-        if (
-          data?.settings &&
-          JSON.stringify(data.settings) !== JSON.stringify(cleanedSettings)
-        ) {
-          await supabase
-
-            .from("system_settings")
-
-            .update({
-              settings: cleanedSettings,
-
-              updated_at: new Date().toISOString(),
-            })
-
-            .eq("id", 1);
-        }
 
         setSettingsReady(true);
       }
@@ -149,10 +143,14 @@ export default function AdminSettingsRoutePage() {
     };
   }, []);
 
-  const persistSettings = (nextSettings: SystemSettings) => {
+  const persistSettings = (
+    nextSettings: SystemSettings,
+    localSettings: SystemSettings,
+  ) => {
     saveQueueRef.current = saveQueueRef.current
       .catch(() => {})
       .then(async () => {
+        writesInFlightRef.current += 1;
         try {
           const { error } = await supabase
             .from("system_settings")
@@ -200,7 +198,7 @@ export default function AdminSettingsRoutePage() {
             );
 
             if (failedCleanup.length > 0) {
-              if (settingsRef.current === nextSettings) {
+              if (settingsRef.current === localSettings) {
                 setSaveState("saved");
                 toast.warning(
                   `Settings saved, but ${failedCleanup.length} media file${failedCleanup.length === 1 ? "" : "s"} could not be cleaned up.`,
@@ -210,17 +208,19 @@ export default function AdminSettingsRoutePage() {
             }
           }
 
-          if (settingsRef.current === nextSettings) {
+          if (settingsRef.current === localSettings) {
             setSaveState("saved");
             toast.success("Settings saved.");
           }
         } catch (caughtError) {
           console.error("Failed to save settings", caughtError);
 
-          if (settingsRef.current === nextSettings) {
+          if (settingsRef.current === localSettings) {
             setSaveState("error");
             toast.error("Settings save failed.");
           }
+        } finally {
+          writesInFlightRef.current -= 1;
         }
       });
   };
@@ -239,9 +239,24 @@ export default function AdminSettingsRoutePage() {
         imageUrl: stripBlobUrls(slide.imageUrl),
       })),
     };
+    const persistableSettings = withoutEmptySlides(sanitizedSettings);
 
     settingsRef.current = sanitizedSettings;
     setSettings(sanitizedSettings);
+
+    if (
+      JSON.stringify(persistableSettings) ===
+        JSON.stringify(persistedSettingsRef.current) &&
+      writesInFlightRef.current === 0
+    ) {
+      if (pendingSaveRef.current) {
+        clearTimeout(pendingSaveRef.current);
+        pendingSaveRef.current = null;
+      }
+      setSaveState("idle");
+      return;
+    }
+
     setSaveState("saving");
 
     if (pendingSaveRef.current) {
@@ -250,7 +265,7 @@ export default function AdminSettingsRoutePage() {
 
     pendingSaveRef.current = setTimeout(() => {
       pendingSaveRef.current = null;
-      persistSettings(sanitizedSettings);
+      persistSettings(persistableSettings, sanitizedSettings);
     }, 600);
   };
 
@@ -259,7 +274,10 @@ export default function AdminSettingsRoutePage() {
       if (pendingSaveRef.current) {
         clearTimeout(pendingSaveRef.current);
         pendingSaveRef.current = null;
-        persistSettings(settingsRef.current);
+        persistSettings(
+          withoutEmptySlides(settingsRef.current),
+          settingsRef.current,
+        );
       }
     },
     [],
