@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FeedbackState } from "@/components/ui/feedback";
 import { MyFinesPage, type FineRecord } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
+import { getPublicSystemSettings } from "@/lib/systemSettings";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 import {
@@ -68,11 +69,7 @@ export default function MyFinesRoutePage() {
             .select(
               "id, title, event_date, status, program, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
             ),
-          supabase
-            .from("system_settings")
-            .select("settings")
-            .eq("id", 1)
-            .maybeSingle(),
+          getPublicSystemSettings(),
           supabase
             .from("excuse_requests")
             .select("event_id, session_label, status")

@@ -4575,8 +4575,6 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
 
   const [paused, setPaused] = useState(false);
 
-  const carouselRef = useRef<HTMLDivElement>(null);
-
   const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const realIdx = trackIdx % n;
@@ -4584,6 +4582,9 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
   const items = n > 1 ? [...slides, slides[0]] : slides;
 
   const total = items.length;
+
+  const activeSlideIsVideo =
+    n > 0 && /\.mp4($|\?)/i.test(slides[realIdx].imageUrl);
 
   const advance = () => {
     setAnimated(true);
@@ -4614,32 +4615,19 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
   };
 
   useEffect(() => {
-    if (paused || n <= 1) return;
+    if (paused || activeSlideIsVideo || n <= 1) return;
 
-    const t = setInterval(advance, 5000);
+    const t = setInterval(() => {
+      if (document.visibilityState === "visible") advance();
+    }, 5000);
 
     return () => clearInterval(t);
-  }, [paused, n]);
-
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        const video = carouselRef.current?.querySelector("video");
-        if (video) void video.play().catch(() => {});
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
+  }, [activeSlideIsVideo, paused, n]);
 
   if (n === 0) return null;
 
   return (
     <div
-      ref={carouselRef}
       className="relative w-full overflow-hidden rounded-2xl select-none"
       style={{ aspectRatio: "16/7" }}
       onMouseEnter={() => setPaused(true)}
@@ -4672,27 +4660,28 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
                 {i === trackIdx && i < n ? (
                   <LazyVideo
                     src={s.imageUrl}
-                    preload="metadata"
+                    poster={s.posterUrl}
+                    preload="none"
                     className="h-full w-full"
-                    autoPlay
-                    muted
                     loop
                     playsInline
                     controls
-                    loadOnClick={false}
                     unmountWhenOffscreen
                   />
                 ) : (
-                  <VideoPosterTile className="h-full w-full" />
+                  <VideoPosterTile
+                    poster={s.posterUrl}
+                    className="h-full w-full"
+                  />
                 )}
               </>
             ) : (
               <OptimizedImage
                 src={s.imageUrl}
                 alt={s.caption}
-                loading="eager"
-                decoding="sync"
-                fetchPriority="high"
+                loading={i === trackIdx ? "eager" : "lazy"}
+                decoding="async"
+                fetchPriority={i === trackIdx ? "high" : "auto"}
                 className="w-full h-full object-cover"
               />
             )}
@@ -4805,7 +4794,9 @@ function LandingPage({
   useEffect(() => {
     if (hn <= 1) return;
 
-    const t = setInterval(heroAdvance, 5000);
+    const t = setInterval(() => {
+      if (document.visibilityState === "visible") heroAdvance();
+    }, 5000);
 
     return () => clearInterval(t);
   }, [hn]);
@@ -4869,9 +4860,9 @@ function LandingPage({
                   src={url}
                   alt=""
                   aria-hidden
-                  loading="eager"
-                  decoding="sync"
-                  fetchPriority="high"
+                  loading={i === heroTrack ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchPriority={i === heroTrack ? "high" : "auto"}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -6963,6 +6954,9 @@ function EventDetailPage({
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
 
   const primaryMedia = ev.highlightUrl ?? ev.mediaUrls?.[0];
+  const videoPoster = [ev.highlightUrl, ...(ev.mediaUrls ?? [])].find(
+    (url): url is string => !!url && !/\.mp4($|\?)/i.test(url),
+  );
   const activeVideoUrl =
     selectedVideoUrl ??
     (primaryMedia && /\.mp4($|\?)/i.test(primaryMedia) ? primaryMedia : null);
@@ -6979,9 +6973,10 @@ function EventDetailPage({
       <div className="relative rounded-xl overflow-hidden mb-4 shadow-sm">
         {activeVideoUrl ? (
           <LazyVideo
+            key={activeVideoUrl}
             src={activeVideoUrl}
-            preload="metadata"
-            loadOnClick={false}
+            poster={videoPoster}
+            preload="none"
             controls
             playsInline
             className="w-full h-64"
@@ -6996,13 +6991,13 @@ function EventDetailPage({
           <div className="w-full h-64 bg-emerald-500" />
         )}
         {}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
         {}
-        <div className="absolute top-4 left-4">
+        <div className="pointer-events-none absolute top-4 left-4">
           <Badge status={ev.status} />
         </div>
         {}
-        <div className="absolute left-0 right-0 bottom-0 px-4 pb-4">
+        <div className="pointer-events-none absolute left-0 right-0 bottom-0 px-4 pb-4">
           <h1 className="font-bold text-lg text-white mb-2.5 leading-snug drop-shadow">
             {ev.title}
           </h1>

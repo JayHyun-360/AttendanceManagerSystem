@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AdminReportsPage, type EventData } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
+import { getPublicSystemSettings } from "@/lib/systemSettings";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 import {
@@ -76,11 +77,7 @@ export default function AdminReportsRoutePage() {
           .select(
             "id, student_id, event_id, attendance_scan_id, session_label, amount, status",
           ),
-        supabase
-          .from("system_settings")
-          .select("settings")
-          .eq("id", 1)
-          .maybeSingle(),
+        getPublicSystemSettings(),
         supabase
           .from("excuse_requests")
           .select("student_id, event_id, session_label")

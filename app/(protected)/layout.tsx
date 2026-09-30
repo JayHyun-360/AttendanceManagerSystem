@@ -27,6 +27,7 @@ import {
 import { DevNotesProvider, useDevNotes } from "../DevNotesPage";
 
 import { supabase } from "@/lib/supabase";
+import { getPublicSystemSettings } from "@/lib/systemSettings";
 
 import { FeedbackState } from "@/components/ui/feedback";
 
@@ -315,15 +316,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
       if (!cancelled) setSettingsError(null);
 
       try {
-        const { data, error } = await supabase
-
-          .from("system_settings")
-
-          .select("settings")
-
-          .eq("id", 1)
-
-          .maybeSingle();
+        const { data, error } = await getPublicSystemSettings();
 
         if (error) {
           console.error("Failed to load protected settings", error);

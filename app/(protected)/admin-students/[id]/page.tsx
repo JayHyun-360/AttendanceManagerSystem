@@ -14,6 +14,7 @@ import {
   type FineRecord,
 } from "../../../shared-page";
 import { supabase } from "@/lib/supabase";
+import { getPublicSystemSettings } from "@/lib/systemSettings";
 import { recordAttendance, type AttendanceStatus } from "@/lib/attendance";
 import { useProtectedUser } from "../../layout";
 import { buildAttendanceSessionRecords } from "@/lib/attendance-fines";
@@ -245,11 +246,7 @@ export default function StudentDetailRoutePage() {
             "id, attendance_scan_id, event_id, session_label, amount, status",
           )
           .eq("student_id", routeId),
-        supabase
-          .from("system_settings")
-          .select("settings")
-          .eq("id", 1)
-          .maybeSingle(),
+        getPublicSystemSettings(),
         supabase
           .from("excuse_requests")
           .select("event_id, session_label")

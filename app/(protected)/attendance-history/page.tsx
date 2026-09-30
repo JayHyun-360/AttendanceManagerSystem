@@ -9,6 +9,7 @@ import {
   type FineRecord,
 } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
+import { getPublicSystemSettings } from "@/lib/systemSettings";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 import { toast } from "sonner";
@@ -114,11 +115,7 @@ export default function AttendanceHistoryRoutePage() {
             .select(
               "id, title, event_date, status, program, multi_session, sanctions_enabled, start_time, end_time, morning_end, afternoon_end, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
             ),
-          supabase
-            .from("system_settings")
-            .select("settings")
-            .eq("id", 1)
-            .maybeSingle(),
+          getPublicSystemSettings(),
         ]);
 
         if (finesResult.error) {

@@ -9,6 +9,7 @@ import {
   type Page,
 } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
+import { getPublicSystemSettings } from "@/lib/systemSettings";
 import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 import { FeedbackState } from "@/components/ui/feedback";
@@ -50,11 +51,7 @@ export default function AdminAttendeesRoutePage() {
               .select("*")
               .eq("role", "student")
               .order("surname", { ascending: true }),
-            supabase
-              .from("system_settings")
-              .select("settings")
-              .eq("id", 1)
-              .maybeSingle(),
+            getPublicSystemSettings(),
             supabase
               .from("excuse_requests")
               .select("event_id, student_id, session_label")

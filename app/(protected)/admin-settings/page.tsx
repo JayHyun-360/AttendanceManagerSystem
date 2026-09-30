@@ -9,6 +9,7 @@ import { AdminSettingsPage, type SystemSettings } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 
 import { deleteImages } from "@/lib/uploadImage";
+import { invalidatePublicSystemSettingsCache } from "@/lib/systemSettings";
 
 const defaultSettings: SystemSettings = {
   finesEnabled: false,
@@ -62,7 +63,9 @@ const normalizeSettings = (
 
     imageUrl: stripBlobUrls(slide?.imageUrl),
 
-    posterUrl: stripBlobUrls(slide?.posterUrl),
+    ...(slide?.posterUrl !== undefined
+      ? { posterUrl: stripBlobUrls(slide.posterUrl) }
+      : {}),
   })),
 });
 
@@ -162,6 +165,8 @@ export default function AdminSettingsRoutePage() {
           if (error) {
             throw error;
           }
+
+          invalidatePublicSystemSettingsCache();
 
           const previousSettings = persistedSettingsRef.current;
           persistedSettingsRef.current = nextSettings;
