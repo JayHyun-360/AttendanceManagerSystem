@@ -777,7 +777,12 @@ import {
 
 import { formatTime12Hour, formatTimeRange12Hour } from "@/lib/time";
 
-import { deleteImages, uploadImage } from "@/lib/uploadImage";
+import {
+  deleteImages,
+  uploadEventVideo,
+  uploadImage,
+  uploadPromotionalImage,
+} from "@/lib/uploadImage";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -787,7 +792,7 @@ export function VideoPosterTile({
   poster,
   className = "",
   onClick,
-  label = "Load video",
+  label = "Play video",
 }: {
   poster?: string;
   className?: string;
@@ -865,6 +870,8 @@ export function LazyVideo({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isIntersecting, setIsIntersecting] = useState(false);
   const [requested, setRequested] = useState(!loadOnClick);
+  const [videoReady, setVideoReady] = useState(false);
+  const shouldAutoPlay = autoPlay || (loadOnClick && requested);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -889,10 +896,10 @@ export function LazyVideo({
 
     if (!isIntersecting) {
       video.pause();
-    } else if (autoPlay && document.visibilityState === "visible") {
+    } else if (shouldAutoPlay && document.visibilityState === "visible") {
       void video.play().catch(() => {});
     }
-  }, [autoPlay, isIntersecting, requested]);
+  }, [isIntersecting, requested, shouldAutoPlay]);
 
   useEffect(() => {
     const handleVisibility = () => {
@@ -900,7 +907,7 @@ export function LazyVideo({
       if (!video) return;
       if (document.visibilityState === "hidden") {
         video.pause();
-      } else if (autoPlay && isIntersecting) {
+      } else if (shouldAutoPlay && isIntersecting) {
         void video.play().catch(() => {});
       }
     };
@@ -908,7 +915,7 @@ export function LazyVideo({
     document.addEventListener("visibilitychange", handleVisibility);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibility);
-  }, [autoPlay, isIntersecting]);
+  }, [isIntersecting, shouldAutoPlay]);
 
   const shouldRenderVideo =
     requested && (isIntersecting || !unmountWhenOffscreen);
@@ -916,23 +923,32 @@ export function LazyVideo({
   return (
     <div ref={containerRef} className={"relative " + className} style={style}>
       {shouldRenderVideo ? (
-        <video
-          ref={videoRef}
-          src={src}
-          poster={poster}
-          preload={preload}
-          controls={controls}
-          autoPlay={autoPlay}
-          muted={muted}
-          loop={loop}
-          playsInline={playsInline}
-          className="h-full w-full object-cover"
-        />
+        <>
+          <video
+            ref={videoRef}
+            src={src}
+            preload={preload}
+            controls={controls}
+            autoPlay={shouldAutoPlay}
+            muted={muted}
+            loop={loop}
+            playsInline={playsInline}
+            onLoadedData={() => setVideoReady(true)}
+            className="h-full w-full object-cover"
+          />
+          {!videoReady && poster && (
+            <VideoPosterTile
+              poster={poster}
+              label="Loading video"
+              className="pointer-events-none absolute inset-0 h-full w-full"
+            />
+          )}
+        </>
       ) : (
         <VideoPosterTile
           poster={poster}
           onClick={loadOnClick ? () => setRequested(true) : undefined}
-          label={loadOnClick ? "Load video" : "Video preview"}
+          label={loadOnClick ? "Play video" : "Video preview"}
           className="absolute inset-0 h-full w-full"
         />
       )}
@@ -9595,14 +9611,20 @@ export function AdminEventsPage({
   const toggleD = (k: keyof NewEventDraft) => () =>
     setDraft((d) => ({ ...d, [k]: !d[k] }));
 
-  const uploadEventMedia = async (files: File[]) => {
+  const uploadEventMedia = async (files: File[], kind: "image" | "video") => {
     if (!files.length) return;
 
     setMediaUploadState("uploading");
 
     setMediaUploadError(null);
 
-    const results = await Promise.all(files.map((file) => uploadImage(file)));
+    const results = await Promise.all(
+      files.map((file) =>
+        kind === "image"
+          ? uploadPromotionalImage(file)
+          : uploadEventVideo(file),
+      ),
+    );
 
     const failed = results.find((result) => "error" in result);
 
@@ -11028,7 +11050,7 @@ export function AdminEventsPage({
                   <input
                     ref={highlightRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     className="hidden"
                     onChange={async (e) => {
                       const f = e.target.files?.[0];
@@ -11037,7 +11059,7 @@ export function AdminEventsPage({
 
                       setHighlightUploadState("uploading");
 
-                      const result = await uploadImage(f);
+                      const result = await uploadPromotionalImage(f);
 
                       if ("error" in result) {
                         setHighlightUploadState("error");
@@ -11103,11 +11125,14 @@ export function AdminEventsPage({
                   <input
                     ref={photoRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     multiple
                     className="hidden"
                     onChange={async (e) => {
-                      await uploadEventMedia(Array.from(e.target.files ?? []));
+                      await uploadEventMedia(
+                        Array.from(e.target.files ?? []),
+                        "image",
+                      );
 
                       e.target.value = "";
                     }}
@@ -11115,11 +11140,14 @@ export function AdminEventsPage({
                   <input
                     ref={videoRef}
                     type="file"
-                    accept="video/mp4,video/*"
+                    accept="video/mp4"
                     multiple
                     className="hidden"
                     onChange={async (e) => {
-                      await uploadEventMedia(Array.from(e.target.files ?? []));
+                      await uploadEventMedia(
+                        Array.from(e.target.files ?? []),
+                        "video",
+                      );
 
                       e.target.value = "";
                     }}
@@ -11558,7 +11586,7 @@ export function AdminEventsPage({
                   <input
                     ref={editHighlightRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     className="hidden"
                     onChange={async (e) => {
                       const f = e.target.files?.[0];
@@ -11567,7 +11595,7 @@ export function AdminEventsPage({
 
                       setEditHighlightUploadState("uploading");
 
-                      const result = await uploadImage(f);
+                      const result = await uploadPromotionalImage(f);
 
                       if ("error" in result) {
                         setEditHighlightUploadState("error");
@@ -14570,7 +14598,7 @@ export function AdminAnnouncementsPage({
 
   const uploadSelectedPhoto = async (file: File) => {
     try {
-      const result = await uploadImage(file, "public-images");
+      const result = await uploadPromotionalImage(file);
 
       if ("error" in result) {
         toast.error(result.error);
@@ -16211,6 +16239,8 @@ export function AdminReportsPage({
 export interface CarouselSlide {
   imageUrl: string;
 
+  posterUrl?: string;
+
   caption: string;
 
   date: string;
@@ -16253,6 +16283,8 @@ export function AdminSettingsPage({
     ...slide,
 
     imageUrl: isBlobUrl(slide.imageUrl) ? "" : slide.imageUrl,
+
+    posterUrl: isBlobUrl(slide.posterUrl) ? "" : slide.posterUrl,
   }));
 
   type UploadSlot = {
@@ -16268,6 +16300,10 @@ export function AdminSettingsPage({
   >({});
 
   const [slideUploadSlots, setSlideUploadSlots] = useState<
+    Record<number, UploadSlot>
+  >({});
+
+  const [posterUploadSlots, setPosterUploadSlots] = useState<
     Record<number, UploadSlot>
   >({});
 
@@ -16293,7 +16329,7 @@ export function AdminSettingsPage({
 
     const uploaded = await Promise.all(
       slots.map(async ({ id, file }) => {
-        const result = await uploadImage(file);
+        const result = await uploadPromotionalImage(file);
 
         if ("error" in result || !isPublicMediaUrl(result.url)) {
           const error =
@@ -16344,7 +16380,10 @@ export function AdminSettingsPage({
       [i]: { file, status: "uploading" },
     }));
 
-    const result = await uploadImage(file);
+    const isVideo = file.type === "video/mp4";
+    const result = isVideo
+      ? await uploadEventVideo(file)
+      : await uploadPromotionalImage(file);
 
     if ("error" in result || !isPublicMediaUrl(result.url)) {
       const error =
@@ -16361,13 +16400,45 @@ export function AdminSettingsPage({
       return;
     }
 
-    patchSlide(i, { imageUrl: result.url });
+    patchSlide(i, {
+      imageUrl: result.url,
+      ...(!isVideo ? { posterUrl: "" } : {}),
+    });
 
     setSlideUploadSlots((current) => {
       const next = { ...current };
 
       delete next[i];
 
+      return next;
+    });
+  };
+
+  const handleSlidePosterUpload = async (i: number, file: File) => {
+    setPosterUploadSlots((current) => ({
+      ...current,
+      [i]: { file, status: "uploading" },
+    }));
+
+    const result = await uploadPromotionalImage(file);
+
+    if ("error" in result || !isPublicMediaUrl(result.url)) {
+      const error =
+        "error" in result
+          ? result.error
+          : "Upload did not return a valid public image URL.";
+      setPosterUploadSlots((current) => ({
+        ...current,
+        [i]: { file, status: "error", error },
+      }));
+      toast.error(error);
+      return;
+    }
+
+    patchSlide(i, { posterUrl: result.url });
+    setPosterUploadSlots((current) => {
+      const next = { ...current };
+      delete next[i];
       return next;
     });
   };
@@ -16387,6 +16458,7 @@ export function AdminSettingsPage({
     update({ heroImageUrls: settings.heroImageUrls.filter((_, j) => j !== i) });
 
   const slideRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const slidePosterRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const addSlide = () => {
     if (settings.carouselSlides.length >= 10) return;
@@ -16563,7 +16635,7 @@ export function AdminSettingsPage({
           <input
             ref={heroRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             multiple
             className="hidden"
             onChange={async (e) => {
@@ -16728,7 +16800,7 @@ export function AdminSettingsPage({
                       <input
                         ref={ref}
                         type="file"
-                        accept="image/*,video/mp4"
+                        accept="image/jpeg,image/png,image/webp,video/mp4"
                         className="hidden"
                         onChange={async (e) => {
                           const f = e.target.files?.[0];
@@ -16764,7 +16836,10 @@ export function AdminSettingsPage({
                           onClick={() => slideRefs.current[i]?.click()}
                         >
                           {/\.mp4($|\?)/i.test(slide.imageUrl) ? (
-                            <VideoPosterTile className="h-full w-full" />
+                            <VideoPosterTile
+                              poster={slide.posterUrl}
+                              className="h-full w-full"
+                            />
                           ) : (
                             <OptimizedImage
                               src={slide.imageUrl}
@@ -16803,6 +16878,52 @@ export function AdminSettingsPage({
                           patchSlide(i, { date: e.target.value })
                         }
                       />
+                      {/\.mp4($|\?)/i.test(slide.imageUrl) && (
+                        <div className="flex items-center gap-2">
+                          <input
+                            ref={(element) => {
+                              slidePosterRefs.current[i] = element;
+                            }}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            className="hidden"
+                            onChange={async (event) => {
+                              const file = event.target.files?.[0];
+                              if (file) await handleSlidePosterUpload(i, file);
+                              event.target.value = "";
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => slidePosterRefs.current[i]?.click()}
+                            disabled={
+                              posterUploadSlots[i]?.status === "uploading"
+                            }
+                            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 px-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                          >
+                            <Icons.Image />
+                            {posterUploadSlots[i]?.status === "uploading"
+                              ? "Preparing poster..."
+                              : slide.posterUrl
+                                ? "Replace poster"
+                                : "Add video poster"}
+                          </button>
+                          {posterUploadSlots[i]?.status === "error" && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const slot = posterUploadSlots[i];
+                                if (slot) {
+                                  void handleSlidePosterUpload(i, slot.file);
+                                }
+                              }}
+                              className="text-xs font-semibold text-red-600 underline"
+                            >
+                              Retry
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {}
                     <div className="flex flex-col gap-1 shrink-0">

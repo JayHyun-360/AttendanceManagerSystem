@@ -1,5 +1,5 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { unstable_cache } from "next/cache";
+import { createClient } from "@supabase/supabase-js";
 import LandingExperienceClient, {
   type SystemSettings,
 } from "./LandingExperienceClient";
@@ -37,44 +37,36 @@ const sanitizeSettings = (
         slide.imageUrl && !slide.imageUrl.startsWith("blob:")
           ? slide.imageUrl
           : "",
+      posterUrl:
+        slide.posterUrl && !slide.posterUrl.startsWith("blob:")
+          ? slide.posterUrl
+          : "",
     })),
   } satisfies SystemSettings;
 };
 
-export const dynamic = "force-dynamic";
+const getLandingSettings = unstable_cache(
+  async (): Promise<SystemSettings> => {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
+    const { data, error } = await supabase
+      .from("system_settings")
+      .select("settings")
+      .eq("id", 1)
+      .maybeSingle();
 
-async function getLandingSettings(): Promise<SystemSettings> {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        },
-      },
-    },
-  );
+    if (error) {
+      console.error("Failed to load landing settings on server", error);
+      return DEFAULT_SETTINGS;
+    }
 
-  const { data, error } = await supabase
-    .from("system_settings")
-    .select("settings")
-    .eq("id", 1)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Failed to load landing settings on server", error);
-    return DEFAULT_SETTINGS;
-  }
-
-  return sanitizeSettings(data?.settings as Partial<SystemSettings> | null);
-}
+    return sanitizeSettings(data?.settings as Partial<SystemSettings> | null);
+  },
+  ["landing-settings"],
+  { revalidate: 60, tags: ["landing-settings"] },
+);
 
 export default async function Page() {
   const settings = await getLandingSettings();

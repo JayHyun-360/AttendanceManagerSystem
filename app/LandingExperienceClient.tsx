@@ -143,7 +143,11 @@ import {
 import QRCode from "qrcode";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
-import { uploadImage } from "@/lib/uploadImage";
+import {
+  uploadEventVideo,
+  uploadImage,
+  uploadPromotionalImage,
+} from "@/lib/uploadImage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTimeRange12Hour } from "@/lib/time";
 
@@ -2067,11 +2071,12 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
   const [trackIdx, setTrackIdx] = useState(0);
   const [animated, setAnimated] = useState(true);
   const [paused, setPaused] = useState(false);
-  const carouselRef = useRef<HTMLDivElement>(null);
   const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const realIdx = trackIdx % n;
   const items = n > 1 ? [...slides, slides[0]] : slides;
   const total = items.length;
+  const activeSlideIsVideo =
+    n > 0 && /\.mp4($|\?)/i.test(slides[realIdx].imageUrl);
   const advance = () => {
     setAnimated(true);
     setTrackIdx((i) => i + 1);
@@ -2092,29 +2097,17 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
   };
 
   useEffect(() => {
-    if (paused || n <= 1) return;
-    const t = setInterval(advance, 5000);
+    if (paused || activeSlideIsVideo || n <= 1) return;
+    const t = setInterval(() => {
+      if (document.visibilityState === "visible") advance();
+    }, 5000);
     return () => clearInterval(t);
-  }, [paused, n]);
-
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        const video = carouselRef.current?.querySelector("video");
-        if (video) void video.play().catch(() => {});
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
+  }, [activeSlideIsVideo, paused, n]);
 
   if (n === 0) return null;
 
   return (
     <div
-      ref={carouselRef}
       className="relative w-full overflow-hidden rounded-2xl select-none"
       style={{ aspectRatio: "16/7" }}
       onMouseEnter={() => setPaused(true)}
@@ -2144,26 +2137,27 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
               i === trackIdx && i < n ? (
                 <LazyVideo
                   src={s.imageUrl}
-                  preload="metadata"
+                  poster={s.posterUrl}
+                  preload="none"
                   className="h-full w-full"
-                  autoPlay
-                  muted
                   loop
                   playsInline
                   controls
-                  loadOnClick={false}
                   unmountWhenOffscreen
                 />
               ) : (
-                <VideoPosterTile className="h-full w-full" />
+                <VideoPosterTile
+                  poster={s.posterUrl}
+                  className="h-full w-full"
+                />
               )
             ) : (
               <OptimizedImage
                 src={s.imageUrl}
                 alt={s.caption}
-                loading="eager"
-                decoding="sync"
-                fetchPriority="high"
+                loading={i === trackIdx ? "eager" : "lazy"}
+                decoding="async"
+                fetchPriority={i === trackIdx ? "high" : "auto"}
                 className="w-full h-full object-cover"
               />
             )}
@@ -2263,7 +2257,9 @@ function LandingPage({
 
   useEffect(() => {
     if (hn <= 1) return;
-    const t = setInterval(heroAdvance, 5000);
+    const t = setInterval(() => {
+      if (document.visibilityState === "visible") heroAdvance();
+    }, 5000);
     return () => clearInterval(t);
   }, [hn]);
 
@@ -2320,9 +2316,9 @@ function LandingPage({
                   src={url}
                   alt=""
                   aria-hidden
-                  loading="eager"
-                  decoding="sync"
-                  fetchPriority="high"
+                  loading={i === heroTrack ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchPriority={i === heroTrack ? "high" : "auto"}
                   onError={(event) => {
                     event.currentTarget.style.display = "none";
                   }}
@@ -5309,12 +5305,18 @@ export function AdminEventsPage({
   const toggleD = (k: keyof NewEventDraft) => () =>
     setDraft((d) => ({ ...d, [k]: !d[k] }));
 
-  const uploadEventMedia = async (files: File[]) => {
+  const uploadEventMedia = async (files: File[], kind: "image" | "video") => {
     if (!files.length) return;
     setMediaUploadState("uploading");
     setMediaUploadError(null);
 
-    const results = await Promise.all(files.map((file) => uploadImage(file)));
+    const results = await Promise.all(
+      files.map((file) =>
+        kind === "image"
+          ? uploadPromotionalImage(file)
+          : uploadEventVideo(file),
+      ),
+    );
     const failed = results.find((result) => "error" in result);
     if (failed && "error" in failed) {
       setMediaUploadState("error");
@@ -5911,7 +5913,7 @@ export function AdminEventsPage({
             <input
               ref={highlightRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               className="hidden"
               onChange={async (e) => {
                 const f = e.target.files?.[0];
@@ -5919,7 +5921,7 @@ export function AdminEventsPage({
 
                 setHighlightUploadState("uploading");
 
-                const result = await uploadImage(f);
+                const result = await uploadPromotionalImage(f);
 
                 if ("error" in result) {
                   setHighlightUploadState("error");
@@ -5981,22 +5983,28 @@ export function AdminEventsPage({
             <input
               ref={photoRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               multiple
               className="hidden"
               onChange={async (e) => {
-                await uploadEventMedia(Array.from(e.target.files ?? []));
+                await uploadEventMedia(
+                  Array.from(e.target.files ?? []),
+                  "image",
+                );
                 e.target.value = "";
               }}
             />
             <input
               ref={videoRef}
               type="file"
-              accept="video/mp4,video/*"
+              accept="video/mp4"
               multiple
               className="hidden"
               onChange={async (e) => {
-                await uploadEventMedia(Array.from(e.target.files ?? []));
+                await uploadEventMedia(
+                  Array.from(e.target.files ?? []),
+                  "video",
+                );
                 e.target.value = "";
               }}
             />
@@ -6289,7 +6297,7 @@ export function AdminEventsPage({
             <input
               ref={editHighlightRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               className="hidden"
               onChange={async (e) => {
                 const f = e.target.files?.[0];
@@ -6297,7 +6305,7 @@ export function AdminEventsPage({
 
                 setEditHighlightUploadState("uploading");
 
-                const result = await uploadImage(f);
+                const result = await uploadPromotionalImage(f);
 
                 if ("error" in result) {
                   setEditHighlightUploadState("error");
@@ -6940,7 +6948,7 @@ export function AdminAnnouncementsPage({
 
   const uploadSelectedPhoto = async (file: File) => {
     try {
-      const result = await uploadImage(file, "public-images");
+      const result = await uploadPromotionalImage(file);
       if ("error" in result) {
         toast.error(result.error);
         return null;
@@ -7783,6 +7791,7 @@ export function AdminReportsPage({
 }
 export interface CarouselSlide {
   imageUrl: string;
+  posterUrl?: string;
   caption: string;
   date: string;
 }
@@ -7809,6 +7818,7 @@ export function AdminSettingsPage({
   const carouselSlides = settings.carouselSlides.map((slide) => ({
     ...slide,
     imageUrl: isBlobUrl(slide.imageUrl) ? "" : slide.imageUrl,
+    posterUrl: isBlobUrl(slide.posterUrl) ? "" : slide.posterUrl,
   }));
   type UploadSlot = {
     file: File;
@@ -7819,6 +7829,9 @@ export function AdminSettingsPage({
     Record<string, UploadSlot>
   >({});
   const [slideUploadSlots, setSlideUploadSlots] = useState<
+    Record<number, UploadSlot>
+  >({});
+  const [posterUploadSlots, setPosterUploadSlots] = useState<
     Record<number, UploadSlot>
   >({});
   const isPublicMediaUrl = (value?: string) =>
@@ -7840,7 +7853,7 @@ export function AdminSettingsPage({
 
     const uploaded = await Promise.all(
       slots.map(async ({ id, file }) => {
-        const result = await uploadImage(file);
+        const result = await uploadPromotionalImage(file);
 
         if ("error" in result || !isPublicMediaUrl(result.url)) {
           const error =
@@ -7882,7 +7895,10 @@ export function AdminSettingsPage({
       ...current,
       [i]: { file, status: "uploading" },
     }));
-    const result = await uploadImage(file);
+    const isVideo = file.type === "video/mp4";
+    const result = isVideo
+      ? await uploadEventVideo(file)
+      : await uploadPromotionalImage(file);
 
     if ("error" in result || !isPublicMediaUrl(result.url)) {
       const error =
@@ -7896,8 +7912,39 @@ export function AdminSettingsPage({
       return;
     }
 
-    patchSlide(i, { imageUrl: result.url });
+    patchSlide(i, {
+      imageUrl: result.url,
+      ...(!isVideo ? { posterUrl: "" } : {}),
+    });
     setSlideUploadSlots((current) => {
+      const next = { ...current };
+      delete next[i];
+      return next;
+    });
+  };
+
+  const handleSlidePosterUpload = async (i: number, file: File) => {
+    setPosterUploadSlots((current) => ({
+      ...current,
+      [i]: { file, status: "uploading" },
+    }));
+    const result = await uploadPromotionalImage(file);
+
+    if ("error" in result || !isPublicMediaUrl(result.url)) {
+      const error =
+        "error" in result
+          ? result.error
+          : "Upload did not return a valid public image URL.";
+      setPosterUploadSlots((current) => ({
+        ...current,
+        [i]: { file, status: "error", error },
+      }));
+      toast.error(error);
+      return;
+    }
+
+    patchSlide(i, { posterUrl: result.url });
+    setPosterUploadSlots((current) => {
       const next = { ...current };
       delete next[i];
       return next;
@@ -7913,6 +7960,7 @@ export function AdminSettingsPage({
   const removeHero = (i: number) =>
     update({ heroImageUrls: settings.heroImageUrls.filter((_, j) => j !== i) });
   const slideRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const slidePosterRefs = useRef<(HTMLInputElement | null)[]>([]);
   const addSlide = () => {
     if (settings.carouselSlides.length >= 10) return;
     update({
@@ -8061,7 +8109,7 @@ export function AdminSettingsPage({
           <input
             ref={heroRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             multiple
             className="hidden"
             onChange={async (e) => {
@@ -8217,7 +8265,7 @@ export function AdminSettingsPage({
                       <input
                         ref={ref}
                         type="file"
-                        accept="image/*,video/mp4"
+                        accept="image/jpeg,image/png,image/webp,video/mp4"
                         className="hidden"
                         onChange={async (e) => {
                           const f = e.target.files?.[0];
@@ -8251,7 +8299,10 @@ export function AdminSettingsPage({
                           onClick={() => slideRefs.current[i]?.click()}
                         >
                           {/\.mp4($|\?)/i.test(slide.imageUrl) ? (
-                            <VideoPosterTile className="h-full w-full" />
+                            <VideoPosterTile
+                              poster={slide.posterUrl}
+                              className="h-full w-full"
+                            />
                           ) : (
                             <OptimizedImage
                               src={slide.imageUrl}
@@ -8290,6 +8341,52 @@ export function AdminSettingsPage({
                           patchSlide(i, { date: e.target.value })
                         }
                       />
+                      {/\.mp4($|\?)/i.test(slide.imageUrl) && (
+                        <div className="flex items-center gap-2">
+                          <input
+                            ref={(element) => {
+                              slidePosterRefs.current[i] = element;
+                            }}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            className="hidden"
+                            onChange={async (event) => {
+                              const file = event.target.files?.[0];
+                              if (file) await handleSlidePosterUpload(i, file);
+                              event.target.value = "";
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => slidePosterRefs.current[i]?.click()}
+                            disabled={
+                              posterUploadSlots[i]?.status === "uploading"
+                            }
+                            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 px-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                          >
+                            <Icons.Image />
+                            {posterUploadSlots[i]?.status === "uploading"
+                              ? "Preparing poster..."
+                              : slide.posterUrl
+                                ? "Replace poster"
+                                : "Add video poster"}
+                          </button>
+                          {posterUploadSlots[i]?.status === "error" && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const slot = posterUploadSlots[i];
+                                if (slot) {
+                                  void handleSlidePosterUpload(i, slot.file);
+                                }
+                              }}
+                              className="text-xs font-semibold text-red-600 underline"
+                            >
+                              Retry
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {}
                     <div className="flex flex-col gap-1 shrink-0">

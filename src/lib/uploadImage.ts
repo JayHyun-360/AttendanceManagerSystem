@@ -4,6 +4,90 @@ export type UploadImageResult =
   | { url: string; path: string }
   | { error: string };
 
+const MAX_PROMOTIONAL_IMAGE_INPUT_BYTES = 20 * 1024 * 1024;
+const MAX_PROMOTIONAL_IMAGE_OUTPUT_BYTES = 5 * 1024 * 1024;
+const MAX_EVENT_VIDEO_BYTES = 50 * 1024 * 1024;
+const PROMOTIONAL_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+async function compressPromotionalImage(file: File): Promise<File | string> {
+  if (!PROMOTIONAL_IMAGE_TYPES.has(file.type)) {
+    return "Choose a JPEG, PNG, or WebP image.";
+  }
+
+  if (file.size > MAX_PROMOTIONAL_IMAGE_INPUT_BYTES) {
+    return "Promotional images must be 20 MB or smaller.";
+  }
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      bitmap.close();
+      return "This browser could not process the selected image.";
+    }
+
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/webp", 0.8),
+    );
+
+    if (!blob) {
+      return "This browser could not compress the selected image.";
+    }
+
+    if (blob.type !== "image/webp") {
+      return "WebP image compression is not supported in this browser.";
+    }
+
+    if (blob.size > MAX_PROMOTIONAL_IMAGE_OUTPUT_BYTES) {
+      return "The compressed image is still larger than 5 MB. Choose a smaller image.";
+    }
+
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "promotion";
+    return new File([blob], `${baseName}.webp`, {
+      type: "image/webp",
+      lastModified: Date.now(),
+    });
+  } catch {
+    return "This browser could not process the selected image.";
+  }
+}
+
+export async function uploadPromotionalImage(
+  file: File,
+): Promise<UploadImageResult> {
+  const compressed = await compressPromotionalImage(file);
+
+  if (typeof compressed === "string") {
+    return { error: compressed };
+  }
+
+  return uploadImage(compressed);
+}
+
+export async function uploadEventVideo(file: File): Promise<UploadImageResult> {
+  if (file.type !== "video/mp4") {
+    return { error: "Event videos must be MP4 files." };
+  }
+
+  if (file.size > MAX_EVENT_VIDEO_BYTES) {
+    return { error: "Event videos must be 50 MB or smaller." };
+  }
+
+  return uploadImage(file);
+}
+
 function getOwnedObjectPath(value: string, bucketName: string) {
   if (!value || value.startsWith("blob:")) return null;
 
