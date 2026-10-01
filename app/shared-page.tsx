@@ -734,6 +734,7 @@ import {
   Maximize2,
   Minimize2,
   Send,
+  Star,
   Trash2,
   Upload,
   X,
@@ -7157,6 +7158,383 @@ function EventDetailPage({
   );
 }
 
+type StudentFeedbackStatus =
+  | "loading"
+  | "eligible"
+  | "submitted"
+  | "ineligible"
+  | "not_open"
+  | "error";
+
+function StudentEventFeedback({ eventId }: { eventId: string }) {
+  const [status, setStatus] = useState<StudentFeedbackStatus>("loading");
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [retryKey, setRetryKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStatus() {
+      const { data, error } = await supabase.rpc(
+        "get_my_event_feedback_status",
+        { p_event_id: eventId },
+      );
+
+      if (cancelled) return;
+      if (error) {
+        console.error(error);
+        setStatus("error");
+      } else {
+        setStatus(data as StudentFeedbackStatus);
+      }
+    }
+
+    void loadStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, retryKey]);
+
+  const submitFeedback = async () => {
+    if (rating < 1 || rating > 5) return;
+
+    setIsSaving(true);
+    setSubmitError("");
+    const { data, error } = await supabase.rpc("submit_event_feedback", {
+      p_event_id: eventId,
+      p_rating: rating,
+      p_comment: comment.trim() || null,
+    });
+    setIsSaving(false);
+
+    if (error) {
+      console.error(error);
+      setSubmitError(
+        "Your feedback could not be sent. Please try again in a moment.",
+      );
+      return;
+    }
+
+    if (data === "submitted" || data === "already_submitted") {
+      setStatus("submitted");
+      return;
+    }
+
+    setSubmitError("Your feedback could not be sent. Please try again.");
+  };
+
+  if (status === "loading") {
+    return (
+      <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <p className="text-sm text-slate-500">
+          Checking feedback availability...
+        </p>
+      </section>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <p className="text-sm font-semibold text-slate-800">
+          Feedback status is unavailable.
+        </p>
+        <button
+          type="button"
+          onClick={() => setRetryKey((current) => current + 1)}
+          className="mt-3 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+        >
+          Try again
+        </button>
+      </section>
+    );
+  }
+
+  if (status === "submitted") {
+    return (
+      <section className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+          <Icons.CheckCircle />
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-emerald-950">
+            Thanks for your feedback.
+          </h3>
+          <p className="mt-1 text-sm leading-relaxed text-emerald-800">
+            Your response was sent privately to the event administrators.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  if (status !== "eligible") {
+    return (
+      <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
+        <h3 className="text-sm font-semibold text-slate-900">Event feedback</h3>
+        <p className="mt-1 text-sm leading-relaxed text-slate-600">
+          {status === "not_open"
+            ? "Feedback opens after the event is closed."
+            : "Feedback is available to students recorded as present or late for this event."}
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+      <div className="mb-4">
+        <h3 className="text-base font-semibold text-slate-900">
+          Event feedback
+        </h3>
+        <p className="mt-1 text-sm leading-relaxed text-slate-500">
+          Your response is private and will only be read by event
+          administrators.
+        </p>
+      </div>
+      <fieldset>
+        <legend className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+          How was the event?
+        </legend>
+        <div className="mt-2 flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setRating(value)}
+              aria-label={`${value} out of 5 stars`}
+              aria-pressed={rating === value}
+              className="flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+            >
+              <Star
+                className={`h-6 w-6 ${
+                  value <= rating
+                    ? "fill-amber-400 text-amber-500"
+                    : "text-slate-300"
+                }`}
+              />
+            </button>
+          ))}
+          <span className="ml-2 text-sm font-semibold text-slate-700">
+            {rating ? `${rating} of 5` : "Choose a rating"}
+          </span>
+        </div>
+      </fieldset>
+      <label className="mt-4 block space-y-1.5">
+        <span className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+          Comment{" "}
+          <span className="normal-case tracking-normal">(optional)</span>
+        </span>
+        <textarea
+          value={comment}
+          onChange={(event) => setComment(event.target.value)}
+          maxLength={2000}
+          rows={4}
+          placeholder="What worked well, or what could be better?"
+          className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-3 text-sm text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/15"
+        />
+        <span className="block text-right text-xs text-slate-400">
+          {comment.length}/2000
+        </span>
+      </label>
+      {submitError && (
+        <p className="mt-2 text-sm text-rose-700" role="alert">
+          {submitError}
+        </p>
+      )}
+      <button
+        type="button"
+        disabled={rating === 0 || isSaving}
+        onClick={() => void submitFeedback()}
+        className="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <Send className="h-4 w-4" />
+        {isSaving ? "Sending..." : "Send feedback"}
+      </button>
+    </section>
+  );
+}
+
+type AdminEventFeedbackRow = {
+  id: string;
+  student_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  student: {
+    first_name: string | null;
+    surname: string | null;
+    student_id: string | null;
+  } | null;
+};
+
+function AdminEventFeedbackPanel({
+  eventId,
+  isActive,
+}: {
+  eventId: string;
+  isActive: boolean;
+}) {
+  const [feedback, setFeedback] = useState<AdminEventFeedbackRow[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
+
+  useEffect(() => {
+    if (!isActive) return;
+
+    let cancelled = false;
+    setIsLoading(true);
+    setHasError(false);
+
+    async function loadFeedback() {
+      const { data, error } = await supabase
+        .from("event_feedback")
+        .select(
+          "id, student_id, rating, comment, created_at, student:profiles!event_feedback_student_id_fkey(first_name, surname, student_id)",
+        )
+        .eq("event_id", eventId)
+        .order("created_at", { ascending: false });
+
+      if (cancelled) return;
+      if (error) {
+        console.error(error);
+        setHasError(true);
+      } else {
+        setFeedback(
+          (data ?? []).map((row: any) => ({
+            ...row,
+            student: Array.isArray(row.student)
+              ? (row.student[0] ?? null)
+              : (row.student ?? null),
+          })),
+        );
+      }
+      setIsLoading(false);
+    }
+
+    void loadFeedback();
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, isActive, retryKey]);
+
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl border border-slate-100 bg-white p-5 text-sm text-slate-500 shadow-sm">
+        Loading event feedback...
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <p className="text-sm font-semibold text-slate-800">
+          Feedback could not be loaded.
+        </p>
+        <button
+          type="button"
+          onClick={() => setRetryKey((current) => current + 1)}
+          className="mt-3 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  if (feedback.length === 0) {
+    return (
+      <div className="rounded-2xl border border-slate-100 bg-white p-6 text-center shadow-sm">
+        <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+          <FileText className="h-5 w-5" />
+        </div>
+        <h3 className="mt-3 text-sm font-semibold text-slate-900">
+          No feedback received yet
+        </h3>
+        <p className="mt-1 text-sm leading-relaxed text-slate-500">
+          Student responses for this event will appear here after submission.
+        </p>
+      </div>
+    );
+  }
+
+  const averageRating =
+    feedback.reduce((total, response) => total + response.rating, 0) /
+    feedback.length;
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+      <header className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-4 py-3.5">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">
+            Student feedback
+          </h3>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Private responses for this event
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-bold text-slate-900">
+            {averageRating.toFixed(1)} / 5
+          </p>
+          <p className="text-xs text-slate-500">
+            {feedback.length} {feedback.length === 1 ? "response" : "responses"}
+          </p>
+        </div>
+      </header>
+      <div className="divide-y divide-slate-100">
+        {feedback.map((response) => {
+          const studentName = [
+            response.student?.first_name,
+            response.student?.surname,
+          ]
+            .filter(Boolean)
+            .join(" ");
+
+          return (
+            <article key={response.id} className="px-4 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-900">
+                    {studentName || "Student"}
+                  </p>
+                  {response.student?.student_id && (
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {response.student.student_id}
+                    </p>
+                  )}
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="inline-flex items-center gap-1 text-sm font-semibold text-amber-700">
+                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+                    {response.rating}/5
+                  </p>
+                  <time
+                    className="mt-0.5 block text-xs text-slate-400"
+                    dateTime={response.created_at}
+                  >
+                    {new Date(response.created_at).toLocaleDateString()}
+                  </time>
+                </div>
+              </div>
+              {response.comment && (
+                <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-600">
+                  {response.comment}
+                </p>
+              )}
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function EventDetailPageView({
   event,
 
@@ -7187,13 +7565,14 @@ function EventDetailPageView({
 
   const [isLoading, setIsLoading] = useState(true);
 
-  const [mobileSection, setMobileSection] = useState<"details" | "gallery">(
-    "details",
-  );
+  const [mobileSection, setMobileSection] = useState<
+    "details" | "gallery" | "feedback"
+  >("details");
 
   useEffect(() => {
     setIsLoading(true);
     setSelectedVideoUrl(null);
+    setMobileSection("details");
 
     const frame = requestAnimationFrame(() => setIsLoading(false));
 
@@ -7243,16 +7622,26 @@ function EventDetailPageView({
           Back to Events
         </button>
 
-        <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl border border-slate-200 bg-white p-1 md:hidden">
-          {[
-            ["details", "Event details"],
-
-            ["gallery", "Gallery"],
-          ].map(([value, label]) => (
+        <div
+          className={`mb-5 grid gap-1 rounded-xl border border-slate-200 bg-white p-1 md:hidden ${role === "admin" ? "grid-cols-3" : "grid-cols-2"}`}
+        >
+          {(role === "admin"
+            ? [
+                ["details", "Details"],
+                ["gallery", "Gallery"],
+                ["feedback", "Feedback"],
+              ]
+            : [
+                ["details", "Event details"],
+                ["gallery", "Gallery"],
+              ]
+          ).map(([value, label]) => (
             <button
               key={value}
               type="button"
-              onClick={() => setMobileSection(value as "details" | "gallery")}
+              onClick={() =>
+                setMobileSection(value as "details" | "gallery" | "feedback")
+              }
               className={`h-9 rounded-lg text-xs font-semibold transition-colors ${
                 mobileSection === value
                   ? "bg-emerald-600 text-white shadow-sm"
@@ -7374,73 +7763,119 @@ function EventDetailPageView({
                   Sign in to attend
                 </button>
               )}
+              {role === "student" && event.status === "closed" && (
+                <StudentEventFeedback eventId={event.id} />
+              )}
             </div>
           </div>
 
           <div
             className={`lg:col-span-5 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:pr-2 ${
-              mobileSection === "gallery" ? "" : "hidden md:block"
+              mobileSection === "details" ? "hidden md:block" : ""
             }`}
           >
-            <div className="mb-3 flex items-center justify-between pr-10">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                  Secondary gallery
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Photos and event videos
-                </p>
+            {role === "admin" && (
+              <div
+                className="mb-4 hidden gap-1 rounded-xl border border-slate-200 bg-white p-1 md:grid md:grid-cols-2"
+                role="tablist"
+                aria-label="Event information"
+              >
+                {(
+                  [
+                    ["gallery", "Gallery"],
+                    ["feedback", "Feedback"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="tab"
+                    aria-selected={
+                      value === "feedback"
+                        ? mobileSection === "feedback"
+                        : mobileSection !== "feedback"
+                    }
+                    onClick={() => setMobileSection(value)}
+                    className={`h-9 rounded-lg px-3 text-xs font-semibold transition-colors ${
+                      (value === "feedback" && mobileSection === "feedback") ||
+                      (value === "gallery" && mobileSection !== "feedback")
+                        ? "bg-emerald-700 text-white"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
-              <span className="text-xs font-semibold text-slate-400">
-                {event.mediaUrls?.length ?? 0} assets
-              </span>
-            </div>
-            {event.mediaUrls && event.mediaUrls.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {event.mediaUrls.map((url, index) =>
-                  /\.mp4($|\?)/i.test(url) ? (
-                    url === selectedVideoUrl ? (
-                      <LazyVideo
-                        key={url}
-                        src={url}
-                        preload="metadata"
-                        loadOnClick={false}
-                        className="aspect-video w-full rounded-xl"
-                      />
-                    ) : (
-                      <VideoPosterTile
-                        key={url}
-                        onClick={() => setSelectedVideoUrl(url)}
-                        label={"Play event video " + (index + 1)}
-                        className="aspect-video w-full rounded-xl border border-slate-100"
-                      />
-                    )
-                  ) : (
-                    <button
-                      key={url}
-                      type="button"
-                      onClick={() => setLightbox(url)}
-                      className="group relative aspect-video overflow-hidden rounded-xl border border-slate-100 bg-slate-50 text-left"
-                    >
-                      <OptimizedImage
-                        src={url}
-                        alt={`Event photo ${index + 1}`}
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                      <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/0 transition-colors group-hover:bg-slate-950/20">
-                        <span className="rounded-full bg-white/0 px-3 py-2 text-xs font-semibold opacity-0 shadow-sm transition-all group-hover:bg-white/90 group-hover:text-slate-800 group-hover:opacity-100">
-                          View photo
-                        </span>
-                      </span>
-                    </button>
-                  ),
-                )}
-              </div>
+            )}
+            {role === "admin" && mobileSection === "feedback" ? (
+              <AdminEventFeedbackPanel
+                eventId={event.id}
+                isActive={mobileSection === "feedback"}
+              />
             ) : (
-              <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-8 text-center text-sm text-slate-400">
-                No secondary gallery assets yet.
-              </div>
+              <>
+                <div className="mb-3 flex items-center justify-between pr-10">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                      Secondary gallery
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Photos and event videos
+                    </p>
+                  </div>
+                  <span className="text-xs font-semibold text-slate-400">
+                    {event.mediaUrls?.length ?? 0} assets
+                  </span>
+                </div>
+                {event.mediaUrls && event.mediaUrls.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {event.mediaUrls.map((url, index) =>
+                      /\.mp4($|\?)/i.test(url) ? (
+                        url === selectedVideoUrl ? (
+                          <LazyVideo
+                            key={url}
+                            src={url}
+                            preload="metadata"
+                            loadOnClick={false}
+                            className="aspect-video w-full rounded-xl"
+                          />
+                        ) : (
+                          <VideoPosterTile
+                            key={url}
+                            onClick={() => setSelectedVideoUrl(url)}
+                            label={"Play event video " + (index + 1)}
+                            className="aspect-video w-full rounded-xl border border-slate-100"
+                          />
+                        )
+                      ) : (
+                        <button
+                          key={url}
+                          type="button"
+                          onClick={() => setLightbox(url)}
+                          className="group relative aspect-video overflow-hidden rounded-xl border border-slate-100 bg-slate-50 text-left"
+                        >
+                          <OptimizedImage
+                            src={url}
+                            alt={`Event photo ${index + 1}`}
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                          <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/0 transition-colors group-hover:bg-slate-950/20">
+                            <span className="rounded-full bg-white/0 px-3 py-2 text-xs font-semibold opacity-0 shadow-sm transition-all group-hover:bg-white/90 group-hover:text-slate-800 group-hover:opacity-100">
+                              View photo
+                            </span>
+                          </span>
+                        </button>
+                      ),
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-8 text-center text-sm text-slate-400">
+                    No secondary gallery assets yet.
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

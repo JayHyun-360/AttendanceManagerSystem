@@ -4,7 +4,7 @@ import { OptimizedImage } from "@/components/OptimizedImage";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ShieldCheck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -952,43 +952,64 @@ export default function StudentDetailRoutePage() {
                   Checking existing attendance...
                 </p>
               ) : selectedEvent?.status === "closed" && isInferredAbsence ? (
-                <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
-                  <p className="text-sm font-semibold text-amber-900">
-                    This is a system-inferred absence for a closed event.
-                  </p>
-                  <p className="mt-1 text-xs text-amber-800">
-                    An admin correction will be recorded with your reason.
-                  </p>
-                  <label className="mt-3 block space-y-1.5">
-                    <span className="text-xs font-semibold uppercase tracking-[0.1em] text-amber-900">
-                      Correction reason
-                    </span>
-                    <textarea
-                      value={correctionReason}
-                      onChange={(event) =>
-                        setCorrectionReason(event.target.value)
-                      }
-                      maxLength={1000}
-                      rows={3}
-                      className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    disabled={isSavingAttendance || !correctionReason.trim()}
-                    onClick={() => void markAttendance()}
-                    className="mt-3 h-10 w-full rounded-lg bg-amber-700 px-4 text-sm font-semibold text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isSavingAttendance
-                      ? "Saving correction..."
-                      : "Correct Attendance"}
-                  </button>
+                <div className="mt-4 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm">
+                  <div className="flex items-start gap-3 border-b border-emerald-100 bg-emerald-50/70 p-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800">
+                      <ShieldCheck className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-slate-900">
+                          Historical attendance correction
+                        </p>
+                        <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                          Event closed
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                        System-inferred absence. Verify the student’s attendance
+                        and record why this entry is being corrected.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-3 p-4">
+                    <label className="block space-y-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        Admin reason
+                      </span>
+                      <textarea
+                        value={correctionReason}
+                        onChange={(event) =>
+                          setCorrectionReason(event.target.value)
+                        }
+                        maxLength={1000}
+                        rows={3}
+                        placeholder="For example: verified attendance during event check-in."
+                        className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-3 text-sm text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/15"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      disabled={isSavingAttendance || !correctionReason.trim()}
+                      onClick={() => void markAttendance()}
+                      className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-emerald-700 px-4 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isSavingAttendance
+                        ? "Saving correction..."
+                        : "Confirm attendance correction"}
+                    </button>
+                  </div>
                 </div>
               ) : selectedEvent?.status === "closed" ? (
-                <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-900">
-                  {existingAttendance
-                    ? "This event is closed. Only a system-inferred absence can be corrected here."
-                    : "This event is closed and has no attendance record to correct."}
+                <div className="mt-4 flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-500 ring-1 ring-slate-200">
+                    <ShieldCheck className="h-4 w-4" />
+                  </div>
+                  <p className="pt-1 text-sm leading-relaxed text-slate-600">
+                    {existingAttendance
+                      ? "This event is closed. Only an existing system-inferred absence can be corrected here."
+                      : "This event is closed and has no attendance record to correct."}
+                  </p>
                 </div>
               ) : existingAttendance && !isInferredAbsence ? (
                 <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-800">
