@@ -197,10 +197,6 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
             setHasSession(false);
           }
 
-          if (!isPublicEventsRoute) {
-            router.replace("/login");
-          }
-
           return;
         }
 
@@ -322,7 +318,13 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [isPublicEventsRoute, router]);
+  }, [router]);
+
+  useEffect(() => {
+    if (sessionReady && !hasSession && !isPublicEventsRoute && !sessionError) {
+      router.replace("/login");
+    }
+  }, [hasSession, isPublicEventsRoute, router, sessionError, sessionReady]);
 
   useEffect(() => {
     let cancelled = false;
@@ -334,10 +336,8 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     }
 
     if (!hasSession) {
-      if (isPublicEventsRoute) {
-        setShowFees(false);
-        setSettingsReady(true);
-      }
+      setShowFees(false);
+      setSettingsReady(true);
 
       return () => {
         cancelled = true;
@@ -392,7 +392,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [hasSession, isPublicEventsRoute, sessionReady]);
+  }, [hasSession, sessionReady]);
 
   useEffect(() => {
     void router.prefetch("/");
