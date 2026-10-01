@@ -527,7 +527,9 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   };
 
   const showGlobalLoading =
-    !sessionReady || !settingsReady || (!user && !isPublicEventsRoute);
+    !sessionReady ||
+    !settingsReady ||
+    (!user && !isPublicEventsRoute && pathname !== "/onboarding");
 
   if (!isPublicEventsRoute && (sessionError || settingsError)) {
     return (
