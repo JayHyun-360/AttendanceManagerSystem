@@ -1,60 +1,86 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { toast } from "sonner"
-import { useRouter } from "next/navigation"
+import { useState } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
-import { OnboardingPage, type OBForm } from "../../shared-page"
-import { supabase } from "@/lib/supabase"
+import { OnboardingPage, type OBForm } from "../../shared-page";
+import { supabase } from "@/lib/supabase";
+
+function getProfileSaveErrorMessage(error: {
+  code?: string;
+  message?: string;
+}) {
+  const message = error.message ?? "No additional error details were returned.";
+
+  if (error.code === "23505" && message.toLowerCase().includes("student_id")) {
+    return "That student ID is already linked to another account. Verify it or contact your school administrator.";
+  }
+
+  if (error.code === "42501") {
+    return "The database denied this profile update. Contact your school administrator.";
+  }
+
+  if (
+    ["PGRST204", "42703"].includes(error.code ?? "") &&
+    message.toLowerCase().includes("id_photo_url")
+  ) {
+    return "The server is missing the ID-photo profile field. Contact your school administrator.";
+  }
+
+  return `${error.code ? `${error.code}: ` : ""}${message}`.slice(0, 240);
+}
 
 export default function OnboardingRoute() {
-  const router = useRouter()
-  const [submitting, setSubmitting] = useState(false)
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
 
   const handleOnboarding = async (d: OBForm) => {
-    if (submitting) return false
-    setSubmitting(true)
+    if (submitting) return false;
+    setSubmitting(true);
 
     try {
       const {
         data: { session },
-      } = await supabase.auth.getSession()
-      const uid = session?.user?.id
+      } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
 
       if (!uid) {
-        toast.error("Your session has expired. Please sign in again.")
-        router.push("/login")
-        return false
+        toast.error("Your session has expired. Please sign in again.");
+        router.push("/login");
+        return false;
       }
 
       const { data: existingProfile, error: profileError } = await supabase
         .from("profiles")
         .select("role, photo_url")
         .eq("id", uid)
-        .maybeSingle()
+        .maybeSingle();
 
       if (profileError) {
-        console.error(profileError)
-        toast.error("Your existing profile could not be checked. Please try again.")
-        return false
+        console.error(profileError);
+        toast.error(
+          "Your existing profile could not be checked. Please try again.",
+        );
+        return false;
       }
 
       if (existingProfile?.role === "admin") {
-        router.replace("/admin-dashboard")
-        return true
+        router.replace("/admin-dashboard");
+        return true;
       }
 
       const googleAvatarUrl =
         (session.user.user_metadata?.avatar_url as string | undefined) ??
         (session.user.user_metadata?.picture as string | undefined) ??
         (session.user.user_metadata?.image_url as string | undefined) ??
-        null
-      const normalizedPhone = d.phone.replace(/[^\d+]/g, "")
-      const validPhone = /^(?:09\d{9}|\+639\d{9})$/.test(normalizedPhone)
+        null;
+      const normalizedPhone = d.phone.replace(/[^\d+]/g, "");
+      const validPhone = /^(?:09\d{9}|\+639\d{9})$/.test(normalizedPhone);
       const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
         d.contactEmail.trim(),
-      )
-      const validStudentId = /^\d{7,}$/.test(d.studentId.trim())
+      );
+      const validStudentId = /^\d{7,}$/.test(d.studentId.trim());
       const validProfile =
         d.firstName.trim() &&
         d.surname.trim() &&
@@ -64,11 +90,13 @@ export default function OnboardingRoute() {
         d.program.trim() &&
         d.yearLevel.trim() &&
         d.idPhotoUrl &&
-        d.agreedToTerms === true
+        d.agreedToTerms === true;
 
       if (!validProfile) {
-        toast.error("Please complete all required information before continuing.")
-        return false
+        toast.error(
+          "Please complete all required information before continuing.",
+        );
+        return false;
       }
 
       const payload = {
@@ -85,28 +113,33 @@ export default function OnboardingRoute() {
         role: existingProfile?.role ?? "student",
         photo_url: existingProfile?.photo_url ?? googleAvatarUrl ?? null,
         id_photo_url: d.idPhotoUrl ?? null,
-      }
+      };
       const { error } = await supabase
         .from("profiles")
-        .upsert(payload, { onConflict: "id" })
+        .upsert(payload, { onConflict: "id" });
 
       if (error) {
-        console.error(error)
-        toast.error("Your profile could not be saved. Please try again.")
-        return false
+        console.error(error);
+        toast.error("Profile could not be saved", {
+          description: getProfileSaveErrorMessage(error),
+          duration: 10000,
+        });
+        return false;
       }
 
-      toast.success("Profile completed. Welcome to Adesse.")
-      window.location.assign("/dashboard?freshLogin=1")
-      return true
+      toast.success("Profile completed. Welcome to Adesse.");
+      window.location.assign("/dashboard?freshLogin=1");
+      return true;
     } catch (caughtError) {
-      console.error(caughtError)
-      toast.error("We could not complete setup. Please try again.")
-      return false
+      console.error(caughtError);
+      toast.error("We could not complete setup. Please try again.");
+      return false;
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
-  return <OnboardingPage onComplete={handleOnboarding} submitting={submitting} />
+  return (
+    <OnboardingPage onComplete={handleOnboarding} submitting={submitting} />
+  );
 }

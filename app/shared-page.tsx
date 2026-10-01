@@ -5750,26 +5750,37 @@ export function OnboardingPage({
                     const file = e.target.files?.[0];
 
                     if (!file) return;
+                    e.currentTarget.value = "";
 
                     setIdPhotoUploadState("uploading");
 
-                    const result = await uploadVerificationImage(file);
+                    try {
+                      const result = await uploadVerificationImage(file);
 
-                    if ("error" in result) {
+                      if ("error" in result) {
+                        setIdPhotoUploadState("error");
+
+                        toast.error(result.error);
+
+                        return;
+                      }
+
+                      setIdPhotoUploadState("idle");
+
+                      setF((p) => ({
+                        ...p,
+
+                        idPhotoUrl: result.url,
+                      }));
+                    } catch (caughtError) {
                       setIdPhotoUploadState("error");
 
-                      toast.error(result.error);
-
-                      return;
+                      toast.error(
+                        caughtError instanceof Error
+                          ? `ID photo upload failed: ${caughtError.message}`
+                          : "ID photo upload failed. Please try again.",
+                      );
                     }
-
-                    setIdPhotoUploadState("idle");
-
-                    setF((p) => ({
-                      ...p,
-
-                      idPhotoUrl: result.url,
-                    }));
                   }}
                 />
                 {idPhotoUploadState === "uploading" ? (
