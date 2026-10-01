@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AdminSettingsPage, type SystemSettings } from "../../shared-page";
+import { refreshLandingSettings } from "./actions";
 
 import { supabase } from "@/lib/supabase";
 
@@ -165,6 +166,19 @@ export default function AdminSettingsRoutePage() {
           }
 
           invalidatePublicSystemSettingsCache();
+          try {
+            await refreshLandingSettings();
+          } catch (revalidationError) {
+            console.error(
+              "Failed to refresh public landing settings",
+              revalidationError,
+            );
+            if (settingsRef.current === localSettings) {
+              toast.warning(
+                "Settings saved, but the landing page may take a minute to update.",
+              );
+            }
+          }
 
           const previousSettings = persistedSettingsRef.current;
           persistedSettingsRef.current = nextSettings;
