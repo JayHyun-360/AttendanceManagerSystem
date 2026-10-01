@@ -39,6 +39,7 @@ interface AttendanceEvent {
   id: string;
   title: string;
   date: string;
+  status: "upcoming" | "active" | "closed";
   multiSession: boolean;
   sanctionsEnabled: boolean;
   morningStart?: string | null;
@@ -54,7 +55,7 @@ interface ExistingAttendance {
   session_label: "morning" | "afternoon";
   scan_in_at: string | null;
   scan_out_at: string | null;
-  method: "qr_scan" | "manual";
+  method: "qr_scan" | "manual" | null;
   scanned_by: string | null;
 }
 
@@ -140,6 +141,7 @@ export default function StudentDetailRoutePage() {
   );
   const [attendanceStatus, setAttendanceStatus] =
     useState<AttendanceStatus>("present");
+  const [correctionReason, setCorrectionReason] = useState("");
   const [existingAttendance, setExistingAttendance] =
     useState<ExistingAttendance | null>(null);
   const [isCheckingAttendance, setIsCheckingAttendance] = useState(false);
@@ -343,7 +345,7 @@ export default function StudentDetailRoutePage() {
       const { data, error } = await supabase
         .from("events")
         .select(
-          "id, title, event_date, multi_session, sanctions_enabled, end_time, morning_start, morning_end, afternoon_start, afternoon_end",
+          "id, title, event_date, status, multi_session, sanctions_enabled, end_time, morning_start, morning_end, afternoon_start, afternoon_end",
         )
         .order("event_date", { ascending: false });
 
@@ -357,6 +359,7 @@ export default function StudentDetailRoutePage() {
           id: event.id,
           title: event.title,
           date: event.event_date,
+          status: event.status,
           multiSession: Boolean(event.multi_session),
           sanctionsEnabled: Boolean(event.sanctions_enabled),
           morningStart: event.morning_start,
@@ -442,7 +445,8 @@ export default function StudentDetailRoutePage() {
     existingAttendance?.status === "absent" &&
     !existingAttendance.scan_in_at &&
     !existingAttendance.scan_out_at &&
-    !existingAttendance.scanned_by;
+    !existingAttendance.scanned_by &&
+    existingAttendance.method === null;
   const approvedExcuseForSession = approvedExcuseKeys.has(
     `${selectedEventId}:${sessionLabel}`,
   );
@@ -467,42 +471,104 @@ export default function StudentDetailRoutePage() {
       return;
     }
 
-    if (existingAttendance && !isInferredAbsence && !overwrite) {
+    const isClosedEvent = selectedEvent.status === "closed";
+
+    if (isClosedEvent && !isInferredAbsence) {
+      toast.error(
+        "This event is closed. Only an existing system-inferred absence can be corrected.",
+      );
+      return;
+    }
+
+    if (isClosedEvent && attendanceStatus === "absent") {
+      toast.error("Choose Present or Late for this attendance correction.");
+      return;
+    }
+
+    if (isClosedEvent && !correctionReason.trim()) {
+      toast.error("Enter a reason for correcting this closed-event absence.");
+      return;
+    }
+
+    if (
+      !isClosedEvent &&
+      existingAttendance &&
+      !isInferredAbsence &&
+      !overwrite
+    ) {
       toast.error("Choose Overwrite or Cancel for the existing record.");
       return;
     }
 
     setIsSavingAttendance(true);
-    const result = await recordAttendance({
-      eventId: selectedEventId,
-      studentId: routeId,
-      sessionLabel,
-      status: attendanceStatus,
-      scannedBy: authUserId,
-      strictSession: false,
-      canTimeOut: false,
-      method: "manual",
-      overwrite: overwrite || isInferredAbsence,
-    });
+    if (isClosedEvent) {
+      const { error } = await supabase.rpc(
+        "correct_closed_event_inferred_absence",
+        {
+          p_event_id: selectedEventId,
+          p_student_id: routeId,
+          p_session_label: sessionLabel,
+          p_corrected_status: attendanceStatus,
+          p_reason: correctionReason.trim(),
+        },
+      );
 
-    setIsSavingAttendance(false);
+      setIsSavingAttendance(false);
+      if (error) {
+        console.error(error);
+        toast.error(
+          "Closed-event correction could not be saved. Refresh attendance and try again.",
+        );
+        return;
+      }
+    } else {
+      const result = await recordAttendance({
+        eventId: selectedEventId,
+        studentId: routeId,
+        sessionLabel,
+        status: attendanceStatus,
+        scannedBy: authUserId,
+        strictSession: false,
+        canTimeOut: false,
+        method: "manual",
+        overwrite: overwrite || isInferredAbsence,
+      });
 
-    if (result.outcome === "error") {
-      console.error(result.error);
-      toast.error("Attendance could not be saved.");
-      return;
-    }
+      setIsSavingAttendance(false);
 
-    if (result.outcome !== "success") {
-      toast.error("Attendance already exists. Review it before overwriting.");
-      return;
+      if (result.outcome === "error") {
+        console.error(result.error);
+        toast.error("Attendance could not be saved.");
+        return;
+      }
+
+      if (result.outcome !== "success") {
+        if (
+          result.reason === "existing" ||
+          result.reason === "unique_violation"
+        ) {
+          toast.error(
+            "Attendance already exists. Review it before overwriting.",
+          );
+        } else if (result.reason === "event_not_active") {
+          toast.error(
+            "Attendance can only be marked while the event is active.",
+          );
+        } else {
+          toast.error("Attendance could not be saved for this session.");
+        }
+        return;
+      }
     }
 
     toast.success(
       `${
-        overwrite ? "Attendance overwritten" : "Attendance marked"
+        isClosedEvent || overwrite || isInferredAbsence
+          ? "Attendance corrected"
+          : "Attendance marked"
       } for ${selectedEvent.title}.`,
     );
+    setCorrectionReason("");
     setExistingAttendance(null);
     const { data } = await supabase
       .from("attendance_scans")
@@ -803,13 +869,18 @@ export default function StudentDetailRoutePage() {
                   </span>
                   <select
                     value={selectedEventId}
-                    onChange={(event) => setSelectedEventId(event.target.value)}
+                    onChange={(event) => {
+                      setSelectedEventId(event.target.value);
+                      setAttendanceStatus("present");
+                      setCorrectionReason("");
+                    }}
                     className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-sm text-slate-800 outline-none transition-colors focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
                   >
                     <option value="">Select an event</option>
                     {events.map((event) => (
                       <option key={event.id} value={event.id}>
                         {event.title} · {event.date}
+                        {event.status === "closed" ? " · Closed" : ""}
                       </option>
                     ))}
                   </select>
@@ -821,6 +892,9 @@ export default function StudentDetailRoutePage() {
                   </span>
                   <select
                     value={attendanceStatus}
+                    disabled={
+                      selectedEvent?.status === "closed" && !isInferredAbsence
+                    }
                     onChange={(event) =>
                       setAttendanceStatus(
                         event.target.value as AttendanceStatus,
@@ -830,7 +904,9 @@ export default function StudentDetailRoutePage() {
                   >
                     <option value="present">Present</option>
                     <option value="late">Late</option>
-                    <option value="absent">Absent</option>
+                    {selectedEvent?.status !== "closed" && (
+                      <option value="absent">Absent</option>
+                    )}
                   </select>
                 </label>
               </div>
@@ -845,7 +921,10 @@ export default function StudentDetailRoutePage() {
                       <button
                         key={option}
                         type="button"
-                        onClick={() => setSessionLabel(option)}
+                        onClick={() => {
+                          setSessionLabel(option);
+                          setCorrectionReason("");
+                        }}
                         className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${
                           sessionLabel === option
                             ? "bg-emerald-600 text-white"
@@ -872,6 +951,45 @@ export default function StudentDetailRoutePage() {
                 <p className="mt-4 text-sm text-slate-500">
                   Checking existing attendance...
                 </p>
+              ) : selectedEvent?.status === "closed" && isInferredAbsence ? (
+                <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
+                  <p className="text-sm font-semibold text-amber-900">
+                    This is a system-inferred absence for a closed event.
+                  </p>
+                  <p className="mt-1 text-xs text-amber-800">
+                    An admin correction will be recorded with your reason.
+                  </p>
+                  <label className="mt-3 block space-y-1.5">
+                    <span className="text-xs font-semibold uppercase tracking-[0.1em] text-amber-900">
+                      Correction reason
+                    </span>
+                    <textarea
+                      value={correctionReason}
+                      onChange={(event) =>
+                        setCorrectionReason(event.target.value)
+                      }
+                      maxLength={1000}
+                      rows={3}
+                      className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={isSavingAttendance || !correctionReason.trim()}
+                    onClick={() => void markAttendance()}
+                    className="mt-3 h-10 w-full rounded-lg bg-amber-700 px-4 text-sm font-semibold text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSavingAttendance
+                      ? "Saving correction..."
+                      : "Correct Attendance"}
+                  </button>
+                </div>
+              ) : selectedEvent?.status === "closed" ? (
+                <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-900">
+                  {existingAttendance
+                    ? "This event is closed. Only a system-inferred absence can be corrected here."
+                    : "This event is closed and has no attendance record to correct."}
+                </div>
               ) : existingAttendance && !isInferredAbsence ? (
                 <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-800">
                   <p className="text-sm font-semibold text-amber-900">
@@ -922,7 +1040,9 @@ export default function StudentDetailRoutePage() {
                 View Attendance History
               </summary>
               <div className="mt-3 max-h-48 overflow-y-auto border-t border-slate-200 pt-3 text-xs text-slate-500">
-                {existingAttendance && !isInferredAbsence ? (
+                {isInferredAbsence ? (
+                  "System-inferred absence; no physical scan is recorded."
+                ) : existingAttendance ? (
                   <div className="grid grid-cols-2 gap-3">
                     <span>Status: {existingAttendance.status}</span>
                     <span>Method: {existingAttendance.method}</span>
