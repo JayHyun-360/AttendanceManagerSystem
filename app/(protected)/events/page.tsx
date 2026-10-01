@@ -60,9 +60,15 @@ function EventsSkeleton() {
 
 export default function EventsRoutePage() {
   const router = useRouter();
-  const { user, showFees } = useProtectedUser();
-  const [events, setEvents] = useState<EventData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, authUserId, showFees, eventsSnapshot, setEventsSnapshot } =
+    useProtectedUser();
+  const eventsCacheKey = user
+    ? `${authUserId ?? user.studentId}:${user.role}:${showFees}`
+    : "public";
+  const cachedEvents =
+    eventsSnapshot?.key === eventsCacheKey ? eventsSnapshot.events : null;
+  const [events, setEvents] = useState<EventData[]>(() => cachedEvents ?? []);
+  const [isLoading, setIsLoading] = useState(() => !cachedEvents);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -107,39 +113,39 @@ export default function EventsRoutePage() {
         }
 
         if (!cancelled) {
-          setEvents(
-            (data ?? []).map((row: any) => ({
-              id: String(row.id),
-              title: row.title,
-              date: row.event_date,
-              time:
-                row.start_time && row.end_time
-                  ? `${row.start_time}–${row.end_time}`
-                  : "",
-              location: row.location,
-              description: row.description,
-              program: row.program || "All Programs",
-              fineAmount:
-                user?.role === "student" && showFees
-                  ? row.multi_session
-                    ? Number(row.morning_absent_fine ?? 0) +
-                      Number(row.afternoon_absent_fine ?? 0)
-                    : Number(row.absent_fine ?? 0)
-                  : 0,
-              status: row.status || "upcoming",
-              attendees: 0,
-              highlightUrl:
-                row.image_url && !row.image_url.startsWith("blob:")
-                  ? row.image_url
-                  : undefined,
-              mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
-              multiSession: Boolean(row.multi_session),
-              morningStart: row.morning_start ?? undefined,
-              morningEnd: row.morning_end ?? undefined,
-              afternoonStart: row.afternoon_start ?? undefined,
-              afternoonEnd: row.afternoon_end ?? undefined,
-            })),
-          );
+          const mappedEvents: EventData[] = (data ?? []).map((row: any) => ({
+            id: String(row.id),
+            title: row.title,
+            date: row.event_date,
+            time:
+              row.start_time && row.end_time
+                ? `${row.start_time}–${row.end_time}`
+                : "",
+            location: row.location,
+            description: row.description,
+            program: row.program || "All Programs",
+            fineAmount:
+              user?.role === "student" && showFees
+                ? row.multi_session
+                  ? Number(row.morning_absent_fine ?? 0) +
+                    Number(row.afternoon_absent_fine ?? 0)
+                  : Number(row.absent_fine ?? 0)
+                : 0,
+            status: row.status || "upcoming",
+            attendees: 0,
+            highlightUrl:
+              row.image_url && !row.image_url.startsWith("blob:")
+                ? row.image_url
+                : undefined,
+            mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
+            multiSession: Boolean(row.multi_session),
+            morningStart: row.morning_start ?? undefined,
+            morningEnd: row.morning_end ?? undefined,
+            afternoonStart: row.afternoon_start ?? undefined,
+            afternoonEnd: row.afternoon_end ?? undefined,
+          }));
+          setEvents(mappedEvents);
+          setEventsSnapshot({ key: eventsCacheKey, events: mappedEvents });
         }
       } catch (caughtError) {
         console.error(caughtError);
@@ -163,7 +169,7 @@ export default function EventsRoutePage() {
       cancelled = true;
       if (eventsChannel) void eventsChannel.unsubscribe();
     };
-  }, [showFees, user]);
+  }, [eventsCacheKey, setEventsSnapshot, showFees, user]);
 
   const onNav = (page: Page) => {
     if (page === "login") {
@@ -183,7 +189,7 @@ export default function EventsRoutePage() {
     return <EventsSkeleton />;
   }
 
-  if (loadError) {
+  if (loadError && !cachedEvents) {
     return (
       <FeedbackState
         title="Events unavailable"

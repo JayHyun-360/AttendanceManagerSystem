@@ -11,19 +11,36 @@ import { FeedbackState } from "@/components/ui/feedback";
 
 export default function DashboardRoute() {
   const router = useRouter();
-  const { user, authUserId, showFees } = useProtectedUser();
-  const [fines, setFines] = useState<any[]>([]);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
-  const [announcementsReady, setAnnouncementsReady] = useState(false);
-  const [finesReady, setFinesReady] = useState(false);
+  const {
+    user,
+    authUserId,
+    showFees,
+    dashboardSnapshot,
+    setDashboardSnapshot,
+  } = useProtectedUser();
+  const cachedDashboard =
+    dashboardSnapshot?.authUserId === authUserId ? dashboardSnapshot : null;
+  const [fines, setFines] = useState<any[]>(() => cachedDashboard?.fines ?? []);
+  const [announcements, setAnnouncements] = useState<any[]>(
+    () => cachedDashboard?.announcements ?? [],
+  );
+  const [events, setEvents] = useState<any[]>(
+    () => cachedDashboard?.events ?? [],
+  );
+  const [announcementsReady, setAnnouncementsReady] = useState(() =>
+    Boolean(cachedDashboard),
+  );
+  const [finesReady, setFinesReady] = useState(() => Boolean(cachedDashboard));
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [attendanceStats, setAttendanceStats] = useState({
-    present: 0,
-    absent: 0,
-    upcoming: 0,
-    totalSessions: 0,
-  });
+  const [attendanceStats, setAttendanceStats] = useState(
+    () =>
+      cachedDashboard?.attendanceStats ?? {
+        present: 0,
+        absent: 0,
+        upcoming: 0,
+        totalSessions: 0,
+      },
+  );
 
   useEffect(() => {
     if (user?.role === "admin") {
@@ -232,6 +249,28 @@ export default function DashboardRoute() {
 
   const isLoading = !announcementsReady || !finesReady;
 
+  useEffect(() => {
+    if (!authUserId || !announcementsReady || !finesReady || loadError) return;
+
+    setDashboardSnapshot({
+      authUserId,
+      announcements,
+      fines,
+      events,
+      attendanceStats,
+    });
+  }, [
+    announcements,
+    announcementsReady,
+    attendanceStats,
+    authUserId,
+    events,
+    fines,
+    finesReady,
+    loadError,
+    setDashboardSnapshot,
+  ]);
+
   function DashboardPageSkeleton() {
     return (
       <div className="space-y-5">
@@ -338,7 +377,7 @@ export default function DashboardRoute() {
     return <DashboardPageSkeleton />;
   }
 
-  if (loadError) {
+  if (loadError && !cachedDashboard) {
     return (
       <FeedbackState
         title="Dashboard data unavailable"

@@ -22,6 +22,7 @@ import {
   PageShell,
   type Page,
   type User,
+  type EventData,
 } from "../shared-page";
 
 import { DevNotesProvider, useDevNotes } from "../DevNotesPage";
@@ -43,6 +44,32 @@ type ProtectedUserContextValue = {
   setAuthUserId: Dispatch<SetStateAction<string | null>>;
 
   showFees: boolean;
+
+  dashboardSnapshot: DashboardSnapshot | null;
+
+  setDashboardSnapshot: Dispatch<SetStateAction<DashboardSnapshot | null>>;
+
+  eventsSnapshot: EventsSnapshot | null;
+
+  setEventsSnapshot: Dispatch<SetStateAction<EventsSnapshot | null>>;
+};
+
+type DashboardSnapshot = {
+  authUserId: string;
+  announcements: any[];
+  fines: any[];
+  events: any[];
+  attendanceStats: {
+    present: number;
+    absent: number;
+    upcoming: number;
+    totalSessions: number;
+  };
+};
+
+type EventsSnapshot = {
+  key: string;
+  events: EventData[];
 };
 
 const ProtectedUserContext = createContext<ProtectedUserContextValue | null>(
@@ -110,12 +137,12 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
   const pathname = usePathname();
   const isPublicEventsRoute = pathname === "/events";
+  const page = pathToPage[pathname] ?? "dashboard";
 
   const [user, setUser] = useState<User | null>(null);
 
   const [authUserId, setAuthUserId] = useState<string | null>(null);
 
-  const [page, setPage] = useState<Page>("landing");
   const [open, setOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
@@ -124,6 +151,13 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const [settingsReady, setSettingsReady] = useState(false);
 
   const [showFees, setShowFees] = useState(false);
+
+  const [dashboardSnapshot, setDashboardSnapshot] =
+    useState<DashboardSnapshot | null>(null);
+
+  const [eventsSnapshot, setEventsSnapshot] = useState<EventsSnapshot | null>(
+    null,
+  );
 
   const [sessionError, setSessionError] = useState<string | null>(null);
 
@@ -369,10 +403,6 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   }, [router, user?.role]);
 
   useEffect(() => {
-    const routePage = pathToPage[pathname] ?? "dashboard";
-
-    setPage(routePage);
-
     window.scrollTo({ top: 0, behavior: "auto" });
 
     document.getElementById("protected-main-content")?.scrollTo({
@@ -415,7 +445,9 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
     setShowFees(false);
 
-    setPage("landing");
+    setDashboardSnapshot(null);
+
+    setEventsSnapshot(null);
 
     setOpen(false);
   };
@@ -528,7 +560,17 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
   return (
     <ProtectedUserContext.Provider
-      value={{ user, setUser, authUserId, setAuthUserId, showFees }}
+      value={{
+        user,
+        setUser,
+        authUserId,
+        setAuthUserId,
+        showFees,
+        dashboardSnapshot,
+        setDashboardSnapshot,
+        eventsSnapshot,
+        setEventsSnapshot,
+      }}
     >
       <DevNotesProvider enabled={Boolean(user)}>
         <div className="w-full min-h-screen m-0 p-0 bg-white md:h-screen md:overflow-hidden md:bg-[#f8faf9] md:relative">
