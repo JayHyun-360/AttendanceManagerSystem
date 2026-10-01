@@ -27,6 +27,8 @@ const defaultSettings: SystemSettings = {
 
   institution: "Adesse University",
 
+  feedbackFormUrl: "",
+
   heroImageUrls: [],
 
   carouselSlides: [],
@@ -52,6 +54,9 @@ const normalizeSettings = (
   semester: rawSettings?.semester ?? defaultSettings.semester,
 
   institution: rawSettings?.institution ?? defaultSettings.institution,
+
+  feedbackFormUrl:
+    rawSettings?.feedbackFormUrl ?? defaultSettings.feedbackFormUrl,
 
   heroImageUrls: (
     rawSettings?.heroImageUrls ?? defaultSettings.heroImageUrls

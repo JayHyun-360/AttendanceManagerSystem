@@ -1,5 +1,21 @@
 import { supabase } from "@/lib/supabase";
 
+export function isGoogleFormsResponderUrl(value: string) {
+  try {
+    const url = new URL(value.trim());
+    if (url.protocol !== "https:") return false;
+    if (url.hostname === "forms.gle") {
+      return /^\/[\w-]+\/?$/.test(url.pathname);
+    }
+    if (url.hostname !== "docs.google.com") return false;
+    return /^\/forms\/(?:u\/\d+\/)?d\/(?:e\/)?[^/]+\/viewform\/?$/.test(
+      url.pathname,
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function querySystemSettings() {
   return supabase
     .from("system_settings")

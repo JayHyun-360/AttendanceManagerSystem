@@ -124,7 +124,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { OptimizedImage } from "@/components/OptimizedImage";
-import { LazyVideo, VideoPosterTile } from "./shared-page";
+import {
+  HelpFeedbackMenuItems,
+  LazyVideo,
+  VideoPosterTile,
+} from "./shared-page";
 import { usePathname, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -1819,54 +1823,10 @@ export function TopBar({
                           Help & Feedback
                         </p>
                       </div>
-                      <button className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left group">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0 mt-0.5 group-hover:bg-emerald-100 transition-colors">
-                          <svg
-                            viewBox="0 0 18 18"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={1.8}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="w-[15px] h-[15px]"
-                          >
-                            <path d="M9 1C4.58 1 1 4.13 1 8c0 1.74.68 3.33 1.8 4.56L2 17l4.67-1.4A8.27 8.27 0 0 0 9 16c4.42 0 8-3.13 8-7s-3.58-7-8-7Z" />
-                            <path d="M6 8h6M6 11h4" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-800">
-                            Send helpful feedback
-                          </p>
-                          <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                            Help us improve Adesse for everyone
-                          </p>
-                        </div>
-                      </button>
-                      <button className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left group border-t border-slate-50">
-                        <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500 shrink-0 mt-0.5 group-hover:bg-slate-100 transition-colors">
-                          <svg
-                            viewBox="0 0 18 18"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={1.8}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="w-[15px] h-[15px]"
-                          >
-                            <circle cx="9" cy="9" r="8" />
-                            <path d="M9 8v4M9 6h.01" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-800">
-                            Help & Support
-                          </p>
-                          <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                            Browse guides and FAQs
-                          </p>
-                        </div>
-                      </button>
+                      <HelpFeedbackMenuItems
+                        open={dotOpen}
+                        onAction={() => setDotOpen(false)}
+                      />
                     </div>
                   </>
                 )}

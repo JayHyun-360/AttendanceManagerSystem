@@ -726,6 +726,7 @@ import {
   Archive,
   ArrowLeft,
   CalendarDays,
+  CircleHelp,
   ChevronDown,
   ChevronUp,
   FileText,
@@ -733,6 +734,7 @@ import {
   LogOut,
   Maximize2,
   Minimize2,
+  ExternalLink,
   Send,
   Star,
   Trash2,
@@ -766,6 +768,11 @@ import QRCode from "qrcode";
 import { toast } from "sonner";
 
 import { supabase } from "@/lib/supabase";
+
+import {
+  getPublicSystemSettings,
+  isGoogleFormsResponderUrl,
+} from "@/lib/systemSettings";
 
 import { recordAttendance } from "@/lib/attendance";
 
@@ -3436,6 +3443,121 @@ export function StudentQR({
   );
 }
 
+export function HelpFeedbackMenuItems({
+  open,
+  onAction,
+}: {
+  open: boolean;
+  onAction: () => void;
+}) {
+  const [feedbackUrl, setFeedbackUrl] = useState("");
+  const [feedbackState, setFeedbackState] = useState<
+    "idle" | "loading" | "ready" | "missing" | "error"
+  >("idle");
+
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+    setFeedbackState("loading");
+
+    async function loadFeedbackUrl() {
+      const { data, error } = await getPublicSystemSettings();
+      if (cancelled) return;
+      if (error) {
+        console.error("Failed to load system feedback link", error);
+        setFeedbackState("error");
+        return;
+      }
+
+      const url = (data?.settings as { feedbackFormUrl?: string } | null)
+        ?.feedbackFormUrl;
+      if (url && isGoogleFormsResponderUrl(url)) {
+        setFeedbackUrl(url);
+        setFeedbackState("ready");
+      } else {
+        setFeedbackUrl("");
+        setFeedbackState("missing");
+      }
+    }
+
+    void loadFeedbackUrl();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  const feedbackDescription =
+    feedbackState === "loading"
+      ? "Loading feedback form..."
+      : feedbackState === "error"
+        ? "Feedback link is unavailable"
+        : feedbackState === "missing"
+          ? "Feedback form is not set up yet"
+          : "Help us improve Adesse for everyone";
+
+  return (
+    <>
+      {feedbackUrl ? (
+        <a
+          href={feedbackUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onAction}
+          className="group flex w-full items-start gap-3 border-b border-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-50"
+        >
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 transition-colors group-hover:bg-emerald-100">
+            <Send className="h-4 w-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-slate-800">
+              Send helpful feedback
+            </span>
+            <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-400">
+              {feedbackDescription}
+            </span>
+          </span>
+          <ExternalLink className="ml-auto mt-1 h-3.5 w-3.5 shrink-0 text-slate-400" />
+        </a>
+      ) : (
+        <div
+          className="flex w-full items-start gap-3 border-b border-slate-50 px-4 py-3 text-left"
+          aria-live="polite"
+        >
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+            <Send className="h-4 w-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-slate-800">
+              Send helpful feedback
+            </span>
+            <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-400">
+              {feedbackDescription}
+            </span>
+          </span>
+        </div>
+      )}
+      <Link
+        href="/help"
+        onClick={onAction}
+        className="group flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
+      >
+        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-600 transition-colors group-hover:bg-slate-100">
+          <CircleHelp className="h-4 w-4" />
+        </span>
+        <span>
+          <span className="block text-sm font-semibold text-slate-800">
+            Help &amp; Support
+          </span>
+          <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-400">
+            Guides for attendance, QR codes, and account help
+          </span>
+        </span>
+      </Link>
+    </>
+  );
+}
+
 export function TopBar({
   user,
 
@@ -4097,54 +4219,10 @@ export function TopBar({
                           Help & Feedback
                         </p>
                       </div>
-                      <button className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left group">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0 mt-0.5 group-hover:bg-emerald-100 transition-colors">
-                          <svg
-                            viewBox="0 0 18 18"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={1.8}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="w-[15px] h-[15px]"
-                          >
-                            <path d="M9 1C4.58 1 1 4.13 1 8c0 1.74.68 3.33 1.8 4.56L2 17l4.67-1.4A8.27 8.27 0 0 0 9 16c4.42 0 8-3.13 8-7s-3.58-7-8-7Z" />
-                            <path d="M6 8h6M6 11h4" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-800">
-                            Send helpful feedback
-                          </p>
-                          <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                            Help us improve Adesse for everyone
-                          </p>
-                        </div>
-                      </button>
-                      <button className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left group border-t border-slate-50">
-                        <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500 shrink-0 mt-0.5 group-hover:bg-slate-100 transition-colors">
-                          <svg
-                            viewBox="0 0 18 18"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={1.8}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="w-[15px] h-[15px]"
-                          >
-                            <circle cx="9" cy="9" r="8" />
-                            <path d="M9 8v4M9 6h.01" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-800">
-                            Help & Support
-                          </p>
-                          <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                            Browse guides and FAQs
-                          </p>
-                        </div>
-                      </button>
+                      <HelpFeedbackMenuItems
+                        open={dotOpen}
+                        onAction={() => setDotOpen(false)}
+                      />
                     </div>
                   </>
                 )}
@@ -7565,9 +7643,9 @@ function EventDetailPageView({
 
   const [isLoading, setIsLoading] = useState(true);
 
-  const [mobileSection, setMobileSection] = useState<
-    "details" | "gallery" | "feedback"
-  >("details");
+  const [mobileSection, setMobileSection] = useState<"details" | "gallery">(
+    "details",
+  );
 
   useEffect(() => {
     setIsLoading(true);
@@ -7622,26 +7700,15 @@ function EventDetailPageView({
           Back to Events
         </button>
 
-        <div
-          className={`mb-5 grid gap-1 rounded-xl border border-slate-200 bg-white p-1 md:hidden ${role === "admin" ? "grid-cols-3" : "grid-cols-2"}`}
-        >
-          {(role === "admin"
-            ? [
-                ["details", "Details"],
-                ["gallery", "Gallery"],
-                ["feedback", "Feedback"],
-              ]
-            : [
-                ["details", "Event details"],
-                ["gallery", "Gallery"],
-              ]
-          ).map(([value, label]) => (
+        <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl border border-slate-200 bg-white p-1 md:hidden">
+          {[
+            ["details", "Event details"],
+            ["gallery", "Gallery"],
+          ].map(([value, label]) => (
             <button
               key={value}
               type="button"
-              onClick={() =>
-                setMobileSection(value as "details" | "gallery" | "feedback")
-              }
+              onClick={() => setMobileSection(value as "details" | "gallery")}
               className={`h-9 rounded-lg text-xs font-semibold transition-colors ${
                 mobileSection === value
                   ? "bg-emerald-600 text-white shadow-sm"
@@ -7763,9 +7830,6 @@ function EventDetailPageView({
                   Sign in to attend
                 </button>
               )}
-              {role === "student" && event.status === "closed" && (
-                <StudentEventFeedback eventId={event.id} />
-              )}
             </div>
           </div>
 
@@ -7774,108 +7838,65 @@ function EventDetailPageView({
               mobileSection === "details" ? "hidden md:block" : ""
             }`}
           >
-            {role === "admin" && (
-              <div
-                className="mb-4 hidden gap-1 rounded-xl border border-slate-200 bg-white p-1 md:grid md:grid-cols-2"
-                role="tablist"
-                aria-label="Event information"
-              >
-                {(
-                  [
-                    ["gallery", "Gallery"],
-                    ["feedback", "Feedback"],
-                  ] as const
-                ).map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    role="tab"
-                    aria-selected={
-                      value === "feedback"
-                        ? mobileSection === "feedback"
-                        : mobileSection !== "feedback"
-                    }
-                    onClick={() => setMobileSection(value)}
-                    className={`h-9 rounded-lg px-3 text-xs font-semibold transition-colors ${
-                      (value === "feedback" && mobileSection === "feedback") ||
-                      (value === "gallery" && mobileSection !== "feedback")
-                        ? "bg-emerald-700 text-white"
-                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
+            <div className="mb-3 flex items-center justify-between pr-10">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                  Secondary gallery
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Photos and event videos
+                </p>
               </div>
-            )}
-            {role === "admin" && mobileSection === "feedback" ? (
-              <AdminEventFeedbackPanel
-                eventId={event.id}
-                isActive={mobileSection === "feedback"}
-              />
-            ) : (
-              <>
-                <div className="mb-3 flex items-center justify-between pr-10">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                      Secondary gallery
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Photos and event videos
-                    </p>
-                  </div>
-                  <span className="text-xs font-semibold text-slate-400">
-                    {event.mediaUrls?.length ?? 0} assets
-                  </span>
-                </div>
-                {event.mediaUrls && event.mediaUrls.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {event.mediaUrls.map((url, index) =>
-                      /\.mp4($|\?)/i.test(url) ? (
-                        url === selectedVideoUrl ? (
-                          <LazyVideo
-                            key={url}
-                            src={url}
-                            preload="metadata"
-                            loadOnClick={false}
-                            className="aspect-video w-full rounded-xl"
-                          />
-                        ) : (
-                          <VideoPosterTile
-                            key={url}
-                            onClick={() => setSelectedVideoUrl(url)}
-                            label={"Play event video " + (index + 1)}
-                            className="aspect-video w-full rounded-xl border border-slate-100"
-                          />
-                        )
-                      ) : (
-                        <button
-                          key={url}
-                          type="button"
-                          onClick={() => setLightbox(url)}
-                          className="group relative aspect-video overflow-hidden rounded-xl border border-slate-100 bg-slate-50 text-left"
-                        >
-                          <OptimizedImage
-                            src={url}
-                            alt={`Event photo ${index + 1}`}
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                          <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/0 transition-colors group-hover:bg-slate-950/20">
-                            <span className="rounded-full bg-white/0 px-3 py-2 text-xs font-semibold opacity-0 shadow-sm transition-all group-hover:bg-white/90 group-hover:text-slate-800 group-hover:opacity-100">
-                              View photo
-                            </span>
-                          </span>
-                        </button>
-                      ),
-                    )}
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-8 text-center text-sm text-slate-400">
-                    No secondary gallery assets yet.
-                  </div>
+              <span className="text-xs font-semibold text-slate-400">
+                {event.mediaUrls?.length ?? 0} assets
+              </span>
+            </div>
+            {event.mediaUrls && event.mediaUrls.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {event.mediaUrls.map((url, index) =>
+                  /\.mp4($|\?)/i.test(url) ? (
+                    url === selectedVideoUrl ? (
+                      <LazyVideo
+                        key={url}
+                        src={url}
+                        preload="metadata"
+                        loadOnClick={false}
+                        className="aspect-video w-full rounded-xl"
+                      />
+                    ) : (
+                      <VideoPosterTile
+                        key={url}
+                        onClick={() => setSelectedVideoUrl(url)}
+                        label={"Play event video " + (index + 1)}
+                        className="aspect-video w-full rounded-xl border border-slate-100"
+                      />
+                    )
+                  ) : (
+                    <button
+                      key={url}
+                      type="button"
+                      onClick={() => setLightbox(url)}
+                      className="group relative aspect-video overflow-hidden rounded-xl border border-slate-100 bg-slate-50 text-left"
+                    >
+                      <OptimizedImage
+                        src={url}
+                        alt={`Event photo ${index + 1}`}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/0 transition-colors group-hover:bg-slate-950/20">
+                        <span className="rounded-full bg-white/0 px-3 py-2 text-xs font-semibold opacity-0 shadow-sm transition-all group-hover:bg-white/90 group-hover:text-slate-800 group-hover:opacity-100">
+                          View photo
+                        </span>
+                      </span>
+                    </button>
+                  ),
                 )}
-              </>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-8 text-center text-sm text-slate-400">
+                No secondary gallery assets yet.
+              </div>
             )}
           </div>
         </div>
@@ -16713,6 +16734,8 @@ export interface SystemSettings {
 
   institution: string;
 
+  feedbackFormUrl: string;
+
   heroImageUrls: string[];
 
   carouselSlides: CarouselSlide[];
@@ -16758,6 +16781,17 @@ export function AdminSettingsPage({
   const [posterUploadSlots, setPosterUploadSlots] = useState<
     Record<number, UploadSlot>
   >({});
+
+  const [feedbackFormDraft, setFeedbackFormDraft] = useState(
+    settings.feedbackFormUrl,
+  );
+
+  const [feedbackFormError, setFeedbackFormError] = useState("");
+
+  useEffect(() => {
+    setFeedbackFormDraft(settings.feedbackFormUrl);
+    setFeedbackFormError("");
+  }, [settings.feedbackFormUrl]);
 
   const isPublicMediaUrl = (value?: string) =>
     !!value && value.startsWith("https://") && !value.startsWith("blob:");
@@ -16899,6 +16933,18 @@ export function AdminSettingsPage({
   const update = (patch: Partial<SystemSettings>) =>
     onSave({ ...settings, ...patch });
 
+  const saveFeedbackFormUrl = () => {
+    const value = feedbackFormDraft.trim();
+    if (value && !isGoogleFormsResponderUrl(value)) {
+      setFeedbackFormError(
+        "Enter a Google Forms responder link, not an edit link.",
+      );
+      return;
+    }
+    setFeedbackFormError("");
+    update({ feedbackFormUrl: value });
+  };
+
   const toggle = (
     k: "finesEnabled" | "showFees" | "allowExcuseRequests" | "requirePhotoId",
   ) => onSave({ ...settings, [k]: !settings[k] });
@@ -17012,6 +17058,65 @@ export function AdminSettingsPage({
             {!(settings.finesEnabled && settings.showFees) &&
               " — enable fines and fee visibility when the payment period opens"}
           </p>
+        </div>
+      </div>
+
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+        Help &amp; Feedback
+      </p>
+      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
+        <div className="px-5 py-4">
+          <label
+            htmlFor="system-feedback-form-url"
+            className="mb-1.5 block text-sm font-semibold text-slate-900"
+          >
+            Google Forms responder link
+          </label>
+          <p className="mb-3 text-xs leading-relaxed text-slate-500">
+            Students use this link to send system feedback. Google controls who
+            can edit the form; never enter its private edit link here.
+          </p>
+          <input
+            id="system-feedback-form-url"
+            type="url"
+            value={feedbackFormDraft}
+            onChange={(event) => {
+              setFeedbackFormDraft(event.target.value);
+              setFeedbackFormError("");
+            }}
+            placeholder="https://docs.google.com/forms/d/e/.../viewform"
+            className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+          />
+          {feedbackFormError && (
+            <p className="mt-2 text-xs font-medium text-rose-700" role="alert">
+              {feedbackFormError}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={saveFeedbackFormUrl}
+              className="h-9 rounded-lg bg-emerald-700 px-3 text-xs font-semibold text-white transition-colors hover:bg-emerald-800"
+            >
+              Save link
+            </button>
+            {settings.feedbackFormUrl &&
+              isGoogleFormsResponderUrl(settings.feedbackFormUrl) && (
+                <a
+                  href={settings.feedbackFormUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  Open responder form
+                </a>
+              )}
+            <span className="text-xs text-slate-400">
+              {feedbackFormDraft === settings.feedbackFormUrl
+                ? "Current link"
+                : "Unsaved changes"}
+            </span>
+          </div>
         </div>
       </div>
 
