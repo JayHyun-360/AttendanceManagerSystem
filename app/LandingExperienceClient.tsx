@@ -1931,7 +1931,7 @@ export function Sidebar({
           l: "Attendance",
           I: Icons.CheckCircle,
         },
-        { p: "my-fines" as Page, l: "My Fines", I: Icons.Peso },
+        { p: "my-fines" as Page, l: "Attendance Charges", I: Icons.Peso },
         { p: "profile" as Page, l: "Profile", I: Icons.User },
       ];
 
@@ -4592,7 +4592,7 @@ export function MyFinesPage({
     return (
       <PageShell>
         <BackButton onClick={onBack} label="Back to Home" />
-        <PageHeader title="My Fines" />
+        <PageHeader title="Attendance Charges" />
         <div className="bg-white border border-slate-100 rounded-xl px-5 py-12 text-center">
           <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3 text-slate-400">
             <Icons.Peso />
@@ -4612,7 +4612,7 @@ export function MyFinesPage({
     <PageShell>
       <BackButton onClick={onBack} label="Back to Home" />
       <PageHeader
-        title="My Fines"
+        title="Attendance Charges"
         subtitle="Outstanding fees from missed events."
       />
       {fines.length === 0 ? (

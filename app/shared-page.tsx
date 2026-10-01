@@ -7322,9 +7322,7 @@ function EventDetailPageView({
 
               <div className="space-y-2 rounded-xl border border-slate-100 p-4">
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                  {canSeeFees || role === "admin"
-                    ? "Session & fines"
-                    : "Session details"}
+                  Attendance details
                 </p>
                 <p className="text-sm text-slate-600">
                   {event.multiSession
