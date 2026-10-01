@@ -12591,13 +12591,17 @@ function CameraScanner({
         dbId: attendance.recordId,
       };
 
-      setSweeping(true);
-
-      setTimeout(() => {
+      if (attendance.outcome === "success") {
+        setSweeping(true);
+        setTimeout(() => {
+          setSweeping(false);
+          setResult(rec);
+          onResult(rec);
+        }, 700);
+      } else {
         setResult(rec);
-
         onResult(rec);
-      }, 700);
+      }
     } catch (caughtError) {
       console.error("Failed to record QR attendance", caughtError);
 
@@ -12733,12 +12737,11 @@ function CameraScanner({
   const retryCamera = () => {
     scannedRef.current = false;
 
+    setSweeping(false);
+
     setCamError(null);
-
     setScanError(null);
-
     setResult(null);
-
     setCameraAttempt((attempt) => attempt + 1);
   };
 
@@ -12814,23 +12817,16 @@ function CameraScanner({
             {}
             <div className="scanner-frame relative w-[min(72vw,18rem)] aspect-square sm:w-[min(52vw,20rem)]">
               {}
-              <div
-                className={`absolute inset-x-0 h-[2px] rounded-full ${
-                  sweeping ? "scan-sweep" : "scanner-idle-sweep"
-                }`}
-                style={{
-                  top: sweeping ? "8%" : "50%",
-
-                  background:
-                    "linear-gradient(90deg, transparent 0%, rgba(74,222,128,0.9) 20%, #34d399 50%, rgba(74,222,128,0.9) 80%, transparent 100%)",
-
-                  boxShadow: "0 0 10px 2px rgba(74,222,128,0.55)",
-
-                  opacity: sweeping ? 1 : 0.6,
-
-                  transition: sweeping ? "none" : "opacity 0.3s",
-                }}
-              />
+              {sweeping && (
+                <div
+                  className="scan-sweep absolute inset-x-0 top-[8%] h-[2px] rounded-full"
+                  style={{
+                    background:
+                      "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.88) 20%, #fff 50%, rgba(255,255,255,0.88) 80%, transparent 100%)",
+                    boxShadow: "0 0 12px 2px rgba(255,255,255,0.7)",
+                  }}
+                />
+              )}
               {}
               {[
                 "top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-lg",
@@ -12843,7 +12839,7 @@ function CameraScanner({
               ].map((cls, i) => (
                 <div
                   key={i}
-                  className={`absolute w-8 h-8 border-emerald-400 ${cls}`}
+                  className={`absolute w-8 h-8 border-white/80 ${cls}`}
                 />
               ))}
             </div>
@@ -12853,8 +12849,8 @@ function CameraScanner({
                   Align the QR code inside the frame
                 </p>
                 <p className="flex items-center gap-1.5 text-white/60 text-xs font-medium">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 scanner-status-dot" />
-                  Scanning automatically
+                  <span className="h-1.5 w-1.5 rounded-full bg-white/80" />
+                  Camera ready · Scanning automatically
                 </p>
               </div>
             )}

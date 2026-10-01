@@ -185,7 +185,7 @@ textarea {
   animation: scan-sweep 0.65s cubic-bezier(0.4, 0, 0.2, 1) 1 forwards;
 }
 
-/* Camera scanner entrance, idle scan feedback, and result motion */
+/* Camera scanner entrance and result motion */
 @keyframes scanner-enter {
   from {
     opacity: 0;
@@ -200,38 +200,8 @@ textarea {
   animation: scanner-enter 0.28s ease-out both;
 }
 
-@keyframes scanner-idle-sweep {
-  0%,
-  100% {
-    top: 14%;
-    opacity: 0.45;
-  }
-  50% {
-    top: 86%;
-    opacity: 0.85;
-  }
-}
-.scanner-idle-sweep {
-  animation: scanner-idle-sweep 2.8s ease-in-out infinite;
-}
-
 .scanner-frame {
-  filter: drop-shadow(0 0 18px rgba(52, 211, 153, 0.16));
-}
-
-@keyframes scanner-status-dot {
-  0%,
-  100% {
-    opacity: 0.45;
-    transform: scale(0.9);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.15);
-  }
-}
-.scanner-status-dot {
-  animation: scanner-status-dot 1.6s ease-in-out infinite;
+  filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.1));
 }
 
 @keyframes scanner-state-enter {
@@ -262,11 +232,9 @@ textarea {
   animation: scanner-result-icon 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-
 @media (prefers-reduced-motion: reduce) {
   .scanner-enter,
-  .scanner-idle-sweep,
-  .scanner-status-dot,
+  .scan-sweep,
   .scanner-state-enter,
   .scanner-result-icon {
     animation: none !important;
