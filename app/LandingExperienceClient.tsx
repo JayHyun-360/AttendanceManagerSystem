@@ -171,7 +171,7 @@ export type Page = string;
 
 export type Role = "student" | "admin" | null;
 export type FineStatus = "unpaid" | "paid" | "excused";
-export type EventStatus = "active" | "upcoming" | "closed";
+export type EventStatus = "active" | "upcoming" | "closed" | "cancelled";
 
 export interface User {
   firstName: string;

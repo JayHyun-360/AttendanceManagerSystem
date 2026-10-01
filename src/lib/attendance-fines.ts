@@ -12,6 +12,9 @@ export interface FineEventLike {
   program?: string | null;
   status?: string | null;
   multi_session?: boolean | null;
+  end_time?: string | null;
+  morning_end?: string | null;
+  afternoon_end?: string | null;
   sanctions_enabled?: boolean | null;
   absent_fine?: number | null;
   late_fine?: number | null;
@@ -73,6 +76,61 @@ export function eventSessions(event: FineEventLike): SessionLabel[] {
   return event.multi_session ? ["morning", "afternoon"] : ["morning"];
 }
 
+function getManilaClock(now: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const value = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+
+  return {
+    date: `${value("year")}-${value("month")}-${value("day")}`,
+    seconds:
+      Number(value("hour")) * 3600 +
+      Number(value("minute")) * 60 +
+      Number(value("second")),
+  };
+}
+
+export function getSchoolDate(now = new Date()) {
+  return getManilaClock(now).date;
+}
+
+export function isAttendanceSessionComplete(
+  event: FineEventLike,
+  session: SessionLabel,
+  now = new Date(),
+) {
+  const clock = getManilaClock(now);
+  if (event.event_date < clock.date) return true;
+  if (event.event_date > clock.date) return false;
+
+  const sessionEnd =
+    session === "afternoon"
+      ? event.afternoon_end
+      : event.multi_session
+        ? event.morning_end
+        : (event.morning_end ?? event.end_time);
+
+  if (!sessionEnd) return false;
+  const match = sessionEnd.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (!match) return false;
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const second = Number(match[3] ?? 0);
+  if (hour > 23 || minute > 59 || second > 59) return false;
+
+  return hour * 3600 + minute * 60 + second <= clock.seconds;
+}
+
 export function sessionFineAmount(
   event: FineEventLike,
   session: SessionLabel,
@@ -96,7 +154,7 @@ export function buildAttendanceSessionRecords(
   scans: FineScanLike[],
   fines: FineRowLike[],
   studentProgram?: string | null,
-  today = new Date().toISOString().slice(0, 10),
+  today = getSchoolDate(),
   finesEnabled = false,
   approvedExcuseKeys: ReadonlySet<string> = new Set(),
 ): AttendanceSessionRecord[] {
@@ -104,6 +162,7 @@ export function buildAttendanceSessionRecords(
     (event) =>
       event.event_date <= today &&
       event.status !== "upcoming" &&
+      event.status !== "cancelled" &&
       (!event.program ||
         event.program === "All Programs" ||
         event.program === studentProgram),
@@ -126,41 +185,45 @@ export function buildAttendanceSessionRecords(
   );
 
   return applicableEvents.flatMap((event) =>
-    eventSessions(event).map((sessionLabel) => {
-      const key = `${event.id}:${sessionLabel}`;
-      const scan = scanByKey.get(key);
-      const linkedFine =
-        (scan && fineByScan.get(scan.id)) ?? fineByKey.get(key);
-      const status = scan?.status ?? "no_record";
-      const excused = approvedExcuseKeys.has(key);
-      const display = getAttendanceDisplayState(
-        status,
-        !!event.sanctions_enabled,
-        excused,
-      );
-      const countedFine = excused
-        ? 0
-        : linkedFine
-          ? linkedFine.status === "unpaid"
-            ? Number(linkedFine.amount ?? 0)
-            : 0
-          : finesEnabled
-            ? sessionFineAmount(event, sessionLabel, status)
-            : 0;
-      return {
-        key,
-        eventId: event.id,
-        sessionLabel,
-        status,
-        excused,
-        scan,
-        fineId: linkedFine?.id,
-        fineAmount: countedFine,
-        fineStatus: linkedFine?.status,
-        sanctioned: display.sanctioned,
-        displayLabel: display.label,
-      };
-    }),
+    eventSessions(event)
+      .filter((sessionLabel) =>
+        isAttendanceSessionComplete(event, sessionLabel),
+      )
+      .map((sessionLabel) => {
+        const key = `${event.id}:${sessionLabel}`;
+        const scan = scanByKey.get(key);
+        const linkedFine =
+          (scan && fineByScan.get(scan.id)) ?? fineByKey.get(key);
+        const status = scan?.status ?? "no_record";
+        const excused = approvedExcuseKeys.has(key);
+        const display = getAttendanceDisplayState(
+          status,
+          !!event.sanctions_enabled,
+          excused,
+        );
+        const countedFine = excused
+          ? 0
+          : linkedFine
+            ? linkedFine.status === "unpaid"
+              ? Number(linkedFine.amount ?? 0)
+              : 0
+            : finesEnabled
+              ? sessionFineAmount(event, sessionLabel, status)
+              : 0;
+        return {
+          key,
+          eventId: event.id,
+          sessionLabel,
+          status,
+          excused,
+          scan,
+          fineId: linkedFine?.id,
+          fineAmount: countedFine,
+          fineStatus: linkedFine?.status,
+          sanctioned: display.sanctioned,
+          displayLabel: display.label,
+        };
+      }),
   );
 }
 

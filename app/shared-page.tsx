@@ -778,6 +778,7 @@ import { recordAttendance } from "@/lib/attendance";
 
 import {
   buildAttendanceSessionRecords,
+  getSchoolDate,
   type FineEventLike,
   type FineRowLike,
   type FineScanLike,
@@ -1189,7 +1190,7 @@ export type Role = "student" | "admin" | null;
 
 export type FineStatus = "unpaid" | "paid" | "excused";
 
-export type EventStatus = "active" | "upcoming" | "closed";
+export type EventStatus = "active" | "upcoming" | "closed" | "cancelled";
 
 export interface User {
   firstName: string;
@@ -1229,6 +1230,8 @@ export interface EventData {
   date: string;
 
   time: string;
+
+  endTime?: string;
 
   location: string;
 
@@ -2658,6 +2661,12 @@ function Badge({
       cls: "bg-slate-100 text-slate-500 ring-1 ring-slate-200",
 
       label: "Closed",
+    },
+
+    cancelled: {
+      cls: "bg-rose-50 text-rose-700 ring-1 ring-rose-200",
+
+      label: "Cancelled",
     },
 
     present: {
@@ -6925,6 +6934,8 @@ export function EventsPage({
           { k: "upcoming", l: "Upcoming" },
 
           { k: "closed", l: "Closed" },
+
+          { k: "cancelled", l: "Cancelled" },
         ].map((f) => (
           <button
             key={f.k}
@@ -7756,7 +7767,9 @@ function EventDetailPageView({
                     ? "Live"
                     : event.status === "closed"
                       ? "Closed"
-                      : "Upcoming"}
+                      : event.status === "cancelled"
+                        ? "Cancelled"
+                        : "Upcoming"}
                 </span>
               </div>
 
@@ -9405,6 +9418,16 @@ export function AdminDashboard({
       classes: "text-slate-600 bg-slate-100 border border-slate-200",
 
       dotClass: "bg-slate-500",
+    },
+
+    cancelled: {
+      label: "Cancelled",
+
+      message: "was cancelled",
+
+      classes: "text-rose-700 bg-rose-50 border border-rose-200",
+
+      dotClass: "bg-rose-500",
     },
   };
 
@@ -11105,6 +11128,43 @@ export function AdminEventsPage({
         return;
       }
 
+      if (
+        status === "closed" &&
+        !window.confirm(
+          `Close ${current.title} now? QR check-in will stop immediately. Sessions that have not ended will not count as absent yet.`,
+        )
+      ) {
+        return;
+      }
+
+      if (status === "cancelled") {
+        const { count, error: attendanceError } = await supabase
+          .from("attendance_scans")
+          .select("id", { count: "exact", head: true })
+          .eq("event_id", id);
+
+        if (attendanceError) {
+          console.error(attendanceError);
+          toast.error("Could not verify attendance before cancelling.");
+          return;
+        }
+
+        if (count) {
+          toast.error(
+            "This event already has attendance records. Close it instead of cancelling.",
+          );
+          return;
+        }
+
+        if (
+          !window.confirm(
+            `Cancel ${current.title}? It will be excluded from attendance totals and no absences will be generated.`,
+          )
+        ) {
+          return;
+        }
+      }
+
       const payload = {
         status,
 
@@ -11157,8 +11217,18 @@ export function AdminEventsPage({
     label: string;
 
     icon: React.ReactNode;
-  }[] =>
-    [
+  }[] => {
+    if (current === "cancelled") {
+      return [
+        {
+          status: "upcoming",
+          label: "Restore as Upcoming",
+          icon: <Icons.Calendar />,
+        },
+      ];
+    }
+
+    return [
       {
         status: "active" as EventStatus,
 
@@ -11182,7 +11252,16 @@ export function AdminEventsPage({
 
         icon: <Icons.Check />,
       },
+
+      {
+        status: "cancelled" as EventStatus,
+
+        label: "Cancel Event",
+
+        icon: <Icons.XCircle />,
+      },
     ].filter((o) => o.status !== current);
+  };
 
   const activeDragEvent = events.find((event) => event.id === activeDragId);
 
@@ -12220,6 +12299,8 @@ export function AdminEventsPage({
                               label: o.label,
 
                               icon: o.icon,
+
+                              danger: o.status === "cancelled",
 
                               onClick: () => setStatus(e.id, o.status),
                             })),
@@ -13363,7 +13444,11 @@ export function AdminScannerPage({
                   <p className="text-xs text-slate-400 mt-1">
                     {selectedEvent.status === "active"
                       ? "Live now"
-                      : "Upcoming"}
+                      : selectedEvent.status === "closed"
+                        ? "Closed"
+                        : selectedEvent.status === "cancelled"
+                          ? "Cancelled"
+                          : "Upcoming"}
                   </p>
                 </div>
                 <div className="space-y-3 text-sm">
@@ -13713,6 +13798,12 @@ export function AdminAttendeesPage({
           id: event.id,
 
           event_date: event.date,
+
+          end_time: event.endTime,
+
+          morning_end: event.morningEnd,
+
+          afternoon_end: event.afternoonEnd,
 
           program: event.program,
 

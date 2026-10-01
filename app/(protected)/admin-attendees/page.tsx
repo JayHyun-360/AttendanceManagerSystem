@@ -100,6 +100,7 @@ export default function AdminAttendeesRoutePage() {
             row.start_time && row.end_time
               ? `${row.start_time}–${row.end_time}`
               : "",
+          endTime: row.end_time ?? undefined,
           location: row.location,
           description: row.description,
           program: row.program || "All Programs",
@@ -118,6 +119,8 @@ export default function AdminAttendeesRoutePage() {
               ? row.image_url
               : undefined,
           multiSession: Boolean(row.multi_session),
+          morningEnd: row.morning_end ?? undefined,
+          afternoonEnd: row.afternoon_end ?? undefined,
           sanctionsEnabled: Boolean(row.sanctions_enabled),
           absentFine: finesEnabled ? Number(row.absent_fine ?? 0) : 0,
           lateFine: finesEnabled ? Number(row.late_fine ?? 0) : 0,

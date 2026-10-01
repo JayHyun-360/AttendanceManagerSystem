@@ -22,7 +22,7 @@ export default function AdminDashboardRoute() {
   const [featuredEventTitle, setFeaturedEventTitle] =
     useState<string>("Adesse overview");
   const [featuredEventStatus, setFeaturedEventStatus] = useState<
-    "active" | "upcoming" | "closed"
+    "active" | "upcoming" | "closed" | "cancelled"
   >("upcoming");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -135,8 +135,11 @@ export default function AdminDashboardRoute() {
         setRecentScans(recent);
         setFeaturedEventTitle(featuredRow?.title || "Adesse overview");
         setFeaturedEventStatus(
-          (featuredRow?.status as "active" | "upcoming" | "closed") ??
-            "upcoming",
+          (featuredRow?.status as
+            | "active"
+            | "upcoming"
+            | "closed"
+            | "cancelled") ?? "upcoming",
         );
       } catch (caughtError) {
         console.error(caughtError);

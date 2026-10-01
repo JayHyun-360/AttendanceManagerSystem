@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { uploadExcuseAttachment } from "@/lib/uploadImage";
 import {
   buildAttendanceSessionRecords,
+  getSchoolDate,
   type FineEventLike,
   type FineRowLike,
   type FineScanLike,
@@ -218,6 +219,7 @@ export default function AttendanceHistoryRoutePage() {
             if (
               event.event_date > todayKey ||
               event.status === "upcoming" ||
+              event.status === "cancelled" ||
               (event.program &&
                 event.program !== "All Programs" &&
                 event.program !== profileResult.data?.program)
@@ -256,7 +258,7 @@ export default function AttendanceHistoryRoutePage() {
           (attendanceResult.data ?? []) as FineScanLike[],
           (finesResult.data ?? []) as FineRowLike[],
           profileResult.data?.program,
-          new Date().toISOString().slice(0, 10),
+          getSchoolDate(),
           Boolean(
             (settingsResult.data?.settings as { finesEnabled?: boolean } | null)
               ?.finesEnabled,

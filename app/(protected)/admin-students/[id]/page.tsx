@@ -17,7 +17,10 @@ import { supabase } from "@/lib/supabase";
 import { getPublicSystemSettings } from "@/lib/systemSettings";
 import { recordAttendance, type AttendanceStatus } from "@/lib/attendance";
 import { useProtectedUser } from "../../layout";
-import { buildAttendanceSessionRecords } from "@/lib/attendance-fines";
+import {
+  buildAttendanceSessionRecords,
+  getSchoolDate,
+} from "@/lib/attendance-fines";
 
 interface StudentDetail {
   id: string;
@@ -39,7 +42,7 @@ interface AttendanceEvent {
   id: string;
   title: string;
   date: string;
-  status: "upcoming" | "active" | "closed";
+  status: "upcoming" | "active" | "closed" | "cancelled";
   multiSession: boolean;
   sanctionsEnabled: boolean;
   morningStart?: string | null;
@@ -236,7 +239,7 @@ export default function StudentDetailRoutePage() {
         supabase
           .from("events")
           .select(
-            "id, title, event_date, program, status, multi_session, sanctions_enabled, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+            "id, title, event_date, end_time, morning_end, afternoon_end, program, status, multi_session, sanctions_enabled, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
           ),
         supabase
           .from("attendance_scans")
@@ -276,7 +279,7 @@ export default function StudentDetailRoutePage() {
         scansResult.data ?? [],
         finesResult.data ?? [],
         student?.program,
-        new Date().toISOString().slice(0, 10),
+        getSchoolDate(),
         Boolean(
           (settingsResult.data?.settings as { finesEnabled?: boolean } | null)
             ?.finesEnabled,
@@ -451,7 +454,9 @@ export default function StudentDetailRoutePage() {
     `${selectedEventId}:${sessionLabel}`,
   );
   const sanctionStatus =
-    !selectedEvent?.sanctionsEnabled || isCheckingAttendance
+    !selectedEvent?.sanctionsEnabled ||
+    selectedEvent.status === "cancelled" ||
+    isCheckingAttendance
       ? null
       : approvedExcuseForSession
         ? "Excused"
@@ -472,6 +477,11 @@ export default function StudentDetailRoutePage() {
     }
 
     const isClosedEvent = selectedEvent.status === "closed";
+
+    if (selectedEvent.status === "cancelled") {
+      toast.error("Attendance cannot be recorded for a cancelled event.");
+      return;
+    }
 
     if (isClosedEvent && !isInferredAbsence) {
       toast.error(
@@ -881,6 +891,7 @@ export default function StudentDetailRoutePage() {
                       <option key={event.id} value={event.id}>
                         {event.title} · {event.date}
                         {event.status === "closed" ? " · Closed" : ""}
+                        {event.status === "cancelled" ? " · Cancelled" : ""}
                       </option>
                     ))}
                   </select>
@@ -893,7 +904,8 @@ export default function StudentDetailRoutePage() {
                   <select
                     value={attendanceStatus}
                     disabled={
-                      selectedEvent?.status === "closed" && !isInferredAbsence
+                      selectedEvent?.status === "cancelled" ||
+                      (selectedEvent?.status === "closed" && !isInferredAbsence)
                     }
                     onChange={(event) =>
                       setAttendanceStatus(
@@ -904,9 +916,10 @@ export default function StudentDetailRoutePage() {
                   >
                     <option value="present">Present</option>
                     <option value="late">Late</option>
-                    {selectedEvent?.status !== "closed" && (
-                      <option value="absent">Absent</option>
-                    )}
+                    {selectedEvent?.status !== "closed" &&
+                      selectedEvent?.status !== "cancelled" && (
+                        <option value="absent">Absent</option>
+                      )}
                   </select>
                 </label>
               </div>
@@ -951,6 +964,11 @@ export default function StudentDetailRoutePage() {
                 <p className="mt-4 text-sm text-slate-500">
                   Checking existing attendance...
                 </p>
+              ) : selectedEvent?.status === "cancelled" ? (
+                <div className="mt-4 rounded-2xl border border-rose-100 bg-rose-50/70 p-4 text-sm leading-relaxed text-rose-800">
+                  This event was cancelled. Attendance cannot be recorded for
+                  it.
+                </div>
               ) : selectedEvent?.status === "closed" && isInferredAbsence ? (
                 <div className="mt-4 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm">
                   <div className="flex items-start gap-3 border-b border-emerald-100 bg-emerald-50/70 p-4">

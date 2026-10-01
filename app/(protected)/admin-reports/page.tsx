@@ -10,6 +10,7 @@ import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 import {
   buildAttendanceSessionRecords,
+  getSchoolDate,
   type FineEventLike,
   type FineRowLike,
   type FineScanLike,
@@ -159,7 +160,7 @@ export default function AdminReportsRoutePage() {
               (fine: any) => fine.student_id === student.id,
             ) as FineRowLike[],
             student.program,
-            new Date().toISOString().slice(0, 10),
+            getSchoolDate(),
             finesEnabled,
             approvedExcuseKeys,
           ),

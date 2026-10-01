@@ -11,6 +11,7 @@ import { subscribeToTableChanges } from "@/lib/realtime";
 import { useProtectedUser } from "../layout";
 import {
   buildAttendanceSessionRecords,
+  getSchoolDate,
   type FineEventLike,
   type FineRowLike,
   type FineScanLike,
@@ -67,7 +68,7 @@ export default function MyFinesRoutePage() {
           supabase
             .from("events")
             .select(
-              "id, title, event_date, status, program, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+              "id, title, event_date, end_time, morning_end, afternoon_end, status, program, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
             ),
           getPublicSystemSettings(),
           supabase
@@ -109,7 +110,7 @@ export default function MyFinesRoutePage() {
             (scans ?? []) as FineScanLike[],
             (data ?? []) as FineRowLike[],
             profile?.program,
-            new Date().toISOString().slice(0, 10),
+            getSchoolDate(),
             Boolean(
               (settings?.settings as { finesEnabled?: boolean } | null)
                 ?.finesEnabled,

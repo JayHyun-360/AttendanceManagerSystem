@@ -45,6 +45,7 @@ export default function AdminScannerRoutePage() {
                 row.start_time && row.end_time
                   ? `${row.start_time}–${row.end_time}`
                   : "",
+              endTime: row.end_time ?? row.endTime ?? undefined,
               location: row.location,
               description: row.description,
               program: row.program || "All Programs",
