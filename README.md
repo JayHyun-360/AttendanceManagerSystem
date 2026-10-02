@@ -14,7 +14,7 @@ Use your own Supabase development or test project. Do not connect this applicati
 
 ### Requirements
 
-- Node.js 20.9 or newer
+- Node.js 22 (pinned by `.mise.toml`)
 - pnpm
 - A Supabase development/test project
 
@@ -40,6 +40,21 @@ Edit `.env.local` and enter your own project's URL and anon key. These `NEXT_PUB
 2. Apply the SQL files in `supabase/migrations/` to your own test project's SQL Editor in ascending filename order, one file at a time. Apply the two `020` files in lexical filename order. Because migration version `020` is duplicated, do not use `supabase db push` until the migration history has been reconciled. Confirm the selected Supabase project is yours before running SQL.
 3. Copy the test project's URL and anon key from its API settings into `.env.local`.
 
+### Create the first administrator
+
+New accounts are created as students, and the application does not allow users to grant themselves the admin role. After signing up with your own test account, use the SQL Editor in your own Supabase project's dashboard as its project owner to promote that account. Confirm the account ID belongs to you before running the update:
+
+```sql
+update public.profiles
+set role = 'admin'
+where id = 'YOUR_OWN_AUTH_USER_UUID'
+returning id, email, role;
+```
+
+This owner-only bootstrap does not weaken the app's RLS or profile-role protection. Do not run it against another person's or a production project.
+
+The private-ID migration is intended for fresh classmate/test projects. It does not move existing `id_photo_url` objects out of the public bucket. If using a database with existing ID photos, first arrange an authorized copy into private storage and remove the old public objects; do not assume changing the application code revokes already-public URLs.
+
 ### Google sign-in
 
 Create your own Google OAuth client. In Google Cloud Console, add your Supabase project's callback URL as an authorized redirect URI:
@@ -60,8 +75,10 @@ pnpm dev
 
 Open <http://localhost:3000>.
 
-### Optional storage cleanup Edge Function
+Automatic event closure uses `pg_cron`. Enable the extension before applying migration 024; if it is enabled afterward, rerun that migration's scheduling block. The app can run without `pg_cron`, but events will not close automatically on a schedule.
 
-The cleanup worker is not required to run the application. If you choose to deploy it, install and authenticate the Supabase CLI, then follow [the worker guide](docs/storage-cleanup-worker.md) using only your own development/test project. The Supabase runtime supplies `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to the Edge Function. Create a unique `CLEANUP_FUNCTION_SECRET` and set it with the Supabase CLI secrets command for your test project. Do not add any of these server-side secrets to `.env.local`, `.env.example`, or client-exposed variables.
+### Deferred storage cleanup worker
+
+The cleanup worker is not required to run the application and is not currently operational: the repository does not yet create `storage_cleanup_queue` or enqueue work items. Do not deploy or schedule it until that schema and queue mechanism are implemented. See [the worker guide](docs/storage-cleanup-worker.md) for the current status.
 
 This is an educational/class project. Use your own test data, OAuth credentials, and Supabase project when running or modifying it.

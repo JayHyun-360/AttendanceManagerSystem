@@ -1,5 +1,7 @@
 # Supabase Storage Cleanup Worker
 
+> **Deferred: not operational.** No migration creates `public.storage_cleanup_queue`, and no app or database trigger enqueues cleanup rows. The function will fail when it queries the missing table. Do not deploy or schedule it yet. It is not required for normal application operation. The remaining notes describe the intended design only and must not be followed until the queue schema and producer are implemented and reviewed.
+
 This function processes rows in `public.storage_cleanup_queue` and removes only unreferenced objects from the `public-images` bucket. It waits at least 24 hours after a queue row is created, checks all known media-bearing tables, deletes through the Supabase Storage API, and records completion or failure.
 
 ## 1. Prepare a local Supabase Functions directory

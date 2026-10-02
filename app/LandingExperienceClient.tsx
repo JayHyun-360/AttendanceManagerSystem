@@ -146,8 +146,10 @@ import {
 } from "recharts";
 import QRCode from "qrcode";
 import { toast } from "sonner";
+import { PrivateIdImage } from "@/components/PrivateIdImage";
 import { supabase } from "@/lib/supabase";
 import {
+  deletePrivateIdImage,
   uploadEventVideo,
   uploadProfileImage,
   uploadPromotionalImage,
@@ -186,7 +188,7 @@ export interface User {
   role: Role;
   photoUrl?: string;
   coverPhotoUrl?: string;
-  idPhotoUrl?: string;
+  idPhotoPath?: string;
 }
 
 export interface EventData {
@@ -2899,7 +2901,7 @@ export interface OBForm {
   program: string;
   yearLevel: string;
   section: string;
-  idPhotoUrl?: string;
+  idPhotoPath?: string;
   agreedToTerms?: boolean;
 }
 
@@ -2925,13 +2927,6 @@ export function OnboardingPage({
   });
   const [agreed, setAgreed] = useState(false);
   const idPhotoRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    return () => {
-      if (f.idPhotoUrl) {
-        URL.revokeObjectURL(f.idPhotoUrl);
-      }
-    };
-  }, []);
   const set =
     (k: keyof OBForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -2973,7 +2968,7 @@ export function OnboardingPage({
       return f.program.trim().length > 0 && f.yearLevel.trim().length > 0;
     }
     if (step === 5) {
-      return !!f.idPhotoUrl;
+      return !!f.idPhotoPath;
     }
     if (step === 6) {
       return agreed;
@@ -3127,7 +3122,7 @@ export function OnboardingPage({
                     setIdPhotoUploadState("idle");
                     setF((p) => ({
                       ...p,
-                      idPhotoUrl: result.url,
+                      idPhotoPath: result.path,
                     }));
                   }}
                 />
@@ -3151,22 +3146,22 @@ export function OnboardingPage({
                       Try again
                     </button>
                   </div>
-                ) : f.idPhotoUrl ? (
+                ) : f.idPhotoPath ? (
                   <div
                     className="relative w-full rounded-xl overflow-hidden border-2 border-emerald-400"
                     style={{ aspectRatio: "16/10" }}
                   >
-                    <OptimizedImage
-                      src={f.idPhotoUrl}
+                    <PrivateIdImage
+                      path={f.idPhotoPath}
                       alt="School ID"
                       className="w-full h-full object-cover"
                     />
                     <button
                       onClick={() => {
-                        if (f.idPhotoUrl) {
-                          URL.revokeObjectURL(f.idPhotoUrl);
+                        if (f.idPhotoPath) {
+                          void deletePrivateIdImage(f.idPhotoPath);
                         }
-                        setF((p) => ({ ...p, idPhotoUrl: undefined }));
+                        setF((p) => ({ ...p, idPhotoPath: undefined }));
                       }}
                       className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
                     >
@@ -4968,7 +4963,7 @@ export function ProfilePage({
             )}
           </div>
         )}
-        {!isMod && user.idPhotoUrl && (
+        {!isMod && user.idPhotoPath && (
           <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mt-4">
             <div className="px-5 py-3.5 border-b border-slate-50 flex items-center justify-between">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
@@ -4979,8 +4974,8 @@ export function ProfilePage({
               </span>
             </div>
             <div className="p-4">
-              <OptimizedImage
-                src={user.idPhotoUrl}
+              <PrivateIdImage
+                path={user.idPhotoPath}
                 alt="School ID"
                 className="w-full rounded-lg object-cover max-h-48"
               />
@@ -8493,7 +8488,7 @@ export default function LandingExperienceClient({
             contactEmail: profile.contact_email ?? profile.email ?? "",
             role: profile.role ?? "student",
             photoUrl: profile.photo_url ?? undefined,
-            idPhotoUrl: profile.id_photo_url ?? undefined,
+            idPhotoPath: profile.id_photo_path ?? undefined,
           });
         }
       } catch (caughtError) {

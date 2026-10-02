@@ -1,4 +1,5 @@
 "use client";
+import { PrivateIdImage } from "@/components/PrivateIdImage";
 import { OptimizedImage } from "@/components/OptimizedImage";
 
 import { useEffect, useMemo, useState } from "react";
@@ -34,7 +35,7 @@ interface StudentDetail {
   email: string;
   photoUrl?: string;
   coverPhotoUrl?: string;
-  idPhotoUrl?: string;
+  idPhotoPath?: string;
   joinedDate: string;
 }
 
@@ -200,7 +201,7 @@ export default function StudentDetailRoutePage() {
           email: data.contact_email || data.email || "",
           photoUrl: data.photo_url || undefined,
           coverPhotoUrl: data.cover_photo_url || undefined,
-          idPhotoUrl: data.id_photo_url || undefined,
+          idPhotoPath: data.id_photo_path || undefined,
           joinedDate: new Date(data.created_at).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
@@ -1135,9 +1136,9 @@ export default function StudentDetailRoutePage() {
             </summary>
             <div className="border-t border-slate-100 p-5">
               <div className="relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50/80">
-                {student.idPhotoUrl ? (
-                  <OptimizedImage
-                    src={student.idPhotoUrl}
+                {student.idPhotoPath ? (
+                  <PrivateIdImage
+                    path={student.idPhotoPath}
                     alt="Student ID"
                     sizes="(max-width: 768px) 100vw, 33vw"
                     className="h-full w-full object-contain"
@@ -1155,9 +1156,9 @@ export default function StudentDetailRoutePage() {
               School ID Photo
             </p>
             <div className="relative mt-3 flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50/80">
-              {student.idPhotoUrl ? (
-                <OptimizedImage
-                  src={student.idPhotoUrl}
+              {student.idPhotoPath ? (
+                <PrivateIdImage
+                  path={student.idPhotoPath}
                   alt="Student ID"
                   sizes="(max-width: 768px) 100vw, 33vw"
                   className="h-full w-full object-contain"

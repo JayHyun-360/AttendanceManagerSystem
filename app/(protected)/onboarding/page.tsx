@@ -23,7 +23,7 @@ function getProfileSaveErrorMessage(error: {
 
   if (
     ["PGRST204", "42703"].includes(error.code ?? "") &&
-    message.toLowerCase().includes("id_photo_url")
+    message.toLowerCase().includes("id_photo_path")
   ) {
     return "The server is missing the ID-photo profile field. Contact your school administrator.";
   }
@@ -89,7 +89,7 @@ export default function OnboardingRoute() {
         validStudentId &&
         d.program.trim() &&
         d.yearLevel.trim() &&
-        d.idPhotoUrl &&
+        d.idPhotoPath &&
         d.agreedToTerms === true;
 
       if (!validProfile) {
@@ -111,7 +111,7 @@ export default function OnboardingRoute() {
         phone: d.phone.trim(),
         contact_email: d.contactEmail.trim(),
         photo_url: existingProfile?.photo_url ?? googleAvatarUrl ?? null,
-        id_photo_url: d.idPhotoUrl ?? null,
+        id_photo_path: d.idPhotoPath ?? null,
       };
       const { error } = await supabase
         .from("profiles")

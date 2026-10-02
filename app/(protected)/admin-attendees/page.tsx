@@ -154,7 +154,7 @@ export default function AdminAttendeesRoutePage() {
             phone: row.phone || "",
             email: row.contact_email || row.email || "",
             photoUrl: row.photo_url || undefined,
-            idPhotoUrl: row.id_photo_url || undefined,
+            idPhotoPath: row.id_photo_path || undefined,
             joinedDate: new Date(row.created_at).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",

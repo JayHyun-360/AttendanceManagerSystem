@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 
 import { ProfilePage, type User } from "../../shared-page"
 import { supabase } from "@/lib/supabase"
-import { deleteImages } from "@/lib/uploadImage"
+import { deleteImages, deletePrivateIdImage } from "@/lib/uploadImage"
 import { useProtectedUser } from "../layout"
 
 export default function ProfileRoutePage() {
@@ -53,10 +53,7 @@ export default function ProfileRoutePage() {
             nextUser.coverPhotoUrl && !nextUser.coverPhotoUrl.startsWith("blob:")
               ? nextUser.coverPhotoUrl
               : null,
-          id_photo_url:
-            nextUser.idPhotoUrl && !nextUser.idPhotoUrl.startsWith("blob:")
-              ? nextUser.idPhotoUrl
-              : null,
+          id_photo_path: nextUser.idPhotoPath ?? null,
         })
         .eq("id", authUserId)
       error = result.error
@@ -78,17 +75,18 @@ export default function ProfileRoutePage() {
     const nextMediaUrls = [
       nextUser.photoUrl,
       nextUser.coverPhotoUrl,
-      nextUser.idPhotoUrl,
     ].filter((url): url is string => !!url && !url.startsWith("blob:"))
     const previousMediaUrls = [
       user.photoUrl,
       user.coverPhotoUrl,
-      user.idPhotoUrl,
     ].filter((url): url is string => !!url && !url.startsWith("blob:"))
 
     const cleanupResults = await deleteImages(
       previousMediaUrls.filter((url) => !nextMediaUrls.includes(url)),
     )
+    if (user.idPhotoPath && user.idPhotoPath !== nextUser.idPhotoPath) {
+      cleanupResults.push(await deletePrivateIdImage(user.idPhotoPath))
+    }
     const failedCleanup = cleanupResults.filter((result) => !result.success)
     failedCleanup.forEach((result) =>
       console.error("Failed to delete profile media", result.error),

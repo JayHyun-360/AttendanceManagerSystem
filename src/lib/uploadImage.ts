@@ -4,6 +4,8 @@ export type UploadImageResult =
   | { url: string; path: string }
   | { error: string };
 
+export type PrivateImageUploadResult = { path: string } | { error: string };
+
 const MAX_PROMOTIONAL_IMAGE_INPUT_BYTES = 20 * 1024 * 1024;
 const MAX_PROMOTIONAL_IMAGE_OUTPUT_BYTES = 5 * 1024 * 1024;
 const MAX_PROFILE_IMAGE_OUTPUT_BYTES = 4 * 1024 * 1024;
@@ -126,7 +128,7 @@ export async function uploadProfileImage(
 
 export async function uploadVerificationImage(
   file: File,
-): Promise<UploadImageResult> {
+): Promise<PrivateImageUploadResult> {
   if (!file.type.startsWith("image/")) {
     return { error: "Choose an image file." };
   }
@@ -135,7 +137,42 @@ export async function uploadVerificationImage(
     return { error: "ID photos must be 20 MB or smaller." };
   }
 
-  return uploadImage(file);
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sign in before uploading an ID photo." };
+  }
+
+  const extension = file.name.includes(".")
+    ? file.name.slice(file.name.lastIndexOf("."))
+    : "";
+  const objectPath = `${user.id}/${Date.now()}-${crypto.randomUUID()}${extension}`;
+  const { error } = await supabase.storage
+    .from("id-verification")
+    .upload(objectPath, file, {
+      cacheControl: "300",
+      contentType: file.type,
+      upsert: false,
+    });
+
+  if (error) {
+    return { error: error.message || "ID photo upload failed." };
+  }
+
+  return { path: objectPath };
+}
+
+export async function deletePrivateIdImage(path: string) {
+  if (!path) return { success: true };
+
+  const { error } = await supabase.storage
+    .from("id-verification")
+    .remove([path]);
+
+  return error ? { success: false, error: error.message } : { success: true };
 }
 
 export async function uploadExcuseAttachment(

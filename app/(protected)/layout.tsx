@@ -291,7 +291,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
           coverPhotoUrl: profile.cover_photo_url ?? undefined,
 
-          idPhotoUrl: profile.id_photo_url ?? undefined,
+          idPhotoPath: profile.id_photo_path ?? undefined,
 
           qrVersion: Number(profile.qr_version ?? 1),
         };

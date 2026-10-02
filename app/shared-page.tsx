@@ -467,9 +467,9 @@ import { Skeleton } from "@/components/ui/skeleton";
                     </span>
                   </div>
                   <div className="mt-4 overflow-hidden rounded-xl bg-slate-100">
-                    {profile.idPhotoUrl ? (
-                      <OptimizedImage
-                        src={profile.idPhotoUrl}
+                    {profile.idPhotoPath ? (
+                      <PrivateIdImage
+                        path={profile.idPhotoPath}
                         alt="School ID"
                         className="h-[260px] w-full object-contain md:h-[360px]"
                       />
@@ -590,7 +590,7 @@ import { Skeleton } from "@/components/ui/skeleton";
                     role: Role;
                     photoUrl?: string;
                     coverPhotoUrl?: string;
-                    idPhotoUrl?: string;
+                    idPhotoPath?: string;
                   }
 
                   export interface EventData {
@@ -675,7 +675,7 @@ import { Skeleton } from "@/components/ui/skeleton";
                     phone: string;
                     email: string;
                     photoUrl?: string;
-                    idPhotoUrl?: string;
+                    idPhotoPath?: string;
                     joinedDate: string;
                   }
 
@@ -787,12 +787,15 @@ import {
 import { formatTime12Hour, formatTimeRange12Hour } from "@/lib/time";
 
 import {
+  deletePrivateIdImage,
   deleteImages,
   uploadEventVideo,
   uploadProfileImage,
   uploadPromotionalImage,
   uploadVerificationImage,
 } from "@/lib/uploadImage";
+
+import { PrivateIdImage } from "@/components/PrivateIdImage";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -1217,7 +1220,7 @@ export interface User {
 
   coverPhotoUrl?: string;
 
-  idPhotoUrl?: string;
+  idPhotoPath?: string;
 
   qrVersion?: number;
 }
@@ -1412,7 +1415,7 @@ export interface StudentProfile {
 
   photoUrl?: string;
 
-  idPhotoUrl?: string;
+  idPhotoPath?: string;
 
   joinedDate: string;
 }
@@ -5584,7 +5587,7 @@ export interface OBForm {
 
   section: string;
 
-  idPhotoUrl?: string;
+  idPhotoPath?: string;
 
   agreedToTerms?: boolean;
 }
@@ -5627,14 +5630,6 @@ export function OnboardingPage({
   const [agreed, setAgreed] = useState(false);
 
   const idPhotoRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    return () => {
-      if (f.idPhotoUrl) {
-        URL.revokeObjectURL(f.idPhotoUrl);
-      }
-    };
-  }, []);
 
   const set =
     (k: keyof OBForm) =>
@@ -5694,7 +5689,7 @@ export function OnboardingPage({
     }
 
     if (step === 5) {
-      return !!f.idPhotoUrl;
+      return !!f.idPhotoPath;
     }
 
     if (step === 6) {
@@ -5858,7 +5853,7 @@ export function OnboardingPage({
                       setF((p) => ({
                         ...p,
 
-                        idPhotoUrl: result.url,
+                        idPhotoPath: result.path,
                       }));
                     } catch (caughtError) {
                       setIdPhotoUploadState("error");
@@ -5891,23 +5886,23 @@ export function OnboardingPage({
                       Try again
                     </button>
                   </div>
-                ) : f.idPhotoUrl ? (
+                ) : f.idPhotoPath ? (
                   <div
                     className="relative w-full rounded-xl overflow-hidden border-2 border-emerald-400"
                     style={{ aspectRatio: "16/10" }}
                   >
-                    <OptimizedImage
-                      src={f.idPhotoUrl}
+                    <PrivateIdImage
+                      path={f.idPhotoPath}
                       alt="School ID"
                       className="w-full h-full object-cover"
                     />
                     <button
                       onClick={() => {
-                        if (f.idPhotoUrl) {
-                          URL.revokeObjectURL(f.idPhotoUrl);
+                        if (f.idPhotoPath) {
+                          void deletePrivateIdImage(f.idPhotoPath);
                         }
 
-                        setF((p) => ({ ...p, idPhotoUrl: undefined }));
+                        setF((p) => ({ ...p, idPhotoPath: undefined }));
                       }}
                       className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
                     >
@@ -9262,7 +9257,7 @@ export function ProfilePage({
             </section>
           )}
 
-          {!isMod && profile.idPhotoUrl && (
+          {!isMod && profile.idPhotoPath && (
             <>
               <details className="rounded-2xl border border-slate-100 bg-white shadow-sm md:hidden">
                 <summary className="flex cursor-pointer list-none items-center justify-between p-5 text-base font-semibold text-slate-900">
@@ -9274,8 +9269,8 @@ export function ProfilePage({
                 </summary>
                 <div className="border-t border-slate-100 p-5">
                   <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-slate-100 bg-slate-50/80">
-                    <OptimizedImage
-                      src={profile.idPhotoUrl}
+                    <PrivateIdImage
+                      path={profile.idPhotoPath}
                       alt="School ID"
                       className="h-full w-full object-contain"
                     />
@@ -9295,8 +9290,8 @@ export function ProfilePage({
                   </span>
                 </div>
                 <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-slate-100 bg-slate-50/80">
-                  <OptimizedImage
-                    src={profile.idPhotoUrl}
+                  <PrivateIdImage
+                    path={profile.idPhotoPath}
                     alt="School ID"
                     className="h-full w-full object-contain"
                   />
@@ -17732,7 +17727,7 @@ export default function LandingExperienceClient({
 
             photoUrl: profile.photo_url ?? undefined,
 
-            idPhotoUrl: profile.id_photo_url ?? undefined,
+            idPhotoPath: profile.id_photo_path ?? undefined,
           });
         }
       } catch (caughtError) {
