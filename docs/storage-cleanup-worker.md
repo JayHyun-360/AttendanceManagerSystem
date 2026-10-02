@@ -4,26 +4,22 @@ This function processes rows in `public.storage_cleanup_queue` and removes only 
 
 ## 1. Prepare a local Supabase Functions directory
 
-Use a temporary directory or your project directory. Do not paste the service-role key into source code.
+The function source is included at `supabase/functions/storage-cleanup/index.ts`. Run the following commands from the repository root. Do not paste the service-role key into source code.
 
-```bash
-mkdir -p supabase/functions/storage-cleanup
-cp /tmp/storage-cleanup-edge-function/index.ts \
-  supabase/functions/storage-cleanup/index.ts
-```
+If `supabase/config.toml` does not exist in your checkout, initialize the Supabase CLI configuration with `supabase init` before linking your test project.
 
 If you do not already have the Supabase CLI, install it using the official instructions:
 
 <https://supabase.com/docs/guides/cli>
 
-## 2. Log in and link the production project
+## 2. Log in and link your own development/test project
 
 ```bash
 supabase login
-supabase link --project-ref lbznngfvgebwagsfigni
+supabase link --project-ref YOUR_TEST_PROJECT_REF
 ```
 
-The project reference above comes from the Supabase project URL shown in the error message. Confirm that the linked project is the intended production project before deploying.
+Use a Supabase project that you own and created specifically for development/testing. Never link or deploy this worker to someone else's or a production project.
 
 ## 3. Create a private function secret
 
@@ -36,7 +32,8 @@ openssl rand -hex 32
 Copy the generated value. Then set it as a Supabase Function secret:
 
 ```bash
-supabase secrets set CLEANUP_FUNCTION_SECRET='PASTE_THE_RANDOM_VALUE_HERE'
+supabase secrets set CLEANUP_FUNCTION_SECRET='PASTE_THE_RANDOM_VALUE_HERE' \
+  --project-ref YOUR_TEST_PROJECT_REF
 ```
 
 Do not commit this value or send it in chat.
@@ -48,13 +45,13 @@ Do not commit this value or send it in chat.
 Because the function authenticates requests with its own secret header, disable the platform's default JWT requirement for this function:
 
 ```bash
-supabase functions deploy storage-cleanup --no-verify-jwt
+supabase functions deploy storage-cleanup --no-verify-jwt --project-ref YOUR_TEST_PROJECT_REF
 ```
 
 The deployed URL will be:
 
 ```text
-https://lbznngfvgebwagsfigni.supabase.co/functions/v1/storage-cleanup
+https://YOUR_TEST_PROJECT_REF.supabase.co/functions/v1/storage-cleanup
 ```
 
 ## 5. Test it manually
@@ -63,7 +60,7 @@ Use the same random secret value from step 3. The function intentionally waits 2
 
 ```bash
 curl --fail-with-body --request POST \
-  'https://lbznngfvgebwagsfigni.supabase.co/functions/v1/storage-cleanup' \
+  'https://YOUR_TEST_PROJECT_REF.supabase.co/functions/v1/storage-cleanup' \
   --header 'Content-Type: application/json' \
   --header 'x-cleanup-secret: PASTE_THE_RANDOM_VALUE_HERE' \
   --data '{"limit":25,"minimumAgeHours":0}'
@@ -111,11 +108,11 @@ In the Supabase Dashboard, enable these extensions if they are not already enabl
 - `pg_net`
 - `vault`
 
-Then run the following SQL **once**. Replace both placeholders. Use the same function secret from step 3 and your project's publishable key from **Project Settings → API**.
+Then run the following SQL **once in your own test project's SQL Editor**. Replace both placeholders. Use the same function secret from step 3 and your project's publishable key from **Project Settings → API**.
 
 ```sql
 select vault.create_secret(
-  'https://lbznngfvgebwagsfigni.supabase.co',
+  'https://YOUR_TEST_PROJECT_REF.supabase.co',
   'storage_cleanup_project_url'
 );
 

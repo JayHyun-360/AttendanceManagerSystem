@@ -6,6 +6,7 @@ node_modules/
 dist/
 .cache/
 .env*
+!.env.example
 .env.local
 .vite/
 vite.config.*.timestamp-*

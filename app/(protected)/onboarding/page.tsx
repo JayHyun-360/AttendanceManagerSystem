@@ -110,7 +110,6 @@ export default function OnboardingRoute() {
         section: d.section.trim(),
         phone: d.phone.trim(),
         contact_email: d.contactEmail.trim(),
-        role: existingProfile?.role ?? "student",
         photo_url: existingProfile?.photo_url ?? googleAvatarUrl ?? null,
         id_photo_url: d.idPhotoUrl ?? null,
       };

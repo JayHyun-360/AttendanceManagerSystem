@@ -497,7 +497,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "2nd Year",
     section: "IT-2A",
     phone: "09171234567",
-    email: "mls.santos@adesse.edu",
+    email: "student01@example.invalid",
     joinedDate: "Aug 12, 2026",
   },
   {
@@ -507,7 +507,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "1st Year",
     section: "CS-1B",
     phone: "09281234568",
-    email: "jc.delacruz@adesse.edu",
+    email: "student02@example.invalid",
     joinedDate: "Aug 13, 2026",
   },
   {
@@ -517,7 +517,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "3rd Year",
     section: "IT-3A",
     phone: "09391234569",
-    email: "am.reyes@adesse.edu",
+    email: "student03@example.invalid",
     joinedDate: "Aug 10, 2026",
   },
   {
@@ -527,7 +527,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "2nd Year",
     section: "CS-2A",
     phone: "09501234570",
-    email: "cm.mendoza@adesse.edu",
+    email: "student04@example.invalid",
     joinedDate: "Aug 14, 2026",
   },
   {
@@ -537,7 +537,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "2nd Year",
     section: "IT-2B",
     phone: "09611234571",
-    email: "jr.flores@adesse.edu",
+    email: "student05@example.invalid",
     joinedDate: "Aug 11, 2026",
   },
   {
@@ -547,7 +547,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "1st Year",
     section: "BA-1A",
     phone: "09721234572",
-    email: "ra.lim@adesse.edu",
+    email: "student06@example.invalid",
     joinedDate: "Aug 15, 2026",
   },
   {
@@ -557,7 +557,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "3rd Year",
     section: "IT-3B",
     phone: "09831234573",
-    email: "pn.torres@adesse.edu",
+    email: "student07@example.invalid",
     joinedDate: "Aug 10, 2026",
   },
   {
@@ -567,7 +567,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "1st Year",
     section: "CS-1A",
     phone: "09941234574",
-    email: "ej.bautista@adesse.edu",
+    email: "student08@example.invalid",
     joinedDate: "Aug 16, 2026",
   },
   {
@@ -577,7 +577,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "2nd Year",
     section: "BA-2A",
     phone: "09051234575",
-    email: "f.dizon@adesse.edu",
+    email: "student09@example.invalid",
     joinedDate: "Aug 12, 2026",
   },
   {
@@ -587,7 +587,7 @@ const ALL_STUDENTS: StudentProfile[] = [
     yearLevel: "1st Year",
     section: "IT-1B",
     phone: "09161234576",
-    email: "kr.castillo@adesse.edu",
+    email: "student10@example.invalid",
     joinedDate: "Aug 17, 2026",
   },
 ];
@@ -2773,7 +2773,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
+                      placeholder="name@example.invalid"
                       className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all"
                     />
                   </label>
@@ -3049,7 +3049,7 @@ export function OnboardingPage({
                   label="Email"
                   required
                   type="email"
-                  placeholder="e.g. student@email.com"
+                  placeholder="e.g. name@example.invalid"
                   value={f.contactEmail}
                   onChange={set("contactEmail")}
                 />
