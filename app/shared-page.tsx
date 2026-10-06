@@ -7825,6 +7825,16 @@ function EventDetailPageView({
                 </p>
               </div>
 
+              {role === "student" && event.status === "closed" && (
+                <StudentEventFeedback eventId={event.id} />
+              )}
+              {role === "admin" && event.status === "closed" && (
+                <AdminEventFeedbackPanel
+                  eventId={event.id}
+                  isActive={event.status === "closed"}
+                />
+              )}
+
               {role && event.status === "active" && (
                 <button
                   type="button"
