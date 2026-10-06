@@ -7,6 +7,7 @@ import { AdminEventsPage, type EventData, type Page } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { getPublicSystemSettings } from "@/lib/systemSettings";
 import { subscribeToTableChanges } from "@/lib/realtime";
+import { debounce } from "@/lib/debounce";
 import { useProtectedUser } from "../layout";
 
 function mapArchivedEvent(row: any): EventData {
@@ -185,21 +186,29 @@ export default function AdminEventsRoutePage() {
 
     void loadAdminEvents();
 
-    const eventsChannel = subscribeToTableChanges("events", () => {
+    const debouncedLoadAdminEvents = debounce(() => {
       if (!cancelled) {
         void loadAdminEvents();
         if (archivedLoaded) void loadArchivedEvents();
       }
-    });
+    }, 750);
+    const debouncedLoadAdminAttendance = debounce(() => {
+      if (!cancelled) void loadAdminEvents();
+    }, 750);
+
+    const eventsChannel = subscribeToTableChanges(
+      "events",
+      debouncedLoadAdminEvents,
+    );
     const attendanceChannel = subscribeToTableChanges(
       "attendance_scans",
-      () => {
-        if (!cancelled) void loadAdminEvents();
-      },
+      debouncedLoadAdminAttendance,
     );
 
     return () => {
       cancelled = true;
+      debouncedLoadAdminEvents.cancel();
+      debouncedLoadAdminAttendance.cancel();
       void eventsChannel.unsubscribe();
       void attendanceChannel.unsubscribe();
     };

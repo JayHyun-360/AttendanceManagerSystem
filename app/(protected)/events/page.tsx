@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EventsPage, type EventData, type Page } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
+import { debounce } from "@/lib/debounce";
 import { useProtectedUser } from "../layout";
 import { FeedbackState } from "@/components/ui/feedback";
 
@@ -86,7 +87,6 @@ export default function EventsRoutePage() {
           "start_time",
           "end_time",
           "image_url",
-          "media_urls",
           "program",
           "status",
           "multi_session",
@@ -138,7 +138,6 @@ export default function EventsRoutePage() {
               row.image_url && !row.image_url.startsWith("blob:")
                 ? row.image_url
                 : undefined,
-            mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
             multiSession: Boolean(row.multi_session),
             morningStart: row.morning_start ?? undefined,
             morningEnd: row.morning_end ?? undefined,
@@ -160,14 +159,17 @@ export default function EventsRoutePage() {
 
     void loadEvents();
 
+    const debouncedLoadEvents = debounce(() => {
+      if (!cancelled) void loadEvents();
+    }, 750);
+
     const eventsChannel = user
-      ? subscribeToTableChanges("events", () => {
-          if (!cancelled) void loadEvents();
-        })
+      ? subscribeToTableChanges("events", debouncedLoadEvents)
       : null;
 
     return () => {
       cancelled = true;
+      debouncedLoadEvents.cancel();
       if (eventsChannel) void eventsChannel.unsubscribe();
     };
   }, [eventsCacheKey, setEventsSnapshot, showFees, user]);

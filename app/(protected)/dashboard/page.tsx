@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardPage, type EventData } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTableChanges } from "@/lib/realtime";
+import { debounce } from "@/lib/debounce";
 import { useProtectedUser } from "../layout";
 import { FeedbackState } from "@/components/ui/feedback";
 
@@ -220,27 +221,28 @@ export default function DashboardRoute() {
 
     void loadDashboardFines();
 
-    const finesChannel = subscribeToTableChanges("fines", () => {
+    const debouncedLoadDashboardFines = debounce(() => {
       if (!cancelled) {
         void loadDashboardFines();
       }
-    });
+    }, 750);
+
+    const finesChannel = subscribeToTableChanges(
+      "fines",
+      debouncedLoadDashboardFines,
+    );
     const attendanceChannel = subscribeToTableChanges(
       "attendance_scans",
-      () => {
-        if (!cancelled) {
-          void loadDashboardFines();
-        }
-      },
+      debouncedLoadDashboardFines,
     );
-    const eventsChannel = subscribeToTableChanges("events", () => {
-      if (!cancelled) {
-        void loadDashboardFines();
-      }
-    });
+    const eventsChannel = subscribeToTableChanges(
+      "events",
+      debouncedLoadDashboardFines,
+    );
 
     return () => {
       cancelled = true;
+      debouncedLoadDashboardFines.cancel();
       void finesChannel.unsubscribe();
       void attendanceChannel.unsubscribe();
       void eventsChannel.unsubscribe();

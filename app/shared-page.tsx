@@ -722,6 +722,8 @@ import { z } from "zod";
 
 import { format } from "date-fns";
 
+import { loadEventMedia } from "@/lib/eventMediaCache";
+
 import {
   Archive,
   ArrowLeft,
@@ -6182,9 +6184,12 @@ function ExcuseModal({
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
                   {previewUrl ? (
                     <div className="flex h-36 items-center justify-center bg-slate-100 p-2 sm:h-40">
-                      <img
+                      <OptimizedImage
                         src={previewUrl}
                         alt={`Preview of ${file.name}`}
+                        width={800}
+                        height={600}
+                        loading="lazy"
                         className="h-full w-full rounded-lg object-contain"
                       />
                     </div>
@@ -7653,6 +7658,9 @@ function EventDetailPageView({
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [isMediaLoading, setIsMediaLoading] = useState(false);
+  const [mediaError, setMediaError] = useState<string | null>(null);
 
   const [mobileSection, setMobileSection] = useState<"details" | "gallery">(
     "details",
@@ -7662,11 +7670,46 @@ function EventDetailPageView({
     setIsLoading(true);
     setSelectedVideoUrl(null);
     setMobileSection("details");
+    setMediaUrls(event?.mediaUrls ?? []);
+    setMediaError(null);
+    setIsMediaLoading(false);
 
     const frame = requestAnimationFrame(() => setIsLoading(false));
 
     return () => cancelAnimationFrame(frame);
-  }, [event?.id]);
+  }, [event?.id, event?.mediaUrls]);
+
+  useEffect(() => {
+    if (!event?.id || event.mediaUrls) return;
+
+    const shouldLoadGallery =
+      mobileSection === "gallery" ||
+      (typeof window !== "undefined" &&
+        window.matchMedia("(min-width: 768px)").matches);
+
+    if (!shouldLoadGallery) return;
+
+    let cancelled = false;
+    setIsMediaLoading(true);
+    setMediaError(null);
+
+    void loadEventMedia(event.id)
+      .then((urls) => {
+        if (!cancelled) setMediaUrls(urls);
+      })
+      .catch(() => {
+        if (!cancelled) setMediaError("Gallery media could not be loaded.");
+      })
+      .finally(() => {
+        if (!cancelled) setIsMediaLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id, event?.mediaUrls, mobileSection]);
+
+  const galleryMedia = event?.mediaUrls ?? mediaUrls;
 
   if (isLoading || !event) {
     return (
@@ -7871,12 +7914,25 @@ function EventDetailPageView({
                 </p>
               </div>
               <span className="text-xs font-semibold text-slate-400">
-                {event.mediaUrls?.length ?? 0} assets
+                {galleryMedia.length} assets
               </span>
             </div>
-            {event.mediaUrls && event.mediaUrls.length > 0 ? (
+            {isMediaLoading ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {event.mediaUrls.map((url, index) =>
+                {[0, 1].map((item) => (
+                  <Skeleton
+                    key={item}
+                    className="aspect-video w-full rounded-xl"
+                  />
+                ))}
+              </div>
+            ) : mediaError ? (
+              <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
+                {mediaError}
+              </div>
+            ) : galleryMedia.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {galleryMedia.map((url, index) =>
                   /\.mp4($|\?)/i.test(url) ? (
                     url === selectedVideoUrl ? (
                       <LazyVideo
@@ -16132,9 +16188,13 @@ export function AdminExcuseRequestsPage({
                   }`}
                 />
               ) : (
-                <img
+                <OptimizedImage
                   src={viewingAttachment.url}
                   alt={viewingAttachment.name}
+                  width={1600}
+                  height={1200}
+                  sizes={attachmentExpanded ? "90vw" : "80vw"}
+                  loading="lazy"
                   className={`mx-auto max-w-full object-contain ${
                     attachmentExpanded ? "max-h-[84dvh]" : "max-h-[64dvh]"
                   }`}
