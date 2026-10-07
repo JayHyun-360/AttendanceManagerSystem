@@ -1,6 +1,10 @@
 # Supabase Storage Cleanup Worker
 
-This function processes rows in `public.storage_cleanup_queue` and removes only unreferenced objects from the `public-images` bucket. It waits at least 24 hours after a queue row is created, checks all known media-bearing tables, deletes through the Supabase Storage API, and records completion or failure.
+This function processes rows in `public.storage_cleanup_queue` and removes only unreferenced objects from the `public-images` bucket. Migration `039_storage_cleanup_queue.sql` creates the queue and enqueues old media references after replacements or removals. The worker waits at least 24 hours after a queue row is created, checks all known media-bearing tables, deletes through the Supabase Storage API, and records completion or failure.
+
+## Repository-side database setup
+
+Apply the pending Supabase migrations, including `supabase/migrations/039_storage_cleanup_queue.sql`, through the normal project migration workflow. The migration creates the queue, a deduplicating enqueue helper, and reference-change triggers for profiles, events, announcements, excuse requests, and system settings. Triggers only enqueue candidates; they never delete Storage objects.
 
 ## 1. Prepare a local Supabase Functions directory
 
@@ -20,10 +24,10 @@ If you do not already have the Supabase CLI, install it using the official instr
 
 ```bash
 supabase login
-supabase link --project-ref lbznngfvgebwagsfigni
+supabase link --project-ref YOUR_PROJECT_REF
 ```
 
-The project reference above comes from the Supabase project URL shown in the error message. Confirm that the linked project is the intended production project before deploying.
+Replace `YOUR_PROJECT_REF` with the project reference for the intended Supabase project.
 
 ## 3. Create a private function secret
 
@@ -54,7 +58,7 @@ supabase functions deploy storage-cleanup --no-verify-jwt
 The deployed URL will be:
 
 ```text
-https://lbznngfvgebwagsfigni.supabase.co/functions/v1/storage-cleanup
+https://YOUR_PROJECT_REF.supabase.co/functions/v1/storage-cleanup
 ```
 
 ## 5. Test it manually
@@ -63,7 +67,7 @@ Use the same random secret value from step 3. The function intentionally waits 2
 
 ```bash
 curl --fail-with-body --request POST \
-  'https://lbznngfvgebwagsfigni.supabase.co/functions/v1/storage-cleanup' \
+  'https://YOUR_PROJECT_REF.supabase.co/functions/v1/storage-cleanup' \
   --header 'Content-Type: application/json' \
   --header 'x-cleanup-secret: PASTE_THE_RANDOM_VALUE_HERE' \
   --data '{"limit":25,"minimumAgeHours":0}'
@@ -85,7 +89,7 @@ A successful response looks like this:
 }
 ```
 
-If a file is still referenced by a profile, event, announcement, settings JSON, or excuse request, the function does not delete it. It marks the queue row as `quarantined`.
+If a file is still referenced by a profile, event, announcement, settings JSON, carousel poster, or excuse request, the function does not delete it. It marks the queue row as `quarantined`.
 
 Check the queue in the SQL Editor:
 
@@ -115,7 +119,7 @@ Then run the following SQL **once**. Replace both placeholders. Use the same fun
 
 ```sql
 select vault.create_secret(
-  'https://lbznngfvgebwagsfigni.supabase.co',
+    'https://YOUR_PROJECT_REF.supabase.co',
   'storage_cleanup_project_url'
 );
 
