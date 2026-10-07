@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -699,30 +699,23 @@ import { Skeleton } from "@/components/ui/skeleton";
       </div>
 */
 
-import { OptimizedImage } from "@/components/OptimizedImage";
+import { OptimizedImage } from "@/components/OptimizedImage"
 
-import {
-  Suspense,
-  useState,
-  useRef,
-  useEffect,
-  useMemo,
-  Fragment,
-} from "react";
+import { Suspense, useState, useRef, useEffect, useMemo, Fragment } from "react"
 
-import Link from "next/link";
+import Link from "next/link"
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
-import { useForm } from "react-hook-form";
+import { useForm } from "react-hook-form"
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@hookform/resolvers/zod"
 
-import { z } from "zod";
+import { z } from "zod"
 
-import { format } from "date-fns";
+import { format } from "date-fns"
 
-import { loadEventMedia } from "@/lib/eventMediaCache";
+import { loadEventMedia } from "@/lib/eventMediaCache"
 
 import {
   Archive,
@@ -742,9 +735,9 @@ import {
   Trash2,
   Upload,
   X,
-} from "lucide-react";
+} from "lucide-react"
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 
 import {
   DndContext,
@@ -759,24 +752,24 @@ import {
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
-} from "@dnd-kit/core";
+} from "@dnd-kit/core"
 
-import { Bar } from "recharts";
+import { Bar } from "recharts"
 
-import jsQR from "jsqr";
+import jsQR from "jsqr"
 
-import QRCode from "qrcode";
+import QRCode from "qrcode"
 
-import { toast } from "sonner";
+import { toast } from "sonner"
 
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase"
 
 import {
   getPublicSystemSettings,
   isGoogleFormsResponderUrl,
-} from "@/lib/systemSettings";
+} from "@/lib/systemSettings"
 
-import { recordAttendance } from "@/lib/attendance";
+import { recordAttendance } from "@/lib/attendance"
 
 import {
   buildAttendanceSessionRecords,
@@ -784,32 +777,39 @@ import {
   type FineEventLike,
   type FineRowLike,
   type FineScanLike,
-} from "@/lib/attendance-fines";
+} from "@/lib/attendance-fines"
 
-import { formatTime12Hour, formatTimeRange12Hour } from "@/lib/time";
+import { formatTime12Hour, formatTimeRange12Hour } from "@/lib/time"
 
 import {
   deleteImages,
+  deleteImage,
   uploadEventVideo,
   uploadProfileImage,
   uploadPromotionalImage,
   uploadVerificationImage,
-} from "@/lib/uploadImage";
+} from "@/lib/uploadImage"
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton"
 
-const adesseLogoSrc = "/adesse-a.svg";
+const adesseLogoSrc = "/adesse-a.svg"
 
 export function VideoPosterTile({
   poster,
+
   className = "",
+
   onClick,
+
   label = "Play video",
 }: {
-  poster?: string;
-  className?: string;
-  onClick?: () => void;
-  label?: string;
+  poster?: string
+
+  className?: string
+
+  onClick?: () => void
+
+  label?: string
 }) {
   const content = (
     <>
@@ -831,9 +831,9 @@ export function VideoPosterTile({
         </svg>
       </span>
     </>
-  );
+  )
 
-  const classes = "relative overflow-hidden bg-slate-950 " + className;
+  const classes = "relative overflow-hidden bg-slate-950 " + className
 
   return onClick ? (
     <button
@@ -848,89 +848,125 @@ export function VideoPosterTile({
     <div className={classes} role="img" aria-label="Video preview">
       {content}
     </div>
-  );
+  )
 }
 
 export function LazyVideo({
   src,
+
   poster,
+
   preload = "none",
+
   className = "",
+
   style,
+
   controls = true,
+
   autoPlay = false,
+
   muted = false,
+
   loop = false,
+
   playsInline = true,
+
   loadOnClick = true,
+
   unmountWhenOffscreen = false,
 }: {
-  src: string;
-  poster?: string;
-  preload?: "none" | "metadata" | "auto";
-  className?: string;
-  style?: React.CSSProperties;
-  controls?: boolean;
-  autoPlay?: boolean;
-  muted?: boolean;
-  loop?: boolean;
-  playsInline?: boolean;
-  loadOnClick?: boolean;
-  unmountWhenOffscreen?: boolean;
+  src: string
+
+  poster?: string
+
+  preload?: "none" | "metadata" | "auto"
+
+  className?: string
+
+  style?: React.CSSProperties
+
+  controls?: boolean
+
+  autoPlay?: boolean
+
+  muted?: boolean
+
+  loop?: boolean
+
+  playsInline?: boolean
+
+  loadOnClick?: boolean
+
+  unmountWhenOffscreen?: boolean
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isIntersecting, setIsIntersecting] = useState(false);
-  const [requested, setRequested] = useState(!loadOnClick);
-  const [videoReady, setVideoReady] = useState(false);
-  const shouldAutoPlay = autoPlay || (loadOnClick && requested);
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  const [isIntersecting, setIsIntersecting] = useState(false)
+
+  const [requested, setRequested] = useState(!loadOnClick)
+
+  const [videoReady, setVideoReady] = useState(false)
+
+  const shouldAutoPlay = autoPlay || (loadOnClick && requested)
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const container = containerRef.current
+
+    if (!container) return
 
     if (!("IntersectionObserver" in window)) {
-      setIsIntersecting(true);
-      return;
+      setIsIntersecting(true)
+
+      return
     }
 
     const observer = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) videoRef.current?.pause();
-      setIsIntersecting(entry.isIntersecting);
-    });
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, []);
+      if (!entry.isIntersecting) videoRef.current?.pause()
+
+      setIsIntersecting(entry.isIntersecting)
+    })
+
+    observer.observe(container)
+
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    const video = videoRef.current
+
+    if (!video) return
 
     if (!isIntersecting) {
-      video.pause();
+      video.pause()
     } else if (shouldAutoPlay && document.visibilityState === "visible") {
-      void video.play().catch(() => {});
+      void video.play().catch(() => {})
     }
-  }, [isIntersecting, requested, shouldAutoPlay]);
+  }, [isIntersecting, requested, shouldAutoPlay])
 
   useEffect(() => {
     const handleVisibility = () => {
-      const video = videoRef.current;
-      if (!video) return;
-      if (document.visibilityState === "hidden") {
-        video.pause();
-      } else if (shouldAutoPlay && isIntersecting) {
-        void video.play().catch(() => {});
-      }
-    };
+      const video = videoRef.current
 
-    document.addEventListener("visibilitychange", handleVisibility);
+      if (!video) return
+
+      if (document.visibilityState === "hidden") {
+        video.pause()
+      } else if (shouldAutoPlay && isIntersecting) {
+        void video.play().catch(() => {})
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibility)
+
     return () =>
-      document.removeEventListener("visibilitychange", handleVisibility);
-  }, [isIntersecting, shouldAutoPlay]);
+      document.removeEventListener("visibilitychange", handleVisibility)
+  }, [isIntersecting, shouldAutoPlay])
 
   const shouldRenderVideo =
-    requested && (isIntersecting || !unmountWhenOffscreen);
+    requested && (isIntersecting || !unmountWhenOffscreen)
 
   return (
     <div ref={containerRef} className={"relative " + className} style={style}>
@@ -965,61 +1001,61 @@ export function LazyVideo({
         />
       )}
     </div>
-  );
+  )
 }
 
 function useDashboardDateLabel() {
-  const [label, setLabel] = useState("");
+  const [label, setLabel] = useState("")
 
   useEffect(() => {
-    setLabel(format(new Date(), "MMM d, yyyy · EEEE"));
-  }, []);
+    setLabel(format(new Date(), "MMM d, yyyy · EEEE"))
+  }, [])
 
-  return label;
+  return label
 }
 
 function toMinutes(value?: string | null) {
-  if (!value) return null;
+  if (!value) return null
 
   const match = value
 
     .trim()
 
-    .match(/^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(AM|PM)?$/i);
+    .match(/^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(AM|PM)?$/i)
 
-  if (!match) return null;
+  if (!match) return null
 
-  let hour = Number(match[1]);
+  let hour = Number(match[1])
 
-  const minute = Number(match[2]);
+  const minute = Number(match[2])
 
-  const meridiem = match[3]?.toUpperCase();
+  const meridiem = match[3]?.toUpperCase()
 
-  if (hour > 23 || minute > 59) return null;
+  if (hour > 23 || minute > 59) return null
 
-  if (meridiem === "AM" && hour === 12) hour = 0;
+  if (meridiem === "AM" && hour === 12) hour = 0
 
-  if (meridiem === "PM" && hour !== 12) hour += 12;
+  if (meridiem === "PM" && hour !== 12) hour += 12
 
-  return hour * 60 + minute;
+  return hour * 60 + minute
 }
 
 function addMinutesToTime(value: string | null | undefined, minutes: number) {
-  const current = toMinutes(value);
+  const current = toMinutes(value)
 
-  if (current === null) return null;
+  if (current === null) return null
 
-  const next = current + minutes;
+  const next = current + minutes
 
-  if (next >= 24 * 60) return null;
+  if (next >= 24 * 60) return null
 
   return `${String(Math.floor(next / 60)).padStart(2, "0")}:${String(
     next % 60,
-  ).padStart(2, "0")}`;
+  ).padStart(2, "0")}`
 }
 
 function normalizeTimeValue(value: unknown) {
-  return typeof value === "string" ? value.slice(0, 5) : "";
+  return typeof value === "string" ? value.slice(0, 5) : ""
 }
 
 function SessionExtensionControls({
@@ -1031,15 +1067,15 @@ function SessionExtensionControls({
 
   onRequest,
 }: {
-  label: string;
+  label: string
 
-  end?: string | null;
+  end?: string | null
 
-  disabled?: boolean;
+  disabled?: boolean
 
-  onRequest: (minutes: number) => void;
+  onRequest: (minutes: number) => void
 }) {
-  const [minutes, setMinutes] = useState(5);
+  const [minutes, setMinutes] = useState(5)
 
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
@@ -1082,7 +1118,7 @@ function SessionExtensionControls({
         </p>
       )}
     </div>
-  );
+  )
 }
 
 function getEventSessionMeta(
@@ -1097,7 +1133,7 @@ function getEventSessionMeta(
       strict: false,
 
       hasActiveSession: false,
-    };
+    }
   }
 
   if (!event.multiSession) {
@@ -1107,20 +1143,20 @@ function getEventSessionMeta(
       strict: !!event.strictMorning,
 
       hasActiveSession: true,
-    };
+    }
   }
 
   if (nowMinutes === null) {
-    return { sessionLabel: null, strict: false, hasActiveSession: false };
+    return { sessionLabel: null, strict: false, hasActiveSession: false }
   }
 
-  const morningStart = toMinutes(event.morningStart);
+  const morningStart = toMinutes(event.morningStart)
 
-  const morningEnd = toMinutes(event.morningEnd);
+  const morningEnd = toMinutes(event.morningEnd)
 
-  const afternoonStart = toMinutes(event.afternoonStart);
+  const afternoonStart = toMinutes(event.afternoonStart)
 
-  const afternoonEnd = toMinutes(event.afternoonEnd);
+  const afternoonEnd = toMinutes(event.afternoonEnd)
 
   if (
     morningStart !== null &&
@@ -1134,7 +1170,7 @@ function getEventSessionMeta(
       strict: !!event.strictMorning,
 
       hasActiveSession: true,
-    };
+    }
   }
 
   if (
@@ -1149,10 +1185,10 @@ function getEventSessionMeta(
       strict: !!event.strictAfternoon,
 
       hasActiveSession: true,
-    };
+    }
   }
 
-  return { sessionLabel: null, strict: false, hasActiveSession: false };
+  return { sessionLabel: null, strict: false, hasActiveSession: false }
 }
 
 function getSelectedSessionMeta(
@@ -1165,11 +1201,11 @@ function getSelectedSessionMeta(
       sessionLabel: null as "morning" | "afternoon" | null,
 
       strict: false,
-    };
+    }
   }
 
   if (!event.multiSession) {
-    return { sessionLabel: "morning" as const, strict: !!event.strictMorning };
+    return { sessionLabel: "morning" as const, strict: !!event.strictMorning }
   }
 
   if (manualSessionLabel === "morning" || manualSessionLabel === "afternoon") {
@@ -1180,301 +1216,298 @@ function getSelectedSessionMeta(
         manualSessionLabel === "morning"
           ? !!event.strictMorning
           : !!event.strictAfternoon,
-    };
+    }
   }
 
-  return getEventSessionMeta(event);
+  return getEventSessionMeta(event)
 }
 
-export type Page = string;
+export type Page = string
 
-export type Role = "student" | "admin" | null;
+export type Role = "student" | "admin" | null
 
-export type FineStatus = "unpaid" | "paid" | "excused";
+export type FineStatus = "unpaid" | "paid" | "excused"
 
-export type EventStatus = "active" | "upcoming" | "closed" | "cancelled";
+export type EventStatus = "active" | "upcoming" | "closed" | "cancelled"
 
 export interface User {
-  firstName: string;
+  firstName: string
 
-  middleInitial: string;
+  middleInitial: string
 
-  surname: string;
+  surname: string
 
-  studentId: string;
+  studentId: string
 
-  program: string;
+  program: string
 
-  yearLevel: string;
+  yearLevel: string
 
-  section: string;
+  section: string
 
-  phone: string;
+  phone: string
 
-  contactEmail: string;
+  contactEmail: string
 
-  role: Role;
+  role: Role
 
-  photoUrl?: string;
+  photoUrl?: string
 
-  coverPhotoUrl?: string;
+  coverPhotoUrl?: string
 
-  idPhotoUrl?: string;
+  idPhotoUrl?: string
 
-  qrVersion?: number;
+  qrVersion?: number
 }
 
 export interface EventData {
-  id: string;
+  id: string
 
-  title: string;
+  title: string
 
-  date: string;
+  date: string
 
-  time: string;
+  time: string
 
-  endTime?: string;
+  endTime?: string
 
-  location: string;
+  location: string
 
-  status: EventStatus;
+  status: EventStatus
 
-  attendees: number;
+  attendees: number
 
-  description: string;
+  description: string
 
-  program: string;
+  program: string
 
-  fineAmount: number;
+  fineAmount: number
 
-  mediaUrls?: string[];
+  mediaUrls?: string[]
 
-  highlightUrl?: string;
+  highlightUrl?: string
 
-  multiSession?: boolean;
+  multiSession?: boolean
 
-  sanctionsEnabled?: boolean;
+  sanctionsEnabled?: boolean
 
-  strictMorning?: boolean;
+  strictMorning?: boolean
 
-  strictAfternoon?: boolean;
+  strictAfternoon?: boolean
 
-  morningStart?: string;
+  morningStart?: string
 
-  morningEnd?: string;
+  morningEnd?: string
 
-  morningLateCutoff?: string;
+  morningLateCutoff?: string
 
-  afternoonStart?: string;
+  afternoonStart?: string
 
-  afternoonEnd?: string;
+  afternoonEnd?: string
 
-  afternoonLateCutoff?: string;
+  afternoonLateCutoff?: string
 
-  absentFine?: number;
+  absentFine?: number
 
-  lateFine?: number;
+  lateFine?: number
 
-  morningAbsentFine?: number;
+  morningAbsentFine?: number
 
-  morningLateFine?: number;
+  morningLateFine?: number
 
-  afternoonAbsentFine?: number;
+  afternoonAbsentFine?: number
 
-  afternoonLateFine?: number;
+  afternoonLateFine?: number
 
-  version?: number;
+  version?: number
 
-  archivedAt?: string;
+  archivedAt?: string
 
-  reportAttendedSessions?: number;
+  reportAttendedSessions?: number
 
-  reportAbsentSessions?: number;
+  reportAbsentSessions?: number
 
-  reportExcusedSessions?: number;
+  reportExcusedSessions?: number
 
-  reportLateSessions?: number;
+  reportLateSessions?: number
 
-  reportFineTotal?: number;
+  reportFineTotal?: number
 
-  reportSanctionedSessions?: number;
+  reportSanctionedSessions?: number
 }
 
 interface ScanRecord {
-  profileId?: string;
+  profileId?: string
 
-  name: string;
+  name: string
 
-  id: string;
+  id: string
 
-  program: string;
+  program: string
 
-  section: string;
+  section: string
 
-  photoUrl?: string;
+  photoUrl?: string
 
-  time: string;
+  time: string
 
-  status: "present" | "confirmed" | "late" | "absent" | "duplicate";
+  status: "present" | "confirmed" | "late" | "absent" | "duplicate"
 
-  sanctioned?: boolean;
+  sanctioned?: boolean
 
-  excused?: boolean;
+  excused?: boolean
 
-  sessionLabel?: "morning" | "afternoon";
+  sessionLabel?: "morning" | "afternoon"
 
-  action?:
-    | "time_in"
-    | "time_out"
-    | "time_out_rejected"
-    | "event_not_active"
-    | "duplicate";
+  action?: "time_in" | "time_out" | "time_out_rejected" | "event_not_active" | "duplicate"
 
-  dbId: string | number;
+  dbId: string | number
 
-  fineStatus?: "unpaid" | "paid" | "excused";
+  fineStatus?: "unpaid" | "paid" | "excused"
 
-  fineAmount?: number;
+  fineAmount?: number
 }
 
 export interface ExcuseRequest {
-  id: string;
+  id: string
 
-  attendanceScanId?: string;
+  attendanceScanId?: string
 
-  attachmentPath?: string;
+  attachmentPath?: string
 
-  attachmentFile?: File;
+  attachmentFile?: File
 
-  studentName: string;
+  studentName: string
 
-  studentId: string;
+  studentId: string
 
-  photoUrl?: string;
+  photoUrl?: string
 
-  event: string;
+  event: string
 
-  eventId?: string;
+  eventId?: string
 
-  fineId?: string;
+  fineId?: string
 
-  sessionLabel?: "morning" | "afternoon";
+  sessionLabel?: "morning" | "afternoon"
 
-  reviewedBy?: string;
+  reviewedBy?: string
 
-  reviewedAt?: string;
+  reviewedAt?: string
 
-  date: string;
+  date: string
 
-  reason: string;
+  reason: string
 
-  proofName: string | null;
+  proofName: string | null
 
-  status: "pending" | "approved" | "denied";
+  status: "pending" | "approved" | "denied"
 
-  submittedDate: string;
+  submittedDate: string
 }
 
 export interface FineRecord {
-  id: string;
+  id: string
 
-  eventId: string;
+  eventId: string
 
-  attendanceScanId?: string;
+  attendanceScanId?: string
 
-  sessionLabel?: "morning" | "afternoon";
+  sessionLabel?: "morning" | "afternoon"
 
-  reason?: string;
+  reason?: string
 
-  eventTitle: string;
+  eventTitle: string
 
-  eventDate: string;
+  eventDate: string
 
-  amount: number;
+  amount: number
 
-  status: FineStatus;
+  status: FineStatus
 }
 
 export interface StudentProfile {
-  profileId?: string;
+  profileId?: string
 
-  name: string;
+  name: string
 
-  id: string;
+  id: string
 
-  program: string;
+  program: string
 
-  yearLevel: string;
+  yearLevel: string
 
-  section: string;
+  section: string
 
-  phone: string;
+  phone: string
 
-  email: string;
+  email: string
 
-  photoUrl?: string;
+  photoUrl?: string
 
-  idPhotoUrl?: string;
+  idPhotoUrl?: string
 
-  joinedDate: string;
+  joinedDate: string
 }
 
 function fullName(u: Pick<User, "firstName" | "middleInitial" | "surname">) {
-  const mid = u.middleInitial ? ` ${u.middleInitial}.` : "";
+  const mid = u.middleInitial ? ` ${u.middleInitial}.` : ""
 
-  return `${u.firstName}${mid} ${u.surname}`.trim();
+  return `${u.firstName}${mid} ${u.surname}`.trim()
 }
 
 function normalizeEventTime(value: string): string | null {
-  const normalized = value.trim().replace(/;/g, ":").toUpperCase();
+  const normalized = value.trim().replace(/;/g, ":").toUpperCase()
 
   const twelveHour = normalized.match(
     /^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/,
-  );
+  )
 
   if (twelveHour) {
-    let hour = Number(twelveHour[1]);
+    let hour = Number(twelveHour[1])
 
-    const minute = Number(twelveHour[2]);
+    const minute = Number(twelveHour[2])
 
-    if (hour < 1 || hour > 12 || minute > 59) return null;
+    if (hour < 1 || hour > 12 || minute > 59) return null
 
-    if (twelveHour[3] === "AM" && hour === 12) hour = 0;
+    if (twelveHour[3] === "AM" && hour === 12) hour = 0
 
-    if (twelveHour[3] === "PM" && hour !== 12) hour += 12;
+    if (twelveHour[3] === "PM" && hour !== 12) hour += 12
 
-    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
   }
 
-  const twentyFourHour = normalized.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  const twentyFourHour = normalized.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/)
 
   if (twentyFourHour) {
-    const hour = Number(twentyFourHour[1]);
+    const hour = Number(twentyFourHour[1])
 
-    const minute = Number(twentyFourHour[2]);
+    const minute = Number(twentyFourHour[2])
 
-    if (hour > 23 || minute > 59) return null;
+    if (hour > 23 || minute > 59) return null
 
-    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
   }
 
-  return null;
+  return null
 }
 
-function parseEventTimeRange(value: string): {
-  start: string;
+function parseEventTimeRange(
+  value: string,
+): {
+  start: string
 
-  end: string | null;
+  end: string | null
 } | null {
-  const parts = value.trim().split(/\s*[-–—]\s*/);
+  const parts = value.trim().split(/\s*[-–—]\s*/)
 
-  const start = normalizeEventTime(parts[0] ?? "");
+  const start = normalizeEventTime(parts[0] ?? "")
 
-  const end = parts[1] ? normalizeEventTime(parts[1]) : null;
+  const end = parts[1] ? normalizeEventTime(parts[1]) : null
 
-  if (!start || (parts[1] && !end)) return null;
+  if (!start || (parts[1] && !end)) return null
 
-  return { start, end };
+  return { start, end }
 }
 
 export const INITIAL_EVENTS: EventData[] = [
@@ -1569,7 +1602,7 @@ export const INITIAL_EVENTS: EventData[] = [
     description:
       "Opening ceremony for the annual intramural sports festival. Parade of athletes, oath-taking, and opening of games.",
   },
-];
+]
 
 const EVENT_SCANS: Record<string, ScanRecord[]> = {
   "2": [
@@ -1799,7 +1832,7 @@ const EVENT_SCANS: Record<string, ScanRecord[]> = {
       dbId: 7,
     },
   ],
-};
+}
 
 const ALL_STUDENTS: StudentProfile[] = [
   {
@@ -1981,7 +2014,7 @@ const ALL_STUDENTS: StudentProfile[] = [
 
     joinedDate: "Aug 17, 2026",
   },
-];
+]
 
 export const INITIAL_ANNOUNCEMENTS = [
   {
@@ -2047,7 +2080,7 @@ export const INITIAL_ANNOUNCEMENTS = [
 
     photoUrl: "",
   },
-];
+]
 
 export const ATTENDANCE_RECORDS = [
   {
@@ -2105,7 +2138,7 @@ export const ATTENDANCE_RECORDS = [
 
     status: "absent",
   },
-];
+]
 
 const STUDENT_FINES: FineRecord[] = [
   {
@@ -2135,7 +2168,7 @@ const STUDENT_FINES: FineRecord[] = [
 
     status: "unpaid",
   },
-];
+]
 
 const sv = {
   fill: "none",
@@ -2147,9 +2180,9 @@ const sv = {
   strokeLinecap: "round" as const,
 
   strokeLinejoin: "round" as const,
-};
+}
 
-const ic = "w-[18px] h-[18px] shrink-0";
+const ic = "w-[18px] h-[18px] shrink-0"
 
 const Icons = {
   Home: () => (
@@ -2490,7 +2523,7 @@ const Icons = {
       <line x1="3" y1="18" x2="21" y2="18" />
     </svg>
   ),
-};
+}
 
 function Toggle({
   on,
@@ -2503,15 +2536,15 @@ function Toggle({
 
   desc,
 }: {
-  on: boolean;
+  on: boolean
 
-  onToggle: () => void;
+  onToggle: () => void
 
-  disabled?: boolean;
+  disabled?: boolean
 
-  label: string;
+  label: string
 
-  desc?: string;
+  desc?: string
 }) {
   return (
     <div className="flex items-center justify-between py-4 gap-4">
@@ -2539,7 +2572,7 @@ function Toggle({
         />
       </button>
     </div>
-  );
+  )
 }
 
 function FieldInput({
@@ -2551,11 +2584,11 @@ function FieldInput({
 
   ...p
 }: {
-  label: string;
+  label: string
 
-  required?: boolean;
+  required?: boolean
 
-  error?: string;
+  error?: string
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -2570,7 +2603,7 @@ function FieldInput({
       />
       {error && <p className="text-[10px] text-red-500">{error}</p>}
     </div>
-  );
+  )
 }
 
 function FieldSelect({
@@ -2584,13 +2617,13 @@ function FieldSelect({
 
   ...p
 }: {
-  label: string;
+  label: string
 
-  required?: boolean;
+  required?: boolean
 
-  children: React.ReactNode;
+  children: React.ReactNode
 
-  error?: string;
+  error?: string
 } & React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -2607,7 +2640,7 @@ function FieldSelect({
       </select>
       {error && <p className="text-[10px] text-red-500">{error}</p>}
     </div>
-  );
+  )
 }
 
 function FieldTextarea({
@@ -2617,9 +2650,9 @@ function FieldTextarea({
 
   ...p
 }: {
-  label: string;
+  label: string
 
-  error?: string;
+  error?: string
 } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -2632,7 +2665,7 @@ function FieldTextarea({
       />
       {error && <p className="text-[10px] text-red-500">{error}</p>}
     </div>
-  );
+  )
 }
 
 function Badge({
@@ -2640,9 +2673,9 @@ function Badge({
 
   sanctioned = false,
 }: {
-  status: string;
+  status: string
 
-  sanctioned?: boolean;
+  sanctioned?: boolean
 }) {
   const cfg: Record<string, { cls: string; label: string; dot?: boolean }> = {
     active: {
@@ -2754,20 +2787,20 @@ function Badge({
 
       label: "Cleared",
     },
-  };
+  }
 
   const c = cfg[status] ?? {
     cls: "bg-slate-100 text-slate-500",
 
     label: status,
-  };
+  }
 
   const sanctionedStatus =
-    sanctioned && (status === "late" || status === "absent");
+    sanctioned && (status === "late" || status === "absent")
 
   const badgeClass = sanctionedStatus
     ? "bg-violet-50 text-violet-700 ring-1 ring-violet-200"
-    : c.cls;
+    : c.cls
 
   return (
     <span
@@ -2783,7 +2816,7 @@ function Badge({
       )}
       {sanctionedStatus ? `Sanctioned · ${c.label}` : c.label}
     </span>
-  );
+  )
 }
 
 function InlineToggle({
@@ -2793,11 +2826,11 @@ function InlineToggle({
 
   label,
 }: {
-  on: boolean;
+  on: boolean
 
-  onToggle: () => void;
+  onToggle: () => void
 
-  label: string;
+  label: string
 }) {
   return (
     <div className="flex items-center justify-between py-2">
@@ -2817,7 +2850,7 @@ function InlineToggle({
         />
       </button>
     </div>
-  );
+  )
 }
 
 function SessionFields({
@@ -2841,25 +2874,25 @@ function SessionFields({
 
   onStrict,
 }: {
-  prefix: string;
+  prefix: string
 
-  label: string;
+  label: string
 
-  start: string;
+  start: string
 
-  onStart: (v: string) => void;
+  onStart: (v: string) => void
 
-  end: string;
+  end: string
 
-  onEnd: (v: string) => void;
+  onEnd: (v: string) => void
 
-  cutoff: string;
+  cutoff: string
 
-  onCutoff: (v: string) => void;
+  onCutoff: (v: string) => void
 
-  strict: boolean;
+  strict: boolean
 
-  onStrict: () => void;
+  onStrict: () => void
 }) {
   return (
     <div className="border border-slate-100 rounded-xl p-3 space-y-2.5">
@@ -2892,7 +2925,7 @@ function SessionFields({
         label="Strict attendance (require time-out scan)"
       />
     </div>
-  );
+  )
 }
 
 function FineFields({
@@ -2904,27 +2937,27 @@ function FineFields({
 
   enabled = true,
 }: {
-  multi: boolean;
+  multi: boolean
 
   values: {
-    absentFine: string;
+    absentFine: string
 
-    lateFine: string;
+    lateFine: string
 
-    morningAbsentFine: string;
+    morningAbsentFine: string
 
-    morningLateFine: string;
+    morningLateFine: string
 
-    afternoonAbsentFine: string;
+    afternoonAbsentFine: string
 
-    afternoonLateFine: string;
-  };
+    afternoonLateFine: string
+  }
 
-  onChange: (k: string, v: string) => void;
+  onChange: (k: string, v: string) => void
 
-  enabled?: boolean;
+  enabled?: boolean
 }) {
-  if (!enabled) return null;
+  if (!enabled) return null
 
   return (
     <div className="space-y-2.5">
@@ -2985,7 +3018,7 @@ function FineFields({
         </>
       )}
     </div>
-  );
+  )
 }
 
 function UnavailableFinesNotice() {
@@ -2999,7 +3032,7 @@ function UnavailableFinesNotice() {
         attendance fine rules for this event.
       </p>
     </div>
-  );
+  )
 }
 
 function Avatar({
@@ -3009,16 +3042,17 @@ function Avatar({
 
   size = "md",
 }: {
-  name: string;
+  name: string
 
-  photoUrl?: string;
+  photoUrl?: string
 
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg"
 }) {
   const sz = { xs: "w-6 h-6", sm: "w-7 h-7", md: "w-9 h-9", lg: "w-14 h-14" }[
     size
-  ];
-  const imageSize = { xs: 24, sm: 28, md: 36, lg: 56 }[size];
+  ]
+
+  const imageSize = { xs: 24, sm: 28, md: 36, lg: 56 }[size]
 
   if (photoUrl)
     return (
@@ -3028,7 +3062,7 @@ function Avatar({
         sizes={`${imageSize}px`}
         className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200`}
       />
-    );
+    )
 
   const letters = name
 
@@ -3042,7 +3076,7 @@ function Avatar({
 
     .join("")
 
-    .toUpperCase();
+    .toUpperCase()
 
   if (letters) {
     const textSz = {
@@ -3053,7 +3087,7 @@ function Avatar({
       md: "text-sm",
 
       lg: "text-lg",
-    }[size];
+    }[size]
 
     return (
       <div
@@ -3061,7 +3095,7 @@ function Avatar({
       >
         {letters}
       </div>
-    );
+    )
   }
 
   return (
@@ -3073,23 +3107,23 @@ function Avatar({
         <ellipse cx="18" cy="42" rx="18" ry="15" />
       </svg>
     </div>
-  );
+  )
 }
 
 function isGoogleProfilePhotoUrl(photoUrl?: string) {
-  if (!photoUrl) return false;
+  if (!photoUrl) return false
 
   try {
-    const hostname = new URL(photoUrl).hostname.toLowerCase();
+    const hostname = new URL(photoUrl).hostname.toLowerCase()
 
     return (
       hostname === "googleusercontent.com" ||
       hostname.endsWith(".googleusercontent.com") ||
       hostname === "google.com" ||
       hostname.endsWith(".google.com")
-    );
+    )
   } catch {
-    return false;
+    return false
   }
 }
 
@@ -3100,13 +3134,13 @@ export function ProfileIcon({
 
   previewable = true,
 }: {
-  photoUrl?: string;
+  photoUrl?: string
 
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg"
 
-  previewable?: boolean;
+  previewable?: boolean
 }) {
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const sz = {
     xs: "w-7 h-7",
@@ -3116,8 +3150,9 @@ export function ProfileIcon({
     md: "w-11 h-11",
 
     lg: "w-16 h-16",
-  }[size];
-  const imageSize = { xs: 28, sm: 36, md: 44, lg: 64 }[size];
+  }[size]
+
+  const imageSize = { xs: 28, sm: 36, md: 44, lg: 64 }[size]
 
   const content = photoUrl ? (
     <OptimizedImage
@@ -3135,10 +3170,10 @@ export function ProfileIcon({
         <ellipse cx="18" cy="42" rx="18" ry="15" />
       </svg>
     </div>
-  );
+  )
 
   if (!photoUrl || !previewable || isGoogleProfilePhotoUrl(photoUrl)) {
-    return content;
+    return content
   }
 
   return (
@@ -3177,7 +3212,7 @@ export function ProfileIcon({
         </div>
       )}
     </>
-  );
+  )
 }
 
 export function Toast({
@@ -3185,9 +3220,9 @@ export function Toast({
 
   variant = "success",
 }: {
-  message: string;
+  message: string
 
-  variant?: "success" | "error";
+  variant?: "success" | "error"
 }) {
   return (
     <div
@@ -3203,31 +3238,31 @@ export function Toast({
       </span>
       {message}
     </div>
-  );
+  )
 }
 
 export function DotMenu({
   items,
 }: {
   items: {
-    label: string;
+    label: string
 
-    icon?: React.ReactNode;
+    icon?: React.ReactNode
 
-    danger?: boolean;
+    danger?: boolean
 
-    onClick: () => void;
-  }[];
+    onClick: () => void
+  }[]
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false)
 
   return (
     <div className="relative">
       <button
         onClick={(e) => {
-          e.stopPropagation();
+          e.stopPropagation()
 
-          setOpen((o) => !o);
+          setOpen((o) => !o)
         }}
         className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
       >
@@ -3241,9 +3276,9 @@ export function DotMenu({
               <button
                 key={it.label}
                 onClick={() => {
-                  it.onClick();
+                  it.onClick()
 
-                  setOpen(false);
+                  setOpen(false)
                 }}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium hover:bg-slate-50 transition-colors text-left ${
                   it.danger ? "text-red-500" : "text-slate-700"
@@ -3263,7 +3298,7 @@ export function DotMenu({
         </>
       )}
     </div>
-  );
+  )
 }
 
 export function BackButton({
@@ -3271,9 +3306,9 @@ export function BackButton({
 
   onClick,
 }: {
-  label?: string;
+  label?: string
 
-  onClick: () => void;
+  onClick: () => void
 }) {
   return (
     <button
@@ -3285,7 +3320,7 @@ export function BackButton({
       </span>
       {label}
     </button>
-  );
+  )
 }
 
 export function PageShell({ children }: { children: React.ReactNode }) {
@@ -3293,7 +3328,7 @@ export function PageShell({ children }: { children: React.ReactNode }) {
     <div className="w-full px-2.5 pt-2 pb-12 md:max-w-6xl md:mx-auto md:px-6 md:pt-4 md:pb-16 lg:max-w-7xl">
       {children}
     </div>
-  );
+  )
 }
 
 export function PageHeader({
@@ -3303,11 +3338,11 @@ export function PageHeader({
 
   action,
 }: {
-  title: string;
+  title: string
 
-  subtitle?: string;
+  subtitle?: string
 
-  action?: React.ReactNode;
+  action?: React.ReactNode
 }) {
   return (
     <div className="flex items-start justify-between mb-6">
@@ -3321,7 +3356,7 @@ export function PageHeader({
       </div>
       {action}
     </div>
-  );
+  )
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -3329,7 +3364,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">
       {children}
     </p>
-  );
+  )
 }
 
 export function AdesseMark({ className = "w-7 h-7" }: { className?: string }) {
@@ -3339,7 +3374,7 @@ export function AdesseMark({ className = "w-7 h-7" }: { className?: string }) {
       alt=""
       className={`${className} shrink-0 object-contain`}
     />
-  );
+  )
 }
 
 export function AdesseWordmark({
@@ -3349,11 +3384,11 @@ export function AdesseWordmark({
 
   textClassName = "",
 }: {
-  variant?: "header" | "mobile" | "hero" | "auth";
+  variant?: "header" | "mobile" | "hero" | "auth"
 
-  className?: string;
+  className?: string
 
-  textClassName?: string;
+  textClassName?: string
 }) {
   const styles = {
     header: {
@@ -3387,7 +3422,7 @@ export function AdesseWordmark({
 
       text: "text-3xl",
     },
-  }[variant];
+  }[variant]
 
   return (
     <span
@@ -3401,7 +3436,7 @@ export function AdesseWordmark({
         desse
       </span>
     </span>
-  );
+  )
 }
 
 export function StudentQR({
@@ -3411,13 +3446,13 @@ export function StudentQR({
 
   size,
 }: {
-  studentId: string;
+  studentId: string
 
-  qrVersion?: number;
+  qrVersion?: number
 
-  size: number;
+  size: number
 }) {
-  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [dataUrl, setDataUrl] = useState<string | null>(null)
 
   useEffect(() => {
     QRCode.toDataURL(`ADESSE:${studentId}:v${qrVersion}`, {
@@ -3432,8 +3467,8 @@ export function StudentQR({
 
       .then(setDataUrl)
 
-      .catch(() => setDataUrl(null));
-  }, [qrVersion, studentId, size]);
+      .catch(() => setDataUrl(null))
+  }, [qrVersion, studentId, size])
 
   if (!dataUrl)
     return (
@@ -3441,7 +3476,7 @@ export function StudentQR({
         style={{ width: size, height: size }}
         className="bg-slate-100 rounded animate-pulse"
       />
-    );
+    )
 
   return (
     <OptimizedImage
@@ -3451,52 +3486,63 @@ export function StudentQR({
       alt="Student QR Code"
       style={{ display: "block", imageRendering: "pixelated" }}
     />
-  );
+  )
 }
 
 export function HelpFeedbackMenuItems({
   open,
+
   onAction,
 }: {
-  open: boolean;
-  onAction: () => void;
+  open: boolean
+
+  onAction: () => void
 }) {
-  const [feedbackUrl, setFeedbackUrl] = useState("");
-  const [feedbackState, setFeedbackState] = useState<
-    "idle" | "loading" | "ready" | "missing" | "error"
-  >("idle");
+  const [feedbackUrl, setFeedbackUrl] = useState("")
+
+  const [feedbackState, setFeedbackState] =
+    useState<"idle" | "loading" | "ready" | "missing" | "error">("idle")
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return
 
-    let cancelled = false;
-    setFeedbackState("loading");
+    let cancelled = false
+
+    setFeedbackState("loading")
 
     async function loadFeedbackUrl() {
-      const { data, error } = await getPublicSystemSettings();
-      if (cancelled) return;
+      const { data, error } = await getPublicSystemSettings()
+
+      if (cancelled) return
+
       if (error) {
-        console.error("Failed to load system feedback link", error);
-        setFeedbackState("error");
-        return;
+        console.error("Failed to load system feedback link", error)
+
+        setFeedbackState("error")
+
+        return
       }
 
       const url = (data?.settings as { feedbackFormUrl?: string } | null)
-        ?.feedbackFormUrl;
+        ?.feedbackFormUrl
+
       if (url && isGoogleFormsResponderUrl(url)) {
-        setFeedbackUrl(url);
-        setFeedbackState("ready");
+        setFeedbackUrl(url)
+
+        setFeedbackState("ready")
       } else {
-        setFeedbackUrl("");
-        setFeedbackState("missing");
+        setFeedbackUrl("")
+
+        setFeedbackState("missing")
       }
     }
 
-    void loadFeedbackUrl();
+    void loadFeedbackUrl()
+
     return () => {
-      cancelled = true;
-    };
-  }, [open]);
+      cancelled = true
+    }
+  }, [open])
 
   const feedbackDescription =
     feedbackState === "loading"
@@ -3505,7 +3551,7 @@ export function HelpFeedbackMenuItems({
         ? "Feedback link is unavailable"
         : feedbackState === "missing"
           ? "Feedback form is not set up yet"
-          : "Help us improve Adesse for everyone";
+          : "Help us improve Adesse for everyone"
 
   return (
     <>
@@ -3566,7 +3612,7 @@ export function HelpFeedbackMenuItems({
         </span>
       </Link>
     </>
-  );
+  )
 }
 
 export function TopBar({
@@ -3582,383 +3628,546 @@ export function TopBar({
 
   showFees,
 }: {
-  user: User | null;
+  user: User | null
 
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  onMenuOpen: () => void;
+  onMenuOpen: () => void
 
-  sidebarCollapsed: boolean;
+  sidebarCollapsed: boolean
 
-  onSidebarToggle: () => void;
+  onSidebarToggle: () => void
 
-  showFees: boolean;
+  showFees: boolean
 }) {
-  const router = useRouter();
+  const router = useRouter()
 
-  const pathname = usePathname();
+  const pathname = usePathname()
 
   const hideAuthButton =
     pathname === "/login" ||
     pathname.startsWith("/login") ||
     pathname === "/onboarding" ||
-    pathname.startsWith("/onboarding");
+    pathname.startsWith("/onboarding")
 
   const dest =
-    user?.role === "admin" ? "/admin-dashboard" : user ? "/dashboard" : "/";
+    user?.role === "admin" ? "/admin-dashboard" : user ? "/dashboard" : "/"
 
-  const isMod = user?.role === "admin";
+  const isMod = user?.role === "admin"
 
-  const notificationDest = isMod ? "/admin-announcements" : "/announcements";
+  const notificationDest = isMod ? "/admin-announcements" : "/announcements"
 
-  const [dotOpen, setDotOpen] = useState(false);
+  const [dotOpen, setDotOpen] = useState(false)
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("")
 
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [activeSearchIndex, setActiveSearchIndex] = useState(0);
+  const [searchOpen, setSearchOpen] = useState(false)
 
-  const [liveSearchResults, setLiveSearchResults] = useState<
-    Array<{
-      label: string;
-      hint: string;
-      path: string;
-      kind: "student" | "event" | "announcement";
-      group: "Students" | "Events" | "Announcements";
-      identifier?: string;
-      matchedQuery: string;
-    }>
-  >([]);
-  const [isSearchLoading, setIsSearchLoading] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const [activeSearchIndex, setActiveSearchIndex] = useState(0)
+
+  const [liveSearchResults, setLiveSearchResults] = useState<Array<{
+    label: string
+
+    hint: string
+
+    path: string
+
+    kind: "student" | "event" | "announcement"
+
+    group: "Students" | "Events" | "Announcements"
+
+    identifier?: string
+
+    matchedQuery: string
+  }>>([])
+
+  const [isSearchLoading, setIsSearchLoading] = useState(false)
+
+  const [searchError, setSearchError] = useState<string | null>(null)
 
   useEffect(() => {
-    const query = searchQuery.trim();
+    const query = searchQuery.trim()
+
     const tokens = query
+
       .toLowerCase()
+
       .replace(/[\\"%_]/g, " ")
+
       .split(/\s+/)
-      .filter(Boolean);
+
+      .filter(Boolean)
 
     if (!user || tokens.join("").length < 2) {
-      setLiveSearchResults([]);
-      setIsSearchLoading(false);
-      setSearchError(null);
-      return;
+      setLiveSearchResults([])
+
+      setIsSearchLoading(false)
+
+      setSearchError(null)
+
+      return
     }
 
-    let cancelled = false;
-    setLiveSearchResults([]);
-    setSearchError(null);
-    setIsSearchLoading(true);
+    let cancelled = false
+
+    setLiveSearchResults([])
+
+    setSearchError(null)
+
+    setIsSearchLoading(true)
 
     const makeTokenFilter = (columns: string[]) => {
       const tokenFilters = tokens.map(
         (token) =>
           `or(${columns.map((column) => `${column}.ilike."%${token}%"`).join(",")})`,
-      );
+      )
+
       return tokenFilters.length === 1
         ? tokenFilters[0]
-        : `and(${tokenFilters.join(",")})`;
-    };
+        : `and(${tokenFilters.join(",")})`
+    }
 
     const timer = window.setTimeout(() => {
       const loadSearchResults = async () => {
         try {
           const eventTextFilter = makeTokenFilter([
             "title",
+
             "description",
+
             "location",
+
             "program",
-          ]);
+          ])
+
           const eventDateFilter = /^\d{4}-\d{2}-\d{2}$/.test(query)
             ? `${eventTextFilter},event_date.eq.${query}`
-            : eventTextFilter;
+            : eventTextFilter
 
           const [studentResult, eventResult, announcementResult] =
             await Promise.all([
               isMod
                 ? supabase
+
                     .from("profiles")
+
                     .select(
                       "id, first_name, surname, student_id, program, section",
                     )
+
                     .eq("role", "student")
+
                     .or(
                       makeTokenFilter([
                         "first_name",
+
                         "surname",
+
                         "student_id",
+
                         "program",
+
                         "section",
                       ]),
                     )
+
                     .limit(12)
                 : Promise.resolve({ data: [], error: null }),
+
               supabase
+
                 .from("events")
+
                 .select("id, title, event_date, location, program")
+
                 .is("archived_at", null)
+
                 .or(eventDateFilter)
+
                 .limit(12),
+
               (() => {
                 let announcementQuery = supabase
+
                   .from("announcements")
+
                   .select("id, title, created_at, target_role")
-                  .or(makeTokenFilter(["title", "content"]));
+
+                  .or(makeTokenFilter(["title", "content"]))
 
                 if (!isMod) {
                   announcementQuery = announcementQuery.eq(
                     "target_role",
+
                     "student",
-                  );
+                  )
                 }
 
-                return announcementQuery.limit(12);
+                return announcementQuery.limit(12)
               })(),
-            ]);
+            ])
 
-          if (cancelled) return;
+          if (cancelled) return
 
           const errors = [
             studentResult.error,
+
             eventResult.error,
+
             announcementResult.error,
-          ].filter(Boolean);
+          ].filter(Boolean)
+
           if (errors.length) {
             console.error(
               "Some quick-search results could not be loaded.",
+
               errors,
-            );
-            setSearchError("Some results could not be loaded.");
+            )
+
+            setSearchError("Some results could not be loaded.")
           }
 
           const studentResults = (studentResult.data ?? []).map(
             (student: any) => {
               const name =
-                `${student.first_name ?? ""} ${student.surname ?? ""}`.trim();
+                `${student.first_name ?? ""} ${student.surname ?? ""}`.trim()
+
               return {
                 label: name || student.student_id || "Student",
+
                 hint: `${student.student_id ?? student.id} · ${student.program ?? "Program"} · ${student.section ?? "Section"}`,
+
                 path: `/admin-students/${encodeURIComponent(student.id)}`,
+
                 kind: "student" as const,
+
                 group: "Students" as const,
+
                 identifier: student.student_id ?? "",
+
                 matchedQuery: query.toLowerCase(),
-              };
+              }
             },
-          );
+          )
+
           const eventResults = (eventResult.data ?? []).map((event: any) => ({
             label: event.title,
+
             hint: `${event.event_date ?? ""} · ${event.location ?? "Location"}`,
-            path: `${isMod ? "/admin-events" : "/events"}?eventId=${encodeURIComponent(event.id)}`,
+
+            path: `${
+              isMod ? "/admin-events" : "/events"
+            }?eventId=${encodeURIComponent(event.id)}`,
+
             kind: "event" as const,
+
             group: "Events" as const,
+
             matchedQuery: query.toLowerCase(),
-          }));
+          }))
+
           const announcementResults = (announcementResult.data ?? []).map(
             (announcement: any) => ({
               label: announcement.title,
+
               hint: `${announcement.target_role ?? "student"} · ${new Date(announcement.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
-              path: `${isMod ? "/admin-announcements" : "/announcements"}?announcementId=${encodeURIComponent(announcement.id)}`,
+
+              path: `${
+                isMod ? "/admin-announcements" : "/announcements"
+              }?announcementId=${encodeURIComponent(announcement.id)}`,
+
               kind: "announcement" as const,
+
               group: "Announcements" as const,
+
               matchedQuery: query.toLowerCase(),
             }),
-          );
+          )
 
           setLiveSearchResults([
             ...studentResults,
-            ...eventResults,
-            ...announcementResults,
-          ]);
-        } catch (error) {
-          if (cancelled) return;
-          console.error("Quick-search results could not be loaded.", error);
-          setSearchError("Search is temporarily unavailable.");
-        } finally {
-          if (!cancelled) setIsSearchLoading(false);
-        }
-      };
 
-      void loadSearchResults();
-    }, 300);
+            ...eventResults,
+
+            ...announcementResults,
+          ])
+        } catch (error) {
+          if (cancelled) return
+
+          console.error("Quick-search results could not be loaded.", error)
+
+          setSearchError("Search is temporarily unavailable.")
+        } finally {
+          if (!cancelled) setIsSearchLoading(false)
+        }
+      }
+
+      void loadSearchResults()
+    }, 300)
 
     return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [isMod, searchQuery, user]);
+      cancelled = true
+
+      window.clearTimeout(timer)
+    }
+  }, [isMod, searchQuery, user])
 
   const quickSearchTargets = useMemo(
     () =>
       [
         {
           label: "Dashboard",
+
           path: isMod ? "/admin-dashboard" : "/dashboard",
+
           keywords: ["dashboard", "home", "overview", "summary"],
+
           hint: isMod ? "Admin overview" : "Student overview",
+
           kind: "page",
         },
+
         {
           label: "Events",
+
           path: isMod ? "/admin-events" : "/events",
+
           keywords: ["events", "event", "calendar", "schedule"],
+
           hint: isMod ? "Manage events" : "Browse events",
+
           kind: "page",
         },
+
         {
           label: isMod ? "Attendees" : "Attendance",
+
           path: isMod ? "/admin-attendees" : "/attendance-history",
+
           keywords: ["attendance", "history", "records", "log"],
+
           hint: isMod ? "Review event attendance" : "Track attendance",
+
           kind: "page",
         },
+
         {
           label: "Announcements",
+
           path: isMod ? "/admin-announcements" : "/announcements",
+
           keywords: ["announcements", "announcement", "news", "updates"],
+
           hint: "Latest updates",
+
           kind: "page",
         },
+
         {
           label: "Attendance Charges",
+
           path: "/my-fines",
+
           keywords: [
             "attendance charges",
+
             "charges",
+
             "fees",
+
             "payments",
+
             "balance",
           ],
+
           hint: showFees
             ? "Outstanding attendance charges"
             : "Not currently available",
+
           show: !isMod,
+
           kind: "page",
         },
+
         {
           label: "Profile",
+
           path: "/profile",
+
           keywords: ["profile", "account", "details", "settings", "info"],
+
           hint: "Account details",
+
           kind: "page",
         },
+
         {
           label: "Students",
+
           path: "/admin-students",
+
           keywords: ["students", "student", "roster", "people"],
+
           hint: "Manage roster",
+
           show: isMod,
+
           kind: "page",
         },
+
         {
           label: "Scanner",
+
           path: "/admin-scanner",
+
           keywords: ["scanner", "scan", "qr", "check in"],
+
           hint: "Quick attendance scan",
+
           show: isMod,
+
           kind: "page",
         },
+
         {
           label: "My QR",
+
           path: "/my-qr",
+
           keywords: ["my qr", "qr", "check in", "student code"],
+
           hint: "Student access code",
+
           show: !isMod,
+
           kind: "page",
         },
       ].filter((item) => item.show !== false),
+
     [isMod, showFees],
-  );
+  )
 
   const filteredResults = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    const tokens = query.split(/\s+/).filter(Boolean);
+    const query = searchQuery.trim().toLowerCase()
 
-    if (!query) return [];
+    const tokens = query.split(/\s+/).filter(Boolean)
+
+    if (!query) return []
 
     const scoreItem = (item: {
-      label: string;
-      hint?: string;
-      kind: string;
-      path?: string;
-      keywords?: string[];
-      identifier?: string;
-      matchedQuery?: string;
+      label: string
+
+      hint?: string
+
+      kind: string
+
+      path?: string
+
+      keywords?: string[]
+
+      identifier?: string
+
+      matchedQuery?: string
     }) => {
       const haystack = [item.label, item.hint ?? "", ...(item.keywords ?? [])]
-        .join(" ")
-        .toLowerCase();
 
-      if (item.matchedQuery && item.matchedQuery !== query) return null;
+        .join(" ")
+
+        .toLowerCase()
+
+      if (item.matchedQuery && item.matchedQuery !== query) return null
+
       if (
         !item.matchedQuery &&
         !tokens.every((token) => haystack.includes(token))
       ) {
-        return null;
+        return null
       }
 
-      let score = 0;
+      let score = 0
+
       const kindBoost: Record<string, number> = {
         student: 80,
+
         event: 65,
+
         announcement: 50,
+
         page: 45,
-      };
+      }
 
-      score += kindBoost[item.kind] ?? 30;
+      score += kindBoost[item.kind] ?? 30
 
-      if (item.identifier?.toLowerCase() === query) score += 120;
-      if (item.label.toLowerCase() === query) score += 50;
-      if (item.label.toLowerCase().startsWith(query)) score += 35;
-      if (item.hint?.toLowerCase().includes(query)) score += 15;
-      if (item.label.toLowerCase().includes(query)) score += 10;
+      if (item.identifier?.toLowerCase() === query) score += 120
 
-      return score;
-    };
+      if (item.label.toLowerCase() === query) score += 50
+
+      if (item.label.toLowerCase().startsWith(query)) score += 35
+
+      if (item.hint?.toLowerCase().includes(query)) score += 15
+
+      if (item.label.toLowerCase().includes(query)) score += 10
+
+      return score
+    }
 
     const items = [
       ...quickSearchTargets.map((item) => ({ ...item, group: "Pages" })),
+
       ...liveSearchResults,
     ]
+
       .map((item) => {
-        const score = scoreItem(item);
-        if (score === null) return null;
-        return { ...item, score };
+        const score = scoreItem(item)
+
+        if (score === null) return null
+
+        return { ...item, score }
       })
+
       .filter(Boolean)
+
       .sort(
         (a, b) =>
           (b as { score: number }).score - (a as { score: number }).score,
       )
-      .slice(0, 8);
+
+      .slice(0, 8)
 
     return items as Array<{
-      label: string;
-      hint: string;
-      path: string;
-      kind: string;
-      group: string;
-      score: number;
-      identifier?: string;
-    }>;
-  }, [liveSearchResults, quickSearchTargets, searchQuery]);
+      label: string
+
+      hint: string
+
+      path: string
+
+      kind: string
+
+      group: string
+
+      score: number
+
+      identifier?: string
+    }>
+  }, [liveSearchResults, quickSearchTargets, searchQuery])
 
   useEffect(() => {
-    setActiveSearchIndex(0);
-  }, [filteredResults.length, searchQuery]);
+    setActiveSearchIndex(0)
+  }, [filteredResults.length, searchQuery])
 
   const submitQuickSearch = (target?: { path: string }) => {
-    const selected = target ?? filteredResults[0];
-    if (!selected) return;
+    const selected = target ?? filteredResults[0]
 
-    setSearchQuery("");
-    setSearchOpen(false);
-    router.push(selected.path);
-  };
+    if (!selected) return
 
-  const go = (target: string) => router.push(target);
+    setSearchQuery("")
+
+    setSearchOpen(false)
+
+    router.push(selected.path)
+  }
+
+  const go = (target: string) => router.push(target)
 
   return (
     <header
@@ -3995,6 +4204,7 @@ export function TopBar({
               <motion.span
                 animate={{
                   rotate: sidebarCollapsed ? 180 : 0,
+
                   scale: sidebarCollapsed ? 0.94 : 1,
                 }}
                 transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
@@ -4045,32 +4255,39 @@ export function TopBar({
                   value={searchQuery}
                   onFocus={() => setSearchOpen(true)}
                   onBlur={() => {
-                    window.setTimeout(() => setSearchOpen(false), 120);
+                    window.setTimeout(() => setSearchOpen(false), 120)
                   }}
                   onChange={(event) => {
-                    setSearchQuery(event.target.value);
-                    setSearchOpen(true);
+                    setSearchQuery(event.target.value)
+
+                    setSearchOpen(true)
                   }}
                   onKeyDown={(event) => {
                     if (event.key === "ArrowDown" && filteredResults.length) {
-                      event.preventDefault();
+                      event.preventDefault()
+
                       setActiveSearchIndex((index) =>
                         Math.min(index + 1, filteredResults.length - 1),
-                      );
+                      )
                     }
+
                     if (event.key === "ArrowUp" && filteredResults.length) {
-                      event.preventDefault();
-                      setActiveSearchIndex((index) => Math.max(index - 1, 0));
+                      event.preventDefault()
+
+                      setActiveSearchIndex((index) => Math.max(index - 1, 0))
                     }
+
                     if (event.key === "Enter") {
-                      event.preventDefault();
+                      event.preventDefault()
+
                       submitQuickSearch(
                         filteredResults[activeSearchIndex] ??
                           filteredResults[0],
-                      );
+                      )
                     }
+
                     if (event.key === "Escape") {
-                      setSearchOpen(false);
+                      setSearchOpen(false)
                     }
                   }}
                   placeholder={
@@ -4250,7 +4467,7 @@ export function TopBar({
         </div>
       </div>
     </header>
-  );
+  )
 }
 
 export function Sidebar({
@@ -4274,32 +4491,33 @@ export function Sidebar({
 
   showFees,
 }: {
-  page: Page;
+  page: Page
 
-  user: User | null;
+  user: User | null
 
-  open: boolean;
+  open: boolean
 
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  onClose: () => void;
+  onClose: () => void
 
-  onLogout: () => void;
+  onLogout: () => void
 
-  badges?: Partial<Record<Page, number>>;
+  badges?: Partial<Record<Page, number>>
 
-  collapsed: boolean;
+  collapsed: boolean
 
-  onToggleCollapse: () => void;
+  onToggleCollapse: () => void
 
-  showFees: boolean;
+  showFees: boolean
 }) {
-  const router = useRouter();
-  const prefersReducedMotion = useReducedMotion();
+  const router = useRouter()
 
-  if (!user) return null;
+  const prefersReducedMotion = useReducedMotion()
 
-  const isMod = user.role === "admin";
+  if (!user) return null
+
+  const isMod = user.role === "admin"
 
   const nav = isMod
     ? [
@@ -4351,7 +4569,7 @@ export function Sidebar({
         { p: "my-fines" as Page, l: "Attendance Charges", I: Icons.Peso },
 
         { p: "profile" as Page, l: "Profile", I: Icons.User },
-      ];
+      ]
 
   const routeFromPage: Record<Page, string> = {
     landing: "/",
@@ -4395,21 +4613,21 @@ export function Sidebar({
     "admin-excuse-requests": "/admin-excuse-requests",
 
     "admin-settings": "/admin-settings",
-  };
+  }
 
   const handleNav = (p: Page) => {
-    const target = routeFromPage[p] ?? "/dashboard";
+    const target = routeFromPage[p] ?? "/dashboard"
 
-    router.push(target);
+    router.push(target)
 
-    onClose();
-  };
+    onClose()
+  }
 
   const prefetchRoute = (p: Page) => {
-    const target = routeFromPage[p] ?? "/dashboard";
+    const target = routeFromPage[p] ?? "/dashboard"
 
-    void router.prefetch(target);
-  };
+    void router.prefetch(target)
+  }
 
   const inner = (
     <div className="flex flex-col h-full bg-white">
@@ -4434,14 +4652,13 @@ export function Sidebar({
       {}
       <nav className="flex-1 px-2 pt-3 pb-2 space-y-0.5 overflow-y-auto">
         {nav.map(({ p, l, I }) => {
-          const active = page === p;
+          const active = page === p
 
-          const count = badges?.[p] ?? 0;
+          const count = badges?.[p] ?? 0
 
-          const badgeLabel =
-            count > 9 ? "9+" : count > 0 ? String(count) : null;
+          const badgeLabel = count > 9 ? "9+" : count > 0 ? String(count) : null
 
-          const target = routeFromPage[p] ?? "/dashboard";
+          const target = routeFromPage[p] ?? "/dashboard"
 
           return (
             <Link
@@ -4496,7 +4713,7 @@ export function Sidebar({
                 {l}
               </motion.span>
             </Link>
-          );
+          )
         })}
       </nav>
 
@@ -4574,7 +4791,7 @@ export function Sidebar({
         </div>
       </div>
     </div>
-  );
+  )
 
   return (
     <>
@@ -4601,6 +4818,7 @@ export function Sidebar({
           <motion.span
             animate={{
               rotate: collapsed ? 180 : 0,
+
               scale: collapsed ? 0.9 : 1,
             }}
             transition={
@@ -4623,6 +4841,7 @@ export function Sidebar({
             animate={{ opacity: 1 }}
             exit={{
               opacity: 0,
+
               transition: { duration: prefersReducedMotion ? 0 : 0.16 },
             }}
             transition={{ duration: prefersReducedMotion ? 0 : 0.16 }}
@@ -4641,14 +4860,17 @@ export function Sidebar({
                 ? { x: 0 }
                 : {
                     x: "-100%",
+
                     transition: {
                       duration: 0.16,
+
                       ease: [0.64, 0, 0.78, 0],
                     },
                   }
             }
             transition={{
               duration: prefersReducedMotion ? 0 : 0.2,
+
               ease: [0.22, 1, 0.36, 1],
             }}
             className="fixed top-0 left-0 z-50 h-full w-72 shadow-2xl lg:hidden"
@@ -4659,68 +4881,68 @@ export function Sidebar({
         )}
       </AnimatePresence>
     </>
-  );
+  )
 }
 
 function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
-  const n = slides.length;
+  const n = slides.length
 
-  const [trackIdx, setTrackIdx] = useState(0);
+  const [trackIdx, setTrackIdx] = useState(0)
 
-  const [animated, setAnimated] = useState(true);
+  const [animated, setAnimated] = useState(true)
 
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(false)
 
-  const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const realIdx = trackIdx % n;
+  const realIdx = trackIdx % n
 
-  const items = n > 1 ? [...slides, slides[0]] : slides;
+  const items = n > 1 ? [...slides, slides[0]] : slides
 
-  const total = items.length;
+  const total = items.length
 
   const activeSlideIsVideo =
-    n > 0 && /\.mp4($|\?)/i.test(slides[realIdx].imageUrl);
+    n > 0 && /\.mp4($|\?)/i.test(slides[realIdx].imageUrl)
 
   const advance = () => {
-    setAnimated(true);
+    setAnimated(true)
 
-    setTrackIdx((i) => i + 1);
-  };
+    setTrackIdx((i) => i + 1)
+  }
 
   const go = (next: number) => {
-    const target = ((next % n) + n) % n;
+    const target = ((next % n) + n) % n
 
-    setAnimated(true);
+    setAnimated(true)
 
-    setTrackIdx(target);
+    setTrackIdx(target)
 
-    setPaused(true);
+    setPaused(true)
 
-    if (pauseTimer.current) clearTimeout(pauseTimer.current);
+    if (pauseTimer.current) clearTimeout(pauseTimer.current)
 
-    pauseTimer.current = setTimeout(() => setPaused(false), 8000);
-  };
+    pauseTimer.current = setTimeout(() => setPaused(false), 8000)
+  }
 
   const handleTransitionEnd = () => {
     if (trackIdx === n) {
-      setAnimated(false);
+      setAnimated(false)
 
-      setTrackIdx(0);
+      setTrackIdx(0)
     }
-  };
+  }
 
   useEffect(() => {
-    if (paused || activeSlideIsVideo || n <= 1) return;
+    if (paused || activeSlideIsVideo || n <= 1) return
 
     const t = setInterval(() => {
-      if (document.visibilityState === "visible") advance();
-    }, 5000);
+      if (document.visibilityState === "visible") advance()
+    }, 5000)
 
-    return () => clearInterval(t);
-  }, [activeSlideIsVideo, paused, n]);
+    return () => clearInterval(t)
+  }, [activeSlideIsVideo, paused, n])
 
-  if (n === 0) return null;
+  if (n === 0) return null
 
   return (
     <div
@@ -4834,7 +5056,7 @@ function LandingCarousel({ slides }: { slides: CarouselSlide[] }) {
         </div>
       )}
     </div>
-  );
+  )
 }
 
 function LandingPage({
@@ -4844,82 +5066,82 @@ function LandingPage({
 
   user,
 }: {
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  settings: SystemSettings;
+  settings: SystemSettings
 
-  user: User | null;
+  user: User | null
 }) {
   const heroUrls = settings.heroImageUrls.filter(
     (url) => !!url && !url.startsWith("blob:"),
-  );
+  )
 
   const carouselSlides = settings.carouselSlides.filter(
     (slide) => !!slide.imageUrl && !slide.imageUrl.startsWith("blob:"),
-  );
+  )
 
-  const hasHero = heroUrls.length > 0;
+  const hasHero = heroUrls.length > 0
 
-  const hn = heroUrls.length;
+  const hn = heroUrls.length
 
-  const [heroTrack, setHeroTrack] = useState(0);
+  const [heroTrack, setHeroTrack] = useState(0)
 
-  const [heroAnim, setHeroAnim] = useState(true);
+  const [heroAnim, setHeroAnim] = useState(true)
 
-  const [heroVisibilityStamp, setHeroVisibilityStamp] = useState(0);
+  const [heroVisibilityStamp, setHeroVisibilityStamp] = useState(0)
 
-  const heroRealIdx = heroTrack % (hn || 1);
+  const heroRealIdx = heroTrack % (hn || 1)
 
-  const heroItems = hn > 1 ? [...heroUrls, heroUrls[0]] : heroUrls;
+  const heroItems = hn > 1 ? [...heroUrls, heroUrls[0]] : heroUrls
 
-  const heroTotal = heroItems.length;
+  const heroTotal = heroItems.length
 
   const heroAdvance = () => {
-    setHeroAnim(true);
+    setHeroAnim(true)
 
-    setHeroTrack((i) => i + 1);
-  };
+    setHeroTrack((i) => i + 1)
+  }
 
   const heroTransitionEnd = () => {
     if (heroTrack === hn) {
-      setHeroAnim(false);
+      setHeroAnim(false)
 
-      setHeroTrack(0);
+      setHeroTrack(0)
     }
-  };
+  }
 
   useEffect(() => {
-    if (hn <= 1) return;
+    if (hn <= 1) return
 
     const t = setInterval(() => {
-      if (document.visibilityState === "visible") heroAdvance();
-    }, 5000);
+      if (document.visibilityState === "visible") heroAdvance()
+    }, 5000)
 
-    return () => clearInterval(t);
-  }, [hn]);
+    return () => clearInterval(t)
+  }, [hn])
 
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        setHeroTrack(0);
+        setHeroTrack(0)
 
-        setHeroAnim(false);
+        setHeroAnim(false)
 
-        setHeroVisibilityStamp((v) => v + 1);
+        setHeroVisibilityStamp((v) => v + 1)
       }
-    };
+    }
 
-    document.addEventListener("visibilitychange", handleVisibility);
+    document.addEventListener("visibilitychange", handleVisibility)
 
     return () =>
-      document.removeEventListener("visibilitychange", handleVisibility);
-  }, [hn]);
+      document.removeEventListener("visibilitychange", handleVisibility)
+  }, [hn])
 
   useEffect(() => {
-    setHeroTrack(0);
+    setHeroTrack(0)
 
-    setHeroAnim(false);
-  }, [hn]);
+    setHeroAnim(false)
+  }, [hn])
 
   return (
     <div className="min-h-screen bg-white">
@@ -5072,15 +5294,15 @@ function LandingPage({
                 if (user) {
                   onNav(
                     user.role === "admin" ? "admin-dashboard" : "dashboard",
-                  );
+                  )
 
-                  return;
+                  return
                 }
 
                 if (typeof window !== "undefined") {
-                  window.location.assign("/login");
+                  window.location.assign("/login")
                 } else {
-                  onNav("login");
+                  onNav("login")
                 }
               }}
               className="h-11 px-6 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-px"
@@ -5157,39 +5379,39 @@ function LandingPage({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 export function LoginPage({ onBack }: { onBack: () => void }) {
-  const router = useRouter();
+  const router = useRouter()
 
-  const [showEmailFlow, setShowEmailFlow] = useState(false);
+  const [showEmailFlow, setShowEmailFlow] = useState(false)
 
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup">("signin")
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("")
 
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState("")
 
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("")
 
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false)
 
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  const [loading, setLoading] = useState<"google" | "submit" | null>(null);
+  const [loading, setLoading] = useState<"google" | "submit" | null>(null)
 
   const routeAfterAuth = async () => {
     const {
       data: { user },
 
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser()
 
     if (userError || !user) {
-      router.push("/login");
+      router.push("/login")
 
-      return;
+      return
     }
 
     const { data: profile, error: profileError } = await supabase
@@ -5200,10 +5422,10 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
 
       .eq("id", user.id)
 
-      .maybeSingle();
+      .maybeSingle()
 
     if (profileError && profileError.code !== "PGRST116") {
-      console.error(profileError);
+      console.error(profileError)
     }
 
     const incomplete =
@@ -5211,23 +5433,23 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
       !profile.first_name ||
       !profile.surname ||
       (profile.role !== "admin" &&
-        (!profile.student_id || !profile.program || !profile.year_level));
+        (!profile.student_id || !profile.program || !profile.year_level))
 
     if (incomplete) {
-      router.push("/onboarding?freshLogin=1");
+      router.push("/onboarding?freshLogin=1")
 
-      return;
+      return
     }
 
     router.push(
       profile.role === "admin"
         ? "/admin-dashboard?freshLogin=1"
         : "/dashboard?freshLogin=1",
-    );
-  };
+    )
+  }
 
   const handleGoogleLogin = async () => {
-    setLoading("google");
+    setLoading("google")
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -5236,73 +5458,73 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
-      });
+      })
 
       if (error) {
-        console.error(error);
+        console.error(error)
 
-        toast.error(error.message || "Google sign-in failed.");
+        toast.error(error.message || "Google sign-in failed.")
       }
     } catch (error) {
-      console.error(error);
+      console.error(error)
 
-      toast.error("Google sign-in failed.");
+      toast.error("Google sign-in failed.")
     } finally {
-      setLoading(null);
+      setLoading(null)
     }
-  };
+  }
 
   const handleEmailSubmit = async () => {
-    const trimmedEmail = email.trim();
+    const trimmedEmail = email.trim()
 
     if (!trimmedEmail || !password) {
-      toast.error("Please enter both your email and password.");
+      toast.error("Please enter both your email and password.")
 
-      return;
+      return
     }
 
     if (mode === "signup") {
       if (!confirmPassword) {
-        toast.error("Please confirm your password.");
+        toast.error("Please confirm your password.")
 
-        return;
+        return
       }
 
       if (password !== confirmPassword) {
-        toast.error("Passwords do not match.");
+        toast.error("Passwords do not match.")
 
-        return;
+        return
       }
     }
 
-    setLoading("submit");
+    setLoading("submit")
 
     try {
-      let result;
+      let result
 
       if (mode === "signin") {
         result = await supabase.auth.signInWithPassword({
           email: trimmedEmail,
 
           password,
-        });
+        })
       } else {
         result = await supabase.auth.signUp({
           email: trimmedEmail,
 
           password,
-        });
+        })
       }
 
       if (result.error) {
-        const message = result.error.message.toLowerCase();
+        const message = result.error.message.toLowerCase()
 
         if (
           message.includes("invalid login") ||
           message.includes("wrong password") ||
           message.includes("invalid credentials")
         ) {
-          toast.error("Invalid email or password.");
+          toast.error("Invalid email or password.")
         } else if (
           message.includes("already registered") ||
           message.includes("user already registered") ||
@@ -5310,49 +5532,49 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
         ) {
           toast.error(
             "This email is already registered. Please sign in instead.",
-          );
+          )
         } else if (message.includes("password") && message.includes("match")) {
-          toast.error("Passwords do not match.");
+          toast.error("Passwords do not match.")
         } else if (message.includes("password") && message.includes("least")) {
-          toast.error("Password must be at least 6 characters long.");
+          toast.error("Password must be at least 6 characters long.")
         } else {
-          toast.error(result.error.message || "Authentication failed.");
+          toast.error(result.error.message || "Authentication failed.")
         }
 
-        return;
+        return
       }
 
       if (mode === "signup") {
         if (result.data.session) {
-          await routeAfterAuth();
+          await routeAfterAuth()
         } else {
           toast.success(
             "Account created. Please check your inbox and confirm your email before signing in.",
-          );
+          )
 
-          setMode("signin");
+          setMode("signin")
 
-          setPassword("");
+          setPassword("")
 
-          setConfirmPassword("");
+          setConfirmPassword("")
 
-          setShowPassword(false);
+          setShowPassword(false)
 
-          setShowConfirmPassword(false);
+          setShowConfirmPassword(false)
         }
 
-        return;
+        return
       }
 
-      await routeAfterAuth();
+      await routeAfterAuth()
     } catch (error) {
-      console.error(error);
+      console.error(error)
 
-      toast.error("Authentication failed. Please try again.");
+      toast.error("Authentication failed. Please try again.")
     } finally {
-      setLoading(null);
+      setLoading(null)
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-3.5 bg-[#f8faf9] md:p-6">
@@ -5388,7 +5610,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
             <button
               type="button"
               onClick={() => {
-                setShowEmailFlow(true);
+                setShowEmailFlow(true)
               }}
               disabled={!!loading}
               className="w-full h-12 flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 rounded-xl text-sm font-semibold text-white transition-all shadow-sm disabled:opacity-50"
@@ -5517,11 +5739,11 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                   <button
                     type="button"
                     onClick={() => {
-                      setMode(mode === "signin" ? "signup" : "signin");
+                      setMode(mode === "signin" ? "signup" : "signin")
 
-                      setPassword("");
+                      setPassword("")
 
-                      setConfirmPassword("");
+                      setConfirmPassword("")
                     }}
                     className="text-emerald-500 font-semibold hover:text-emerald-600"
                   >
@@ -5532,15 +5754,15 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                 <button
                   type="button"
                   onClick={() => {
-                    setShowEmailFlow(false);
+                    setShowEmailFlow(false)
 
-                    setPassword("");
+                    setPassword("")
 
-                    setConfirmPassword("");
+                    setConfirmPassword("")
 
-                    setShowPassword(false);
+                    setShowPassword(false)
 
-                    setShowConfirmPassword(false);
+                    setShowConfirmPassword(false)
                   }}
                   className="w-full text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-1 pt-3"
                 >
@@ -5564,31 +5786,31 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 export interface OBForm {
-  firstName: string;
+  firstName: string
 
-  middleInitial: string;
+  middleInitial: string
 
-  surname: string;
+  surname: string
 
-  phone: string;
+  phone: string
 
-  contactEmail: string;
+  contactEmail: string
 
-  studentId: string;
+  studentId: string
 
-  program: string;
+  program: string
 
-  yearLevel: string;
+  yearLevel: string
 
-  section: string;
+  section: string
 
-  idPhotoUrl?: string;
+  idPhotoUrl?: string
 
-  agreedToTerms?: boolean;
+  agreedToTerms?: boolean
 }
 
 export function OnboardingPage({
@@ -5596,15 +5818,14 @@ export function OnboardingPage({
 
   submitting = false,
 }: {
-  onComplete: (d: OBForm) => Promise<boolean> | boolean | void;
+  onComplete: (d: OBForm) => Promise<boolean> | boolean | void
 
-  submitting?: boolean;
+  submitting?: boolean
 }) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1)
 
-  const [idPhotoUploadState, setIdPhotoUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [idPhotoUploadState, setIdPhotoUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
   const [f, setF] = useState<OBForm>({
     firstName: "",
@@ -5624,26 +5845,35 @@ export function OnboardingPage({
     yearLevel: "",
 
     section: "",
-  });
+  })
 
-  const [agreed, setAgreed] = useState(false);
+  const [agreed, setAgreed] = useState(false)
 
-  const idPhotoRef = useRef<HTMLInputElement>(null);
+  const idPhotoRef = useRef<HTMLInputElement>(null)
+  const idPhotoUrlRef = useRef<string | undefined>(undefined)
+  const onboardingMountedRef = useRef(true)
+  const completionCommittedRef = useRef(false)
 
   useEffect(() => {
+    onboardingMountedRef.current = true
     return () => {
-      if (f.idPhotoUrl) {
-        URL.revokeObjectURL(f.idPhotoUrl);
+      onboardingMountedRef.current = false
+      if (!completionCommittedRef.current && idPhotoUrlRef.current) {
+        void deleteImage(idPhotoUrlRef.current)
       }
-    };
-  }, []);
+    }
+  }, [])
+
+  useEffect(() => {
+    idPhotoUrlRef.current = f.idPhotoUrl
+  }, [f.idPhotoUrl])
 
   const set =
     (k: keyof OBForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-      setF((p) => ({ ...p, [k]: e.target.value }));
+      setF((p) => ({ ...p, [k]: e.target.value }))
 
-  const TOTAL = 6;
+  const TOTAL = 6
 
   const steps = [
     {
@@ -5669,42 +5899,42 @@ export function OnboardingPage({
     },
 
     { t: "Terms & Privacy", d: "Please read and agree to continue." },
-  ];
+  ]
 
   const canContinue = () => {
     if (step === 1) {
-      return f.firstName.trim().length > 0 && f.surname.trim().length > 0;
+      return f.firstName.trim().length > 0 && f.surname.trim().length > 0
     }
 
     if (step === 2) {
-      const phone = f.phone.replace(/[^\d+]/g, "");
+      const phone = f.phone.replace(/[^\d+]/g, "")
 
-      const email = f.contactEmail.trim();
+      const email = f.contactEmail.trim()
 
       return (
         /^(?:09\d{9}|\+639\d{9})$/.test(phone) &&
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-      );
+      )
     }
 
     if (step === 3) {
-      return /^\d{7,}$/.test(f.studentId.trim());
+      return /^\d{7,}$/.test(f.studentId.trim())
     }
 
     if (step === 4) {
-      return f.program.trim().length > 0 && f.yearLevel.trim().length > 0;
+      return f.program.trim().length > 0 && f.yearLevel.trim().length > 0
     }
 
     if (step === 5) {
-      return !!f.idPhotoUrl;
+      return !!f.idPhotoUrl
     }
 
     if (step === 6) {
-      return agreed;
+      return agreed
     }
 
-    return false;
-  };
+    return false
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-3.5 bg-[#f8faf9] md:p-6">
@@ -5837,39 +6067,50 @@ export function OnboardingPage({
                   capture="environment"
                   className="hidden"
                   onChange={async (e) => {
-                    const file = e.target.files?.[0];
+                    const file = e.target.files?.[0]
 
-                    if (!file) return;
-                    e.currentTarget.value = "";
+                    if (!file) return
 
-                    setIdPhotoUploadState("uploading");
+                    e.currentTarget.value = ""
+
+                    setIdPhotoUploadState("uploading")
 
                     try {
-                      const result = await uploadVerificationImage(file);
+                      const previousPhotoUrl = idPhotoUrlRef.current
+                      const result = await uploadVerificationImage(file)
 
                       if ("error" in result) {
-                        setIdPhotoUploadState("error");
+                        setIdPhotoUploadState("error")
 
-                        toast.error(result.error);
+                        toast.error(result.error)
 
-                        return;
+                        return
                       }
 
-                      setIdPhotoUploadState("idle");
+                      if (!onboardingMountedRef.current) {
+                        await deleteImage(result.url)
+                        return
+                      }
+
+                      setIdPhotoUploadState("idle")
 
                       setF((p) => ({
                         ...p,
 
                         idPhotoUrl: result.url,
-                      }));
+                      }))
+
+                      if (previousPhotoUrl && previousPhotoUrl !== result.url) {
+                        void deleteImage(previousPhotoUrl)
+                      }
                     } catch (caughtError) {
-                      setIdPhotoUploadState("error");
+                      setIdPhotoUploadState("error")
 
                       toast.error(
                         caughtError instanceof Error
                           ? `ID photo upload failed: ${caughtError.message}`
                           : "ID photo upload failed. Please try again.",
-                      );
+                      )
                     }
                   }}
                 />
@@ -5905,11 +6146,10 @@ export function OnboardingPage({
                     />
                     <button
                       onClick={() => {
-                        if (f.idPhotoUrl) {
-                          URL.revokeObjectURL(f.idPhotoUrl);
-                        }
+                        const photoUrl = f.idPhotoUrl
 
-                        setF((p) => ({ ...p, idPhotoUrl: undefined }));
+                        setF((p) => ({ ...p, idPhotoUrl: undefined }))
+                        if (photoUrl) void deleteImage(photoUrl)
                       }}
                       className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
                     >
@@ -6028,12 +6268,20 @@ export function OnboardingPage({
               disabled={!canContinue() || submitting}
               onClick={async () => {
                 if (step < TOTAL) {
-                  setStep((s) => s + 1);
+                  setStep((s) => s + 1)
 
-                  return;
+                  return
                 }
 
-                await onComplete({ ...f, agreedToTerms: agreed });
+                const completed = await onComplete({
+                  ...f,
+                  agreedToTerms: agreed,
+                })
+                if (completed === true) {
+                  completionCommittedRef.current = true
+                } else if (f.idPhotoUrl) {
+                  setF((current) => ({ ...current, idPhotoUrl: undefined }))
+                }
               }}
               className={`flex-1 h-10 text-white text-sm font-semibold rounded-lg transition-all shadow-sm ${
                 canContinue()
@@ -6051,37 +6299,49 @@ export function OnboardingPage({
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function ExcuseModal({
   record,
+
   onClose,
+
   onSubmit,
 }: {
-  record: (typeof ATTENDANCE_RECORDS)[0] & {
-    sessionLabel?: "morning" | "afternoon";
-  };
-  onClose: () => void;
-  onSubmit: (r: ExcuseRequest) => Promise<boolean> | boolean;
+  record: typeof ATTENDANCE_RECORDS[0] & {
+    sessionLabel?: "morning" | "afternoon"
+  }
+
+  onClose: () => void
+
+  onSubmit: (r: ExcuseRequest) => Promise<boolean> | boolean
 }) {
-  const [reason, setReason] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const ref = useRef<HTMLInputElement>(null);
-  const prefersReducedMotion = useReducedMotion();
+  const [reason, setReason] = useState("")
+
+  const [file, setFile] = useState<File | null>(null)
+
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  const [submitting, setSubmitting] = useState(false)
+
+  const ref = useRef<HTMLInputElement>(null)
+
+  const prefersReducedMotion = useReducedMotion()
 
   useEffect(() => {
     if (!file?.type.startsWith("image/")) {
-      setPreviewUrl(null);
-      return;
+      setPreviewUrl(null)
+
+      return
     }
 
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [file]);
+    const objectUrl = URL.createObjectURL(file)
+
+    setPreviewUrl(objectUrl)
+
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [file])
 
   return (
     <motion.div
@@ -6099,6 +6359,7 @@ function ExcuseModal({
         animate={{ opacity: 1, y: 0 }}
         transition={{
           duration: prefersReducedMotion ? 0 : 0.18,
+
           ease: [0.22, 1, 0.36, 1],
         }}
         className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:max-h-[min(88dvh,780px)] sm:rounded-2xl"
@@ -6175,8 +6436,9 @@ function ExcuseModal({
                 accept="image/*,.pdf"
                 className="hidden"
                 onChange={(event) => {
-                  setFile(event.currentTarget.files?.[0] ?? null);
-                  event.currentTarget.value = "";
+                  setFile(event.currentTarget.files?.[0] ?? null)
+
+                  event.currentTarget.value = ""
                 }}
               />
 
@@ -6273,30 +6535,42 @@ function ExcuseModal({
           <button
             type="button"
             onClick={async () => {
-              if (!reason.trim()) return;
+              if (!reason.trim()) return
 
-              setSubmitting(true);
+              setSubmitting(true)
 
               try {
                 const succeeded = await onSubmit({
                   id: Date.now().toString(),
-                  studentName: "Maria Luisa Santos",
-                  studentId: "2440014",
-                  event: record.event,
-                  eventId: record.eventId,
-                  attendanceScanId: record.id,
-                  attachmentFile: file ?? undefined,
-                  sessionLabel: record.sessionLabel,
-                  date: record.date,
-                  reason,
-                  proofName: file ? file.name : null,
-                  status: "pending",
-                  submittedDate: "Aug 22, 2026",
-                });
 
-                if (succeeded) onClose();
+                  studentName: "Maria Luisa Santos",
+
+                  studentId: "2440014",
+
+                  event: record.event,
+
+                  eventId: record.eventId,
+
+                  attendanceScanId: record.id,
+
+                  attachmentFile: file ?? undefined,
+
+                  sessionLabel: record.sessionLabel,
+
+                  date: record.date,
+
+                  reason,
+
+                  proofName: file ? file.name : null,
+
+                  status: "pending",
+
+                  submittedDate: "Aug 22, 2026",
+                })
+
+                if (succeeded) onClose()
               } finally {
-                setSubmitting(false);
+                setSubmitting(false)
               }
             }}
             disabled={!reason.trim() || submitting}
@@ -6308,7 +6582,7 @@ function ExcuseModal({
         </footer>
       </motion.div>
     </motion.div>
-  );
+  )
 }
 
 function FormModal({
@@ -6322,17 +6596,17 @@ function FormModal({
 
   children,
 }: {
-  title: string;
+  title: string
 
-  onClose: () => void;
+  onClose: () => void
 
-  sidebar?: React.ReactNode;
+  sidebar?: React.ReactNode
 
-  footer?: React.ReactNode;
+  footer?: React.ReactNode
 
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion()
 
   return (
     <motion.div
@@ -6347,6 +6621,7 @@ function FormModal({
         animate={{ opacity: 1, y: 0 }}
         transition={{
           duration: prefersReducedMotion ? 0 : 0.18,
+
           ease: [0.22, 1, 0.36, 1],
         }}
         className={`bg-white rounded-2xl w-full shadow-2xl flex flex-col overflow-hidden ${
@@ -6397,7 +6672,7 @@ function FormModal({
         )}
       </motion.div>
     </motion.div>
-  );
+  )
 }
 
 function UpcomingEventCard({
@@ -6405,11 +6680,11 @@ function UpcomingEventCard({
 
   onClick,
 }: {
-  event: EventData;
+  event: EventData
 
-  onClick: () => void;
+  onClick: () => void
 }) {
-  const cover = ev.mediaUrls?.[0] ?? null;
+  const cover = ev.mediaUrls?.[0] ?? null
 
   const greenText = (dim?: boolean) => (
     <>
@@ -6445,7 +6720,7 @@ function UpcomingEventCard({
         </span>
       </div>
     </>
-  );
+  )
 
   return (
     <button onClick={onClick} className="w-full text-left mb-5 block group">
@@ -6546,7 +6821,7 @@ function UpcomingEventCard({
         </div>
       )}
     </button>
-  );
+  )
 }
 
 export function DashboardPage({
@@ -6564,33 +6839,33 @@ export function DashboardPage({
 
   attendanceStats,
 }: {
-  user: User;
+  user: User
 
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  fines: FineRecord[];
+  fines: FineRecord[]
 
-  showFees: boolean;
+  showFees: boolean
 
-  announcements: typeof INITIAL_ANNOUNCEMENTS;
+  announcements: typeof INITIAL_ANNOUNCEMENTS
 
-  nextEvent?: EventData;
+  nextEvent?: EventData
 
   attendanceStats?: {
-    present: number;
+    present: number
 
-    absent: number;
+    absent: number
 
-    upcoming: number;
+    upcoming: number
 
-    totalSessions: number;
-  };
+    totalSessions: number
+  }
 }) {
-  const unpaidFines = fines.filter((f) => f.status === "unpaid");
+  const unpaidFines = fines.filter((f) => f.status === "unpaid")
 
-  const total = unpaidFines.reduce((s, f) => s + Number(f.amount || 0), 0);
+  const total = unpaidFines.reduce((s, f) => s + Number(f.amount || 0), 0)
 
-  const latestAnnouncements = announcements.slice(0, 2);
+  const latestAnnouncements = announcements.slice(0, 2)
 
   const statValues = attendanceStats ?? {
     present: 0,
@@ -6600,20 +6875,24 @@ export function DashboardPage({
     upcoming: 0,
 
     totalSessions: 0,
-  };
+  }
 
   const attendedSessions = Math.min(
     statValues.present,
+
     statValues.totalSessions,
-  );
+  )
+
   const notAttendedSessions = Math.max(
     statValues.totalSessions - attendedSessions,
+
     0,
-  );
+  )
+
   const attendanceRate =
     statValues.totalSessions > 0
       ? Math.round((attendedSessions / statValues.totalSessions) * 100)
-      : null;
+      : null
 
   return (
     <>
@@ -6827,15 +7106,17 @@ export function DashboardPage({
         ))}
       </div>
     </>
-  );
+  )
 }
 
 function SearchRecordUnavailable({
   label,
+
   onBack,
 }: {
-  label: string;
-  onBack: () => void;
+  label: string
+
+  onBack: () => void
 }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white px-5 py-8 text-center shadow-sm">
@@ -6850,29 +7131,35 @@ function SearchRecordUnavailable({
         Back to results
       </button>
     </div>
-  );
+  )
 }
 
 function useRecordSelection(searchParam: string) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const selectedId = searchParams.get(searchParam);
+  const router = useRouter()
+
+  const pathname = usePathname()
+
+  const searchParams = useSearchParams()
+
+  const selectedId = searchParams.get(searchParam)
 
   const setSelectedId = (id: string | null, replace = false) => {
-    if (searchParams.get(searchParam) === id) return;
+    if (searchParams.get(searchParam) === id) return
 
-    const params = new URLSearchParams(searchParams.toString());
-    if (id) params.set(searchParam, id);
-    else params.delete(searchParam);
+    const params = new URLSearchParams(searchParams.toString())
 
-    const query = params.toString();
-    const href = query ? `${pathname}?${query}` : pathname;
-    if (replace) router.replace(href, { scroll: false });
-    else router.push(href, { scroll: false });
-  };
+    if (id) params.set(searchParam, id)
+    else params.delete(searchParam)
 
-  return { selectedId, setSelectedId };
+    const query = params.toString()
+
+    const href = query ? `${pathname}?${query}` : pathname
+
+    if (replace) router.replace(href, { scroll: false })
+    else router.push(href, { scroll: false })
+  }
+
+  return { selectedId, setSelectedId }
 }
 
 export function EventsPage({
@@ -6884,26 +7171,26 @@ export function EventsPage({
 
   events,
 }: {
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  user: User | null;
+  user: User | null
 
-  showFees: boolean;
+  showFees: boolean
 
-  events: EventData[];
+  events: EventData[]
 }) {
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("all")
 
   const { selectedId: selectedEventId, setSelectedId: setSelectedEventId } =
-    useRecordSelection("eventId");
+    useRecordSelection("eventId")
 
   const items =
-    filter === "all" ? events : events.filter((e) => e.status === filter);
+    filter === "all" ? events : events.filter((e) => e.status === filter)
 
-  const canSeeFees = user?.role === "student" && showFees;
+  const canSeeFees = user?.role === "student" && showFees
 
   if (selectedEventId) {
-    const selectedEvent = events.find((event) => event.id === selectedEventId);
+    const selectedEvent = events.find((event) => event.id === selectedEventId)
 
     if (!selectedEvent) {
       return (
@@ -6911,7 +7198,7 @@ export function EventsPage({
           label="Event"
           onBack={() => setSelectedEventId(null, true)}
         />
-      );
+      )
     }
 
     return (
@@ -6921,10 +7208,10 @@ export function EventsPage({
         showFees={showFees}
         onClose={() => setSelectedEventId(null, true)}
         onPrimaryAction={() => {
-          onNav(user ? "my-qr" : "login");
+          onNav(user ? "my-qr" : "login")
         }}
       />
-    );
+    )
   }
 
   return (
@@ -6964,7 +7251,7 @@ export function EventsPage({
           >
             <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
               {(() => {
-                const cover = e.highlightUrl;
+                const cover = e.highlightUrl
 
                 if (!cover) {
                   return (
@@ -6973,7 +7260,7 @@ export function EventsPage({
                         No media
                       </span>
                     </div>
-                  );
+                  )
                 }
 
                 return /\.mp4($|\?)/i.test(cover) ? (
@@ -6985,7 +7272,7 @@ export function EventsPage({
                     sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
                     className="w-full h-full object-cover"
                   />
-                );
+                )
               })()}
 
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/25 via-transparent to-slate-900/10" />
@@ -7037,7 +7324,7 @@ export function EventsPage({
         ))}
       </div>
     </>
-  );
+  )
 }
 
 function EventDetailPage({
@@ -7051,36 +7338,39 @@ function EventDetailPage({
 
   events,
 }: {
-  eventId: string;
+  eventId: string
 
-  user: User | null;
+  user: User | null
 
-  showFees: boolean;
+  showFees: boolean
 
-  onBack: () => void;
+  onBack: () => void
 
-  events: EventData[];
+  events: EventData[]
 }) {
-  const ev = events.find((e) => e.id === eventId) ?? events[0];
+  const ev = events.find((e) => e.id === eventId) ?? events[0]
 
-  const canSeeFees = user?.role === "student" && showFees;
+  const canSeeFees = user?.role === "student" && showFees
 
-  const [lightbox, setLightbox] = useState<string | null>(null);
-  const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null)
 
-  const primaryMedia = ev.highlightUrl ?? ev.mediaUrls?.[0];
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null)
+
+  const primaryMedia = ev.highlightUrl ?? ev.mediaUrls?.[0]
+
   const videoPoster = [ev.highlightUrl, ...(ev.mediaUrls ?? [])].find(
     (url): url is string => !!url && !/\.mp4($|\?)/i.test(url),
-  );
+  )
+
   const activeVideoUrl =
     selectedVideoUrl ??
-    (primaryMedia && /\.mp4($|\?)/i.test(primaryMedia) ? primaryMedia : null);
+    (primaryMedia && /\.mp4($|\?)/i.test(primaryMedia) ? primaryMedia : null)
 
   useEffect(() => {
     setSelectedVideoUrl(
       primaryMedia && /\.mp4($|\?)/i.test(primaryMedia) ? primaryMedia : null,
-    );
-  }, [eventId, primaryMedia]);
+    )
+  }, [eventId, primaryMedia])
 
   return (
     <>
@@ -7249,76 +7539,87 @@ function EventDetailPage({
         </div>
       )}
     </>
-  );
+  )
 }
 
-type StudentFeedbackStatus =
-  | "loading"
-  | "eligible"
-  | "submitted"
-  | "ineligible"
-  | "not_open"
-  | "error";
+type StudentFeedbackStatus = "loading" | "eligible" | "submitted" | "ineligible" | "not_open" | "error"
 
 function StudentEventFeedback({ eventId }: { eventId: string }) {
-  const [status, setStatus] = useState<StudentFeedbackStatus>("loading");
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-  const [retryKey, setRetryKey] = useState(0);
+  const [status, setStatus] = useState<StudentFeedbackStatus>("loading")
+
+  const [rating, setRating] = useState(0)
+
+  const [comment, setComment] = useState("")
+
+  const [isSaving, setIsSaving] = useState(false)
+
+  const [submitError, setSubmitError] = useState("")
+
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false
 
     async function loadStatus() {
       const { data, error } = await supabase.rpc(
         "get_my_event_feedback_status",
-        { p_event_id: eventId },
-      );
 
-      if (cancelled) return;
+        { p_event_id: eventId },
+      )
+
+      if (cancelled) return
+
       if (error) {
-        console.error(error);
-        setStatus("error");
+        console.error(error)
+
+        setStatus("error")
       } else {
-        setStatus(data as StudentFeedbackStatus);
+        setStatus(data as StudentFeedbackStatus)
       }
     }
 
-    void loadStatus();
+    void loadStatus()
+
     return () => {
-      cancelled = true;
-    };
-  }, [eventId, retryKey]);
+      cancelled = true
+    }
+  }, [eventId, retryKey])
 
   const submitFeedback = async () => {
-    if (rating < 1 || rating > 5) return;
+    if (rating < 1 || rating > 5) return
 
-    setIsSaving(true);
-    setSubmitError("");
+    setIsSaving(true)
+
+    setSubmitError("")
+
     const { data, error } = await supabase.rpc("submit_event_feedback", {
       p_event_id: eventId,
+
       p_rating: rating,
+
       p_comment: comment.trim() || null,
-    });
-    setIsSaving(false);
+    })
+
+    setIsSaving(false)
 
     if (error) {
-      console.error(error);
+      console.error(error)
+
       setSubmitError(
         "Your feedback could not be sent. Please try again in a moment.",
-      );
-      return;
+      )
+
+      return
     }
 
     if (data === "submitted" || data === "already_submitted") {
-      setStatus("submitted");
-      return;
+      setStatus("submitted")
+
+      return
     }
 
-    setSubmitError("Your feedback could not be sent. Please try again.");
-  };
+    setSubmitError("Your feedback could not be sent. Please try again.")
+  }
 
   if (status === "loading") {
     return (
@@ -7327,7 +7628,7 @@ function StudentEventFeedback({ eventId }: { eventId: string }) {
           Checking feedback availability...
         </p>
       </section>
-    );
+    )
   }
 
   if (status === "error") {
@@ -7344,7 +7645,7 @@ function StudentEventFeedback({ eventId }: { eventId: string }) {
           Try again
         </button>
       </section>
-    );
+    )
   }
 
   if (status === "submitted") {
@@ -7362,7 +7663,7 @@ function StudentEventFeedback({ eventId }: { eventId: string }) {
           </p>
         </div>
       </section>
-    );
+    )
   }
 
   if (status !== "eligible") {
@@ -7375,7 +7676,7 @@ function StudentEventFeedback({ eventId }: { eventId: string }) {
             : "Feedback is available to students recorded as present or late for this event."}
         </p>
       </section>
-    );
+    )
   }
 
   return (
@@ -7449,79 +7750,102 @@ function StudentEventFeedback({ eventId }: { eventId: string }) {
         {isSaving ? "Sending..." : "Send feedback"}
       </button>
     </section>
-  );
+  )
 }
 
 type AdminEventFeedbackRow = {
-  id: string;
-  student_id: string;
-  rating: number;
-  comment: string | null;
-  created_at: string;
+  id: string
+
+  student_id: string
+
+  rating: number
+
+  comment: string | null
+
+  created_at: string
+
   student: {
-    first_name: string | null;
-    surname: string | null;
-    student_id: string | null;
-  } | null;
-};
+    first_name: string | null
+
+    surname: string | null
+
+    student_id: string | null
+  } | null
+}
 
 function AdminEventFeedbackPanel({
   eventId,
+
   isActive,
 }: {
-  eventId: string;
-  isActive: boolean;
+  eventId: string
+
+  isActive: boolean
 }) {
-  const [feedback, setFeedback] = useState<AdminEventFeedbackRow[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const [retryKey, setRetryKey] = useState(0);
+  const [feedback, setFeedback] = useState<AdminEventFeedbackRow[]>([])
+
+  const [isLoading, setIsLoading] = useState(false)
+
+  const [hasError, setHasError] = useState(false)
+
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) return
 
-    let cancelled = false;
-    setIsLoading(true);
-    setHasError(false);
+    let cancelled = false
+
+    setIsLoading(true)
+
+    setHasError(false)
 
     async function loadFeedback() {
       const { data, error } = await supabase
+
         .from("event_feedback")
+
         .select(
           "id, student_id, rating, comment, created_at, student:profiles!event_feedback_student_id_fkey(first_name, surname, student_id)",
         )
-        .eq("event_id", eventId)
-        .order("created_at", { ascending: false });
 
-      if (cancelled) return;
+        .eq("event_id", eventId)
+
+        .order("created_at", { ascending: false })
+
+      if (cancelled) return
+
       if (error) {
-        console.error(error);
-        setHasError(true);
+        console.error(error)
+
+        setHasError(true)
       } else {
         setFeedback(
           (data ?? []).map((row: any) => ({
             ...row,
+
             student: Array.isArray(row.student)
               ? (row.student[0] ?? null)
               : (row.student ?? null),
           })),
-        );
+        )
       }
-      setIsLoading(false);
+
+      setIsLoading(false)
     }
 
-    void loadFeedback();
+    void loadFeedback()
+
     return () => {
-      cancelled = true;
-    };
-  }, [eventId, isActive, retryKey]);
+      cancelled = true
+    }
+  }, [eventId, isActive, retryKey])
 
   if (isLoading) {
     return (
       <div className="rounded-2xl border border-slate-100 bg-white p-5 text-sm text-slate-500 shadow-sm">
         Loading event feedback...
       </div>
-    );
+    )
   }
 
   if (hasError) {
@@ -7538,7 +7862,7 @@ function AdminEventFeedbackPanel({
           Try again
         </button>
       </div>
-    );
+    )
   }
 
   if (feedback.length === 0) {
@@ -7554,12 +7878,12 @@ function AdminEventFeedbackPanel({
           Student responses for this event will appear here after submission.
         </p>
       </div>
-    );
+    )
   }
 
   const averageRating =
     feedback.reduce((total, response) => total + response.rating, 0) /
-    feedback.length;
+    feedback.length
 
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
@@ -7585,10 +7909,13 @@ function AdminEventFeedbackPanel({
         {feedback.map((response) => {
           const studentName = [
             response.student?.first_name,
+
             response.student?.surname,
           ]
+
             .filter(Boolean)
-            .join(" ");
+
+            .join(" ")
 
           return (
             <article key={response.id} className="px-4 py-4">
@@ -7622,11 +7949,11 @@ function AdminEventFeedbackPanel({
                 </p>
               )}
             </article>
-          );
+          )
         })}
       </div>
     </section>
-  );
+  )
 }
 
 function EventDetailPageView({
@@ -7642,74 +7969,88 @@ function EventDetailPageView({
 
   onPrimaryAction,
 }: {
-  event: EventData | null;
+  event: EventData | null
 
-  user: User | null;
+  user: User | null
 
-  viewerRole?: Role;
+  viewerRole?: Role
 
-  showFees: boolean;
+  showFees: boolean
 
-  onClose: () => void;
+  onClose: () => void
 
-  onPrimaryAction: () => void;
+  onPrimaryAction: () => void
 }) {
-  const [lightbox, setLightbox] = useState<string | null>(null);
-  const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null)
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
-  const [isMediaLoading, setIsMediaLoading] = useState(false);
-  const [mediaError, setMediaError] = useState<string | null>(null);
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null)
+
+  const [isLoading, setIsLoading] = useState(true)
+
+  const [mediaUrls, setMediaUrls] = useState<string[]>([])
+
+  const [isMediaLoading, setIsMediaLoading] = useState(false)
+
+  const [mediaError, setMediaError] = useState<string | null>(null)
 
   const [mobileSection, setMobileSection] = useState<"details" | "gallery">(
     "details",
-  );
+  )
 
   useEffect(() => {
-    setIsLoading(true);
-    setSelectedVideoUrl(null);
-    setMobileSection("details");
-    setMediaUrls(event?.mediaUrls ?? []);
-    setMediaError(null);
-    setIsMediaLoading(false);
+    setIsLoading(true)
 
-    const frame = requestAnimationFrame(() => setIsLoading(false));
+    setSelectedVideoUrl(null)
 
-    return () => cancelAnimationFrame(frame);
-  }, [event?.id, event?.mediaUrls]);
+    setMobileSection("details")
+
+    setMediaUrls(event?.mediaUrls ?? [])
+
+    setMediaError(null)
+
+    setIsMediaLoading(false)
+
+    const frame = requestAnimationFrame(() => setIsLoading(false))
+
+    return () => cancelAnimationFrame(frame)
+  }, [event?.id, event?.mediaUrls])
 
   useEffect(() => {
-    if (!event?.id || event.mediaUrls) return;
+    if (!event?.id || event.mediaUrls) return
 
     const shouldLoadGallery =
       mobileSection === "gallery" ||
       (typeof window !== "undefined" &&
-        window.matchMedia("(min-width: 768px)").matches);
+        window.matchMedia("(min-width: 768px)").matches)
 
-    if (!shouldLoadGallery) return;
+    if (!shouldLoadGallery) return
 
-    let cancelled = false;
-    setIsMediaLoading(true);
-    setMediaError(null);
+    let cancelled = false
+
+    setIsMediaLoading(true)
+
+    setMediaError(null)
 
     void loadEventMedia(event.id)
+
       .then((urls) => {
-        if (!cancelled) setMediaUrls(urls);
+        if (!cancelled) setMediaUrls(urls)
       })
+
       .catch(() => {
-        if (!cancelled) setMediaError("Gallery media could not be loaded.");
+        if (!cancelled) setMediaError("Gallery media could not be loaded.")
       })
+
       .finally(() => {
-        if (!cancelled) setIsMediaLoading(false);
-      });
+        if (!cancelled) setIsMediaLoading(false)
+      })
 
     return () => {
-      cancelled = true;
-    };
-  }, [event?.id, event?.mediaUrls, mobileSection]);
+      cancelled = true
+    }
+  }, [event?.id, event?.mediaUrls, mobileSection])
 
-  const galleryMedia = event?.mediaUrls ?? mediaUrls;
+  const galleryMedia = event?.mediaUrls ?? mediaUrls
 
   if (isLoading || !event) {
     return (
@@ -7735,12 +8076,12 @@ function EventDetailPageView({
           </div>
         </div>
       </div>
-    );
+    )
   }
 
-  const role = user?.role ?? viewerRole;
+  const role = user?.role ?? viewerRole
 
-  const canSeeFees = role === "student" && showFees;
+  const canSeeFees = role === "student" && showFees
 
   return (
     <div className="min-h-screen bg-slate-50/60">
@@ -7757,6 +8098,7 @@ function EventDetailPageView({
         <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl border border-slate-200 bg-white p-1 md:hidden">
           {[
             ["details", "Event details"],
+
             ["gallery", "Gallery"],
           ].map(([value, label]) => (
             <button
@@ -8002,7 +8344,7 @@ function EventDetailPageView({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 export function MyQRPage({
@@ -8012,39 +8354,39 @@ export function MyQRPage({
 
   onBack,
 }: {
-  user: User;
+  user: User
 
-  qrVersion: number;
+  qrVersion: number
 
-  onBack: () => void;
+  onBack: () => void
 }) {
-  const name = fullName(user);
+  const name = fullName(user)
 
   const handleDownload = async () => {
     const size = 240,
       pad = 24,
       footH = 72,
-      dpr = 2;
+      dpr = 2
 
-    const canvas = document.createElement("canvas");
+    const canvas = document.createElement("canvas")
 
-    canvas.width = (size + pad * 2) * dpr;
+    canvas.width = (size + pad * 2) * dpr
 
-    canvas.height = (size + pad * 2 + footH) * dpr;
+    canvas.height = (size + pad * 2 + footH) * dpr
 
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d")!
 
-    ctx.scale(dpr, dpr);
+    ctx.scale(dpr, dpr)
 
-    const W = size + pad * 2;
+    const W = size + pad * 2
 
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = "#fff"
 
-    ctx.beginPath();
+    ctx.beginPath()
 
-    ctx.roundRect(0, 0, W, size + pad * 2 + footH, 16);
+    ctx.roundRect(0, 0, W, size + pad * 2 + footH, 16)
 
-    ctx.fill();
+    ctx.fill()
 
     const qrDataUrl = await QRCode.toDataURL(
       `ADESSE:${user.studentId}:v${qrVersion}`,
@@ -8058,42 +8400,43 @@ export function MyQRPage({
 
         errorCorrectionLevel: "H",
       },
-    );
+    )
 
-    const img = new Image();
+    const img = new Image()
 
     await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () =>
-        reject(new Error("Could not load generated QR code."));
-      img.src = qrDataUrl;
-    });
+      img.onload = () => resolve()
 
-    ctx.drawImage(img, pad, pad, size, size);
+      img.onerror = () => reject(new Error("Could not load generated QR code."))
 
-    ctx.strokeStyle = "#f1f5f9";
+      img.src = qrDataUrl
+    })
 
-    ctx.lineWidth = 1;
+    ctx.drawImage(img, pad, pad, size, size)
 
-    ctx.beginPath();
+    ctx.strokeStyle = "#f1f5f9"
 
-    ctx.moveTo(pad, size + pad + 12);
+    ctx.lineWidth = 1
 
-    ctx.lineTo(W - pad, size + pad + 12);
+    ctx.beginPath()
 
-    ctx.stroke();
+    ctx.moveTo(pad, size + pad + 12)
 
-    ctx.fillStyle = "#111827";
+    ctx.lineTo(W - pad, size + pad + 12)
 
-    ctx.font = "bold 13px sans-serif";
+    ctx.stroke()
 
-    ctx.textAlign = "center";
+    ctx.fillStyle = "#111827"
 
-    ctx.fillText(name, W / 2, size + pad + 32);
+    ctx.font = "bold 13px sans-serif"
 
-    ctx.fillStyle = "#94a3b8";
+    ctx.textAlign = "center"
 
-    ctx.font = "11px sans-serif";
+    ctx.fillText(name, W / 2, size + pad + 32)
+
+    ctx.fillStyle = "#94a3b8"
+
+    ctx.font = "11px sans-serif"
 
     ctx.fillText(
       `${user.studentId} · ${user.program} ${user.yearLevel}`,
@@ -8101,11 +8444,11 @@ export function MyQRPage({
       W / 2,
 
       size + pad + 50,
-    );
+    )
 
-    ctx.fillStyle = "#10b981";
+    ctx.fillStyle = "#10b981"
 
-    ctx.font = "bold 10px sans-serif";
+    ctx.font = "bold 10px sans-serif"
 
     ctx.fillText(
       "Adesse · Student Attendance & Fee Tracking System",
@@ -8113,16 +8456,16 @@ export function MyQRPage({
       W / 2,
 
       size + pad + 66,
-    );
+    )
 
-    const a = document.createElement("a");
+    const a = document.createElement("a")
 
-    a.download = `adesse-qr-${user.studentId}-v${qrVersion}.png`;
+    a.download = `adesse-qr-${user.studentId}-v${qrVersion}.png`
 
-    a.href = canvas.toDataURL("image/png");
+    a.href = canvas.toDataURL("image/png")
 
-    a.click();
-  };
+    a.click()
+  }
 
   return (
     <>
@@ -8189,7 +8532,7 @@ export function MyQRPage({
         </div>
       </div>
     </>
-  );
+  )
 }
 
 export function AnnouncementsPage({
@@ -8197,19 +8540,20 @@ export function AnnouncementsPage({
 
   announcements,
 }: {
-  onBack: () => void;
+  onBack: () => void
 
-  announcements: typeof INITIAL_ANNOUNCEMENTS;
+  announcements: typeof INITIAL_ANNOUNCEMENTS
 }) {
   const {
     selectedId: selectedAnnouncementId,
+
     setSelectedId: setSelectedAnnouncementId,
-  } = useRecordSelection("announcementId");
+  } = useRecordSelection("announcementId")
 
   if (selectedAnnouncementId) {
     const selectedAnnouncement = announcements.find(
       (item) => item.id === selectedAnnouncementId,
-    );
+    )
 
     if (!selectedAnnouncement) {
       return (
@@ -8217,7 +8561,7 @@ export function AnnouncementsPage({
           label="Announcement"
           onBack={() => setSelectedAnnouncementId(null, true)}
         />
-      );
+      )
     }
 
     return (
@@ -8225,7 +8569,7 @@ export function AnnouncementsPage({
         announcement={selectedAnnouncement}
         onBack={() => setSelectedAnnouncementId(null, true)}
       />
-    );
+    )
   }
 
   return (
@@ -8289,7 +8633,7 @@ export function AnnouncementsPage({
         ))}
       </div>
     </>
-  );
+  )
 }
 
 function AnnouncementDetailPageView({
@@ -8301,17 +8645,17 @@ function AnnouncementDetailPageView({
 
   onDelete,
 }: {
-  announcement: (typeof INITIAL_ANNOUNCEMENTS)[0] | null;
+  announcement: typeof INITIAL_ANNOUNCEMENTS[0] | null
 
-  onBack: () => void;
+  onBack: () => void
 
-  onEdit?: () => void;
+  onEdit?: () => void
 
-  onDelete?: () => void;
+  onDelete?: () => void
 }) {
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
-  if (!announcement) return null;
+  if (!announcement) return null
 
   return (
     <div className="min-h-screen bg-slate-50/60">
@@ -8419,7 +8763,7 @@ function AnnouncementDetailPageView({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 export function AttendanceHistoryPage({
@@ -8437,25 +8781,25 @@ export function AttendanceHistoryPage({
 
   attendanceRecords = ATTENDANCE_RECORDS,
 }: {
-  excuseRequests: ExcuseRequest[];
+  excuseRequests: ExcuseRequest[]
 
-  fines: FineRecord[];
+  fines: FineRecord[]
 
-  showFees: boolean;
+  showFees: boolean
 
-  allowExcuseRequests?: boolean;
+  allowExcuseRequests?: boolean
 
-  onSubmitExcuse: (r: ExcuseRequest) => Promise<boolean> | boolean;
+  onSubmitExcuse: (r: ExcuseRequest) => Promise<boolean> | boolean
 
-  onBack: () => void;
+  onBack: () => void
 
-  attendanceRecords?: Array<
-    (typeof ATTENDANCE_RECORDS)[number] & { sanctioned?: boolean }
-  >;
+  attendanceRecords?: Array<typeof ATTENDANCE_RECORDS[number] & {
+    sanctioned?: boolean
+  }>
 }) {
-  const [modal, setModal] = useState<(typeof ATTENDANCE_RECORDS)[0] | null>(
+  const [modal, setModal] = useState<typeof ATTENDANCE_RECORDS[0] | null>(
     null,
-  );
+  )
 
   return (
     <>
@@ -8475,7 +8819,7 @@ export function AttendanceHistoryPage({
         ) : (
           attendanceRecords.map((r, i) => {
             const rowSessionLabel =
-              "sessionLabel" in r ? r.sessionLabel : undefined;
+              "sessionLabel" in r ? r.sessionLabel : undefined
 
             const req = excuseRequests.find(
               (x) =>
@@ -8485,23 +8829,23 @@ export function AttendanceHistoryPage({
                 (!x.eventId &&
                   x.event === r.event &&
                   x.sessionLabel === rowSessionLabel),
-            );
+            )
 
             const eff =
               req?.status === "approved"
                 ? "excused"
                 : req?.status === "pending"
                   ? "pending"
-                  : r.status;
+                  : r.status
 
             const fine = fines.find(
               (f) =>
                 f.attendanceScanId === r.id ||
                 (f.eventId === r.eventId && f.sessionLabel === rowSessionLabel),
-            );
+            )
 
             const cleared =
-              fine?.status === "paid" || fine?.status === "excused";
+              fine?.status === "paid" || fine?.status === "excused"
 
             return (
               <div
@@ -8612,7 +8956,7 @@ export function AttendanceHistoryPage({
                   <Badge status={eff} />
                 )}
               </div>
-            );
+            )
           })
         )}
       </div>
@@ -8649,16 +8993,16 @@ export function AttendanceHistoryPage({
           record={modal}
           onClose={() => setModal(null)}
           onSubmit={async (r) => {
-            const succeeded = await onSubmitExcuse(r);
+            const succeeded = await onSubmitExcuse(r)
 
-            if (succeeded) setModal(null);
+            if (succeeded) setModal(null)
 
-            return succeeded;
+            return succeeded
           }}
         />
       )}
     </>
-  );
+  )
 }
 
 export function MyFinesPage({
@@ -8668,15 +9012,15 @@ export function MyFinesPage({
 
   onBack,
 }: {
-  fines: FineRecord[];
+  fines: FineRecord[]
 
-  showFees: boolean;
+  showFees: boolean
 
-  onBack: () => void;
+  onBack: () => void
 }) {
-  const unpaid = fines.filter((f) => f.status === "unpaid");
+  const unpaid = fines.filter((f) => f.status === "unpaid")
 
-  const total = unpaid.reduce((s, f) => s + f.amount, 0);
+  const total = unpaid.reduce((s, f) => s + f.amount, 0)
 
   if (!showFees) {
     return (
@@ -8695,7 +9039,7 @@ export function MyFinesPage({
           </p>
         </div>
       </>
-    );
+    )
   }
 
   return (
@@ -8803,7 +9147,7 @@ export function MyFinesPage({
         </>
       )}
     </>
-  );
+  )
 }
 
 export function ProfilePage({
@@ -8815,104 +9159,102 @@ export function ProfilePage({
 
   saving,
 }: {
-  user: User;
+  user: User
 
-  onSave: (u: User) => Promise<boolean>;
+  onSave: (u: User) => Promise<boolean>
 
-  onBack: () => void;
+  onBack: () => void
 
-  saving?: boolean;
+  saving?: boolean
 }) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(false)
 
-  const [photoUploadState, setPhotoUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [photoUploadState, setPhotoUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
-  const [coverPhotoUploadState, setCoverPhotoUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [coverPhotoUploadState, setCoverPhotoUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
-  const [draft, setDraft] = useState({ ...user });
+  const [draft, setDraft] = useState({ ...user })
 
-  const photoRef = useRef<HTMLInputElement>(null);
+  const photoRef = useRef<HTMLInputElement>(null)
 
-  const coverPhotoRef = useRef<HTMLInputElement>(null);
+  const coverPhotoRef = useRef<HTMLInputElement>(null)
 
   const setF =
     (k: keyof User) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-      setDraft((d) => ({ ...d, [k]: e.target.value }));
+      setDraft((d) => ({ ...d, [k]: e.target.value }))
 
-  const isMod = user.role === "admin";
+  const isMod = user.role === "admin"
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]
 
-    if (!file) return;
+    if (!file) return
 
     if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(draft.photoUrl);
+      URL.revokeObjectURL(draft.photoUrl)
     }
 
-    setPhotoUploadState("uploading");
+    setPhotoUploadState("uploading")
 
-    const result = await uploadProfileImage(file);
+    const result = await uploadProfileImage(file)
 
     if ("error" in result) {
-      setPhotoUploadState("error");
+      setPhotoUploadState("error")
 
-      toast.error(result.error);
+      toast.error(result.error)
 
-      return;
+      return
     }
 
-    setPhotoUploadState("idle");
+    setPhotoUploadState("idle")
 
-    setDraft((d) => ({ ...d, photoUrl: result.url }));
-  };
+    setDraft((d) => ({ ...d, photoUrl: result.url }))
+  }
 
   const handleCoverPhotoChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]
 
-    if (!file) return;
+    if (!file) return
 
     if (draft.coverPhotoUrl && draft.coverPhotoUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(draft.coverPhotoUrl);
+      URL.revokeObjectURL(draft.coverPhotoUrl)
     }
 
-    setCoverPhotoUploadState("uploading");
+    setCoverPhotoUploadState("uploading")
 
-    const result = await uploadProfileImage(file);
+    const result = await uploadProfileImage(file)
 
     if ("error" in result) {
-      setCoverPhotoUploadState("error");
+      setCoverPhotoUploadState("error")
 
-      toast.error(result.error);
+      toast.error(result.error)
 
-      return;
+      return
     }
 
-    setCoverPhotoUploadState("idle");
+    setCoverPhotoUploadState("idle")
 
-    setDraft((d) => ({ ...d, coverPhotoUrl: result.url }));
-  };
+    setDraft((d) => ({ ...d, coverPhotoUrl: result.url }))
+  }
 
   useEffect(() => {
     return () => {
       if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
-        URL.revokeObjectURL(draft.photoUrl);
+        URL.revokeObjectURL(draft.photoUrl)
       }
 
       if (draft.coverPhotoUrl && draft.coverPhotoUrl.startsWith("blob:")) {
-        URL.revokeObjectURL(draft.coverPhotoUrl);
+        URL.revokeObjectURL(draft.coverPhotoUrl)
       }
-    };
-  }, []);
+    }
+  }, [])
 
-  const profile = editing ? draft : user;
+  const profile = editing ? draft : user
 
   return (
     <>
@@ -8928,12 +9270,12 @@ export function ProfilePage({
               <button
                 onClick={() => {
                   if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
-                    URL.revokeObjectURL(draft.photoUrl);
+                    URL.revokeObjectURL(draft.photoUrl)
                   }
 
-                  setDraft({ ...user });
+                  setDraft({ ...user })
 
-                  setEditing(false);
+                  setEditing(false)
                 }}
                 className="h-9 px-4 border border-slate-200 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-50"
               >
@@ -8942,7 +9284,7 @@ export function ProfilePage({
               <button
                 onClick={async () => {
                   if (await onSave({ ...user, ...draft })) {
-                    setEditing(false);
+                    setEditing(false)
                   }
                 }}
                 disabled={saving}
@@ -9376,7 +9718,7 @@ export function ProfilePage({
         </main>
       </div>
     </>
-  );
+  )
 }
 
 export function AdminDashboard({
@@ -9392,45 +9734,45 @@ export function AdminDashboard({
 
   featuredEventStatus,
 }: {
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  excuseRequests: ExcuseRequest[];
+  excuseRequests: ExcuseRequest[]
 
   stats?: {
-    scannedToday: number;
+    scannedToday: number
 
-    duplicates: number;
+    duplicates: number
 
-    activeEvents: number;
+    activeEvents: number
 
-    students: number;
-  };
+    students: number
+  }
 
   recentScans?: Array<{
-    name: string;
+    name: string
 
-    id: string;
+    id: string
 
-    program: string;
+    program: string
 
-    section: string;
+    section: string
 
-    photoUrl?: string;
+    photoUrl?: string
 
-    time: string;
+    time: string
 
-    status: "confirmed" | "duplicate";
+    status: "confirmed" | "duplicate"
 
-    sanctioned?: boolean;
-  }>;
+    sanctioned?: boolean
+  }>
 
-  featuredEventTitle?: string;
+  featuredEventTitle?: string
 
-  featuredEventStatus?: EventStatus;
+  featuredEventStatus?: EventStatus
 }) {
-  const dashboardDateLabel = useDashboardDateLabel();
+  const dashboardDateLabel = useDashboardDateLabel()
 
-  const pending = excuseRequests.filter((r) => r.status === "pending").length;
+  const pending = excuseRequests.filter((r) => r.status === "pending").length
 
   const liveStats = stats ?? {
     scannedToday: 0,
@@ -9440,22 +9782,19 @@ export function AdminDashboard({
     activeEvents: 0,
 
     students: 0,
-  };
+  }
 
-  const liveRecentScans = recentScans ?? [];
+  const liveRecentScans = recentScans ?? []
 
-  const statusConfig: Record<
-    EventStatus,
-    {
-      label: string;
+  const statusConfig: Record<EventStatus, {
+    label: string
 
-      message: string;
+    message: string
 
-      classes: string;
+    classes: string
 
-      dotClass: string;
-    }
-  > = {
+    dotClass: string
+  }> = {
     active: {
       label: "Live",
 
@@ -9495,11 +9834,11 @@ export function AdminDashboard({
 
       dotClass: "bg-rose-500",
     },
-  };
+  }
 
-  const currentStatus = featuredEventStatus ?? "upcoming";
+  const currentStatus = featuredEventStatus ?? "upcoming"
 
-  const currentStatusMeta = statusConfig[currentStatus];
+  const currentStatusMeta = statusConfig[currentStatus]
 
   return (
     <>
@@ -9665,74 +10004,74 @@ export function AdminDashboard({
         ))}
       </div>
     </>
-  );
+  )
 }
 
 interface NewEventDraft {
-  title: string;
+  title: string
 
-  date: string;
+  date: string
 
-  time: string;
+  time: string
 
-  location: string;
+  location: string
 
-  description: string;
+  description: string
 
-  program: string;
+  program: string
 
-  fineAmount: string;
+  fineAmount: string
 
-  photos: File[];
+  photos: File[]
 
-  videos: File[];
+  videos: File[]
 
-  multiSession: boolean;
+  multiSession: boolean
 
-  sanctionsEnabled: boolean;
+  sanctionsEnabled: boolean
 
-  strictMorning: boolean;
+  strictMorning: boolean
 
-  strictAfternoon: boolean;
+  strictAfternoon: boolean
 
-  morningStart: string;
+  morningStart: string
 
-  morningEnd: string;
+  morningEnd: string
 
-  morningLateCutoff: string;
+  morningLateCutoff: string
 
-  afternoonStart: string;
+  afternoonStart: string
 
-  afternoonEnd: string;
+  afternoonEnd: string
 
-  afternoonLateCutoff: string;
+  afternoonLateCutoff: string
 
-  absentFine: string;
+  absentFine: string
 
-  lateFine: string;
+  lateFine: string
 
-  morningAbsentFine: string;
+  morningAbsentFine: string
 
-  morningLateFine: string;
+  morningLateFine: string
 
-  afternoonAbsentFine: string;
+  afternoonAbsentFine: string
 
-  afternoonLateFine: string;
+  afternoonLateFine: string
 }
 
-type CreateEventTab = "basic" | "session" | "fines" | "media";
+type CreateEventTab = "basic" | "session" | "fines" | "media"
 
 type PendingSessionExtension = {
-  sessionLabel: "morning" | "afternoon";
+  sessionLabel: "morning" | "afternoon"
 
-  minutes: number;
+  minutes: number
 
-  oldEnd: string;
+  oldEnd: string
 
-  newEnd: string;
-};
+  newEnd: string
+}
 
-const ARCHIVE_DROP_ZONE_ID = "archive";
+const ARCHIVE_DROP_ZONE_ID = "archive"
 
 function ArchiveDropZone({
   active,
@@ -9741,15 +10080,15 @@ function ArchiveDropZone({
 
   archived,
 }: {
-  active: boolean;
+  active: boolean
 
-  onClick: () => void;
+  onClick: () => void
 
-  archived: boolean;
+  archived: boolean
 }) {
-  const { isOver, setNodeRef } = useDroppable({ id: ARCHIVE_DROP_ZONE_ID });
+  const { isOver, setNodeRef } = useDroppable({ id: ARCHIVE_DROP_ZONE_ID })
 
-  const highlighted = active && isOver;
+  const highlighted = active && isOver
 
   return (
     <div
@@ -9761,7 +10100,7 @@ function ArchiveDropZone({
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") onClick();
+        if (event.key === "Enter" || event.key === " ") onClick()
       }}
       title={
         archived
@@ -9789,7 +10128,7 @@ function ArchiveDropZone({
             : "Archive"}
       </span>
     </div>
-  );
+  )
 }
 
 function DraggableEventCard({
@@ -9801,16 +10140,16 @@ function DraggableEventCard({
 
   dragDisabled,
 }: {
-  event: EventData;
+  event: EventData
 
-  onClick: () => void;
+  onClick: () => void
 
-  children: React.ReactNode;
+  children: React.ReactNode
 
-  dragDisabled: boolean;
+  dragDisabled: boolean
 }) {
   const { attributes, listeners, setActivatorNodeRef, setNodeRef, isDragging } =
-    useDraggable({ id: event.id, disabled: dragDisabled });
+    useDraggable({ id: event.id, disabled: dragDisabled })
 
   return (
     <motion.div
@@ -9834,7 +10173,7 @@ function DraggableEventCard({
         />
       )}
     </motion.div>
-  );
+  )
 }
 
 function EventDragPreview({ event }: { event: EventData }) {
@@ -9866,7 +10205,7 @@ function EventDragPreview({ event }: { event: EventData }) {
         <p className="mt-2 text-xs text-slate-500">{event.location || "TBA"}</p>
       </div>
     </div>
-  );
+  )
 }
 
 function ArchivedEventCard({
@@ -9876,11 +10215,11 @@ function ArchivedEventCard({
 
   onDelete,
 }: {
-  event: EventData;
+  event: EventData
 
-  onRestore: () => void;
+  onRestore: () => void
 
-  onDelete: () => void;
+  onDelete: () => void
 }) {
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -9938,7 +10277,7 @@ function ArchivedEventCard({
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function ArchivedEventsSkeleton() {
@@ -9966,7 +10305,7 @@ function ArchivedEventsSkeleton() {
         </div>
       ))}
     </div>
-  );
+  )
 }
 
 export function AdminEventsPage({
@@ -9986,21 +10325,21 @@ export function AdminEventsPage({
 
   finesEnabled = false,
 }: {
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  events: EventData[];
+  events: EventData[]
 
-  setEvents: React.Dispatch<React.SetStateAction<EventData[]>>;
+  setEvents: React.Dispatch<React.SetStateAction<EventData[]>>
 
-  archivedEvents: EventData[];
+  archivedEvents: EventData[]
 
-  setArchivedEvents: React.Dispatch<React.SetStateAction<EventData[]>>;
+  setArchivedEvents: React.Dispatch<React.SetStateAction<EventData[]>>
 
-  onLoadArchived: () => Promise<void>;
+  onLoadArchived: () => Promise<void>
 
-  isArchivedLoading: boolean;
+  isArchivedLoading: boolean
 
-  finesEnabled?: boolean;
+  finesEnabled?: boolean
 }) {
   const EMPTY_DRAFT: NewEventDraft = {
     title: "",
@@ -10052,45 +10391,45 @@ export function AdminEventsPage({
     afternoonAbsentFine: "0",
 
     afternoonLateFine: "0",
-  };
+  }
 
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(false)
 
-  const [activeTab, setActiveTab] = useState<CreateEventTab>("basic");
+  const [activeTab, setActiveTab] = useState<CreateEventTab>("basic")
 
-  const [editEventTab, setEditEventTab] = useState<CreateEventTab>("basic");
+  const [editEventTab, setEditEventTab] = useState<CreateEventTab>("basic")
 
-  const [editId, setEditId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null)
 
-  const [isCreating, setIsCreating] = useState(false);
+  const [isCreating, setIsCreating] = useState(false)
 
   const { selectedId: selectedEventId, setSelectedId: setSelectedEventId } =
-    useRecordSelection("eventId");
+    useRecordSelection("eventId")
 
-  const [eventView, setEventView] = useState<"active" | "archived">("active");
+  const [eventView, setEventView] = useState<"active" | "archived">("active")
 
   const [pendingPermanentDelete, setPendingPermanentDelete] =
-    useState<EventData | null>(null);
+    useState<EventData | null>(null)
 
-  const [isPermanentlyDeleting, setIsPermanentlyDeleting] = useState(false);
+  const [isPermanentlyDeleting, setIsPermanentlyDeleting] = useState(false)
 
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false)
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const mediaQuery = window.matchMedia("(max-width: 767px)")
 
-    const updateViewport = () => setIsMobileViewport(mediaQuery.matches);
+    const updateViewport = () => setIsMobileViewport(mediaQuery.matches)
 
-    updateViewport();
+    updateViewport()
 
-    mediaQuery.addEventListener("change", updateViewport);
+    mediaQuery.addEventListener("change", updateViewport)
 
-    return () => mediaQuery.removeEventListener("change", updateViewport);
-  }, []);
+    return () => mediaQuery.removeEventListener("change", updateViewport)
+  }, [])
 
-  const [editDraft, setEditDraft] = useState<EventData | null>(null);
+  const [editDraft, setEditDraft] = useState<EventData | null>(null)
 
-  const [editOriginal, setEditOriginal] = useState<EventData | null>(null);
+  const [editOriginal, setEditOriginal] = useState<EventData | null>(null)
 
   const [editFineValues, setEditFineValues] = useState({
     absentFine: "0",
@@ -10104,20 +10443,20 @@ export function AdminEventsPage({
     afternoonAbsentFine: "0",
 
     afternoonLateFine: "0",
-  });
+  })
 
-  const [showSensitiveWarning, setShowSensitiveWarning] = useState(false);
+  const [showSensitiveWarning, setShowSensitiveWarning] = useState(false)
 
   const [pendingSessionExtension, setPendingSessionExtension] =
-    useState<PendingSessionExtension | null>(null);
+    useState<PendingSessionExtension | null>(null)
 
-  const [isExtendingSession, setIsExtendingSession] = useState(false);
+  const [isExtendingSession, setIsExtendingSession] = useState(false)
 
-  const [eventHasScans, setEventHasScans] = useState(false);
+  const [eventHasScans, setEventHasScans] = useState(false)
 
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null)
 
-  const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [archivingId, setArchivingId] = useState<string | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -10127,58 +10466,53 @@ export function AdminEventsPage({
     }),
 
     useSensor(KeyboardSensor),
-  );
+  )
 
-  const photoRef = useRef<HTMLInputElement>(null);
+  const photoRef = useRef<HTMLInputElement>(null)
 
-  const videoRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null)
 
-  const editPhotoRef = useRef<HTMLInputElement>(null);
+  const editPhotoRef = useRef<HTMLInputElement>(null)
 
-  const highlightRef = useRef<HTMLInputElement>(null);
+  const highlightRef = useRef<HTMLInputElement>(null)
 
-  const editHighlightRef = useRef<HTMLInputElement>(null);
+  const editHighlightRef = useRef<HTMLInputElement>(null)
 
-  const [draft, setDraft] = useState<NewEventDraft>(EMPTY_DRAFT);
+  const [draft, setDraft] = useState<NewEventDraft>(EMPTY_DRAFT)
 
-  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [photoUrls, setPhotoUrls] = useState<string[]>([])
 
-  const [videoNames, setVideoNames] = useState<string[]>([]);
+  const [videoNames, setVideoNames] = useState<string[]>([])
 
-  const [highlightUrl, setHighlightUrl] = useState<string | null>(null);
+  const [highlightUrl, setHighlightUrl] = useState<string | null>(null)
 
-  const [highlightUploadState, setHighlightUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [highlightUploadState, setHighlightUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
-  const [mediaUploadState, setMediaUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [mediaUploadState, setMediaUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
-  const [mediaUploadError, setMediaUploadError] = useState<string | null>(null);
+  const [mediaUploadError, setMediaUploadError] = useState<string | null>(null)
 
-  const [editHighlightUploadState, setEditHighlightUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [editHighlightUploadState, setEditHighlightUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
   const setD =
     (k: keyof NewEventDraft) =>
     (
-      e: React.ChangeEvent<
-        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >,
+      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
     ) =>
-      setDraft((d) => ({ ...d, [k]: e.target.value }));
+      setDraft((d) => ({ ...d, [k]: e.target.value }))
 
   const toggleD = (k: keyof NewEventDraft) => () =>
-    setDraft((d) => ({ ...d, [k]: !d[k] }));
+    setDraft((d) => ({ ...d, [k]: !d[k] }))
 
   const uploadEventMedia = async (files: File[], kind: "image" | "video") => {
-    if (!files.length) return;
+    if (!files.length) return
 
-    setMediaUploadState("uploading");
+    setMediaUploadState("uploading")
 
-    setMediaUploadError(null);
+    setMediaUploadError(null)
 
     const results = await Promise.all(
       files.map((file) =>
@@ -10186,18 +10520,18 @@ export function AdminEventsPage({
           ? uploadPromotionalImage(file)
           : uploadEventVideo(file),
       ),
-    );
+    )
 
-    const failed = results.find((result) => "error" in result);
+    const failed = results.find((result) => "error" in result)
 
     if (failed && "error" in failed) {
-      setMediaUploadState("error");
+      setMediaUploadState("error")
 
-      setMediaUploadError(failed.error);
+      setMediaUploadError(failed.error)
 
-      toast.error(failed.error);
+      toast.error(failed.error)
 
-      return;
+      return
     }
 
     const urls = results
@@ -10206,22 +10540,22 @@ export function AdminEventsPage({
         (result): result is { url: string; path: string } => "url" in result,
       )
 
-      .map((result) => result.url);
+      .map((result) => result.url)
 
-    setMediaUploadState("idle");
+    setMediaUploadState("idle")
 
     setPhotoUrls((current) => [
       ...current,
 
       ...urls.filter((url) => !/\.mp4($|\?)/i.test(url)),
-    ]);
+    ])
 
     setVideoNames((current) => [
       ...current,
 
       ...urls.filter((url) => /\.mp4($|\?)/i.test(url)),
-    ]);
-  };
+    ])
+  }
 
   const discardCreateMedia = () => {
     const mediaToDelete = [
@@ -10232,16 +10566,16 @@ export function AdminEventsPage({
       ...(highlightUrl && !highlightUrl.startsWith("blob:")
         ? [highlightUrl]
         : []),
-    ];
+    ]
 
-    setPhotoUrls([]);
+    setPhotoUrls([])
 
-    setVideoNames([]);
+    setVideoNames([])
 
-    setHighlightUrl(null);
+    setHighlightUrl(null)
 
-    void deleteImages(mediaToDelete);
-  };
+    void deleteImages(mediaToDelete)
+  }
 
   const discardEditMedia = () => {
     const uploadedReplacement =
@@ -10249,39 +10583,39 @@ export function AdminEventsPage({
       editDraft.highlightUrl !== editOriginal?.highlightUrl &&
       !editDraft.highlightUrl.startsWith("blob:")
         ? [editDraft.highlightUrl]
-        : [];
+        : []
 
-    void deleteImages(uploadedReplacement);
+    void deleteImages(uploadedReplacement)
 
-    setEditId(null);
+    setEditId(null)
 
-    setEditDraft(null);
+    setEditDraft(null)
 
-    setEditOriginal(null);
+    setEditOriginal(null)
 
-    setShowSensitiveWarning(false);
-  };
+    setShowSensitiveWarning(false)
+  }
 
   const handleCreate = async () => {
-    if (!draft.title || !draft.date) return;
+    if (!draft.title || !draft.date) return
 
-    if (isCreating) return;
+    if (isCreating) return
 
-    setIsCreating(true);
+    setIsCreating(true)
 
     try {
       const timeRange = draft.multiSession
         ? null
-        : parseEventTimeRange(draft.time);
+        : parseEventTimeRange(draft.time)
 
       if (!draft.multiSession && !timeRange) {
-        toast.error("Enter time like 3:35 AM - 5:20 AM.");
+        toast.error("Enter time like 3:35 AM - 5:20 AM.")
 
-        return;
+        return
       }
 
       const persistedHighlightUrl =
-        highlightUrl && !highlightUrl.startsWith("blob:") ? highlightUrl : null;
+        highlightUrl && !highlightUrl.startsWith("blob:") ? highlightUrl : null
 
       const payload = {
         title: draft.title,
@@ -10355,7 +10689,7 @@ export function AdminEventsPage({
             ? Number(draft.afternoonLateFine) || 0
             : 0
           : null,
-      };
+      }
 
       const { data, error } = await supabase
 
@@ -10363,7 +10697,7 @@ export function AdminEventsPage({
 
         .insert([payload])
 
-        .select();
+        .select()
 
       if (error) {
         await deleteImages([
@@ -10372,23 +10706,23 @@ export function AdminEventsPage({
           ...videoNames,
 
           ...(persistedHighlightUrl ? [persistedHighlightUrl] : []),
-        ]);
+        ])
 
-        setPhotoUrls([]);
+        setPhotoUrls([])
 
-        setVideoNames([]);
+        setVideoNames([])
 
-        setHighlightUrl(null);
+        setHighlightUrl(null)
 
-        toast.error(`Failed to create event: ${error.message}`);
+        toast.error(`Failed to create event: ${error.message}`)
 
-        console.error(error);
+        console.error(error)
 
-        return;
+        return
       }
 
       if (data && data.length > 0) {
-        const row = data[0];
+        const row = data[0]
 
         const newEvent: EventData = {
           id: row.id,
@@ -10408,7 +10742,7 @@ export function AdminEventsPage({
 
           program: row.program || "All Programs",
 
-          status: (row.status as any) || "upcoming",
+          status: row.status as any || "upcoming",
 
           attendees: 0,
 
@@ -10470,25 +10804,25 @@ export function AdminEventsPage({
           afternoonLateFine: finesEnabled
             ? parseInt(draft.afternoonLateFine) || 0
             : 0,
-        };
+        }
 
-        setEvents((ev) => [newEvent, ...ev]);
+        setEvents((ev) => [newEvent, ...ev])
 
-        setDraft(EMPTY_DRAFT);
+        setDraft(EMPTY_DRAFT)
 
-        setPhotoUrls([]);
+        setPhotoUrls([])
 
-        setVideoNames([]);
+        setVideoNames([])
 
-        setHighlightUrl(null);
+        setHighlightUrl(null)
 
-        setMediaUploadState("idle");
+        setMediaUploadState("idle")
 
-        setMediaUploadError(null);
+        setMediaUploadError(null)
 
-        setShowForm(false);
+        setShowForm(false)
 
-        toast.success("Event created successfully");
+        toast.success("Event created successfully")
       }
     } catch (caughtError) {
       await deleteImages([
@@ -10499,21 +10833,21 @@ export function AdminEventsPage({
         ...(highlightUrl && !highlightUrl.startsWith("blob:")
           ? [highlightUrl]
           : []),
-      ]);
+      ])
 
-      setPhotoUrls([]);
+      setPhotoUrls([])
 
-      setVideoNames([]);
+      setVideoNames([])
 
-      setHighlightUrl(null);
+      setHighlightUrl(null)
 
-      console.error(caughtError);
+      console.error(caughtError)
 
-      toast.error("An error occurred while creating the event");
+      toast.error("An error occurred while creating the event")
     } finally {
-      setIsCreating(false);
+      setIsCreating(false)
     }
-  };
+  }
 
   const startEdit = async (e: EventData) => {
     const { count, error } = await supabase
@@ -10522,17 +10856,17 @@ export function AdminEventsPage({
 
       .select("*", { count: "exact", head: true })
 
-      .eq("event_id", e.id);
+      .eq("event_id", e.id)
 
-    setEventHasScans(!error && (count ?? 0) > 0);
+    setEventHasScans(!error && (count ?? 0) > 0)
 
-    setEditId(e.id);
+    setEditId(e.id)
 
-    setEditEventTab("basic");
+    setEditEventTab("basic")
 
-    setEditDraft({ ...e });
+    setEditDraft({ ...e })
 
-    setEditOriginal({ ...e });
+    setEditOriginal({ ...e })
 
     setEditFineValues({
       absentFine: String(e.absentFine ?? e.fineAmount ?? 0),
@@ -10546,12 +10880,12 @@ export function AdminEventsPage({
       afternoonAbsentFine: String(e.afternoonAbsentFine ?? 0),
 
       afternoonLateFine: String(e.afternoonLateFine ?? 0),
-    });
+    })
 
-    setShowSensitiveWarning(false);
+    setShowSensitiveWarning(false)
 
-    setShowForm(false);
-  };
+    setShowForm(false)
+  }
 
   const SENSITIVE_KEYS: (keyof EventData)[] = [
     "time",
@@ -10585,14 +10919,14 @@ export function AdminEventsPage({
     "afternoonAbsentFine",
 
     "afternoonLateFine",
-  ];
+  ]
 
   const hasSensitiveChanges = () => {
-    if (!editDraft || !editOriginal) return false;
+    if (!editDraft || !editOriginal) return false
 
     const eventFieldChanged = SENSITIVE_KEYS.some(
       (k) => String(editDraft[k] ?? "") !== String(editOriginal[k] ?? ""),
-    );
+    )
 
     const fineChanged =
       editFineValues.absentFine !==
@@ -10605,29 +10939,27 @@ export function AdminEventsPage({
       editFineValues.afternoonAbsentFine !==
         String(editOriginal.afternoonAbsentFine ?? 0) ||
       editFineValues.afternoonLateFine !==
-        String(editOriginal.afternoonLateFine ?? 0);
+        String(editOriginal.afternoonLateFine ?? 0)
 
-    return eventFieldChanged || fineChanged;
-  };
+    return eventFieldChanged || fineChanged
+  }
 
   const requestSessionExtension = (
     sessionLabel: "morning" | "afternoon",
 
     minutes: number,
   ) => {
-    if (!editDraft) return;
+    if (!editDraft) return
 
     const oldEnd =
-      sessionLabel === "morning"
-        ? editDraft.morningEnd
-        : editDraft.afternoonEnd;
+      sessionLabel === "morning" ? editDraft.morningEnd : editDraft.afternoonEnd
 
-    const newEnd = addMinutesToTime(oldEnd, minutes);
+    const newEnd = addMinutesToTime(oldEnd, minutes)
 
     if (!oldEnd || !newEnd) {
-      toast.error("This session cannot be extended beyond midnight.");
+      toast.error("This session cannot be extended beyond midnight.")
 
-      return;
+      return
     }
 
     setPendingSessionExtension({
@@ -10638,13 +10970,13 @@ export function AdminEventsPage({
       oldEnd: normalizeTimeValue(oldEnd),
 
       newEnd,
-    });
-  };
+    })
+  }
 
   const extendSession = async () => {
-    if (!editDraft || !pendingSessionExtension || isExtendingSession) return;
+    if (!editDraft || !pendingSessionExtension || isExtendingSession) return
 
-    setIsExtendingSession(true);
+    setIsExtendingSession(true)
 
     const { data, error } = await supabase.rpc("extend_event_session", {
       p_event_id: editDraft.id,
@@ -10652,106 +10984,106 @@ export function AdminEventsPage({
       p_session_label: pendingSessionExtension.sessionLabel,
 
       p_extension_minutes: pendingSessionExtension.minutes,
-    });
+    })
 
     if (error) {
-      console.error(error);
+      console.error(error)
 
-      toast.error(`Could not extend session: ${error.message}`);
+      toast.error(`Could not extend session: ${error.message}`)
 
-      setIsExtendingSession(false);
+      setIsExtendingSession(false)
 
-      return;
+      return
     }
 
-    const result = Array.isArray(data) ? data[0] : data;
+    const result = Array.isArray(data) ? data[0] : data
 
-    const newEnd = normalizeTimeValue(result?.new_end_time);
+    const newEnd = normalizeTimeValue(result?.new_end_time)
 
-    const upgradedCount = Number(result?.upgraded_count ?? 0);
+    const upgradedCount = Number(result?.upgraded_count ?? 0)
 
     if (!newEnd) {
-      toast.error("The extension completed without returning a new end time.");
+      toast.error("The extension completed without returning a new end time.")
 
-      setIsExtendingSession(false);
+      setIsExtendingSession(false)
 
-      return;
+      return
     }
 
     const nextDraft: EventData = {
       ...editDraft,
 
       version: (editDraft.version ?? 1) + 1,
-    };
-
-    if (pendingSessionExtension.sessionLabel === "morning") {
-      nextDraft.morningEnd = newEnd;
-
-      nextDraft.morningLateCutoff = newEnd;
-
-      if (!nextDraft.multiSession) {
-        const start = nextDraft.time.split(/[–-]/)[0]?.trim();
-
-        nextDraft.time = start ? `${start}–${newEnd}` : newEnd;
-      }
-    } else {
-      nextDraft.afternoonEnd = newEnd;
-
-      nextDraft.afternoonLateCutoff = newEnd;
     }
 
-    setEditDraft(nextDraft);
+    if (pendingSessionExtension.sessionLabel === "morning") {
+      nextDraft.morningEnd = newEnd
 
-    setEditOriginal(nextDraft);
+      nextDraft.morningLateCutoff = newEnd
+
+      if (!nextDraft.multiSession) {
+        const start = nextDraft.time.split(/[–-]/)[0]?.trim()
+
+        nextDraft.time = start ? `${start}–${newEnd}` : newEnd
+      }
+    } else {
+      nextDraft.afternoonEnd = newEnd
+
+      nextDraft.afternoonLateCutoff = newEnd
+    }
+
+    setEditDraft(nextDraft)
+
+    setEditOriginal(nextDraft)
 
     setEvents((current) =>
       current.map((event) => (event.id === nextDraft.id ? nextDraft : event)),
-    );
+    )
 
-    setPendingSessionExtension(null);
+    setPendingSessionExtension(null)
 
-    setIsExtendingSession(false);
+    setIsExtendingSession(false)
 
     toast.success(
       `Session extended to ${newEnd}. ${upgradedCount} late ${
         upgradedCount === 1 ? "record was" : "records were"
       } upgraded to present.`,
-    );
-  };
+    )
+  }
 
   const commitSave = async () => {
-    if (!editDraft) return;
+    if (!editDraft) return
 
-    setShowSensitiveWarning(false);
+    setShowSensitiveWarning(false)
 
     try {
       const timeRange = editDraft.multiSession
         ? null
-        : parseEventTimeRange(editDraft.time);
+        : parseEventTimeRange(editDraft.time)
 
       if (!editDraft.multiSession && !timeRange) {
-        toast.error("Enter time like 3:35 AM - 5:20 AM.");
+        toast.error("Enter time like 3:35 AM - 5:20 AM.")
 
-        return;
+        return
       }
 
       const persistedHighlightUrl =
         editDraft.highlightUrl && !editDraft.highlightUrl.startsWith("blob:")
           ? editDraft.highlightUrl
-          : null;
+          : null
 
       const nextGalleryUrls = (editDraft.mediaUrls ?? []).filter(
         (url) =>
           url !== editDraft.highlightUrl && url !== editOriginal?.highlightUrl,
-      );
+      )
 
       const previousMediaUrls = [
         ...(editOriginal?.mediaUrls ?? []),
 
         ...(editOriginal?.highlightUrl ? [editOriginal.highlightUrl] : []),
-      ];
+      ]
 
-      const current = events.find((e) => e.id === editDraft.id);
+      const current = events.find((e) => e.id === editDraft.id)
 
       if (
         current &&
@@ -10760,17 +11092,17 @@ export function AdminEventsPage({
       ) {
         toast.error(
           "Another admin modified this event — please review and try again.",
-        );
+        )
 
-        setEditId(null);
+        setEditId(null)
 
-        setEditDraft(null);
+        setEditDraft(null)
 
-        setEditOriginal(null);
+        setEditOriginal(null)
 
-        setShowSensitiveWarning(false);
+        setShowSensitiveWarning(false)
 
-        return;
+        return
       }
 
       const savedFineValues = finesEnabled
@@ -10799,7 +11131,7 @@ export function AdminEventsPage({
             afternoonAbsent: editOriginal?.afternoonAbsentFine ?? 0,
 
             afternoonLate: editOriginal?.afternoonLateFine ?? 0,
-          };
+          }
 
       const payload = {
         title: editDraft.title,
@@ -10859,7 +11191,7 @@ export function AdminEventsPage({
         afternoon_late_fine: savedFineValues.afternoonLate,
 
         version: (editOriginal?.version ?? 1) + 1,
-      };
+      }
 
       const { error } = await supabase
 
@@ -10867,14 +11199,14 @@ export function AdminEventsPage({
 
         .update(payload)
 
-        .eq("id", editDraft.id);
+        .eq("id", editDraft.id)
 
       if (error) {
-        toast.error(`Failed to update event: ${error.message}`);
+        toast.error(`Failed to update event: ${error.message}`)
 
-        console.error(error);
+        console.error(error)
 
-        return;
+        return
       }
 
       await deleteImages(
@@ -10882,7 +11214,7 @@ export function AdminEventsPage({
           (url) =>
             url !== persistedHighlightUrl && !nextGalleryUrls.includes(url),
         ),
-      );
+      )
 
       const saved: EventData = {
         ...editDraft,
@@ -10912,59 +11244,59 @@ export function AdminEventsPage({
         afternoonAbsentFine: savedFineValues.afternoonAbsent,
 
         afternoonLateFine: savedFineValues.afternoonLate,
-      };
+      }
 
-      setEvents((ev) => ev.map((e) => (e.id === saved.id ? saved : e)));
+      setEvents((ev) => ev.map((e) => (e.id === saved.id ? saved : e)))
 
-      setEditId(null);
+      setEditId(null)
 
-      setEditDraft(null);
+      setEditDraft(null)
 
-      setEditOriginal(null);
+      setEditOriginal(null)
 
-      setShowSensitiveWarning(false);
+      setShowSensitiveWarning(false)
 
-      toast.success("Event updated successfully");
+      toast.success("Event updated successfully")
     } catch (caughtError) {
-      console.error(caughtError);
+      console.error(caughtError)
 
-      toast.error("An error occurred while updating the event");
+      toast.error("An error occurred while updating the event")
     }
-  };
+  }
 
   const handleSaveEdit = () => {
     if (hasSensitiveChanges()) {
-      setShowSensitiveWarning(true);
+      setShowSensitiveWarning(true)
 
-      return;
+      return
     }
 
-    commitSave();
-  };
+    commitSave()
+  }
 
   const deleteEvent = async (id: string) => {
     try {
-      const event = events.find((item) => item.id === id);
+      const event = events.find((item) => item.id === id)
 
       const mediaUrls = [
         ...(event?.mediaUrls ?? []),
 
         ...(event?.highlightUrl ? [event.highlightUrl] : []),
-      ];
+      ]
 
-      const { error } = await supabase.from("events").delete().eq("id", id);
+      const { error } = await supabase.from("events").delete().eq("id", id)
 
       if (error) {
-        toast.error(`Failed to delete event: ${error.message}`);
+        toast.error(`Failed to delete event: ${error.message}`)
 
-        console.error(error);
+        console.error(error)
 
-        return;
+        return
       }
 
-      setEvents((ev) => ev.filter((e) => e.id !== id));
+      setEvents((ev) => ev.filter((e) => e.id !== id))
 
-      const cleanupResults = await deleteImages(mediaUrls);
+      const cleanupResults = await deleteImages(mediaUrls)
 
       cleanupResults
 
@@ -10972,28 +11304,28 @@ export function AdminEventsPage({
 
         .forEach((result) =>
           console.error("Failed to delete event media", result.error),
-        );
+        )
 
-      toast.success("Event deleted successfully");
+      toast.success("Event deleted successfully")
     } catch (caughtError) {
-      console.error(caughtError);
+      console.error(caughtError)
 
-      toast.error("An error occurred while deleting the event");
+      toast.error("An error occurred while deleting the event")
     }
-  };
+  }
 
   const archiveEvent = async (id: string) => {
-    if (archivingId) return;
+    if (archivingId) return
 
-    const current = events.find((event) => event.id === id);
+    const current = events.find((event) => event.id === id)
 
-    if (!current) return;
+    if (!current) return
 
-    const version = current.version ?? 1;
+    const version = current.version ?? 1
 
-    setArchivingId(id);
+    setArchivingId(id)
 
-    setEvents((items) => items.filter((event) => event.id !== id));
+    setEvents((items) => items.filter((event) => event.id !== id))
 
     try {
       const { data, error } = await supabase
@@ -11014,44 +11346,44 @@ export function AdminEventsPage({
 
         .select("id")
 
-        .maybeSingle();
+        .maybeSingle()
 
-      if (error) throw error;
+      if (error) throw error
 
       if (!data) {
         throw new Error(
           "This event was changed by another admin. Refresh and try again.",
-        );
+        )
       }
 
-      toast.success("Event archived");
+      toast.success("Event archived")
     } catch (caughtError) {
-      console.error(caughtError);
+      console.error(caughtError)
 
       setEvents((items) => {
-        if (items.some((event) => event.id === current.id)) return items;
+        if (items.some((event) => event.id === current.id)) return items
 
-        return [...items, current];
-      });
+        return [...items, current]
+      })
 
       toast.error(
         caughtError instanceof Error
           ? caughtError.message
           : "An error occurred while archiving the event",
-      );
+      )
     } finally {
-      setArchivingId(null);
+      setArchivingId(null)
     }
-  };
+  }
 
   const restoreEvent = async (id: string) => {
-    const current = archivedEvents.find((event) => event.id === id);
+    const current = archivedEvents.find((event) => event.id === id)
 
-    if (!current) return;
+    if (!current) return
 
-    const version = current.version ?? 1;
+    const version = current.version ?? 1
 
-    setArchivedEvents((items) => items.filter((event) => event.id !== id));
+    setArchivedEvents((items) => items.filter((event) => event.id !== id))
 
     try {
       const { data, error } = await supabase
@@ -11068,44 +11400,44 @@ export function AdminEventsPage({
 
         .select("id")
 
-        .maybeSingle();
+        .maybeSingle()
 
-      if (error) throw error;
+      if (error) throw error
 
       if (!data) {
         throw new Error(
           "This event was changed by another admin. Refresh and try again.",
-        );
+        )
       }
 
       setEvents((items) => [
         { ...current, archivedAt: undefined, version: version + 1 },
 
         ...items,
-      ]);
+      ])
 
-      toast.success("Event restored");
+      toast.success("Event restored")
     } catch (caughtError) {
-      console.error(caughtError);
+      console.error(caughtError)
 
-      setArchivedEvents((items) => [current, ...items]);
+      setArchivedEvents((items) => [current, ...items])
 
       toast.error(
         caughtError instanceof Error
           ? caughtError.message
           : "An error occurred while restoring the event",
-      );
+      )
     }
-  };
+  }
 
   const permanentlyDeleteEvent = async () => {
-    if (!pendingPermanentDelete || isPermanentlyDeleting) return;
+    if (!pendingPermanentDelete || isPermanentlyDeleting) return
 
-    const current = pendingPermanentDelete;
+    const current = pendingPermanentDelete
 
-    const version = current.version ?? 1;
+    const version = current.version ?? 1
 
-    setIsPermanentlyDeleting(true);
+    setIsPermanentlyDeleting(true)
 
     try {
       const { data, error } = await supabase
@@ -11122,27 +11454,27 @@ export function AdminEventsPage({
 
         .select("id")
 
-        .maybeSingle();
+        .maybeSingle()
 
-      if (error) throw error;
+      if (error) throw error
 
       if (!data) {
         throw new Error(
           "This event was changed by another admin. Refresh and try again.",
-        );
+        )
       }
 
       setArchivedEvents((items) =>
         items.filter((event) => event.id !== current.id),
-      );
+      )
 
       const mediaUrls = [
         ...(current.mediaUrls ?? []),
 
         ...(current.highlightUrl ? [current.highlightUrl] : []),
-      ];
+      ]
 
-      const cleanupResults = await deleteImages(mediaUrls);
+      const cleanupResults = await deleteImages(mediaUrls)
 
       cleanupResults
 
@@ -11150,48 +11482,48 @@ export function AdminEventsPage({
 
         .forEach((result) =>
           console.error("Failed to delete event media", result.error),
-        );
+        )
 
-      setPendingPermanentDelete(null);
+      setPendingPermanentDelete(null)
 
-      toast.success("Event permanently deleted");
+      toast.success("Event permanently deleted")
     } catch (caughtError) {
-      console.error(caughtError);
+      console.error(caughtError)
 
       toast.error(
         caughtError instanceof Error
           ? caughtError.message
           : "An error occurred while permanently deleting the event",
-      );
+      )
     } finally {
-      setIsPermanentlyDeleting(false);
+      setIsPermanentlyDeleting(false)
     }
-  };
+  }
 
   const handleDragStart = ({ active }: DragStartEvent) => {
-    setActiveDragId(String(active.id));
-  };
+    setActiveDragId(String(active.id))
+  }
 
   const handleDragCancel = () => {
-    setActiveDragId(null);
-  };
+    setActiveDragId(null)
+  }
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    setActiveDragId(null);
+    setActiveDragId(null)
 
     if (over?.id === ARCHIVE_DROP_ZONE_ID) {
-      void archiveEvent(String(active.id));
+      void archiveEvent(String(active.id))
     }
-  };
+  }
 
   const setStatus = async (id: string, status: EventStatus) => {
     try {
-      const current = events.find((e) => e.id === id);
+      const current = events.find((e) => e.id === id)
 
       if (!current) {
-        toast.error("Event not found");
+        toast.error("Event not found")
 
-        return;
+        return
       }
 
       if (
@@ -11200,26 +11532,32 @@ export function AdminEventsPage({
           `Close ${current.title} now? QR check-in will stop immediately. Sessions that have not ended will not count as absent yet.`,
         )
       ) {
-        return;
+        return
       }
 
       if (status === "cancelled") {
         const { count, error: attendanceError } = await supabase
+
           .from("attendance_scans")
+
           .select("id", { count: "exact", head: true })
-          .eq("event_id", id);
+
+          .eq("event_id", id)
 
         if (attendanceError) {
-          console.error(attendanceError);
-          toast.error("Could not verify attendance before cancelling.");
-          return;
+          console.error(attendanceError)
+
+          toast.error("Could not verify attendance before cancelling.")
+
+          return
         }
 
         if (count) {
           toast.error(
             "This event already has attendance records. Close it instead of cancelling.",
-          );
-          return;
+          )
+
+          return
         }
 
         if (
@@ -11227,7 +11565,7 @@ export function AdminEventsPage({
             `Cancel ${current.title}? It will be excluded from attendance totals and no absences will be generated.`,
           )
         ) {
-          return;
+          return
         }
       }
 
@@ -11235,7 +11573,7 @@ export function AdminEventsPage({
         status,
 
         version: (current.version ?? 1) + 1,
-      };
+      }
 
       const { error } = await supabase
 
@@ -11243,14 +11581,14 @@ export function AdminEventsPage({
 
         .update(payload)
 
-        .eq("id", id);
+        .eq("id", id)
 
       if (error) {
-        toast.error(`Failed to update event status: ${error.message}`);
+        toast.error(`Failed to update event status: ${error.message}`)
 
-        console.error(error);
+        console.error(error)
 
-        return;
+        return
       }
 
       setEvents((ev) =>
@@ -11265,33 +11603,33 @@ export function AdminEventsPage({
               }
             : e,
         ),
-      );
+      )
 
-      toast.success(`Event marked as ${status}`);
+      toast.success(`Event marked as ${status}`)
     } catch (caughtError) {
-      console.error(caughtError);
+      console.error(caughtError)
 
-      toast.error("An error occurred while updating event status");
+      toast.error("An error occurred while updating event status")
     }
-  };
+  }
 
-  const statusOptions = (
-    current: EventStatus,
-  ): {
-    status: EventStatus;
+  const statusOptions = (current: EventStatus): {
+    status: EventStatus
 
-    label: string;
+    label: string
 
-    icon: React.ReactNode;
+    icon: React.ReactNode
   }[] => {
     if (current === "cancelled") {
       return [
         {
           status: "upcoming",
+
           label: "Restore as Upcoming",
+
           icon: <Icons.Calendar />,
         },
-      ];
+      ]
     }
 
     return [
@@ -11326,13 +11664,13 @@ export function AdminEventsPage({
 
         icon: <Icons.XCircle />,
       },
-    ].filter((o) => o.status !== current);
-  };
+    ].filter((o) => o.status !== current)
+  }
 
-  const activeDragEvent = events.find((event) => event.id === activeDragId);
+  const activeDragEvent = events.find((event) => event.id === activeDragId)
 
   if (selectedEventId) {
-    const selectedEvent = events.find((event) => event.id === selectedEventId);
+    const selectedEvent = events.find((event) => event.id === selectedEventId)
 
     if (!selectedEvent) {
       return (
@@ -11340,7 +11678,7 @@ export function AdminEventsPage({
           label="Event"
           onBack={() => setSelectedEventId(null, true)}
         />
-      );
+      )
     }
 
     return (
@@ -11351,10 +11689,10 @@ export function AdminEventsPage({
         showFees
         onClose={() => setSelectedEventId(null, true)}
         onPrimaryAction={() => {
-          onNav("admin-attendees");
+          onNav("admin-attendees")
         }}
       />
-    );
+    )
   }
 
   return (
@@ -11376,25 +11714,25 @@ export function AdminEventsPage({
                 archived={eventView === "archived"}
                 onClick={() => {
                   if (eventView === "archived") {
-                    setEventView("active");
+                    setEventView("active")
                   } else {
-                    setEventView("archived");
+                    setEventView("archived")
 
-                    void onLoadArchived();
+                    void onLoadArchived()
                   }
                 }}
               />
               <button
                 onClick={() => {
-                  setEventView("active");
+                  setEventView("active")
 
-                  setShowForm(true);
+                  setShowForm(true)
 
-                  setActiveTab("basic");
+                  setActiveTab("basic")
 
-                  setEditId(null);
+                  setEditId(null)
 
-                  setEditDraft(null);
+                  setEditDraft(null)
                 }}
                 className="h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"
               >
@@ -11436,7 +11774,7 @@ export function AdminEventsPage({
                     key={value}
                     type="button"
                     onClick={() => {
-                      setActiveTab(value as CreateEventTab);
+                      setActiveTab(value as CreateEventTab)
                     }}
                     className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
                       activeTab === value
@@ -11453,9 +11791,9 @@ export function AdminEventsPage({
               </nav>
             }
             onClose={() => {
-              discardCreateMedia();
+              discardCreateMedia()
 
-              setShowForm(false);
+              setShowForm(false)
             }}
             footer={
               <>
@@ -11475,9 +11813,9 @@ export function AdminEventsPage({
                 </button>
                 <button
                   onClick={() => {
-                    discardCreateMedia();
+                    discardCreateMedia()
 
-                    setShowForm(false);
+                    setShowForm(false)
                   }}
                   className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50"
                 >
@@ -11671,25 +12009,25 @@ export function AdminEventsPage({
                     accept="image/jpeg,image/png,image/webp"
                     className="hidden"
                     onChange={async (e) => {
-                      const f = e.target.files?.[0];
+                      const f = e.target.files?.[0]
 
-                      if (!f) return;
+                      if (!f) return
 
-                      setHighlightUploadState("uploading");
+                      setHighlightUploadState("uploading")
 
-                      const result = await uploadPromotionalImage(f);
+                      const result = await uploadPromotionalImage(f)
 
                       if ("error" in result) {
-                        setHighlightUploadState("error");
+                        setHighlightUploadState("error")
 
-                        toast.error(result.error);
+                        toast.error(result.error)
 
-                        return;
+                        return
                       }
 
-                      setHighlightUploadState("idle");
+                      setHighlightUploadState("idle")
 
-                      setHighlightUrl(result.url);
+                      setHighlightUrl(result.url)
                     }}
                   />
                   {highlightUploadState === "uploading" ? (
@@ -11716,10 +12054,10 @@ export function AdminEventsPage({
                       <button
                         onClick={() => {
                           if (highlightUrl) {
-                            URL.revokeObjectURL(highlightUrl);
+                            URL.revokeObjectURL(highlightUrl)
                           }
 
-                          setHighlightUrl(null);
+                          setHighlightUrl(null)
                         }}
                         className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
                       >
@@ -11749,10 +12087,11 @@ export function AdminEventsPage({
                     onChange={async (e) => {
                       await uploadEventMedia(
                         Array.from(e.target.files ?? []),
-                        "image",
-                      );
 
-                      e.target.value = "";
+                        "image",
+                      )
+
+                      e.target.value = ""
                     }}
                   />
                   <input
@@ -11764,10 +12103,11 @@ export function AdminEventsPage({
                     onChange={async (e) => {
                       await uploadEventMedia(
                         Array.from(e.target.files ?? []),
-                        "video",
-                      );
 
-                      e.target.value = "";
+                        "video",
+                      )
+
+                      e.target.value = ""
                     }}
                   />
                   {mediaUploadState === "uploading" ? (
@@ -11861,7 +12201,7 @@ export function AdminEventsPage({
                     key={value}
                     type="button"
                     onClick={() => {
-                      setEditEventTab(value as CreateEventTab);
+                      setEditEventTab(value as CreateEventTab)
                     }}
                     className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
                       editEventTab === value
@@ -11883,9 +12223,9 @@ export function AdminEventsPage({
                 <>
                   <button
                     onClick={() => {
-                      setShowSensitiveWarning(false);
+                      setShowSensitiveWarning(false)
 
-                      void commitSave();
+                      void commitSave()
                     }}
                     className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm"
                   >
@@ -12002,11 +12342,11 @@ export function AdminEventsPage({
                     </div>
                     <button
                       onClick={() => {
-                        if (eventHasScans) return;
+                        if (eventHasScans) return
 
                         setEditDraft((d) =>
                           d ? { ...d, multiSession: !d.multiSession } : d,
-                        );
+                        )
                       }}
                       role="switch"
                       aria-checked={!!editDraft.multiSession}
@@ -12207,27 +12547,27 @@ export function AdminEventsPage({
                     accept="image/jpeg,image/png,image/webp"
                     className="hidden"
                     onChange={async (e) => {
-                      const f = e.target.files?.[0];
+                      const f = e.target.files?.[0]
 
-                      if (!f) return;
+                      if (!f) return
 
-                      setEditHighlightUploadState("uploading");
+                      setEditHighlightUploadState("uploading")
 
-                      const result = await uploadPromotionalImage(f);
+                      const result = await uploadPromotionalImage(f)
 
                       if ("error" in result) {
-                        setEditHighlightUploadState("error");
+                        setEditHighlightUploadState("error")
 
-                        toast.error(result.error);
+                        toast.error(result.error)
 
-                        return;
+                        return
                       }
 
-                      setEditHighlightUploadState("idle");
+                      setEditHighlightUploadState("idle")
 
                       setEditDraft((d) =>
                         d ? { ...d, highlightUrl: result.url } : d,
-                      );
+                      )
                     }}
                   />
                   {editHighlightUploadState === "uploading" ? (
@@ -12281,7 +12621,7 @@ export function AdminEventsPage({
           <FormModal
             title="Confirm session extension"
             onClose={() => {
-              if (!isExtendingSession) setPendingSessionExtension(null);
+              if (!isExtendingSession) setPendingSessionExtension(null)
             }}
             footer={
               <>
@@ -12436,9 +12776,9 @@ export function AdminEventsPage({
                       {e.status === "active" && (
                         <button
                           onClick={(event) => {
-                            event.stopPropagation();
+                            event.stopPropagation()
 
-                            onNav("admin-scanner");
+                            onNav("admin-scanner")
                           }}
                           className="flex-1 h-9 bg-emerald-500 text-white text-xs font-semibold rounded-lg hover:bg-emerald-600 flex items-center justify-center gap-1.5 shadow-sm"
                         >
@@ -12451,9 +12791,9 @@ export function AdminEventsPage({
                       )}
                       <button
                         onClick={(event) => {
-                          event.stopPropagation();
+                          event.stopPropagation()
 
-                          onNav("admin-attendees");
+                          onNav("admin-attendees")
                         }}
                         className={`h-9 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1.5 ${
                           e.status === "active" ? "flex-1" : "w-full"
@@ -12505,7 +12845,7 @@ export function AdminEventsPage({
           <FormModal
             title="Permanently delete event?"
             onClose={() => {
-              if (!isPermanentlyDeleting) setPendingPermanentDelete(null);
+              if (!isPermanentlyDeleting) setPendingPermanentDelete(null)
             }}
             footer={
               <>
@@ -12542,7 +12882,7 @@ export function AdminEventsPage({
         )}
       </>
     </DndContext>
-  );
+  )
 }
 
 function CameraScanner({
@@ -12556,55 +12896,55 @@ function CameraScanner({
 
   manualSessionLabel,
 }: {
-  event: EventData;
+  event: EventData
 
-  scannerId: string | null;
+  scannerId: string | null
 
-  onResult: (r: ScanRecord) => void;
+  onResult: (r: ScanRecord) => void
 
-  onClose: () => void;
+  onClose: () => void
 
-  manualSessionLabel: "morning" | "afternoon" | null;
+  manualSessionLabel: "morning" | "afternoon" | null
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null)
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  const streamRef = useRef<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null)
 
-  const animRef = useRef<number>(0);
+  const animRef = useRef<number>(0)
 
-  const scannedRef = useRef<boolean>(false);
+  const scannedRef = useRef<boolean>(false)
 
-  const [camError, setCamError] = useState<string | null>(null);
+  const [camError, setCamError] = useState<string | null>(null)
 
-  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null)
 
-  const [result, setResult] = useState<ScanRecord | null>(null);
+  const [result, setResult] = useState<ScanRecord | null>(null)
 
-  const [cameraAttempt, setCameraAttempt] = useState(0);
+  const [cameraAttempt, setCameraAttempt] = useState(0)
 
-  const [torch, setTorch] = useState(false);
+  const [torch, setTorch] = useState(false)
 
   const determineSessionLabel = () =>
-    event.multiSession ? manualSessionLabel : "morning";
+    event.multiSession ? manualSessionLabel : "morning"
 
   const resolveQr = async (raw: string) => {
-    if (scannedRef.current) return;
+    if (scannedRef.current) return
 
-    scannedRef.current = true;
+    scannedRef.current = true
 
-    setScanError(null);
+    setScanError(null)
 
     try {
-      const qrMatch = raw.match(/^ADESSE:([^:]+)(?::v(\d+))?$/i);
+      const qrMatch = raw.match(/^ADESSE:([^:]+)(?::v(\d+))?$/i)
 
-      const studentId = qrMatch?.[1]?.trim() ?? "";
+      const studentId = qrMatch?.[1]?.trim() ?? ""
 
-      const qrVersion = qrMatch?.[2] ? Number(qrMatch[2]) : null;
+      const qrVersion = qrMatch?.[2] ? Number(qrMatch[2]) : null
 
       if (!studentId || !scannerId) {
-        throw new Error("This QR code is not a valid Adesse student code.");
+        throw new Error("This QR code is not a valid Adesse student code.")
       }
 
       const sessionMeta = event.multiSession
@@ -12618,12 +12958,12 @@ function CameraScanner({
                   ? !!event.strictAfternoon
                   : false,
           }
-        : getEventSessionMeta(event);
+        : getEventSessionMeta(event)
 
-      const sessionLabel = sessionMeta.sessionLabel;
+      const sessionLabel = sessionMeta.sessionLabel
 
       if (!sessionLabel) {
-        throw new Error("Please select a session before scanning.");
+        throw new Error("Please select a session before scanning.")
       }
 
       const { data: profile, error: profileError } = await supabase
@@ -12636,47 +12976,47 @@ function CameraScanner({
 
         .eq("student_id", studentId)
 
-        .maybeSingle();
+        .maybeSingle()
 
-      if (profileError) throw profileError;
+      if (profileError) throw profileError
 
       if (!profile) {
         throw new Error(
           "Student profile not found. Ask the student to renew their QR code.",
-        );
+        )
       }
 
       if (qrVersion !== null && qrVersion !== Number(profile.qr_version ?? 1)) {
         throw new Error(
           "This QR code has expired. Ask the student to renew it.",
-        );
+        )
       }
 
-      const now = new Date();
+      const now = new Date()
 
-      const strictSession = sessionMeta.strict;
+      const strictSession = sessionMeta.strict
 
       const cutoffValue =
         sessionLabel === "morning"
           ? event.morningLateCutoff
-          : event.afternoonLateCutoff;
+          : event.afternoonLateCutoff
 
-      const cutoffMinutes = cutoffValue ? toMinutes(cutoffValue) : null;
+      const cutoffMinutes = cutoffValue ? toMinutes(cutoffValue) : null
 
-      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes()
 
-      const isLateScan = cutoffMinutes !== null && nowMinutes > cutoffMinutes;
+      const isLateScan = cutoffMinutes !== null && nowMinutes > cutoffMinutes
 
       const sessionEndValue =
-        sessionLabel === "morning" ? event.morningEnd : event.afternoonEnd;
+        sessionLabel === "morning" ? event.morningEnd : event.afternoonEnd
 
       const sessionEndMinutes = sessionEndValue
         ? toMinutes(sessionEndValue)
-        : null;
+        : null
 
       const canTimeOut =
         sessionEndMinutes !== null &&
-        now.getHours() * 60 + now.getMinutes() >= sessionEndMinutes;
+        now.getHours() * 60 + now.getMinutes() >= sessionEndMinutes
 
       const attendance = await recordAttendance({
         eventId: event.id,
@@ -12694,10 +13034,10 @@ function CameraScanner({
         canTimeOut,
 
         now,
-      });
+      })
 
       if (attendance.outcome === "error") {
-        throw attendance.error;
+        throw attendance.error
       }
 
       if (
@@ -12706,11 +13046,11 @@ function CameraScanner({
       ) {
         setScanError(
           "Attendance already recorded for this student and session.",
-        );
+        )
 
-        scannedRef.current = false;
+        scannedRef.current = false
 
-        return;
+        return
       }
 
       const rec: ScanRecord = {
@@ -12736,34 +13076,38 @@ function CameraScanner({
         action: attendance.action,
 
         dbId: attendance.recordId,
-      };
+      }
 
       if (attendance.outcome === "success") {
-        setSweeping(true);
+        setSweeping(true)
+
         setTimeout(() => {
-          setSweeping(false);
-          setResult(rec);
-          onResult(rec);
-        }, 700);
+          setSweeping(false)
+
+          setResult(rec)
+
+          onResult(rec)
+        }, 700)
       } else {
-        setResult(rec);
-        onResult(rec);
+        setResult(rec)
+
+        onResult(rec)
       }
     } catch (caughtError) {
-      console.error("Failed to record QR attendance", caughtError);
+      console.error("Failed to record QR attendance", caughtError)
 
       setScanError(
         caughtError instanceof Error
           ? caughtError.message
           : "Unable to record attendance. Please try again.",
-      );
+      )
 
-      scannedRef.current = false;
+      scannedRef.current = false
     }
-  };
+  }
 
   useEffect(() => {
-    let active = true;
+    let active = true
 
     async function start() {
       try {
@@ -12775,122 +13119,125 @@ function CameraScanner({
 
             height: { ideal: 720 },
           },
-        });
+        })
 
         if (!active) {
-          stream.getTracks().forEach((t) => t.stop());
+          stream.getTracks().forEach((t) => t.stop())
 
-          return;
+          return
         }
 
-        streamRef.current = stream;
+        streamRef.current = stream
 
         if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+          videoRef.current.srcObject = stream
 
-          await videoRef.current.play();
+          await videoRef.current.play()
         }
 
         tickRef.current = () => {
-          if (!active || scannedRef.current) return;
+          if (!active || scannedRef.current) return
 
-          const video = videoRef.current;
+          const video = videoRef.current
 
-          const canvas = canvasRef.current;
+          const canvas = canvasRef.current
 
           if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
-            const { videoWidth: w, videoHeight: h } = video;
+            const { videoWidth: w, videoHeight: h } = video
 
-            canvas.width = w;
+            canvas.width = w
 
-            canvas.height = h;
+            canvas.height = h
 
-            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            const ctx = canvas.getContext("2d", { willReadFrequently: true })
 
             if (ctx) {
-              ctx.drawImage(video, 0, 0, w, h);
+              ctx.drawImage(video, 0, 0, w, h)
 
-              const imageData = ctx.getImageData(0, 0, w, h);
+              const imageData = ctx.getImageData(0, 0, w, h)
 
               const code = jsQR(imageData.data, w, h, {
                 inversionAttempts: "dontInvert",
-              });
+              })
 
               if (code?.data) {
-                resolveQr(code.data);
+                resolveQr(code.data)
 
-                return;
+                return
               }
             }
           }
 
-          animRef.current = requestAnimationFrame(tickRef.current);
-        };
+          animRef.current = requestAnimationFrame(tickRef.current)
+        }
 
-        animRef.current = requestAnimationFrame(tickRef.current);
+        animRef.current = requestAnimationFrame(tickRef.current)
       } catch {
         if (active)
           setCamError(
             "Camera access denied. Please allow camera permission and try again.",
-          );
+          )
       }
     }
 
-    start();
+    start()
 
     return () => {
-      active = false;
+      active = false
 
-      cancelAnimationFrame(animRef.current);
+      cancelAnimationFrame(animRef.current)
 
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-    };
-  }, [cameraAttempt]);
+      streamRef.current?.getTracks().forEach((t) => t.stop())
+    }
+  }, [cameraAttempt])
 
   const toggleTorch = async () => {
-    const track = streamRef.current?.getVideoTracks()[0];
+    const track = streamRef.current?.getVideoTracks()[0]
 
-    if (!track) return;
+    if (!track) return
 
     try {
-      await (
-        track as MediaStreamTrack & {
-          applyConstraints: (c: object) => Promise<void>;
-        }
-      ).applyConstraints({
-        advanced: [{ torch: !torch } as MediaTrackConstraintSet],
-      });
+      await (track as MediaStreamTrack & {
+        applyConstraints: (c: object) => Promise<void>
+      })
 
-      setTorch((t) => !t);
+        .applyConstraints({
+          advanced: [{ torch: !torch } as MediaTrackConstraintSet],
+        })
+
+      setTorch((t) => !t)
     } catch {}
-  };
+  }
 
-  const [sweeping, setSweeping] = useState(false);
+  const [sweeping, setSweeping] = useState(false)
 
-  const tickRef = useRef<() => void>(() => {});
+  const tickRef = useRef<() => void>(() => {})
 
   const scanAgain = () => {
-    scannedRef.current = false;
+    scannedRef.current = false
 
-    setSweeping(false);
+    setSweeping(false)
 
-    setResult(null);
+    setResult(null)
 
-    setScanError(null);
+    setScanError(null)
 
-    animRef.current = requestAnimationFrame(tickRef.current);
-  };
+    animRef.current = requestAnimationFrame(tickRef.current)
+  }
 
   const retryCamera = () => {
-    scannedRef.current = false;
+    scannedRef.current = false
 
-    setSweeping(false);
+    setSweeping(false)
 
-    setCamError(null);
-    setScanError(null);
-    setResult(null);
-    setCameraAttempt((attempt) => attempt + 1);
-  };
+    setCamError(null)
+
+    setScanError(null)
+
+    setResult(null)
+
+    setCameraAttempt((attempt) => attempt + 1)
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col scanner-enter">
@@ -12970,6 +13317,7 @@ function CameraScanner({
                   style={{
                     background:
                       "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.88) 20%, #fff 50%, rgba(255,255,255,0.88) 80%, transparent 100%)",
+
                     boxShadow: "0 0 12px 2px rgba(255,255,255,0.7)",
                   }}
                 />
@@ -13170,7 +13518,7 @@ function CameraScanner({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 export function AdminScannerPage({
@@ -13178,73 +13526,72 @@ export function AdminScannerPage({
 
   scannerId,
 }: {
-  events?: EventData[];
+  events?: EventData[]
 
-  scannerId: string | null;
+  scannerId: string | null
 }) {
   const [selectedEventId, setSelectedEventId] = useState<string>(
     events[0]?.id ?? "",
-  );
+  )
 
-  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false)
 
-  const [scanned, setScanned] = useState<ScanRecord[]>([]);
+  const [scanned, setScanned] = useState<ScanRecord[]>([])
 
-  const [manualSessionLabel, setManualSessionLabel] = useState<
-    "morning" | "afternoon" | null
-  >(null);
+  const [manualSessionLabel, setManualSessionLabel] =
+    useState<"morning" | "afternoon" | null>(null)
 
-  const [imageLoading, setImageLoading] = useState(true);
+  const [imageLoading, setImageLoading] = useState(true)
 
-  const [showEventRules, setShowEventRules] = useState(false);
+  const [showEventRules, setShowEventRules] = useState(false)
 
   useEffect(() => {
     if (!events.some((event) => event.id === selectedEventId) && events[0]) {
-      setSelectedEventId(events[0].id);
+      setSelectedEventId(events[0].id)
     }
-  }, [events, selectedEventId]);
+  }, [events, selectedEventId])
 
   useEffect(() => {
-    const nextEvent = events.find((event) => event.id === selectedEventId);
+    const nextEvent = events.find((event) => event.id === selectedEventId)
 
     if (!nextEvent) {
-      setManualSessionLabel(null);
+      setManualSessionLabel(null)
 
-      return;
+      return
     }
 
     if (!nextEvent.multiSession) {
-      setManualSessionLabel(null);
+      setManualSessionLabel(null)
 
-      return;
+      return
     }
 
     const defaultSession =
-      getEventSessionMeta(nextEvent).sessionLabel ?? "morning";
+      getEventSessionMeta(nextEvent).sessionLabel ?? "morning"
 
-    setManualSessionLabel(defaultSession);
-  }, [selectedEventId, events]);
+    setManualSessionLabel(defaultSession)
+  }, [selectedEventId, events])
 
   const activeEvents = events.filter(
     (e) => e.status === "active" || e.status === "upcoming",
-  );
+  )
 
-  const selectedEvent = events.find((e) => e.id === selectedEventId);
+  const selectedEvent = events.find((e) => e.id === selectedEventId)
 
   const primaryMedia =
-    selectedEvent?.highlightUrl ?? selectedEvent?.mediaUrls?.[0];
+    selectedEvent?.highlightUrl ?? selectedEvent?.mediaUrls?.[0]
 
   useEffect(() => {
-    setImageLoading(Boolean(primaryMedia));
-  }, [selectedEventId, primaryMedia]);
+    setImageLoading(Boolean(primaryMedia))
+  }, [selectedEventId, primaryMedia])
 
-  const canScanSelectedEvent = selectedEvent?.status === "active";
+  const canScanSelectedEvent = selectedEvent?.status === "active"
 
   const selectedSessionMeta = getSelectedSessionMeta(
     selectedEvent,
 
     manualSessionLabel,
-  );
+  )
 
   const handleResult = (r: ScanRecord) => {
     setScanned((prev) => [
@@ -13259,8 +13606,8 @@ export function AdminScannerPage({
       },
 
       ...prev,
-    ]);
-  };
+    ])
+  }
 
   if (scannerOpen && selectedEvent) {
     return (
@@ -13271,7 +13618,7 @@ export function AdminScannerPage({
         onClose={() => setScannerOpen(false)}
         manualSessionLabel={manualSessionLabel}
       />
-    );
+    )
   }
 
   return (
@@ -13574,8 +13921,7 @@ export function AdminScannerPage({
                 {scanned.length}
               </span>
             </div>
-            {scanned.length > 0 ? (
-              scanned.slice(0, 8).map((s, i) => (
+            {scanned.length > 0 ? scanned.slice(0, 8).map((s, i) => (
                 <div
                   key={i}
                   className={`flex items-center gap-3 px-5 py-3.5 ${
@@ -13595,17 +13941,14 @@ export function AdminScannerPage({
                   </div>
                   <Badge status={s.status} sanctioned={s.sanctioned} />
                 </div>
-              ))
-            ) : (
-              <p className="px-5 py-6 text-sm text-slate-400 text-center">
+              )) : <p className="px-5 py-6 text-sm text-slate-400 text-center">
                 No scans recorded yet.
-              </p>
-            )}
+              </p>}
           </div>
         </div>
       </div>
     </>
-  );
+  )
 }
 
 export function AdminAttendeesPage({
@@ -13623,45 +13966,44 @@ export function AdminAttendeesPage({
 
   onDeleteAttendance,
 }: {
-  onNav: (p: Page) => void;
+  onNav: (p: Page) => void
 
-  events?: EventData[];
+  events?: EventData[]
 
-  students?: StudentProfile[];
+  students?: StudentProfile[]
 
-  scanState?: Record<string, ScanRecord[]>;
+  scanState?: Record<string, ScanRecord[]>
 
-  fineRows?: FineRowLike[];
+  fineRows?: FineRowLike[]
 
-  approvedExcuseKeys?: ReadonlySet<string>;
+  approvedExcuseKeys?: ReadonlySet<string>
 
-  onDeleteAttendance?: (dbId: string | number) => Promise<boolean>;
+  onDeleteAttendance?: (dbId: string | number) => Promise<boolean>
 }) {
-  const ALL_EVENTS_ID = "__all_events__";
+  const ALL_EVENTS_ID = "__all_events__"
 
-  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "");
+  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "")
 
-  const [studentSearch, setStudentSearch] = useState("");
+  const [studentSearch, setStudentSearch] = useState("")
 
   const [scanState, setScanState] = useState<Record<string, ScanRecord[]>>(
     initialScanState ?? {},
-  );
+  )
 
   const [tab, setTab] = useState<"present" | "late" | "absent" | "duplicates">(
     "present",
-  );
+  )
 
-  const [deletingId, setDeletingId] = useState<string | number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | number | null>(null)
 
-  const [selectedSession, setSelectedSession] = useState<
-    "morning" | "afternoon"
-  >("morning");
+  const [selectedSession, setSelectedSession] =
+    useState<"morning" | "afternoon">("morning")
 
   useEffect(() => {
     if (initialScanState) {
-      setScanState(initialScanState);
+      setScanState(initialScanState)
     }
-  }, [initialScanState]);
+  }, [initialScanState])
 
   useEffect(() => {
     if (
@@ -13669,67 +14011,67 @@ export function AdminAttendeesPage({
       !events.some((event) => event.id === selectedEventId) &&
       events[0]
     ) {
-      setSelectedEventId(events[0].id);
+      setSelectedEventId(events[0].id)
     }
-  }, [events, selectedEventId]);
+  }, [events, selectedEventId])
 
-  const allEventsSelected = selectedEventId === ALL_EVENTS_ID;
+  const allEventsSelected = selectedEventId === ALL_EVENTS_ID
 
   const selectedEvent = allEventsSelected
     ? null
-    : (events.find((e) => e.id === selectedEventId) ?? events[0] ?? null);
+    : (events.find((e) => e.id === selectedEventId) ?? events[0] ?? null)
 
   useEffect(() => {
-    setSelectedSession("morning");
-  }, [selectedEventId]);
+    setSelectedSession("morning")
+  }, [selectedEventId])
 
   const scans = selectedEvent
     ? (scanState[selectedEvent.id] ?? []).filter(
         (scan) => (scan.sessionLabel ?? "morning") === selectedSession,
       )
-    : [];
+    : []
 
   const fineForScan = (scan?: ScanRecord) =>
     scan
       ? fineRows.find(
           (fine) => String(fine.attendance_scan_id ?? "") === String(scan.dbId),
         )
-      : undefined;
+      : undefined
 
   const sessionFine = selectedEvent
     ? selectedSession === "afternoon"
       ? (selectedEvent.afternoonAbsentFine ?? selectedEvent.absentFine ?? 0)
       : (selectedEvent.morningAbsentFine ?? selectedEvent.absentFine ?? 0)
-    : 0;
+    : 0
 
   const sessionLateFine = selectedEvent
     ? selectedSession === "afternoon"
       ? (selectedEvent.afternoonLateFine ?? selectedEvent.lateFine ?? 0)
       : (selectedEvent.morningLateFine ?? selectedEvent.lateFine ?? 0)
-    : 0;
+    : 0
 
   const presentScans = scans.filter(
     (s) => s.status === "present" || s.status === "confirmed",
-  );
+  )
 
-  const lateScans = scans.filter((s) => s.status === "late");
+  const lateScans = scans.filter((s) => s.status === "late")
 
-  const absentScans = scans.filter((s) => s.status === "absent");
+  const absentScans = scans.filter((s) => s.status === "absent")
 
-  const duplicates = scans.filter((s) => s.status === "duplicate");
+  const duplicates = scans.filter((s) => s.status === "duplicate")
 
   const presentIds = new Set(
     [...presentScans, ...lateScans].map((s) => s.profileId ?? s.id),
-  );
+  )
 
   const eligibleStudents = students.filter(
     (student) =>
       !selectedEvent?.program ||
       selectedEvent.program === "All Programs" ||
       student.program === selectedEvent.program,
-  );
+  )
 
-  const searchQuery = studentSearch.trim().toLowerCase();
+  const searchQuery = studentSearch.trim().toLowerCase()
 
   const visibleStudents = searchQuery
     ? eligibleStudents.filter((student) =>
@@ -13739,7 +14081,7 @@ export function AdminAttendeesPage({
 
           .some((value) => value.toLowerCase().includes(searchQuery)),
       )
-    : eligibleStudents;
+    : eligibleStudents
 
   const visibleScans = (records: ScanRecord[]) =>
     searchQuery
@@ -13750,11 +14092,11 @@ export function AdminAttendeesPage({
 
             .some((value) => value.toLowerCase().includes(searchQuery)),
         )
-      : records;
+      : records
 
   const absentScanByProfileId = new Map(
     absentScans.map((scan) => [scan.profileId ?? scan.id, scan]),
-  );
+  )
 
   const absentees: ScanRecord[] = visibleStudents
 
@@ -13793,23 +14135,23 @@ export function AdminAttendeesPage({
 
           dbId: `inferred-${selectedEvent?.id ?? "event"}-${student.profileId ?? student.id}`,
         },
-    );
+    )
 
   const absentFineForStudent = (profileId: string) => {
-    const absentScan = absentScanByProfileId.get(profileId);
+    const absentScan = absentScanByProfileId.get(profileId)
 
-    return fineForScan(absentScan);
-  };
+    return fineForScan(absentScan)
+  }
 
   const isAbsentCleared = (profileId: string) => {
-    const status = absentFineForStudent(profileId)?.status;
+    const status = absentFineForStudent(profileId)?.status
 
-    return status === "paid" || status === "excused";
-  };
+    return status === "paid" || status === "excused"
+  }
 
-  const visiblePresent = visibleScans(presentScans);
+  const visiblePresent = visibleScans(presentScans)
 
-  const visibleLate = visibleScans(lateScans);
+  const visibleLate = visibleScans(lateScans)
 
   const visibleAbsent = searchQuery
     ? absentees.filter((scan) =>
@@ -13819,44 +14161,46 @@ export function AdminAttendeesPage({
 
           .some((value) => value.toLowerCase().includes(searchQuery)),
       )
-    : absentees;
+    : absentees
 
-  const monetaryPolicyActive = sessionFine > 0 || sessionLateFine > 0;
+  const monetaryPolicyActive = sessionFine > 0 || sessionLateFine > 0
 
   const policyColumn = monetaryPolicyActive
     ? "Fee"
     : selectedEvent?.sanctionsEnabled
       ? "Sanction"
-      : null;
+      : null
 
-  const visibleCurrentScans = tab === "late" ? visibleLate : visiblePresent;
+  const visibleCurrentScans = tab === "late" ? visibleLate : visiblePresent
 
   const matchedStudent = students.find((student) => {
-    if (!searchQuery) return false;
+    if (!searchQuery) return false
 
     return [student.name, student.id, student.program, student.section]
 
       .filter(Boolean)
 
-      .some((value) => value.toLowerCase().includes(searchQuery));
-  });
+      .some((value) => value.toLowerCase().includes(searchQuery))
+  })
 
   const matchedStudentExcuseKeys = new Set(
     matchedStudent
       ? events.flatMap((event) =>
           (event.multiSession
-            ? (["morning", "afternoon"] as const)
-            : (["morning"] as const)
+            ? ["morning", "afternoon"] as const
+            : ["morning"] as const
           )
+
             .filter((sessionLabel) =>
               approvedExcuseKeys.has(
                 `${event.id}:${matchedStudent.profileId ?? matchedStudent.id}:${sessionLabel}`,
               ),
             )
+
             .map((sessionLabel) => `${event.id}:${sessionLabel}`),
         )
       : [],
-  );
+  )
 
   const allEventRows = matchedStudent
     ? buildAttendanceSessionRecords(
@@ -13918,7 +14262,7 @@ export function AdminAttendeesPage({
 
         matchedStudentExcuseKeys,
       ).map((record) => {
-        const event = events.find((item) => item.id === record.eventId);
+        const event = events.find((item) => item.id === record.eventId)
 
         return {
           ...record,
@@ -13926,25 +14270,25 @@ export function AdminAttendeesPage({
           eventTitle: event?.title ?? "Event",
 
           eventDate: event?.date ?? "",
-        };
+        }
       })
-    : [];
+    : []
 
   const deleteRecord = async (dbId: string | number) => {
-    if (deletingId !== null) return;
+    if (deletingId !== null) return
 
     if (
       !window.confirm(
         "Delete this attendance record? This action cannot be undone.",
       )
     )
-      return;
+      return
 
-    setDeletingId(dbId);
+    setDeletingId(dbId)
 
     try {
       if (onDeleteAttendance && !(await onDeleteAttendance(dbId))) {
-        return;
+        return
       }
 
       setScanState((st) => ({
@@ -13953,16 +14297,16 @@ export function AdminAttendeesPage({
         [selectedEventId]: (st[selectedEventId] ?? []).filter(
           (r) => r.dbId !== dbId,
         ),
-      }));
+      }))
     } finally {
-      setDeletingId(null);
+      setDeletingId(null)
     }
-  };
+  }
 
   const exportAttendance = () => {
-    if (!selectedEvent) return;
+    if (!selectedEvent) return
 
-    const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`
 
     const rows = scans.map((scan) =>
       [
@@ -13984,7 +14328,7 @@ export function AdminAttendeesPage({
         .map((value) => escapeCsv(String(value ?? "")))
 
         .join(","),
-    );
+    )
 
     const csv = [
       [
@@ -14008,22 +14352,22 @@ export function AdminAttendeesPage({
         .join(","),
 
       ...rows,
-    ].join("\n");
+    ].join("\n")
 
     const url = URL.createObjectURL(
       new Blob([csv], { type: "text/csv;charset=utf-8" }),
-    );
+    )
 
-    const link = document.createElement("a");
+    const link = document.createElement("a")
 
-    link.href = url;
+    link.href = url
 
-    link.download = `${selectedEvent.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-attendees.csv`;
+    link.download = `${selectedEvent.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-attendees.csv`
 
-    link.click();
+    link.click()
 
-    URL.revokeObjectURL(url);
-  };
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <>
@@ -14051,9 +14395,9 @@ export function AdminAttendeesPage({
         <select
           value={selectedEventId}
           onChange={(e) => {
-            setSelectedEventId(e.target.value);
+            setSelectedEventId(e.target.value)
 
-            setTab("present");
+            setTab("present")
           }}
           className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 font-medium outline-none focus:border-emerald-500 appearance-none"
         >
@@ -14071,9 +14415,9 @@ export function AdminAttendeesPage({
             onChange={(event) => {
               setSelectedEventId(
                 event.target.checked ? ALL_EVENTS_ID : (events[0]?.id ?? ""),
-              );
+              )
 
-              setTab("present");
+              setTab("present")
             }}
             className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
           />
@@ -14135,7 +14479,7 @@ export function AdminAttendeesPage({
                     0)
                   : (selectedEvent.morningAbsentFine ??
                     selectedEvent.absentFine ??
-                    0);
+                    0)
 
               const lateAmount =
                 session === "afternoon"
@@ -14144,7 +14488,7 @@ export function AdminAttendeesPage({
                     0)
                   : (selectedEvent.morningLateFine ??
                     selectedEvent.lateFine ??
-                    0);
+                    0)
 
               return (
                 <button
@@ -14164,7 +14508,7 @@ export function AdminAttendeesPage({
                     Absent ₱{amount} · Late ₱{lateAmount}
                   </span>
                 </button>
-              );
+              )
             })}
           </div>
         </div>
@@ -14253,7 +14597,7 @@ export function AdminAttendeesPage({
                 <div className="divide-y divide-slate-100">
                   {allEventRows.map((row) => {
                     const cleared =
-                      row.fineStatus === "paid" || row.fineStatus === "excused";
+                      row.fineStatus === "paid" || row.fineStatus === "excused"
 
                     return (
                       <div
@@ -14305,7 +14649,7 @@ export function AdminAttendeesPage({
                           )}
                         </div>
                       </div>
-                    );
+                    )
                   })}
                 </div>
               )}
@@ -14527,11 +14871,11 @@ export function AdminAttendeesPage({
                 )}
               </div>
               {visibleAbsent.map((s, i) => {
-                const profileId = s.profileId ?? s.id;
+                const profileId = s.profileId ?? s.id
 
-                const fine = fineForScan(s)?.amount ?? sessionFine;
+                const fine = fineForScan(s)?.amount ?? sessionFine
 
-                const cleared = isAbsentCleared(profileId);
+                const cleared = isAbsentCleared(profileId)
 
                 return (
                   <div
@@ -14620,14 +14964,14 @@ export function AdminAttendeesPage({
                       )}
                     </div>
                   </div>
-                );
+                )
               })}
             </div>
           )}
         </>
       )}
     </>
-  );
+  )
 }
 
 export function AdminStudentsPage({
@@ -14637,128 +14981,128 @@ export function AdminStudentsPage({
 
   authUserId,
 }: {
-  students?: StudentProfile[];
+  students?: StudentProfile[]
 
-  events?: EventData[];
+  events?: EventData[]
 
-  authUserId?: string | null;
+  authUserId?: string | null
 }) {
-  const router = useRouter();
+  const router = useRouter()
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState("")
 
-  const [bulkSelectionEnabled, setBulkSelectionEnabled] = useState(false);
+  const [bulkSelectionEnabled, setBulkSelectionEnabled] = useState(false)
 
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(
     new Set(),
-  );
+  )
 
-  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "");
+  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "")
 
   const [sessionLabel, setSessionLabel] = useState<"morning" | "afternoon">(
     "morning",
-  );
+  )
 
-  const [existingStudentIds, setExistingStudentIds] = useState<string[]>([]);
+  const [existingStudentIds, setExistingStudentIds] = useState<string[]>([])
 
-  const [isChecking, setIsChecking] = useState(false);
+  const [isChecking, setIsChecking] = useState(false)
 
-  const [isMarking, setIsMarking] = useState(false);
+  const [isMarking, setIsMarking] = useState(false)
 
   const filtered = students.filter((s) => {
-    const q = query.toLowerCase();
+    const q = query.toLowerCase()
 
     return (
       s.name.toLowerCase().includes(q) ||
       s.id.includes(q) ||
       s.program.toLowerCase().includes(q) ||
       s.section.toLowerCase().includes(q)
-    );
-  });
+    )
+  })
 
-  const selectedEvent = events.find((event) => event.id === selectedEventId);
+  const selectedEvent = events.find((event) => event.id === selectedEventId)
 
-  const visibleIds = filtered.map((student) => student.profileId ?? student.id);
+  const visibleIds = filtered.map((student) => student.profileId ?? student.id)
 
   const allVisibleSelected =
     visibleIds.length > 0 &&
-    visibleIds.every((id) => selectedStudentIds.has(id));
+    visibleIds.every((id) => selectedStudentIds.has(id))
 
   const suggestedSessionLabel = selectedEvent
     ? getEventSessionMeta(selectedEvent).sessionLabel
-    : null;
+    : null
 
   const sessionMismatch =
     selectedEvent?.multiSession &&
     suggestedSessionLabel !== null &&
-    suggestedSessionLabel !== sessionLabel;
+    suggestedSessionLabel !== sessionLabel
 
   const openStudent = (student: StudentProfile) => {
-    const targetId = student.profileId ?? student.id;
+    const targetId = student.profileId ?? student.id
 
-    router.push(`/admin-students/${encodeURIComponent(targetId)}`);
-  };
+    router.push(`/admin-students/${encodeURIComponent(targetId)}`)
+  }
 
   useEffect(() => {
     if (!events.some((event) => event.id === selectedEventId) && events[0]) {
-      setSelectedEventId(events[0].id);
+      setSelectedEventId(events[0].id)
     }
-  }, [events, selectedEventId]);
+  }, [events, selectedEventId])
 
   useEffect(() => {
-    if (!selectedEvent) return;
+    if (!selectedEvent) return
 
     setSessionLabel(
       selectedEvent.multiSession
         ? (getEventSessionMeta(selectedEvent).sessionLabel ?? "morning")
         : "morning",
-    );
-  }, [selectedEvent]);
+    )
+  }, [selectedEvent])
 
   const toggleStudent = (studentId: string) => {
     setSelectedStudentIds((current) => {
-      const next = new Set(current);
+      const next = new Set(current)
 
-      if (next.has(studentId)) next.delete(studentId);
-      else next.add(studentId);
+      if (next.has(studentId)) next.delete(studentId)
+      else next.add(studentId)
 
-      return next;
-    });
-  };
+      return next
+    })
+  }
 
   const toggleVisibleStudents = () => {
     setSelectedStudentIds((current) => {
-      const next = new Set(current);
+      const next = new Set(current)
 
-      if (allVisibleSelected) visibleIds.forEach((id) => next.delete(id));
-      else visibleIds.forEach((id) => next.add(id));
+      if (allVisibleSelected) visibleIds.forEach((id) => next.delete(id))
+      else visibleIds.forEach((id) => next.add(id))
 
-      return next;
-    });
-  };
+      return next
+    })
+  }
 
   const clearSelection = () => {
-    setSelectedStudentIds(new Set());
+    setSelectedStudentIds(new Set())
 
-    setExistingStudentIds([]);
-  };
+    setExistingStudentIds([])
+  }
 
   const disableBulkSelection = () => {
-    setBulkSelectionEnabled(false);
+    setBulkSelectionEnabled(false)
 
-    clearSelection();
-  };
+    clearSelection()
+  }
 
   const markSelected = async (overwriteExisting: boolean) => {
     if (!selectedEventId || !selectedEvent || !authUserId) {
-      toast.error("Select an event before marking attendance.");
+      toast.error("Select an event before marking attendance.")
 
-      return;
+      return
     }
 
-    const studentIds = Array.from(selectedStudentIds);
+    const studentIds = Array.from(selectedStudentIds)
 
-    setIsMarking(true);
+    setIsMarking(true)
 
     const results = await Promise.all(
       studentIds.map((studentId) =>
@@ -14783,40 +15127,40 @@ export function AdminStudentsPage({
             overwriteExisting || !existingStudentIds.includes(studentId),
         }),
       ),
-    );
+    )
 
-    setIsMarking(false);
+    setIsMarking(false)
 
     const marked = results.filter(
       (result) => result.outcome === "success",
-    ).length;
+    ).length
 
     const failed = results.filter(
       (result) => result.outcome === "error",
-    ).length;
+    ).length
 
     const skipped = results.filter(
       (result) =>
         result.outcome === "duplicate" || result.outcome === "rejected",
-    ).length;
+    ).length
 
     toast.success(
       `${marked} marked present, ${skipped} skipped, ${failed} failed.`,
-    );
+    )
 
-    clearSelection();
-  };
+    clearSelection()
+  }
 
   const preflightAndMark = async () => {
     if (!selectedEventId || !selectedEvent || !authUserId) {
-      toast.error("Select an event before marking attendance.");
+      toast.error("Select an event before marking attendance.")
 
-      return;
+      return
     }
 
-    const studentIds = Array.from(selectedStudentIds);
+    const studentIds = Array.from(selectedStudentIds)
 
-    setIsChecking(true);
+    setIsChecking(true)
 
     const { data, error } = await supabase
 
@@ -14828,28 +15172,28 @@ export function AdminStudentsPage({
 
       .eq("session_label", sessionLabel)
 
-      .in("student_id", studentIds);
+      .in("student_id", studentIds)
 
-    setIsChecking(false);
+    setIsChecking(false)
 
     if (error) {
-      console.error(error);
+      console.error(error)
 
-      toast.error("Could not check existing attendance.");
+      toast.error("Could not check existing attendance.")
 
-      return;
+      return
     }
 
     const existingIds = Array.from(
       new Set((data ?? []).map((row) => String(row.student_id))),
-    );
+    )
 
-    setExistingStudentIds(existingIds);
+    setExistingStudentIds(existingIds)
 
-    if (existingIds.length > 0) return;
+    if (existingIds.length > 0) return
 
-    await markSelected(false);
-  };
+    await markSelected(false)
+  }
 
   return (
     <>
@@ -15108,7 +15452,7 @@ export function AdminStudentsPage({
         </div>
       )}
     </>
-  );
+  )
 }
 
 export function AdminAnnouncementsPage({
@@ -15122,75 +15466,73 @@ export function AdminAnnouncementsPage({
 
   onDelete,
 }: {
-  posts: typeof INITIAL_ANNOUNCEMENTS;
+  posts: typeof INITIAL_ANNOUNCEMENTS
 
-  setPosts: React.Dispatch<React.SetStateAction<typeof INITIAL_ANNOUNCEMENTS>>;
+  setPosts: React.Dispatch<React.SetStateAction<typeof INITIAL_ANNOUNCEMENTS>>
 
   onCreate?: (payload: {
-    title: string;
+    title: string
 
-    body: string;
+    body: string
 
-    badge: string;
+    badge: string
 
-    photoUrl: string | null;
-  }) => Promise<void | boolean>;
+    photoUrl: string | null
+  }) => Promise<void | boolean>
 
   onUpdate?: (payload: {
-    id: string;
+    id: string
 
-    title: string;
+    title: string
 
-    body: string;
+    body: string
 
-    badge: string;
+    badge: string
 
-    photoUrl: string | null;
+    photoUrl: string | null
 
-    previousPhotoUrl?: string;
-  }) => Promise<void | boolean>;
+    previousPhotoUrl?: string
+  }) => Promise<void | boolean>
 
-  onDelete?: (id: string, photoUrl?: string) => Promise<void | boolean>;
+  onDelete?: (id: string, photoUrl?: string) => Promise<void | boolean>
 }) {
-  type NewPostTab = "details" | "media";
+  type NewPostTab = "details" | "media"
 
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(false)
 
-  const [newPostTab, setNewPostTab] = useState<NewPostTab>("details");
+  const [newPostTab, setNewPostTab] = useState<NewPostTab>("details")
 
   const [editAnnouncementTab, setEditAnnouncementTab] =
-    useState<NewPostTab>("details");
+    useState<NewPostTab>("details")
 
-  const [editId, setEditId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null)
 
-  const [isPublishing, setIsPublishing] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false)
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false)
 
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const {
     selectedId: selectedAnnouncementId,
+
     setSelectedId: setSelectedAnnouncementId,
-  } = useRecordSelection("announcementId");
+  } = useRecordSelection("announcementId")
 
-  const [editDraft, setEditDraft] = useState<
-    (typeof INITIAL_ANNOUNCEMENTS)[0] | null
-  >(null);
+  const [editDraft, setEditDraft] =
+    useState<typeof INITIAL_ANNOUNCEMENTS[0] | null>(null)
 
-  const [newPhoto, setNewPhoto] = useState<string | null>(null);
+  const [newPhoto, setNewPhoto] = useState<string | null>(null)
 
-  const [newPhotoUploadState, setNewPhotoUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [newPhotoUploadState, setNewPhotoUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
-  const [editPhotoUploadState, setEditPhotoUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
+  const [editPhotoUploadState, setEditPhotoUploadState] =
+    useState<"idle" | "uploading" | "error">("idle")
 
-  const photoRef = useRef<HTMLInputElement>(null);
+  const photoRef = useRef<HTMLInputElement>(null)
 
-  const editPhotoRef = useRef<HTMLInputElement>(null);
+  const editPhotoRef = useRef<HTMLInputElement>(null)
 
   const announcementFormSchema = z.object({
     title: z.string().trim().min(1, "Title is required"),
@@ -15198,9 +15540,9 @@ export function AdminAnnouncementsPage({
     body: z.string().trim().min(10, "Body must be at least 10 characters"),
 
     badge: z.string().trim().min(1, "Category is required"),
-  });
+  })
 
-  type AnnouncementFormValues = z.infer<typeof announcementFormSchema>;
+  type AnnouncementFormValues = z.infer<typeof announcementFormSchema>
 
   const {
     register,
@@ -15220,50 +15562,50 @@ export function AdminAnnouncementsPage({
 
       badge: "General",
     },
-  });
+  })
 
   const uploadSelectedPhoto = async (file: File) => {
     try {
-      const result = await uploadPromotionalImage(file);
+      const result = await uploadPromotionalImage(file)
 
       if ("error" in result) {
-        toast.error(result.error);
+        toast.error(result.error)
 
-        return null;
+        return null
       }
 
-      return result.url;
+      return result.url
     } catch {
-      toast.error("Image upload failed.");
+      toast.error("Image upload failed.")
 
-      return null;
+      return null
     }
-  };
+  }
 
   const uploadNewPhoto = async (file: File) => {
-    setNewPhotoUploadState("uploading");
+    setNewPhotoUploadState("uploading")
 
-    const uploaded = await uploadSelectedPhoto(file);
+    const uploaded = await uploadSelectedPhoto(file)
 
-    setNewPhotoUploadState(uploaded ? "idle" : "error");
+    setNewPhotoUploadState(uploaded ? "idle" : "error")
 
-    if (uploaded) setNewPhoto(uploaded);
-  };
+    if (uploaded) setNewPhoto(uploaded)
+  }
 
   const uploadEditPhoto = async (file: File) => {
-    setEditPhotoUploadState("uploading");
+    setEditPhotoUploadState("uploading")
 
-    const uploaded = await uploadSelectedPhoto(file);
+    const uploaded = await uploadSelectedPhoto(file)
 
-    setEditPhotoUploadState(uploaded ? "idle" : "error");
+    setEditPhotoUploadState(uploaded ? "idle" : "error")
 
-    if (uploaded) setEditDraft((d) => (d ? { ...d, photoUrl: uploaded } : d));
-  };
+    if (uploaded) setEditDraft((d) => (d ? { ...d, photoUrl: uploaded } : d))
+  }
 
   const handlePublish = handleSubmit(async (values) => {
-    if (isPublishing) return;
+    if (isPublishing) return
 
-    setIsPublishing(true);
+    setIsPublishing(true)
 
     const payload = {
       title: values.title.trim(),
@@ -15273,13 +15615,13 @@ export function AdminAnnouncementsPage({
       badge: values.badge,
 
       photoUrl: newPhoto ?? null,
-    };
+    }
 
     try {
       if (onCreate) {
-        const result = await onCreate(payload);
+        const result = await onCreate(payload)
 
-        if (result === false) return;
+        if (result === false) return
       } else {
         setPosts((p) => [
           {
@@ -15299,37 +15641,37 @@ export function AdminAnnouncementsPage({
           },
 
           ...p,
-        ]);
+        ])
       }
 
-      reset({ title: "", body: "", badge: "General" });
+      reset({ title: "", body: "", badge: "General" })
 
-      setNewPhoto(null);
+      setNewPhoto(null)
 
-      setNewPhotoUploadState("idle");
+      setNewPhotoUploadState("idle")
 
-      setShowForm(false);
+      setShowForm(false)
     } finally {
-      setIsPublishing(false);
+      setIsPublishing(false)
     }
-  });
+  })
 
-  const startEdit = (a: (typeof INITIAL_ANNOUNCEMENTS)[0]) => {
-    setEditId(a.id);
+  const startEdit = (a: typeof INITIAL_ANNOUNCEMENTS[0]) => {
+    setEditId(a.id)
 
-    setEditAnnouncementTab("details");
+    setEditAnnouncementTab("details")
 
-    setEditDraft({ ...a });
+    setEditDraft({ ...a })
 
-    setShowForm(false);
-  };
+    setShowForm(false)
+  }
 
   const saveEdit = async () => {
-    if (!editDraft || isEditing) return;
+    if (!editDraft || isEditing) return
 
-    setIsEditing(true);
+    setIsEditing(true)
 
-    const currentPost = posts.find((post) => post.id === editDraft.id);
+    const currentPost = posts.find((post) => post.id === editDraft.id)
 
     const payload = {
       id: editDraft.id,
@@ -15343,13 +15685,13 @@ export function AdminAnnouncementsPage({
       photoUrl: editDraft.photoUrl || null,
 
       previousPhotoUrl: currentPost?.photoUrl || undefined,
-    };
+    }
 
     try {
       if (onUpdate) {
-        const result = await onUpdate(payload);
+        const result = await onUpdate(payload)
 
-        if (result === false) return;
+        if (result === false) return
       } else {
         setPosts((p) =>
           p.map((a) =>
@@ -15367,49 +15709,49 @@ export function AdminAnnouncementsPage({
                 }
               : a,
           ),
-        );
+        )
       }
 
-      setEditId(null);
+      setEditId(null)
 
-      setEditDraft(null);
+      setEditDraft(null)
     } finally {
-      setIsEditing(false);
+      setIsEditing(false)
     }
-  };
+  }
 
   const deletePost = async (id: string) => {
-    if (deletingId) return false;
+    if (deletingId) return false
 
     if (
       !window.confirm("Delete this announcement? This action cannot be undone.")
     ) {
-      return false;
+      return false
     }
 
-    const currentPost = posts.find((post) => post.id === id);
+    const currentPost = posts.find((post) => post.id === id)
 
-    setDeletingId(id);
+    setDeletingId(id)
 
     try {
       if (onDelete) {
-        const result = await onDelete(id, currentPost?.photoUrl || undefined);
+        const result = await onDelete(id, currentPost?.photoUrl || undefined)
 
-        if (result === false) return false;
+        if (result === false) return false
       } else {
-        setPosts((p) => p.filter((a) => a.id !== id));
+        setPosts((p) => p.filter((a) => a.id !== id))
       }
 
-      return true;
+      return true
     } finally {
-      setDeletingId(null);
+      setDeletingId(null)
     }
-  };
+  }
 
   if (selectedAnnouncementId) {
     const selectedAnnouncement = posts.find(
       (post) => post.id === selectedAnnouncementId,
-    );
+    )
 
     if (!selectedAnnouncement) {
       return (
@@ -15417,7 +15759,7 @@ export function AdminAnnouncementsPage({
           label="Announcement"
           onBack={() => setSelectedAnnouncementId(null, true)}
         />
-      );
+      )
     }
 
     return (
@@ -15425,21 +15767,21 @@ export function AdminAnnouncementsPage({
         announcement={selectedAnnouncement}
         onBack={() => setSelectedAnnouncementId(null, true)}
         onEdit={() => {
-          const post = posts.find((item) => item.id === selectedAnnouncementId);
+          const post = posts.find((item) => item.id === selectedAnnouncementId)
 
-          if (post) startEdit(post);
+          if (post) startEdit(post)
 
-          setSelectedAnnouncementId(null, true);
+          setSelectedAnnouncementId(null, true)
         }}
         onDelete={() => {
-          const id = selectedAnnouncementId;
+          const id = selectedAnnouncementId
 
           void deletePost(id).then((succeeded) => {
-            if (succeeded) setSelectedAnnouncementId(null, true);
-          });
+            if (succeeded) setSelectedAnnouncementId(null, true)
+          })
         }}
       />
-    );
+    )
   }
 
   return (
@@ -15449,13 +15791,13 @@ export function AdminAnnouncementsPage({
         action={
           <button
             onClick={() => {
-              setShowForm(true);
+              setShowForm(true)
 
-              setNewPostTab("details");
+              setNewPostTab("details")
 
-              setEditId(null);
+              setEditId(null)
 
-              setEditDraft(null);
+              setEditDraft(null)
             }}
             className="h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5"
           >
@@ -15565,11 +15907,11 @@ export function AdminAnnouncementsPage({
                 accept="image/*"
                 className="hidden"
                 onChange={async (e) => {
-                  const f = e.target.files?.[0];
+                  const f = e.target.files?.[0]
 
-                  if (!f) return;
+                  if (!f) return
 
-                  await uploadNewPhoto(f);
+                  await uploadNewPhoto(f)
                 }}
               />
               {newPhotoUploadState === "uploading" ? (
@@ -15649,9 +15991,9 @@ export function AdminAnnouncementsPage({
             </nav>
           }
           onClose={() => {
-            setEditId(null);
+            setEditId(null)
 
-            setEditDraft(null);
+            setEditDraft(null)
           }}
           footer={
             <>
@@ -15663,9 +16005,9 @@ export function AdminAnnouncementsPage({
               </button>
               <button
                 onClick={() => {
-                  setEditId(null);
+                  setEditId(null)
 
-                  setEditDraft(null);
+                  setEditDraft(null)
                 }}
                 className="h-10 px-4 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50"
               >
@@ -15718,11 +16060,11 @@ export function AdminAnnouncementsPage({
                 accept="image/*"
                 className="hidden"
                 onChange={async (e) => {
-                  const f = e.target.files?.[0];
+                  const f = e.target.files?.[0]
 
-                  if (!f) return;
+                  if (!f) return
 
-                  await uploadEditPhoto(f);
+                  await uploadEditPhoto(f)
                 }}
               />
               {editPhotoUploadState === "uploading" ? (
@@ -15851,7 +16193,7 @@ export function AdminAnnouncementsPage({
         ))}
       </div>
     </>
-  );
+  )
 }
 
 export function AdminExcuseRequestsPage({
@@ -15863,55 +16205,61 @@ export function AdminExcuseRequestsPage({
 
   onBack,
 }: {
-  requests: ExcuseRequest[];
+  requests: ExcuseRequest[]
 
-  onAction: (id: string, a: "approved" | "denied") => Promise<void> | void;
+  onAction: (id: string, a: "approved" | "denied") => Promise<void> | void
 
-  onViewAttachment: (path: string) => Promise<string | null>;
+  onViewAttachment: (path: string) => Promise<string | null>
 
-  onBack: () => void;
+  onBack: () => void
 }) {
-  const pending = requests.filter((r) => r.status === "pending");
+  const pending = requests.filter((r) => r.status === "pending")
 
-  const [actionId, setActionId] = useState<string | null>(null);
+  const [actionId, setActionId] = useState<string | null>(null)
 
   const [expandedReasonIds, setExpandedReasonIds] = useState<Set<string>>(
     new Set(),
-  );
+  )
 
   const [attachmentLoadingId, setAttachmentLoadingId] = useState<string | null>(
     null,
-  );
+  )
 
   const [viewingAttachment, setViewingAttachment] = useState<{
-    url: string;
-    name: string;
-    isPdf: boolean;
-  } | null>(null);
-  const [attachmentExpanded, setAttachmentExpanded] = useState(false);
+    url: string
 
-  const reviewed = requests.filter((r) => r.status !== "pending");
+    name: string
+
+    isPdf: boolean
+  } | null>(null)
+
+  const [attachmentExpanded, setAttachmentExpanded] = useState(false)
+
+  const reviewed = requests.filter((r) => r.status !== "pending")
 
   const viewAttachment = async (request: ExcuseRequest) => {
-    if (!request.attachmentPath || attachmentLoadingId) return;
+    if (!request.attachmentPath || attachmentLoadingId) return
 
-    setAttachmentLoadingId(request.id);
+    setAttachmentLoadingId(request.id)
 
     try {
-      const url = await onViewAttachment(request.attachmentPath);
+      const url = await onViewAttachment(request.attachmentPath)
 
       if (url) {
-        setAttachmentExpanded(false);
+        setAttachmentExpanded(false)
+
         setViewingAttachment({
           url,
+
           name: request.proofName ?? "Supporting document",
+
           isPdf: request.attachmentPath.toLowerCase().endsWith(".pdf"),
-        });
+        })
       }
     } finally {
-      setAttachmentLoadingId(null);
+      setAttachmentLoadingId(null)
     }
-  };
+  }
 
   return (
     <>
@@ -15990,12 +16338,12 @@ export function AdminExcuseRequestsPage({
                     type="button"
                     onClick={() =>
                       setExpandedReasonIds((current) => {
-                        const next = new Set(current);
+                        const next = new Set(current)
 
-                        if (next.has(r.id)) next.delete(r.id);
-                        else next.add(r.id);
+                        if (next.has(r.id)) next.delete(r.id)
+                        else next.add(r.id)
 
-                        return next;
+                        return next
                       })
                     }
                     aria-expanded={expandedReasonIds.has(r.id)}
@@ -16034,14 +16382,14 @@ export function AdminExcuseRequestsPage({
                   <div className="flex gap-2 sm:shrink-0">
                     <button
                       onClick={async () => {
-                        if (actionId) return;
+                        if (actionId) return
 
-                        setActionId(r.id);
+                        setActionId(r.id)
 
                         try {
-                          await onAction(r.id, "approved");
+                          await onAction(r.id, "approved")
                         } finally {
-                          setActionId(null);
+                          setActionId(null)
                         }
                       }}
                       disabled={actionId === r.id}
@@ -16052,14 +16400,14 @@ export function AdminExcuseRequestsPage({
                     </button>
                     <button
                       onClick={async () => {
-                        if (actionId) return;
+                        if (actionId) return
 
-                        setActionId(r.id);
+                        setActionId(r.id)
 
                         try {
-                          await onAction(r.id, "denied");
+                          await onAction(r.id, "denied")
                         } finally {
-                          setActionId(null);
+                          setActionId(null)
                         }
                       }}
                       disabled={actionId === r.id}
@@ -16098,7 +16446,11 @@ export function AdminExcuseRequestsPage({
                       <p className="text-xs text-slate-400 truncate">
                         {r.event}
                         {r.sessionLabel
-                          ? ` · ${r.sessionLabel === "morning" ? "Morning" : "Afternoon"}`
+                          ? ` · ${
+                              r.sessionLabel === "morning"
+                                ? "Morning"
+                                : "Afternoon"
+                            }`
                           : ""}
                       </p>
                       {r.reviewedAt && (
@@ -16106,7 +16458,9 @@ export function AdminExcuseRequestsPage({
                           Reviewed{" "}
                           {new Date(r.reviewedAt).toLocaleDateString("en-US", {
                             month: "short",
+
                             day: "numeric",
+
                             year: "numeric",
                           })}
                           {r.reviewedBy ? ` by ${r.reviewedBy}` : ""}
@@ -16205,7 +16559,7 @@ export function AdminExcuseRequestsPage({
         </div>
       )}
     </>
-  );
+  )
 }
 
 export function AdminReportsPage({
@@ -16217,82 +16571,82 @@ export function AdminReportsPage({
 
   onPeriodChange,
 }: {
-  events?: EventData[];
+  events?: EventData[]
 
   reportData?: {
-    events?: EventData[];
+    events?: EventData[]
 
-    periodLabel?: string;
+    periodLabel?: string
 
     programStats?: Array<{
-      label: string;
+      label: string
 
-      present: number;
+      present: number
 
-      total: number;
+      total: number
 
-      rate: number;
+      rate: number
 
-      absent?: number;
+      absent?: number
 
-      excused?: number;
+      excused?: number
 
-      late?: number;
+      late?: number
 
-      fineTotal?: number;
+      fineTotal?: number
 
-      sanctioned?: number;
+      sanctioned?: number
 
-      sanctionedLate?: number;
+      sanctionedLate?: number
 
-      sanctionedAbsent?: number;
-    }>;
+      sanctionedAbsent?: number
+    }>
 
     feeSummary?: Array<{
-      label: string;
+      label: string
 
-      value: string;
+      value: string
 
-      color: string;
-    }>;
-  };
+      color: string
+    }>
+  }
 
-  period?: { dateFrom: string; dateTo: string };
+  period?: { dateFrom: string; dateTo: string }
 
-  onPeriodChange?: (period: { dateFrom: string; dateTo: string }) => void;
+  onPeriodChange?: (period: { dateFrom: string; dateTo: string }) => void
 }) {
-  const liveEvents = reportData?.events ?? events ?? [];
+  const liveEvents = reportData?.events ?? events ?? []
 
-  const programRows = reportData?.programStats ?? [];
+  const programRows = reportData?.programStats ?? []
 
-  const fees = reportData?.feeSummary ?? [];
+  const fees = reportData?.feeSummary ?? []
 
-  const eventRows = liveEvents.filter((e) => e.status !== "upcoming");
+  const eventRows = liveEvents.filter((e) => e.status !== "upcoming")
 
   const totalSanctioned = programRows.reduce(
     (total, row) => total + (row.sanctioned ?? 0),
 
     0,
-  );
+  )
 
   const totalSanctionedLate = programRows.reduce(
     (total, row) => total + (row.sanctionedLate ?? 0),
 
     0,
-  );
+  )
 
   const totalSanctionedAbsent = programRows.reduce(
     (total, row) => total + (row.sanctionedAbsent ?? 0),
 
     0,
-  );
+  )
 
-  const printReport = () => window.print();
+  const printReport = () => window.print()
 
   const exportPDF = () => {
     const W = 794,
       pad = 48,
-      dpr = 2;
+      dpr = 2
 
     const H =
       80 +
@@ -16306,141 +16660,141 @@ export function AdminReportsPage({
       20 +
       24 +
       (eventRows.length * 26 + 16) +
-      48;
+      48
 
-    const canvas = document.createElement("canvas");
+    const canvas = document.createElement("canvas")
 
-    canvas.width = W * dpr;
+    canvas.width = W * dpr
 
-    canvas.height = H * dpr;
+    canvas.height = H * dpr
 
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d")!
 
-    ctx.scale(dpr, dpr);
+    ctx.scale(dpr, dpr)
 
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = "#fff"
 
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(0, 0, W, H)
 
-    let y = 0;
+    let y = 0
 
-    ctx.fillStyle = "#10b981";
+    ctx.fillStyle = "#10b981"
 
-    ctx.fillRect(0, 0, W, 60);
+    ctx.fillRect(0, 0, W, 60)
 
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = "#fff"
 
-    ctx.font = "bold 18px system-ui, sans-serif";
+    ctx.font = "bold 18px system-ui, sans-serif"
 
-    ctx.textAlign = "left";
+    ctx.textAlign = "left"
 
-    ctx.fillText("Adesse — Attendance & Fees Report", pad, 38);
+    ctx.fillText("Adesse — Attendance & Fees Report", pad, 38)
 
-    ctx.font = "12px system-ui, sans-serif";
+    ctx.font = "12px system-ui, sans-serif"
 
-    ctx.textAlign = "right";
+    ctx.textAlign = "right"
 
-    ctx.fillText(`AY 2026-2027 · 1st Semester`, W - pad, 38);
+    ctx.fillText(`AY 2026-2027 · 1st Semester`, W - pad, 38)
 
-    y = 60;
+    y = 60
 
-    ctx.fillStyle = "#94a3b8";
+    ctx.fillStyle = "#94a3b8"
 
-    ctx.font = "10px system-ui, sans-serif";
+    ctx.font = "10px system-ui, sans-serif"
 
-    ctx.textAlign = "left";
+    ctx.textAlign = "left"
 
-    ctx.fillText(`Generated ${new Date().toLocaleString()}`, pad, y + 18);
+    ctx.fillText(`Generated ${new Date().toLocaleString()}`, pad, y + 18)
 
-    y += 32;
+    y += 32
 
     const sectionTitle = (title: string) => {
-      ctx.fillStyle = "#f1f5f9";
+      ctx.fillStyle = "#f1f5f9"
 
-      ctx.fillRect(pad, y, W - pad * 2, 22);
+      ctx.fillRect(pad, y, W - pad * 2, 22)
 
-      ctx.fillStyle = "#334155";
+      ctx.fillStyle = "#334155"
 
-      ctx.font = "bold 11px system-ui, sans-serif";
+      ctx.font = "bold 11px system-ui, sans-serif"
 
-      ctx.fillText(title.toUpperCase(), pad + 8, y + 15);
+      ctx.fillText(title.toUpperCase(), pad + 8, y + 15)
 
-      y += 22;
-    };
+      y += 22
+    }
 
     const tableHeader = (
       cols: { t: string; x: number; align?: CanvasTextAlign }[],
     ) => {
-      ctx.fillStyle = "#f8fafc";
+      ctx.fillStyle = "#f8fafc"
 
-      ctx.fillRect(pad, y, W - pad * 2, 22);
+      ctx.fillRect(pad, y, W - pad * 2, 22)
 
-      ctx.strokeStyle = "#e2e8f0";
+      ctx.strokeStyle = "#e2e8f0"
 
-      ctx.lineWidth = 0.5;
+      ctx.lineWidth = 0.5
 
-      ctx.strokeRect(pad, y, W - pad * 2, 22);
+      ctx.strokeRect(pad, y, W - pad * 2, 22)
 
       cols.forEach((c) => {
-        ctx.fillStyle = "#64748b";
+        ctx.fillStyle = "#64748b"
 
-        ctx.font = "bold 10px system-ui, sans-serif";
+        ctx.font = "bold 10px system-ui, sans-serif"
 
-        ctx.textAlign = c.align ?? "left";
+        ctx.textAlign = c.align ?? "left"
 
-        ctx.fillText(c.t, c.x, y + 15);
-      });
+        ctx.fillText(c.t, c.x, y + 15)
+      })
 
-      y += 22;
-    };
+      y += 22
+    }
 
     const tableRow = (
       cols: {
-        t: string;
+        t: string
 
-        x: number;
+        x: number
 
-        align?: CanvasTextAlign;
+        align?: CanvasTextAlign
 
-        color?: string;
+        color?: string
       }[],
 
       shade: boolean,
     ) => {
       if (shade) {
-        ctx.fillStyle = "#fafafa";
+        ctx.fillStyle = "#fafafa"
 
-        ctx.fillRect(pad, y, W - pad * 2, 24);
+        ctx.fillRect(pad, y, W - pad * 2, 24)
       }
 
-      ctx.strokeStyle = "#f1f5f9";
+      ctx.strokeStyle = "#f1f5f9"
 
-      ctx.lineWidth = 0.5;
+      ctx.lineWidth = 0.5
 
-      ctx.beginPath();
+      ctx.beginPath()
 
-      ctx.moveTo(pad, y + 24);
+      ctx.moveTo(pad, y + 24)
 
-      ctx.lineTo(W - pad, y + 24);
+      ctx.lineTo(W - pad, y + 24)
 
-      ctx.stroke();
+      ctx.stroke()
 
       cols.forEach((c) => {
-        ctx.fillStyle = c.color ?? "#1e293b";
+        ctx.fillStyle = c.color ?? "#1e293b"
 
-        ctx.font = "11px system-ui, sans-serif";
+        ctx.font = "11px system-ui, sans-serif"
 
-        ctx.textAlign = c.align ?? "left";
+        ctx.textAlign = c.align ?? "left"
 
-        ctx.fillText(c.t, c.x, y + 16);
-      });
+        ctx.fillText(c.t, c.x, y + 16)
+      })
 
-      y += 24;
-    };
+      y += 24
+    }
 
-    y += 14;
+    y += 14
 
-    sectionTitle("Attendance by Program");
+    sectionTitle("Attendance by Program")
 
     tableHeader([
       {
@@ -16454,7 +16808,7 @@ export function AdminReportsPage({
       { t: "Total", x: W - pad - 120, align: "right" },
 
       { t: "Rate", x: W - pad - 8, align: "right" },
-    ]);
+    ])
 
     programRows.forEach((r, i) =>
       tableRow(
@@ -16483,11 +16837,11 @@ export function AdminReportsPage({
 
         i % 2 === 1,
       ),
-    );
+    )
 
-    y += 14;
+    y += 14
 
-    sectionTitle("Fees Summary");
+    sectionTitle("Fees Summary")
 
     tableHeader([
       {
@@ -16497,7 +16851,7 @@ export function AdminReportsPage({
       },
 
       { t: "Amount", x: W - pad - 8, align: "right" },
-    ]);
+    ])
 
     const feeColors: Record<string, string> = {
       "Total fees issued": "#dc2626",
@@ -16505,7 +16859,7 @@ export function AdminReportsPage({
       Collected: "#10b981",
 
       Pending: "#d97706",
-    };
+    }
 
     fees.forEach((f, i) =>
       tableRow(
@@ -16529,11 +16883,11 @@ export function AdminReportsPage({
 
         i % 2 === 1,
       ),
-    );
+    )
 
-    y += 14;
+    y += 14
 
-    sectionTitle("By Event");
+    sectionTitle("By Event")
 
     tableHeader([
       {
@@ -16547,7 +16901,7 @@ export function AdminReportsPage({
       { t: "Absent / Late", x: W - pad - 100, align: "right" },
 
       { t: "Attended", x: W - pad - 8, align: "right" },
-    ]);
+    ])
 
     eventRows.forEach((e, i) =>
       tableRow(
@@ -16581,19 +16935,19 @@ export function AdminReportsPage({
 
         i % 2 === 1,
       ),
-    );
+    )
 
-    y += 20;
+    y += 20
 
-    ctx.fillStyle = "#e2e8f0";
+    ctx.fillStyle = "#e2e8f0"
 
-    ctx.fillRect(pad, y, W - pad * 2, 1);
+    ctx.fillRect(pad, y, W - pad * 2, 1)
 
-    ctx.fillStyle = "#94a3b8";
+    ctx.fillStyle = "#94a3b8"
 
-    ctx.font = "10px system-ui, sans-serif";
+    ctx.font = "10px system-ui, sans-serif"
 
-    ctx.textAlign = "center";
+    ctx.textAlign = "center"
 
     ctx.fillText(
       "Adesse · Student Event Attendance & Fee Tracking System",
@@ -16601,24 +16955,24 @@ export function AdminReportsPage({
       W / 2,
 
       y + 18,
-    );
+    )
 
     canvas.toBlob((blob) => {
-      if (!blob) return;
+      if (!blob) return
 
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob)
 
-      const a = document.createElement("a");
+      const a = document.createElement("a")
 
-      a.href = url;
+      a.href = url
 
-      a.download = `adesse-report-${new Date().toISOString().slice(0, 10)}.png`;
+      a.download = `adesse-report-${new Date().toISOString().slice(0, 10)}.png`
 
-      a.click();
+      a.click()
 
-      URL.revokeObjectURL(url);
-    }, "image/png");
-  };
+      URL.revokeObjectURL(url)
+    }, "image/png")
+  }
 
   return (
     <>
@@ -16697,7 +17051,7 @@ export function AdminReportsPage({
             "bg-violet-400",
 
             "bg-amber-400",
-          ];
+          ]
 
           return (
             <div
@@ -16745,7 +17099,7 @@ export function AdminReportsPage({
                 </div>
               </details>
             </div>
-          );
+          )
         })}
       </div>
       <SectionLabel>Sanctions overview</SectionLabel>
@@ -16863,39 +17217,39 @@ export function AdminReportsPage({
         multi-session events.
       </p>
     </>
-  );
+  )
 }
 
 export interface CarouselSlide {
-  imageUrl: string;
+  imageUrl: string
 
-  posterUrl?: string;
+  posterUrl?: string
 
-  caption: string;
+  caption: string
 
-  date: string;
+  date: string
 }
 
 export interface SystemSettings {
-  finesEnabled: boolean;
+  finesEnabled: boolean
 
-  showFees: boolean;
+  showFees: boolean
 
-  allowExcuseRequests: boolean;
+  allowExcuseRequests: boolean
 
-  requirePhotoId: boolean;
+  requirePhotoId: boolean
 
-  academicYear: string;
+  academicYear: string
 
-  semester: string;
+  semester: string
 
-  institution: string;
+  institution: string
 
-  feedbackFormUrl: string;
+  feedbackFormUrl: string
 
-  heroImageUrls: string[];
+  heroImageUrls: string[]
 
-  carouselSlides: CarouselSlide[];
+  carouselSlides: CarouselSlide[]
 }
 
 export function AdminSettingsPage({
@@ -16903,13 +17257,13 @@ export function AdminSettingsPage({
 
   onSave,
 }: {
-  settings: SystemSettings;
+  settings: SystemSettings
 
-  onSave: (s: SystemSettings) => void;
+  onSave: (s: SystemSettings) => void
 }) {
-  const isBlobUrl = (value?: string) => !!value && value.startsWith("blob:");
+  const isBlobUrl = (value?: string) => !!value && value.startsWith("blob:")
 
-  const heroImageUrls = settings.heroImageUrls.filter((url) => !isBlobUrl(url));
+  const heroImageUrls = settings.heroImageUrls.filter((url) => !isBlobUrl(url))
 
   const carouselSlides = settings.carouselSlides.map((slide) => ({
     ...slide,
@@ -16917,50 +17271,48 @@ export function AdminSettingsPage({
     imageUrl: isBlobUrl(slide.imageUrl) ? "" : slide.imageUrl,
 
     posterUrl: isBlobUrl(slide.posterUrl) ? "" : slide.posterUrl,
-  }));
+  }))
 
   type UploadSlot = {
-    file: File;
+    file: File
 
-    status: "uploading" | "error";
+    status: "uploading" | "error"
 
-    error?: string;
-  };
+    error?: string
+  }
 
-  const [heroUploadSlots, setHeroUploadSlots] = useState<
-    Record<string, UploadSlot>
-  >({});
+  const [heroUploadSlots, setHeroUploadSlots] =
+    useState<Record<string, UploadSlot>>({})
 
-  const [slideUploadSlots, setSlideUploadSlots] = useState<
-    Record<number, UploadSlot>
-  >({});
+  const [slideUploadSlots, setSlideUploadSlots] =
+    useState<Record<number, UploadSlot>>({})
 
-  const [posterUploadSlots, setPosterUploadSlots] = useState<
-    Record<number, UploadSlot>
-  >({});
+  const [posterUploadSlots, setPosterUploadSlots] =
+    useState<Record<number, UploadSlot>>({})
 
   const [feedbackFormDraft, setFeedbackFormDraft] = useState(
     settings.feedbackFormUrl,
-  );
+  )
 
-  const [feedbackFormError, setFeedbackFormError] = useState("");
+  const [feedbackFormError, setFeedbackFormError] = useState("")
 
   useEffect(() => {
-    setFeedbackFormDraft(settings.feedbackFormUrl);
-    setFeedbackFormError("");
-  }, [settings.feedbackFormUrl]);
+    setFeedbackFormDraft(settings.feedbackFormUrl)
+
+    setFeedbackFormError("")
+  }, [settings.feedbackFormUrl])
 
   const isPublicMediaUrl = (value?: string) =>
-    !!value && value.startsWith("https://") && !value.startsWith("blob:");
+    !!value && value.startsWith("https://") && !value.startsWith("blob:")
 
   const handleHeroImageUpload = async (files: File[]) => {
-    if (!files.length) return;
+    if (!files.length) return
 
     const slots = files.map((file, index) => ({
       id: `hero-${Date.now()}-${index}`,
 
       file,
-    }));
+    }))
 
     setHeroUploadSlots((current) => ({
       ...current,
@@ -16968,34 +17320,34 @@ export function AdminSettingsPage({
       ...Object.fromEntries(
         slots.map(({ id, file }) => [id, { file, status: "uploading" }]),
       ),
-    }));
+    }))
 
     const uploaded = await Promise.all(
       slots.map(async ({ id, file }) => {
-        const result = await uploadPromotionalImage(file);
+        const result = await uploadPromotionalImage(file)
 
         if ("error" in result || !isPublicMediaUrl(result.url)) {
           const error =
             "error" in result
               ? result.error
-              : "Upload did not return a valid public image URL.";
+              : "Upload did not return a valid public image URL."
 
           setHeroUploadSlots((current) => ({
             ...current,
 
             [id]: { file, status: "error", error },
-          }));
+          }))
 
-          return null;
+          return null
         }
 
-        return { id, url: result.url };
+        return { id, url: result.url }
       }),
-    );
+    )
 
     const validUploads = uploaded.filter(
       (upload): upload is { id: string; url: string } => !!upload,
-    );
+    )
 
     if (validUploads.length) {
       update({
@@ -17004,120 +17356,136 @@ export function AdminSettingsPage({
 
           ...validUploads.map((upload) => upload.url),
         ],
-      });
+      })
 
       setHeroUploadSlots((current) => {
-        const next = { ...current };
+        const next = { ...current }
 
-        validUploads.forEach(({ id }) => delete next[id]);
+        validUploads.forEach(({ id }) => delete next[id])
 
-        return next;
-      });
+        return next
+      })
     }
-  };
+  }
 
   const handleSlideImageUpload = async (i: number, file: File) => {
     setSlideUploadSlots((current) => ({
       ...current,
 
       [i]: { file, status: "uploading" },
-    }));
+    }))
 
-    const isVideo = file.type === "video/mp4";
+    const isVideo = file.type === "video/mp4"
+
     const result = isVideo
       ? await uploadEventVideo(file)
-      : await uploadPromotionalImage(file);
+      : await uploadPromotionalImage(file)
 
     if ("error" in result || !isPublicMediaUrl(result.url)) {
       const error =
         "error" in result
           ? result.error
-          : "Upload did not return a valid public image URL.";
+          : "Upload did not return a valid public image URL."
 
       setSlideUploadSlots((current) => ({
         ...current,
 
         [i]: { file, status: "error", error },
-      }));
+      }))
 
-      toast.error(error);
-      return;
+      toast.error(error)
+
+      return
     }
 
     patchSlide(i, {
       imageUrl: result.url,
+
       ...(!isVideo ? { posterUrl: "" } : {}),
-    });
+    })
 
     setSlideUploadSlots((current) => {
-      const next = { ...current };
+      const next = { ...current }
 
-      delete next[i];
+      delete next[i]
 
-      return next;
-    });
-  };
+      return next
+    })
+  }
 
   const handleSlidePosterUpload = async (i: number, file: File) => {
     setPosterUploadSlots((current) => ({
       ...current,
-      [i]: { file, status: "uploading" },
-    }));
 
-    const result = await uploadPromotionalImage(file);
+      [i]: { file, status: "uploading" },
+    }))
+
+    const result = await uploadPromotionalImage(file)
 
     if ("error" in result || !isPublicMediaUrl(result.url)) {
       const error =
         "error" in result
           ? result.error
-          : "Upload did not return a valid public image URL.";
+          : "Upload did not return a valid public image URL."
+
       setPosterUploadSlots((current) => ({
         ...current,
+
         [i]: { file, status: "error", error },
-      }));
-      toast.error(error);
-      return;
+      }))
+
+      toast.error(error)
+
+      return
     }
 
-    patchSlide(i, { posterUrl: result.url });
+    patchSlide(i, { posterUrl: result.url })
+
     setPosterUploadSlots((current) => {
-      const next = { ...current };
-      delete next[i];
-      return next;
-    });
-  };
+      const next = { ...current }
+
+      delete next[i]
+
+      return next
+    })
+  }
 
   const update = (patch: Partial<SystemSettings>) =>
-    onSave({ ...settings, ...patch });
+    onSave({ ...settings, ...patch })
 
   const saveFeedbackFormUrl = () => {
-    const value = feedbackFormDraft.trim();
+    const value = feedbackFormDraft.trim()
+
     if (value && !isGoogleFormsResponderUrl(value)) {
       setFeedbackFormError(
         "Enter a Google Forms responder link, not an edit link.",
-      );
-      return;
+      )
+
+      return
     }
-    setFeedbackFormError("");
-    update({ feedbackFormUrl: value });
-  };
+
+    setFeedbackFormError("")
+
+    update({ feedbackFormUrl: value })
+  }
 
   const toggle = (
     k: "finesEnabled" | "showFees" | "allowExcuseRequests" | "requirePhotoId",
-  ) => onSave({ ...settings, [k]: !settings[k] });
+  ) => onSave({ ...settings, [k]: !settings[k] })
 
-  const heroRef = useRef<HTMLInputElement>(null);
+  const heroRef = useRef<HTMLInputElement>(null)
 
-  const addHero = () => heroRef.current?.click();
+  const addHero = () => heroRef.current?.click()
 
   const removeHero = (i: number) =>
-    update({ heroImageUrls: settings.heroImageUrls.filter((_, j) => j !== i) });
+    update({ heroImageUrls: settings.heroImageUrls.filter((_, j) => j !== i) })
 
-  const slideRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const slidePosterRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const slideRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  const slidePosterRefs = useRef<(HTMLInputElement | null)[]>([])
 
   const addSlide = () => {
-    if (settings.carouselSlides.length >= 10) return;
+    if (settings.carouselSlides.length >= 10) return
 
     update({
       carouselSlides: [
@@ -17125,32 +17493,33 @@ export function AdminSettingsPage({
 
         { imageUrl: "", caption: "", date: "" },
       ],
-    });
-  };
+    })
+  }
 
   const removeSlide = (i: number) =>
     update({
       carouselSlides: settings.carouselSlides.filter((_, j) => j !== i),
-    });
+    })
 
   const moveSlide = (i: number, dir: -1 | 1) => {
-    const arr = [...settings.carouselSlides];
+    const arr = [...settings.carouselSlides]
 
-    const t = i + dir;
+    const t = i + dir
 
-    if (t < 0 || t >= arr.length) return;
-    [arr[i], arr[t]] = [arr[t], arr[i]];
+    if (t < 0 || t >= arr.length) return
 
-    update({ carouselSlides: arr });
-  };
+    ;[arr[i], arr[t]] = [arr[t], arr[i]]
+
+    update({ carouselSlides: arr })
+  }
 
   const patchSlide = (i: number, patch: Partial<CarouselSlide>) => {
     const arr = settings.carouselSlides.map((s, j) =>
       j === i ? { ...s, ...patch } : s,
-    );
+    )
 
-    update({ carouselSlides: arr });
-  };
+    update({ carouselSlides: arr })
+  }
 
   return (
     <>
@@ -17238,8 +17607,9 @@ export function AdminSettingsPage({
             type="url"
             value={feedbackFormDraft}
             onChange={(event) => {
-              setFeedbackFormDraft(event.target.value);
-              setFeedbackFormError("");
+              setFeedbackFormDraft(event.target.value)
+
+              setFeedbackFormError("")
             }}
             placeholder="https://docs.google.com/forms/d/e/.../viewform"
             className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
@@ -17354,17 +17724,17 @@ export function AdminSettingsPage({
             multiple
             className="hidden"
             onChange={async (e) => {
-              const files = Array.from(e.target.files ?? []);
+              const files = Array.from(e.target.files ?? [])
 
-              const remaining = 6 - settings.heroImageUrls.length;
+              const remaining = 6 - settings.heroImageUrls.length
 
-              const toAdd = files.slice(0, remaining);
+              const toAdd = files.slice(0, remaining)
 
               if (toAdd.length) {
-                await handleHeroImageUpload(toAdd);
+                await handleHeroImageUpload(toAdd)
               }
 
-              e.target.value = "";
+              e.target.value = ""
             }}
           />
           {heroImageUrls.length > 0 && (
@@ -17405,14 +17775,14 @@ export function AdminSettingsPage({
                     <button
                       onClick={() => {
                         setHeroUploadSlots((current) => {
-                          const next = { ...current };
+                          const next = { ...current }
 
-                          delete next[slotId];
+                          delete next[slotId]
 
-                          return next;
-                        });
+                          return next
+                        })
 
-                        void handleHeroImageUpload([slot.file]);
+                        void handleHeroImageUpload([slot.file])
                       }}
                       className="h-7 px-2.5 rounded-lg border border-red-200 bg-white text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
                     >
@@ -17443,14 +17813,14 @@ export function AdminSettingsPage({
                       <button
                         onClick={() => {
                           setHeroUploadSlots((current) => {
-                            const next = { ...current };
+                            const next = { ...current }
 
-                            delete next[slotId];
+                            delete next[slotId]
 
-                            return next;
-                          });
+                            return next
+                          })
 
-                          void handleHeroImageUpload([slot.file]);
+                          void handleHeroImageUpload([slot.file])
                         }}
                         className="h-7 px-2.5 rounded-lg border border-red-200 bg-white text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
                       >
@@ -17504,8 +17874,8 @@ export function AdminSettingsPage({
           <div className="divide-y divide-slate-50">
             {carouselSlides.map((slide, i) => {
               const ref = (el: HTMLInputElement | null) => {
-                slideRefs.current[i] = el;
-              };
+                slideRefs.current[i] = el
+              }
 
               return (
                 <div key={i} className="px-5 py-4">
@@ -17518,10 +17888,10 @@ export function AdminSettingsPage({
                         accept="image/jpeg,image/png,image/webp,video/mp4"
                         className="hidden"
                         onChange={async (e) => {
-                          const f = e.target.files?.[0];
+                          const f = e.target.files?.[0]
 
                           if (f) {
-                            await handleSlideImageUpload(i, f);
+                            await handleSlideImageUpload(i, f)
                           }
                         }}
                       />
@@ -17534,10 +17904,10 @@ export function AdminSettingsPage({
                           </span>
                           <button
                             onClick={() => {
-                              const slot = slideUploadSlots[i];
+                              const slot = slideUploadSlots[i]
 
                               if (slot) {
-                                void handleSlideImageUpload(i, slot.file);
+                                void handleSlideImageUpload(i, slot.file)
                               }
                             }}
                             className="text-[9px] font-bold text-red-700 underline"
@@ -17598,15 +17968,17 @@ export function AdminSettingsPage({
                         <div className="flex items-center gap-2">
                           <input
                             ref={(element) => {
-                              slidePosterRefs.current[i] = element;
+                              slidePosterRefs.current[i] = element
                             }}
                             type="file"
                             accept="image/jpeg,image/png,image/webp"
                             className="hidden"
                             onChange={async (event) => {
-                              const file = event.target.files?.[0];
-                              if (file) await handleSlidePosterUpload(i, file);
-                              event.target.value = "";
+                              const file = event.target.files?.[0]
+
+                              if (file) await handleSlidePosterUpload(i, file)
+
+                              event.target.value = ""
                             }}
                           />
                           <button
@@ -17628,9 +18000,10 @@ export function AdminSettingsPage({
                             <button
                               type="button"
                               onClick={() => {
-                                const slot = posterUploadSlots[i];
+                                const slot = posterUploadSlots[i]
+
                                 if (slot) {
-                                  void handleSlidePosterUpload(i, slot.file);
+                                  void handleSlidePosterUpload(i, slot.file)
                                 }
                               }}
                               className="text-xs font-semibold text-red-600 underline"
@@ -17666,7 +18039,7 @@ export function AdminSettingsPage({
                     </div>
                   </div>
                 </div>
-              );
+              )
             })}
           </div>
         )}
@@ -17696,30 +18069,30 @@ export function AdminSettingsPage({
         ))}
       </div>
     </>
-  );
+  )
 }
 
 export default function LandingExperienceClient({
   settings,
 }: {
-  settings: SystemSettings;
+  settings: SystemSettings
 }) {
-  const router = useRouter();
+  const router = useRouter()
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null)
 
-  const [showLoader, setShowLoader] = useState(true);
+  const [showLoader, setShowLoader] = useState(true)
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setShowLoader(false);
-    }, 180);
+      setShowLoader(false)
+    }, 180)
 
-    return () => window.clearTimeout(timer);
-  }, []);
+    return () => window.clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false
 
     async function loadAuthenticatedUser() {
       try {
@@ -17727,18 +18100,18 @@ export default function LandingExperienceClient({
           data: { session },
 
           error: sessionError,
-        } = await supabase.auth.getSession();
+        } = await supabase.auth.getSession()
 
         if (sessionError) {
-          console.error("Failed to load landing session", sessionError);
+          console.error("Failed to load landing session", sessionError)
         }
 
         if (!session?.user) {
           if (!cancelled) {
-            setUser(null);
+            setUser(null)
           }
 
-          return;
+          return
         }
 
         const { data: profile, error: profileError } = await supabase
@@ -17749,18 +18122,18 @@ export default function LandingExperienceClient({
 
           .eq("id", session.user.id)
 
-          .maybeSingle();
+          .maybeSingle()
 
         if (profileError && profileError.code !== "PGRST116") {
-          console.error("Failed to load landing profile", profileError);
+          console.error("Failed to load landing profile", profileError)
         }
 
         if (!profile) {
           if (!cancelled) {
-            setUser(null);
+            setUser(null)
           }
 
-          return;
+          return
         }
 
         const profileIsComplete =
@@ -17768,14 +18141,14 @@ export default function LandingExperienceClient({
           !!profile.surname &&
           !!profile.student_id &&
           !!profile.program &&
-          !!profile.year_level;
+          !!profile.year_level
 
         if (!profileIsComplete) {
           if (!cancelled) {
-            setUser(null);
+            setUser(null)
           }
 
-          return;
+          return
         }
 
         if (!cancelled) {
@@ -17803,23 +18176,23 @@ export default function LandingExperienceClient({
             photoUrl: profile.photo_url ?? undefined,
 
             idPhotoUrl: profile.id_photo_url ?? undefined,
-          });
+          })
         }
       } catch (caughtError) {
-        console.error(caughtError);
+        console.error(caughtError)
 
         if (!cancelled) {
-          setUser(null);
+          setUser(null)
         }
       }
     }
 
-    void loadAuthenticatedUser();
+    void loadAuthenticatedUser()
 
     return () => {
-      cancelled = true;
-    };
-  }, []);
+      cancelled = true
+    }
+  }, [])
 
   const handleLandingNav = (page: Page) => {
     const routeFromPage: Record<Page, string> = {
@@ -17864,10 +18237,10 @@ export default function LandingExperienceClient({
       "admin-excuse-requests": "/admin-excuse-requests",
 
       "admin-settings": "/admin-settings",
-    };
+    }
 
-    router.push(routeFromPage[page] ?? "/");
-  };
+    router.push(routeFromPage[page] ?? "/")
+  }
 
   return (
     <AnimatePresence mode="wait">
@@ -17935,5 +18308,5 @@ export default function LandingExperienceClient({
         </motion.div>
       )}
     </AnimatePresence>
-  );
+  )
 }
