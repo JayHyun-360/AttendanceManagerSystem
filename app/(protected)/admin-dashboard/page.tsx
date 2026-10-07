@@ -59,27 +59,43 @@ export default function AdminDashboardRoute() {
           return
         }
 
-        const [excuseResult, eventsResult, profileResult, scansResult] =
-          await Promise.all([
-            supabase
-              .from("excuse_requests")
-              .select("id, status")
-              .order("created_at", { ascending: false }),
-            supabase
-              .from("events")
-              .select("id, title, event_date, status")
-              .is("archived_at", null)
-              .order("event_date", { ascending: true }),
-            supabase.from("profiles").select("id").eq("role", "student"),
-            supabase
-              .from("attendance_scans")
-              .select(
-                "id, event_id, student_id, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(first_name, surname, student_id, program, section, photo_url), events(title)",
-              )
-              .in("status", ["present", "late"])
-              .not("scan_in_at", "is", null)
-              .order("scan_in_at", { ascending: false }),
-          ])
+        const today = new Date()
+
+        today.setHours(0, 0, 0, 0)
+
+        const [
+          excuseResult,
+          eventsResult,
+          profileResult,
+          scannedTodayResult,
+          recentScansResult,
+        ] = await Promise.all([
+          supabase
+            .from("excuse_requests")
+            .select("id, status")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("events")
+            .select("id, title, event_date, status")
+            .is("archived_at", null)
+            .order("event_date", { ascending: true }),
+          supabase.from("profiles").select("id").eq("role", "student"),
+          supabase
+            .from("attendance_scans")
+            .select("id", { count: "exact", head: true })
+            .in("status", ["present", "late"])
+            .not("scan_in_at", "is", null)
+            .gte("scan_in_at", today.toISOString()),
+          supabase
+            .from("attendance_scans")
+            .select(
+              "id, event_id, student_id, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(first_name, surname, student_id, program, section, photo_url), events(title)",
+            )
+            .in("status", ["present", "late"])
+            .not("scan_in_at", "is", null)
+            .order("scan_in_at", { ascending: false })
+            .limit(5),
+        ])
 
         if (excuseResult.error) {
           console.error(excuseResult.error)
@@ -93,17 +109,17 @@ export default function AdminDashboardRoute() {
           console.error(profileResult.error)
         }
 
-        if (scansResult.error) {
-          console.error(scansResult.error)
+        if (scannedTodayResult.error) {
+          console.error(scannedTodayResult.error)
+        }
+
+        if (recentScansResult.error) {
+          console.error(recentScansResult.error)
         }
 
         if (cancelled) {
           return
         }
-
-        const today = new Date()
-
-        today.setHours(0, 0, 0, 0)
 
         const eventRows = eventsResult.data ?? []
 
@@ -117,26 +133,11 @@ export default function AdminDashboardRoute() {
           return row.status === "active"
         }).length
 
-        const scannedToday = (scansResult.data ?? []).filter((row: any) => {
-          if (
-            (row.status !== "present" && row.status !== "late") ||
-            !row.scan_in_at
-          ) {
-            return false
-          }
-
-          const scannedAt = new Date(row.scan_in_at)
-
-          return scannedAt >= today
-        }).length
+        const scannedToday = scannedTodayResult.count ?? 0
 
         const duplicates = 0
 
-        const recent = (scansResult.data ?? [])
-
-          .filter(
-            (row: any) => row.status === "present" || row.status === "late",
-          )
+        const recent = (recentScansResult.data ?? [])
 
           .map((row: any) => ({
             name:

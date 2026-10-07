@@ -143,27 +143,24 @@ export default function AdminEventsRoutePage() {
           return
         }
 
-        const [
-          { data: rows, error },
-
-          { data: scans, error: scansError },
-
-          { data: settingsRow, error: settingsError },
-        ] = await Promise.all([
+        const [{ data: rows, error }, settingsResult] = await Promise.all([
           supabase
             .from("events")
             .select(EVENT_COLUMNS)
             .is("archived_at", null)
             .order("event_date", { ascending: false }),
-
-          supabase
-
-            .from("attendance_scans")
-
-            .select("event_id, student_id, status, scan_in_at"),
-
           getPublicSystemSettings(),
         ])
+
+        const eventIds = (rows ?? []).map((row: any) => String(row.id))
+        const { data: scans, error: scansError } = eventIds.length
+          ? await supabase
+              .from("attendance_scans")
+              .select("event_id, student_id, status, scan_in_at")
+              .in("event_id", eventIds)
+          : { data: [], error: null }
+        const settingsRow = settingsResult.data
+        const settingsError = settingsResult.error
 
         if (error) {
           console.error(error)

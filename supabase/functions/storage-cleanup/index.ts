@@ -32,6 +32,8 @@ const defaultMinimumAgeHours = 24
 
 const maxAttempts = 5
 
+const processingLeaseMinutes = 30
+
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
@@ -179,9 +181,30 @@ async function markFailed(
 }
 
 async function processQueue(limit: number, minimumAgeHours: number) {
+  const now = new Date()
   const cutoff = new Date(
-    Date.now() - minimumAgeHours * 60 * 60 * 1000,
+    now.getTime() - minimumAgeHours * 60 * 60 * 1000,
   ).toISOString()
+  const staleProcessingCutoff = new Date(
+    now.getTime() - processingLeaseMinutes * 60 * 1000,
+  ).toISOString()
+
+  const { error: recoveryError } = await admin
+    .from("storage_cleanup_queue")
+    .update({
+      status: "failed",
+      available_at: now.toISOString(),
+      last_error: "Recovered stale processing lease.",
+    })
+    .eq("bucket_id", bucketId)
+    .eq("status", "processing")
+    .lte("available_at", staleProcessingCutoff)
+
+  if (recoveryError) {
+    throw new Error(
+      `Could not recover stale cleanup rows: ${recoveryError.message}`,
+    )
+  }
 
   const { data: rows, error: listError } = await admin
 
@@ -193,7 +216,7 @@ async function processQueue(limit: number, minimumAgeHours: number) {
 
     .eq("bucket_id", bucketId)
 
-    .lte("available_at", new Date().toISOString())
+    .lte("available_at", now.toISOString())
 
     .lte("created_at", cutoff)
 
@@ -248,6 +271,10 @@ async function processQueue(limit: number, minimumAgeHours: number) {
         status: "processing",
 
         attempts,
+
+        available_at: new Date(
+          Date.now() + processingLeaseMinutes * 60 * 1000,
+        ).toISOString(),
 
         last_error: null,
       })
