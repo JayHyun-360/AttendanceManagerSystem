@@ -1,0 +1,23 @@
+name: Storage cleanup
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Invoke storage cleanup worker
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          CLEANUP_FUNCTION_SECRET: ${{ secrets.CLEANUP_FUNCTION_SECRET }}
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error --request POST \
+            "${SUPABASE_URL}/functions/v1/storage-cleanup" \
+            --header "Content-Type: application/json" \
+            --header "x-cleanup-secret: ${CLEANUP_FUNCTION_SECRET}" \
+            --data '{"limit":25,"minimumAgeHours":24}'

@@ -1,6 +1,6 @@
 # Supabase Storage Cleanup Worker
 
-The repository contains the `storage-cleanup` Edge Function at:
+The repository contains the already-deployed `storage-cleanup` Edge Function at:
 
 ```text
 supabase/functions/storage-cleanup/index.ts
@@ -8,99 +8,76 @@ supabase/functions/storage-cleanup/index.ts
 
 It processes eligible rows in `public.storage_cleanup_queue`, checks all known database media references, and deletes only unreferenced objects from the `public-images` bucket. Migration `039_storage_cleanup_queue.sql` creates or upgrades the queue and enqueues old media references after replacements or removals.
 
-The worker waits at least 24 hours after a queue row is created by default. It supports retries, concurrent-worker claiming, and quarantine handling. The function requires a private `CLEANUP_FUNCTION_SECRET` header and uses the Supabase-provided `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` runtime secrets.
+The worker waits at least 24 hours after a queue row is created by default. It supports retries, concurrent-worker claiming, and quarantine handling. The deployed function authenticates the caller with the private `CLEANUP_FUNCTION_SECRET` sent in the `x-cleanup-secret` header.
 
-## Deployment order
+## Recommended Vault-free scheduler
 
-Complete these steps in order:
+Use the repository workflow [`storage-cleanup.yml`](../.github/workflows/storage-cleanup.yml) with GitHub Actions scheduled execution.
 
-1. Link the intended Supabase project.
-2. Configure `CLEANUP_FUNCTION_SECRET`.
-3. Deploy the Edge Function.
-4. Manually verify the deployed function with the secret.
-5. Enable `pg_cron`, `pg_net`, and Vault if needed.
-6. Store the scheduler secrets in Vault.
-7. Create the scheduled job.
-8. Verify the job and its HTTP responses.
+This is recommended for the current project because the live Supabase project does not provide the Vault extension. Supabase’s documented `pg_cron` → `pg_net` Edge Function pattern requires Vault, or would otherwise require storing a secret directly in SQL. The GitHub Actions workflow keeps the cleanup secret in GitHub Actions encrypted repository secrets and sends it only at runtime.
 
-Do not create the scheduled job before the function is deployed, its secret is configured, and the manual request succeeds.
+Do not create a Supabase `pg_cron` HTTP job containing `CLEANUP_FUNCTION_SECRET`, a Supabase secret key, or any other private key as SQL text.
 
-## 1. Link the Supabase project
+The workflow runs every 15 minutes and also supports manual `workflow_dispatch`. It invokes the existing deployed function; no Edge Function code change or redeployment is required.
 
-Run from the repository root. Replace the placeholder with the project reference for the intended production project.
+## 1. Configure GitHub Actions secrets
 
-```bash
-supabase login
-supabase link --project-ref YOUR_PROJECT_REF
-```
+In the GitHub repository:
 
-Do not commit the project reference if it is considered sensitive in your environment, and never commit secret values.
+1. Open **Settings**.
+2. Open **Secrets and variables → Actions**.
+3. Select **New repository secret**.
+4. Create `SUPABASE_URL` with the project URL, for example `https://YOUR_PROJECT_REF.supabase.co`.
+5. Create `CLEANUP_FUNCTION_SECRET` with the exact same value already configured in the deployed Supabase Edge Function.
+6. Do not paste either secret into the workflow file or any committed document.
 
-## 2. Configure the Edge Function secret
+The workflow uses these secrets only through `${{ secrets.SUPABASE_URL }}` and `${{ secrets.CLEANUP_FUNCTION_SECRET }}`.
 
-Generate a random secret locally:
+## 2. Enable and test the workflow
 
-```bash
-openssl rand -hex 32
-```
-
-Copy the generated value into the following command. Run it locally; do not place the value in source code or SQL committed to the repository:
-
-```bash
-supabase secrets set CLEANUP_FUNCTION_SECRET='PASTE_THE_RANDOM_VALUE_HERE'
-```
-
-The function also requires these values, which Supabase provides automatically to deployed Edge Functions:
-
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-
-Never add the service-role key to the repository, browser code, scheduler SQL, or chat messages.
-
-## 3. Deploy the Edge Function
-
-The function validates its own `x-cleanup-secret` header, so disable the platform’s default JWT verification for this endpoint:
-
-```bash
-supabase functions deploy storage-cleanup --no-verify-jwt
-```
-
-The deployed endpoint is:
+The workflow file is:
 
 ```text
-https://YOUR_PROJECT_REF.supabase.co/functions/v1/storage-cleanup
+.github/workflows/storage-cleanup.yml
 ```
 
-## 4. Manually verify the deployed function
+After the file is committed and pushed:
 
-Use the same secret configured in step 2. This request limits processing to one row and uses `minimumAgeHours: 0` only for an intentional deployment test. It does not bypass reference checks.
+1. Open the repository’s **Actions** tab.
+2. Select **Storage cleanup**.
+3. Select **Run workflow**.
+4. Run it from the intended default branch.
+5. Confirm the job completes successfully.
 
-```bash
-curl --fail-with-body --request POST \
-  'https://YOUR_PROJECT_REF.supabase.co/functions/v1/storage-cleanup' \
-  --header 'Content-Type: application/json' \
-  --header 'x-cleanup-secret: PASTE_THE_RANDOM_VALUE_HERE' \
+The scheduled trigger is:
+
+```text
+*/15 * * * *
+```
+
+GitHub Actions may start scheduled workflows a few minutes after the nominal time. The workflow has a 10-minute timeout and sends:
+
+```json
+{"limit":25,"minimumAgeHours":24}
+```
+
+The 24-hour minimum age is intentionally preserved as a recovery window.
+
+## 3. Verify the deployed function manually
+
+The function is already deployed and its `CLEANUP_FUNCTION_SECRET` is already configured. If a manual check is needed, use the same secret locally without committing it:
+
+```powershell
+curl.exe --fail-with-body --request POST `
+  "https://YOUR_PROJECT_REF.supabase.co/functions/v1/storage-cleanup" `
+  --header "Content-Type: application/json" `
+  --header "x-cleanup-secret: PASTE_THE_RANDOM_VALUE_HERE" `
   --data '{"limit":1,"minimumAgeHours":0}'
 ```
 
-A successful response has `ok: true` and includes counters such as:
+A successful response must contain `"ok":true`. A `401` means the caller’s secret does not match the deployed function secret. Do not weaken the function authentication to resolve a mismatch.
 
-```json
-{
-  "ok": true,
-  "bucket": "public-images",
-  "selected": 0,
-  "deleted": 0,
-  "stillReferenced": 0,
-  "failed": 0,
-  "quarantined": 0,
-  "skippedByAnotherWorker": 0
-}
-```
-
-A `401` response means the `x-cleanup-secret` value does not match the configured function secret. A database or reference-check error must be resolved before enabling the scheduler.
-
-## 5. Inspect the queue
+## 4. Inspect the queue
 
 Run in the Supabase SQL Editor:
 
@@ -128,140 +105,44 @@ The worker processes only rows with:
 
 Rows still referenced by profiles, events, announcements, system settings, carousel posters, or excuse requests are not deleted and are quarantined.
 
-## 6. Prepare the scheduler extensions and secrets
+## 5. Verify scheduled execution
 
-The scheduler is not configured by a repository migration because it requires project-specific URL and secret values. In the Supabase Dashboard, enable these extensions if they are not already enabled:
+In GitHub:
 
-- `pg_cron`
-- `pg_net`
-- `vault`
+1. Open **Actions → Storage cleanup**.
+2. Confirm the scheduled workflow has successful runs approximately every 15 minutes.
+3. Open a run and confirm the **Invoke storage cleanup worker** step completed with HTTP success.
 
-Run the following SQL once in the Supabase SQL Editor. Replace every placeholder. Use the same private function secret from step 2 and the project’s publishable key from **Project Settings → API**. Do not use the service-role key.
-
-```sql
-select vault.create_secret(
-  'https://YOUR_PROJECT_REF.supabase.co',
-  'storage_cleanup_project_url'
-);
-
-select vault.create_secret(
-  'PASTE_THE_RANDOM_VALUE_HERE',
-  'storage_cleanup_function_secret'
-);
-
-select vault.create_secret(
-  'PASTE_YOUR_PUBLISHABLE_KEY_HERE',
-  'storage_cleanup_publishable_key'
-);
-```
-
-The publishable key is used only as the `apikey` header for the Edge Function request. The private cleanup secret is sent separately as `x-cleanup-secret`.
-
-## 7. Create the scheduled job
-
-Run this SQL only after the manual function request in step 4 succeeds and the Vault secrets in step 6 exist.
-
-The first statement makes rerunning the setup safe by removing only a previous job with the same name:
-
-```sql
-select cron.unschedule(jobid)
-from cron.job
-where jobname = 'storage-cleanup-every-15-minutes';
-```
-
-Then create the schedule:
-
-```sql
-select cron.schedule(
-  'storage-cleanup-every-15-minutes',
-  '*/15 * * * *',
-  $$
-  select net.http_post(
-    url := (
-      select decrypted_secret
-      from vault.decrypted_secrets
-      where name = 'storage_cleanup_project_url'
-    ) || '/functions/v1/storage-cleanup',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'apikey', (
-        select decrypted_secret
-        from vault.decrypted_secrets
-        where name = 'storage_cleanup_publishable_key'
-      ),
-      'x-cleanup-secret', (
-        select decrypted_secret
-        from vault.decrypted_secrets
-        where name = 'storage_cleanup_function_secret'
-      )
-    ),
-    body := jsonb_build_object(
-      'limit', 25,
-      'minimumAgeHours', 24
-    )
-  ) as request_id;
-  $$
-);
-```
-
-The job invokes the worker every 15 minutes, processes up to 25 eligible rows per invocation, and preserves the worker’s 24-hour recovery window.
-
-## 8. Verify scheduled execution
-
-Confirm the job is active:
+The Supabase queue is also a useful operational check:
 
 ```sql
 select
-  jobid,
-  jobname,
-  schedule,
-  active
-from cron.job
-where jobname = 'storage-cleanup-every-15-minutes';
+  status,
+  count(*)
+from public.storage_cleanup_queue
+group by status
+order by status;
 ```
 
-After at least one scheduled interval, inspect the HTTP invocation results:
+New candidates should be processed only after their 24-hour delay. A successful workflow run can legitimately report `selected: 0` when no eligible candidates exist.
 
-```sql
-select
-  id,
-  status_code,
-  content,
-  error_msg,
-  created
-from net._http_response
-order by created desc
-limit 20;
-```
+## Production-only configuration
 
-A successful invocation should show an HTTP 200 response with an `ok: true` JSON body. If the response is `401`, verify that the Vault cleanup secret exactly matches `CLEANUP_FUNCTION_SECRET`. If the response reports a database or reference-check failure, disable the schedule until the issue is resolved.
+The following must be configured outside the repository:
 
-To stop the schedule without deleting queue data:
+- GitHub Actions must be enabled for the repository.
+- Repository Actions secret `SUPABASE_URL` must be configured.
+- Repository Actions secret `CLEANUP_FUNCTION_SECRET` must match the deployed Supabase Function secret.
+- The default branch must contain `.github/workflows/storage-cleanup.yml`.
+- The workflow must be allowed to run on schedule.
 
-```sql
-select cron.unschedule('storage-cleanup-every-15-minutes');
-```
+No `pg_cron`, `pg_net`, or Vault setup is required for this recommended scheduler. Do not configure a duplicate Supabase Cron job unless a secure secret-storage mechanism becomes available.
 
 ## Security notes
 
-- Never place `SUPABASE_SERVICE_ROLE_KEY` in frontend code, the repository, scheduler SQL, or chat.
-- Keep `CLEANUP_FUNCTION_SECRET` private. It authorizes requests to the deployed worker.
-- Do not expose the cleanup secret in a public URL or query string.
-- The worker performs a complete database reference check before deletion.
+- Never place `CLEANUP_FUNCTION_SECRET` in source control, SQL text, a URL, or chat.
+- Never place a Supabase secret key or service-role key in the workflow file. This worker uses its existing dedicated cleanup secret instead.
+- GitHub Actions exposes the secret only to the workflow process at runtime; review repository collaborators and Actions permissions accordingly.
 - Database triggers enqueue candidates only; they never delete Storage objects.
-- The queue uses a 24-hour delay by default.
+- The worker performs a complete database reference check before deletion.
 - Failed rows retry with backoff up to five attempts, then become `quarantined` for review.
-- The current worker handles the `public-images` bucket and the audited media references only.
-
-## Production-only configuration still required
-
-The repository provides the Edge Function and deployment instructions. The following must still be configured in the intended Supabase project:
-
-- Supabase CLI project linking.
-- `CLEANUP_FUNCTION_SECRET` Function secret.
-- Edge Function deployment.
-- `pg_cron`, `pg_net`, and Vault availability.
-- Vault secrets for the project URL, cleanup secret, and publishable key.
-- The `storage-cleanup-every-15-minutes` cron job.
-
-Scheduling is not considered active until the job query shows `active = true` and `net._http_response` contains a successful invocation.
