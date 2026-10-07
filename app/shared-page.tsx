@@ -715,7 +715,7 @@ import { z } from "zod"
 
 import { format } from "date-fns"
 
-import { loadEventMedia } from "@/lib/eventMediaCache"
+import { invalidateEventMedia, loadEventMedia } from "@/lib/eventMediaCache"
 
 import {
   Archive,
@@ -5292,9 +5292,7 @@ function LandingPage({
             <button
               onClick={() => {
                 if (user) {
-                  onNav(
-                    user.role === "admin" ? "admin-dashboard" : "dashboard",
-                  )
+                  onNav(user.role === "admin" ? "admin-dashboard" : "dashboard")
 
                   return
                 }
@@ -8797,9 +8795,7 @@ export function AttendanceHistoryPage({
     sanctioned?: boolean
   }>
 }) {
-  const [modal, setModal] = useState<typeof ATTENDANCE_RECORDS[0] | null>(
-    null,
-  )
+  const [modal, setModal] = useState<typeof ATTENDANCE_RECORDS[0] | null>(null)
 
   return (
     <>
@@ -11209,6 +11205,8 @@ export function AdminEventsPage({
         return
       }
 
+      invalidateEventMedia(editDraft.id)
+
       await deleteImages(
         previousMediaUrls.filter(
           (url) =>
@@ -11293,6 +11291,8 @@ export function AdminEventsPage({
 
         return
       }
+
+      invalidateEventMedia(id)
 
       setEvents((ev) => ev.filter((e) => e.id !== id))
 
@@ -15135,9 +15135,7 @@ export function AdminStudentsPage({
       (result) => result.outcome === "success",
     ).length
 
-    const failed = results.filter(
-      (result) => result.outcome === "error",
-    ).length
+    const failed = results.filter((result) => result.outcome === "error").length
 
     const skipped = results.filter(
       (result) =>
@@ -17507,7 +17505,6 @@ export function AdminSettingsPage({
     const t = i + dir
 
     if (t < 0 || t >= arr.length) return
-
     ;[arr[i], arr[t]] = [arr[t], arr[i]]
 
     update({ carouselSlides: arr })
