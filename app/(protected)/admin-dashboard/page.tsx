@@ -1,50 +1,73 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Skeleton } from "@/components/ui/skeleton";
-import { AdminDashboard } from "../../shared-page";
-import { supabase } from "@/lib/supabase";
-import { subscribeToTableChanges } from "@/lib/realtime";
-import { useProtectedUser } from "../layout";
+import { useEffect, useState } from "react"
+
+import { useRouter } from "next/navigation"
+
+import { Skeleton } from "@/components/ui/skeleton"
+
+import { AdminDashboard } from "../../shared-page"
+
+import { supabase } from "@/lib/supabase"
+import { subscribeToTableChanges } from "@/lib/realtime"
+import { debounce } from "@/lib/debounce"
+import { useProtectedUser } from "../layout"
 
 export default function AdminDashboardRoute() {
-  const router = useRouter();
-  const { user } = useProtectedUser();
-  const [requests, setRequests] = useState<any[]>([]);
+  const router = useRouter()
+
+  const { user } = useProtectedUser()
+
+  const [requests, setRequests] = useState<any[]>([])
+
   const [stats, setStats] = useState({
     scannedToday: 0,
+
     duplicates: 0,
+
     activeEvents: 0,
+
     students: 0,
-  });
-  const [recentScans, setRecentScans] = useState<any[]>([]);
+  })
+
+  const [recentScans, setRecentScans] = useState<any[]>([])
+
   const [featuredEventTitle, setFeaturedEventTitle] =
-    useState<string>("Adesse overview");
-  const [featuredEventStatus, setFeaturedEventStatus] = useState<
-    "active" | "upcoming" | "closed" | "cancelled"
-  >("upcoming");
-  const [isLoading, setIsLoading] = useState(true);
+    useState<string>("Adesse overview")
+
+  const [featuredEventStatus, setFeaturedEventStatus] =
+    useState<"active" | "upcoming" | "closed" | "cancelled">("upcoming")
+
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false
+    let loadInFlight = false
+    let refreshQueued = false
 
     async function loadAdminDashboardRequests() {
+      if (loadInFlight) {
+        refreshQueued = true
+        return
+      }
+
+      loadInFlight = true
+
       try {
         if (!user || user.role !== "admin") {
-          router.push("/dashboard");
-          return;
+          router.push("/dashboard")
+          return
         }
 
         const [excuseResult, eventsResult, profileResult, scansResult] =
           await Promise.all([
             supabase
               .from("excuse_requests")
-              .select("*")
+              .select("id, status")
               .order("created_at", { ascending: false }),
             supabase
               .from("events")
-              .select("*")
+              .select("id, title, event_date, status")
               .is("archived_at", null)
               .order("event_date", { ascending: true }),
             supabase.from("profiles").select("id").eq("role", "student"),
@@ -53,137 +76,159 @@ export default function AdminDashboardRoute() {
               .select(
                 "id, event_id, student_id, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(first_name, surname, student_id, program, section, photo_url), events(title)",
               )
+              .in("status", ["present", "late"])
+              .not("scan_in_at", "is", null)
               .order("scan_in_at", { ascending: false }),
-          ]);
+          ])
 
         if (excuseResult.error) {
-          console.error(excuseResult.error);
+          console.error(excuseResult.error)
         }
 
         if (eventsResult.error) {
-          console.error(eventsResult.error);
+          console.error(eventsResult.error)
         }
 
         if (profileResult.error) {
-          console.error(profileResult.error);
+          console.error(profileResult.error)
         }
 
         if (scansResult.error) {
-          console.error(scansResult.error);
+          console.error(scansResult.error)
         }
 
         if (cancelled) {
-          return;
+          return
         }
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const today = new Date()
 
-        const eventRows = eventsResult.data ?? [];
+        today.setHours(0, 0, 0, 0)
+
+        const eventRows = eventsResult.data ?? []
+
         const featuredRow =
           eventRows.find((row: any) => row.status === "active") ??
           eventRows.find((row: any) => row.status === "upcoming") ??
           eventRows.find((row: any) => row.status === "closed") ??
-          null;
+          null
 
         const activeEvents = eventRows.filter((row: any) => {
-          return row.status === "active";
-        }).length;
+          return row.status === "active"
+        }).length
 
         const scannedToday = (scansResult.data ?? []).filter((row: any) => {
           if (
             (row.status !== "present" && row.status !== "late") ||
             !row.scan_in_at
           ) {
-            return false;
+            return false
           }
 
-          const scannedAt = new Date(row.scan_in_at);
-          return scannedAt >= today;
-        }).length;
+          const scannedAt = new Date(row.scan_in_at)
 
-        const duplicates = 0;
+          return scannedAt >= today
+        }).length
+
+        const duplicates = 0
 
         const recent = (scansResult.data ?? [])
+
           .filter(
             (row: any) => row.status === "present" || row.status === "late",
           )
+
           .map((row: any) => ({
             name:
               `${row.student_profile?.first_name ?? ""} ${row.student_profile?.surname ?? ""}`.trim() ||
               "Student",
+
             id: row.student_profile?.student_id || row.student_id,
+
             program: row.student_profile?.program || "",
+
             section: row.student_profile?.section || "",
+
             photoUrl: row.student_profile?.photo_url || undefined,
+
             time: row.scan_in_at
               ? new Date(row.scan_in_at).toLocaleTimeString("en-US", {
                   hour: "2-digit",
+
                   minute: "2-digit",
                 })
               : "",
-            status: "confirmed",
-          }));
 
-        setRequests(excuseResult.data ?? []);
+            status: "confirmed",
+          }))
+
+        setRequests(excuseResult.data ?? [])
+
         setStats({
           scannedToday,
+
           duplicates,
+
           activeEvents,
+
           students: profileResult.data?.length ?? 0,
-        });
-        setRecentScans(recent);
-        setFeaturedEventTitle(featuredRow?.title || "Adesse overview");
+        })
+
+        setRecentScans(recent)
+
+        setFeaturedEventTitle(featuredRow?.title || "Adesse overview")
+
         setFeaturedEventStatus(
-          (featuredRow?.status as
-            | "active"
-            | "upcoming"
-            | "closed"
-            | "cancelled") ?? "upcoming",
-        );
+          featuredRow?.status as "active" | "upcoming" | "closed" | "cancelled" ??
+            "upcoming",
+        )
       } catch (caughtError) {
-        console.error(caughtError);
+        console.error(caughtError)
       } finally {
+        loadInFlight = false
         if (!cancelled) {
-          setIsLoading(false);
+          setIsLoading(false)
+          if (refreshQueued) {
+            refreshQueued = false
+            debouncedLoadAdminDashboard()
+          }
         }
       }
     }
 
-    void loadAdminDashboardRequests();
+    const debouncedLoadAdminDashboard = debounce(() => {
+      if (!cancelled) void loadAdminDashboardRequests()
+    }, 350)
+
+    void loadAdminDashboardRequests()
 
     const requestsChannel = subscribeToTableChanges("excuse_requests", () => {
-      if (!cancelled) {
-        void loadAdminDashboardRequests();
-      }
-    });
+      if (!cancelled) debouncedLoadAdminDashboard()
+    })
     const eventsChannel = subscribeToTableChanges("events", () => {
-      if (!cancelled) {
-        void loadAdminDashboardRequests();
-      }
-    });
+      if (!cancelled) debouncedLoadAdminDashboard()
+    })
     const profilesChannel = subscribeToTableChanges("profiles", () => {
-      if (!cancelled) {
-        void loadAdminDashboardRequests();
-      }
-    });
+      if (!cancelled) debouncedLoadAdminDashboard()
+    })
     const attendanceChannel = subscribeToTableChanges(
       "attendance_scans",
       () => {
-        if (!cancelled) {
-          void loadAdminDashboardRequests();
-        }
+        if (!cancelled) debouncedLoadAdminDashboard()
       },
-    );
+    )
 
     return () => {
-      cancelled = true;
-      void requestsChannel.unsubscribe();
-      void eventsChannel.unsubscribe();
-      void profilesChannel.unsubscribe();
-      void attendanceChannel.unsubscribe();
-    };
-  }, [router, user]);
+      cancelled = true
+      debouncedLoadAdminDashboard.cancel()
+      void requestsChannel.unsubscribe()
+      void eventsChannel.unsubscribe()
+
+      void profilesChannel.unsubscribe()
+
+      void attendanceChannel.unsubscribe()
+    }
+  }, [router, user])
 
   function AdminDashboardPageSkeleton() {
     return (
@@ -210,27 +255,35 @@ export default function AdminDashboardRoute() {
           ))}
         </div>
       </div>
-    );
+    )
   }
 
   const onNav = (page: string) => {
     const paths: Record<string, string> = {
       "admin-events": "/admin-events",
-      "admin-scanner": "/admin-scanner",
-      "admin-attendees": "/admin-attendees",
-      "admin-students": "/admin-students",
-      "admin-announcements": "/admin-announcements",
-      "admin-excuse-requests": "/admin-excuse-requests",
-      "admin-reports": "/admin-reports",
-      "admin-settings": "/admin-settings",
-    };
 
-    const target = paths[page] ?? "/admin-dashboard";
-    router.push(target);
-  };
+      "admin-scanner": "/admin-scanner",
+
+      "admin-attendees": "/admin-attendees",
+
+      "admin-students": "/admin-students",
+
+      "admin-announcements": "/admin-announcements",
+
+      "admin-excuse-requests": "/admin-excuse-requests",
+
+      "admin-reports": "/admin-reports",
+
+      "admin-settings": "/admin-settings",
+    }
+
+    const target = paths[page] ?? "/admin-dashboard"
+
+    router.push(target)
+  }
 
   if (isLoading) {
-    return <AdminDashboardPageSkeleton />;
+    return <AdminDashboardPageSkeleton />
   }
 
   return (
@@ -242,5 +295,5 @@ export default function AdminDashboardRoute() {
       featuredEventTitle={featuredEventTitle}
       featuredEventStatus={featuredEventStatus}
     />
-  );
+  )
 }
