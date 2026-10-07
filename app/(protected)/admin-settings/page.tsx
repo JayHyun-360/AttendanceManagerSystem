@@ -1,16 +1,18 @@
-"use client";
+"use client"
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react"
 
-import { toast } from "sonner";
+import { toast } from "sonner"
 
-import { AdminSettingsPage, type SystemSettings } from "../../shared-page";
-import { refreshLandingSettings } from "./actions";
+import { AdminSettingsPage, type SystemSettings } from "../../shared-page"
 
-import { supabase } from "@/lib/supabase";
+import { refreshLandingSettings } from "./actions"
 
-import { deleteImages } from "@/lib/uploadImage";
-import { invalidatePublicSystemSettingsCache } from "@/lib/systemSettings";
+import { supabase } from "@/lib/supabase"
+
+import { deleteImages } from "@/lib/uploadImage"
+
+import { invalidatePublicSystemSettingsCache } from "@/lib/systemSettings"
 
 const defaultSettings: SystemSettings = {
   finesEnabled: false,
@@ -32,10 +34,10 @@ const defaultSettings: SystemSettings = {
   heroImageUrls: [],
 
   carouselSlides: [],
-};
+}
 
 const stripBlobUrls = (value?: string) =>
-  typeof value === "string" && value.startsWith("blob:") ? "" : (value ?? "");
+  typeof value === "string" && value.startsWith("blob:") ? "" : (value ?? "")
 
 const normalizeSettings = (
   rawSettings?: Partial<SystemSettings> | null,
@@ -58,53 +60,60 @@ const normalizeSettings = (
   feedbackFormUrl:
     rawSettings?.feedbackFormUrl ?? defaultSettings.feedbackFormUrl,
 
-  heroImageUrls: (
-    rawSettings?.heroImageUrls ?? defaultSettings.heroImageUrls
-  ).filter((url) => !!stripBlobUrls(url)),
+  heroImageUrls: (rawSettings?.heroImageUrls ?? defaultSettings.heroImageUrls)
+
+    .filter((url) => !!stripBlobUrls(url)),
 
   carouselSlides: (
     rawSettings?.carouselSlides ?? defaultSettings.carouselSlides
-  ).map((slide) => ({
-    ...slide,
+  )
 
-    imageUrl: stripBlobUrls(slide?.imageUrl),
+    .map((slide) => ({
+      ...slide,
 
-    ...(slide?.posterUrl !== undefined
-      ? { posterUrl: stripBlobUrls(slide.posterUrl) }
-      : {}),
-  })),
-});
+      imageUrl: stripBlobUrls(slide?.imageUrl),
+
+      ...(slide?.posterUrl !== undefined
+        ? { posterUrl: stripBlobUrls(slide.posterUrl) }
+        : {}),
+    })),
+})
 
 const withoutEmptySlides = (settings: SystemSettings): SystemSettings => ({
   ...settings,
+
   carouselSlides: settings.carouselSlides.filter((slide) =>
     [slide.imageUrl, slide.posterUrl, slide.caption, slide.date].some(
       (value) => typeof value === "string" && value.trim().length > 0,
     ),
   ),
-});
+})
 
 export default function AdminSettingsRoutePage() {
-  const [settings, setSettings] = useState<SystemSettings>(defaultSettings);
+  const [settings, setSettings] = useState<SystemSettings>(defaultSettings)
 
-  const [settingsReady, setSettingsReady] = useState(false);
+  const [settingsReady, setSettingsReady] = useState(false)
 
-  const [saveState, setSaveState] = useState<
-    "idle" | "saving" | "saved" | "error"
-  >("idle");
+  const [saveState, setSaveState] =
+    useState<"idle" | "saving" | "saved" | "error">("idle")
 
-  const settingsRef = useRef(defaultSettings);
+  const settingsRef = useRef(defaultSettings)
 
-  const persistedSettingsRef = useRef(defaultSettings);
+  const persistedSettingsRef = useRef(defaultSettings)
 
-  const pendingSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const writesInFlightRef = useRef(0)
 
-  const writesInFlightRef = useRef(0);
+  const pendingPersistRef = useRef<{
+    nextSettings: SystemSettings
+    localSettings: SystemSettings
+  } | null>(null)
+
+  const persistingRef = useRef(false)
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false
 
     async function loadSettings() {
       const { data, error } = await supabase
@@ -115,134 +124,160 @@ export default function AdminSettingsRoutePage() {
 
         .eq("id", 1)
 
-        .maybeSingle();
+        .maybeSingle()
 
       if (error) {
-        console.error("Failed to load settings", error);
+        console.error("Failed to load settings", error)
 
         if (!cancelled) {
-          setSettingsReady(true);
+          setSettingsReady(true)
         }
 
-        return;
+        return
       }
 
       if (!cancelled) {
         const cleanedSettings = normalizeSettings(
           data?.settings as Partial<SystemSettings>,
-        );
+        )
 
-        settingsRef.current = cleanedSettings;
+        settingsRef.current = cleanedSettings
 
-        persistedSettingsRef.current = withoutEmptySlides(cleanedSettings);
+        persistedSettingsRef.current = withoutEmptySlides(cleanedSettings)
 
-        setSettings(cleanedSettings);
+        setSettings(cleanedSettings)
 
-        setSettingsReady(true);
+        setSettingsReady(true)
       }
     }
 
-    void loadSettings();
+    void loadSettings()
 
     return () => {
-      cancelled = true;
-    };
-  }, []);
+      cancelled = true
+    }
+  }, [])
 
   const persistSettings = (
     nextSettings: SystemSettings,
     localSettings: SystemSettings,
   ) => {
-    saveQueueRef.current = saveQueueRef.current
-      .catch(() => {})
-      .then(async () => {
-        writesInFlightRef.current += 1;
+    pendingPersistRef.current = { nextSettings, localSettings }
+
+    if (persistingRef.current) return
+
+    persistingRef.current = true
+    void (async () => {
+      while (pendingPersistRef.current) {
+        const pending = pendingPersistRef.current
+        pendingPersistRef.current = null
+        const { nextSettings: settingsToPersist, localSettings: localState } =
+          pending
+
+        if (
+          JSON.stringify(settingsToPersist) ===
+          JSON.stringify(persistedSettingsRef.current)
+        ) {
+          continue
+        }
+
+        writesInFlightRef.current += 1
         try {
           const { error } = await supabase
             .from("system_settings")
             .update({
-              settings: nextSettings,
+              settings: settingsToPersist,
               updated_at: new Date().toISOString(),
             })
-            .eq("id", 1);
+            .eq("id", 1)
 
-          if (error) {
-            throw error;
-          }
+          if (error) throw error
 
-          invalidatePublicSystemSettingsCache();
+          invalidatePublicSystemSettingsCache()
           try {
-            await refreshLandingSettings();
+            await refreshLandingSettings()
           } catch (revalidationError) {
             console.error(
               "Failed to refresh public landing settings",
+
               revalidationError,
-            );
-            if (settingsRef.current === localSettings) {
+            )
+
+            if (settingsRef.current === localState) {
               toast.warning(
                 "Settings saved, but the landing page may take a minute to update.",
-              );
+              )
             }
           }
 
-          const previousSettings = persistedSettingsRef.current;
-          persistedSettingsRef.current = nextSettings;
+          const previousSettings = persistedSettingsRef.current
+          persistedSettingsRef.current = settingsToPersist
 
           const retainedUrls = new Set([
-            ...nextSettings.heroImageUrls,
-            ...nextSettings.carouselSlides.flatMap((slide) => [
+            ...settingsToPersist.heroImageUrls,
+            ...settingsToPersist.carouselSlides.flatMap((slide) => [
               slide.imageUrl,
               slide.posterUrl ?? "",
             ]),
-          ]);
+          ])
+
           const cleanupUrls = [
             ...previousSettings.heroImageUrls,
+
             ...previousSettings.carouselSlides.flatMap((slide) => [
               slide.imageUrl,
+
               slide.posterUrl ?? "",
             ]),
           ].filter(
             (url) =>
               !!url && !url.startsWith("blob:") && !retainedUrls.has(url),
-          );
+          )
+          let failedCleanupCount = 0
 
           if (cleanupUrls.length > 0) {
-            const cleanupResults = await deleteImages(cleanupUrls);
+            const cleanupResults = await deleteImages(cleanupUrls)
             const failedCleanup = cleanupResults.filter(
               (result) => !result.success,
-            );
+            )
+            failedCleanupCount = failedCleanup.length
 
             failedCleanup.forEach((result) =>
               console.error("Failed to delete settings media", result.error),
-            );
+            )
 
-            if (failedCleanup.length > 0) {
-              if (settingsRef.current === localSettings) {
-                setSaveState("saved");
-                toast.warning(
-                  `Settings saved, but ${failedCleanup.length} media file${failedCleanup.length === 1 ? "" : "s"} could not be cleaned up.`,
-                );
-              }
-              return;
+            if (
+              failedCleanup.length > 0 &&
+              settingsRef.current === localState
+            ) {
+              setSaveState("saved")
+              toast.warning(
+                `Settings saved, but ${failedCleanup.length} media file${
+                  failedCleanup.length === 1 ? "" : "s"
+                } could not be cleaned up.`,
+              )
             }
           }
 
-          if (settingsRef.current === localSettings) {
-            setSaveState("saved");
-            toast.success("Settings saved.");
+          if (settingsRef.current === localState) {
+            setSaveState("saved")
+            if (failedCleanupCount === 0) toast.success("Settings saved.")
           }
         } catch (caughtError) {
-          console.error("Failed to save settings", caughtError);
+          console.error("Failed to save settings", caughtError)
 
-          if (settingsRef.current === localSettings) {
-            setSaveState("error");
-            toast.error("Settings save failed.");
+          if (settingsRef.current === localState) {
+            setSaveState("error")
+            toast.error("Settings save failed.")
           }
         } finally {
-          writesInFlightRef.current -= 1;
+          writesInFlightRef.current -= 1
         }
-      });
-  };
+      }
+
+      persistingRef.current = false
+    })()
+  }
 
   const handleSave = (nextSettings: SystemSettings) => {
     const sanitizedSettings: SystemSettings = {
@@ -257,11 +292,13 @@ export default function AdminSettingsRoutePage() {
 
         imageUrl: stripBlobUrls(slide.imageUrl),
       })),
-    };
-    const persistableSettings = withoutEmptySlides(sanitizedSettings);
+    }
 
-    settingsRef.current = sanitizedSettings;
-    setSettings(sanitizedSettings);
+    const persistableSettings = withoutEmptySlides(sanitizedSettings)
+
+    settingsRef.current = sanitizedSettings
+
+    setSettings(sanitizedSettings)
 
     if (
       JSON.stringify(persistableSettings) ===
@@ -269,38 +306,45 @@ export default function AdminSettingsRoutePage() {
       writesInFlightRef.current === 0
     ) {
       if (pendingSaveRef.current) {
-        clearTimeout(pendingSaveRef.current);
-        pendingSaveRef.current = null;
+        clearTimeout(pendingSaveRef.current)
+
+        pendingSaveRef.current = null
       }
-      setSaveState("idle");
-      return;
+
+      setSaveState("idle")
+
+      return
     }
 
-    setSaveState("saving");
+    setSaveState("saving")
 
     if (pendingSaveRef.current) {
-      clearTimeout(pendingSaveRef.current);
+      clearTimeout(pendingSaveRef.current)
     }
 
     pendingSaveRef.current = setTimeout(() => {
-      pendingSaveRef.current = null;
-      persistSettings(persistableSettings, sanitizedSettings);
-    }, 600);
-  };
+      pendingSaveRef.current = null
+      persistSettings(persistableSettings, sanitizedSettings)
+    }, 1500)
+  }
 
   useEffect(
     () => () => {
       if (pendingSaveRef.current) {
-        clearTimeout(pendingSaveRef.current);
-        pendingSaveRef.current = null;
+        clearTimeout(pendingSaveRef.current)
+
+        pendingSaveRef.current = null
+
         persistSettings(
           withoutEmptySlides(settingsRef.current),
+
           settingsRef.current,
-        );
+        )
       }
     },
+
     [],
-  );
+  )
 
   if (!settingsReady) {
     return (
@@ -321,7 +365,7 @@ export default function AdminSettingsRoutePage() {
           <div className="h-40 rounded-xl bg-slate-200" />
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -348,5 +392,5 @@ export default function AdminSettingsRoutePage() {
 
       <AdminSettingsPage settings={settings} onSave={handleSave} />
     </div>
-  );
+  )
 }
