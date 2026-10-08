@@ -193,24 +193,6 @@ import { formatTimeRange12Hour } from "@/lib/time"
 
 const adesseLogoSrc = "/adesse-a.svg"
 
-const LANDING_QR_PATTERN = [
-  "111111100101111",
-  "100000101101001",
-  "101110101001101",
-  "101110100111101",
-  "101110101010101",
-  "100000101110001",
-  "111111101010101",
-  "000000001101100",
-  "110111101011111",
-  "001010001100101",
-  "111011111011100",
-  "100101001101011",
-  "101111101010111",
-  "100000001110001",
-  "111111101011111",
-]
-
 function useDashboardDateLabel() {
   const [label, setLabel] = useState("")
 
@@ -3021,66 +3003,55 @@ function LandingPage({
               aria-hidden="true"
             />
             <div
-              className="relative h-[300px] w-full max-w-[600px] sm:h-[370px] lg:translate-x-4"
+              className="relative h-[285px] w-full max-w-[560px] sm:h-[360px] lg:translate-x-4"
               aria-label="Attendance confirmation and event records preview"
               role="img"
             >
-              <div className="absolute left-[10%] top-[5%] h-[90%] w-[72%] rotate-[-8deg] rounded-[2.5rem] border border-white/80 bg-white/35 shadow-[0_24px_55px_rgba(15,118,110,.12)] backdrop-blur-sm" />
-              <div className="absolute right-[4%] top-[7%] h-24 w-44 rotate-[7deg] rounded-[1.5rem] border border-white/80 bg-emerald-100/70 shadow-[0_18px_40px_rgba(15,118,110,.12)] sm:h-32 sm:w-56">
-                <div className="flex items-start gap-3 p-4 text-emerald-800 sm:p-5">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/70">
+              <div className="absolute left-[8%] top-[4%] h-[90%] w-[76%] rotate-[-8deg] rounded-[2.5rem] border border-white/80 bg-white/35 shadow-[0_24px_55px_rgba(15,118,110,.12)] backdrop-blur-sm" />
+              <div className="absolute right-[1%] top-[6%] h-24 w-40 rotate-[7deg] rounded-[1.5rem] border border-white/80 bg-emerald-100/70 shadow-[0_18px_40px_rgba(15,118,110,.12)] sm:h-32 sm:w-56">
+                <div className="flex items-start gap-2.5 p-3.5 text-emerald-800 sm:gap-3 sm:p-5">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 sm:h-9 sm:w-9">
                     <Icons.Users />
                   </span>
                   <div className="space-y-2 pt-1">
-                    <div className="h-2 w-24 rounded-full bg-emerald-700/25 sm:w-32" />
-                    <div className="h-2 w-16 rounded-full bg-emerald-700/15 sm:w-24" />
+                    <div className="h-2 w-20 rounded-full bg-emerald-700/25 sm:w-32" />
+                    <div className="h-2 w-14 rounded-full bg-emerald-700/15 sm:w-24" />
                   </div>
                 </div>
               </div>
-              <div className="absolute left-[16%] top-[12%] w-[46%] rotate-[-3deg] rounded-[1.75rem] border border-white bg-white/95 p-4 shadow-[0_25px_45px_rgba(15,23,42,.14)] sm:p-5">
-                <div className="mx-auto flex w-fit rounded-xl bg-white p-1.5 shadow-inner ring-1 ring-slate-100">
-                  <div className="grid grid-cols-15 gap-[2px] rounded-lg bg-white p-1">
-                    {LANDING_QR_PATTERN.flatMap((row, rowIndex) =>
-                      [...row].map((cell, cellIndex) => (
-                        <span
-                          key={`${rowIndex}-${cellIndex}`}
-                          className={`h-1.5 w-1.5 sm:h-2 sm:w-2 ${
-                            cell === "1" ? "bg-slate-900" : "bg-white"
-                          }`}
-                        />
-                      )),
-                    )}
-                  </div>
+              <div className="absolute left-[13%] top-[13%] w-[49%] rotate-[-3deg] rounded-[1.75rem] border border-white bg-white/95 p-3.5 shadow-[0_25px_45px_rgba(15,23,42,.14)] sm:left-[16%] sm:top-[12%] sm:p-5">
+                <div className="mx-auto flex w-fit rounded-xl bg-white p-2 shadow-inner ring-1 ring-slate-100 sm:p-2.5">
+                  <StudentQR studentId="LANDING-DEMO-2026" size={104} />
                 </div>
-                <div className="mt-3 flex items-center justify-center gap-1.5 rounded-full bg-emerald-50 px-2 py-1.5 text-[9px] font-semibold text-emerald-700 ring-1 ring-emerald-100 sm:text-[10px]">
+                <div className="mt-2.5 flex items-center justify-center gap-1.5 rounded-full bg-emerald-50 px-2 py-1.5 text-[8px] font-semibold text-emerald-700 ring-1 ring-emerald-100 sm:mt-3 sm:text-[10px]">
                   <Icons.CheckCircle />
                   Attendance confirmed
                 </div>
-                <div className="mt-4 flex items-center gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                <div className="mt-3 flex items-center gap-2 sm:mt-4">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400 sm:h-7 sm:w-7">
                     <Icons.User />
                   </span>
                   <div className="space-y-1.5">
-                    <div className="h-1.5 w-20 rounded-full bg-slate-200" />
-                    <div className="h-1.5 w-14 rounded-full bg-slate-100" />
+                    <div className="h-1.5 w-16 rounded-full bg-slate-200 sm:w-20" />
+                    <div className="h-1.5 w-11 rounded-full bg-slate-100 sm:w-14" />
                   </div>
                 </div>
               </div>
-              <div className="absolute bottom-[5%] right-[4%] w-[52%] rotate-[6deg] rounded-[1.75rem] border border-white/80 bg-white/95 p-4 shadow-[0_22px_42px_rgba(15,23,42,.14)] sm:p-5">
-                <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 sm:text-base">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <div className="absolute bottom-[4%] right-[1%] w-[56%] rotate-[6deg] rounded-[1.75rem] border border-white/80 bg-white/95 p-3.5 shadow-[0_22px_42px_rgba(15,23,42,.14)] sm:right-[4%] sm:w-[52%] sm:p-5">
+                <div className="flex items-center gap-2 text-[13px] font-semibold text-slate-800 sm:text-base">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 sm:h-8 sm:w-8">
                     <Icons.Calendar />
                   </span>
                   Events
                 </div>
-                <div className="mt-4 space-y-3">
+                <div className="mt-3 space-y-2 sm:mt-4 sm:space-y-3">
                   {["Student Leadership Forum", "Campus Orientation"].map(
                     (event, index) => (
                       <div
                         key={event}
-                        className="flex items-center gap-2 rounded-xl bg-slate-50/80 px-2.5 py-2"
+                        className="flex items-center gap-1.5 rounded-xl bg-slate-50/80 px-2 py-1.5 sm:gap-2 sm:px-2.5 sm:py-2"
                       >
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200/70 text-slate-400">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200/70 text-slate-400 sm:h-6 sm:w-6">
                           <Icons.User />
                         </span>
                         <span className="min-w-0 flex-1 truncate text-[9px] font-medium text-slate-500 sm:text-[10px]">
