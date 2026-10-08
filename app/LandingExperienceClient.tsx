@@ -193,7 +193,7 @@ import { formatTimeRange12Hour } from "@/lib/time"
 
 const adesseLogoSrc = "/adesse-a.svg"
 
-const DEFAULT_HERO_IMAGE = "/adesse-default-hero.webp"
+const LANDING_HERO_ART = "/enhanced-image-with-white-wrapper.jpg"
 
 function useDashboardDateLabel() {
   const [label, setLabel] = useState("")
@@ -2903,42 +2903,22 @@ function LandingPage({
 
   const hasConfiguredHero = configuredHeroUrls.length > 0
 
-  const heroUrls = hasConfiguredHero ? configuredHeroUrls : [DEFAULT_HERO_IMAGE]
+  const heroUrls = hasConfiguredHero ? configuredHeroUrls : [LANDING_HERO_ART]
 
   const carouselSlides = settings.carouselSlides.filter(
     (slide) => !!slide.imageUrl && !slide.imageUrl.startsWith("blob:"),
   )
 
-  const hasHero = heroUrls.length > 0
-
-  const isDefaultHero = !hasConfiguredHero
-
   const hn = heroUrls.length
 
   const [heroTrack, setHeroTrack] = useState(0)
-
-  const [heroAnim, setHeroAnim] = useState(true)
 
   const [heroVisibilityStamp, setHeroVisibilityStamp] = useState(0)
 
   const heroRealIdx = heroTrack % (hn || 1)
 
-  const heroItems = hn > 1 ? [...heroUrls, heroUrls[0]] : heroUrls
-
-  const heroTotal = heroItems.length
-
   const heroAdvance = () => {
-    setHeroAnim(true)
-
-    setHeroTrack((i) => i + 1)
-  }
-
-  const heroTransitionEnd = () => {
-    if (heroTrack === hn) {
-      setHeroAnim(false)
-
-      setHeroTrack(0)
-    }
+    setHeroTrack((i) => (i + 1) % hn)
   }
 
   useEffect(() => {
@@ -2956,8 +2936,6 @@ function LandingPage({
       if (document.visibilityState === "visible") {
         setHeroTrack(0)
 
-        setHeroAnim(false)
-
         setHeroVisibilityStamp((v) => v + 1)
       }
     }
@@ -2970,141 +2948,69 @@ function LandingPage({
 
   useEffect(() => {
     setHeroTrack(0)
-
-    setHeroAnim(false)
   }, [hn])
+
+  const landingHeroImage = heroUrls[heroRealIdx] ?? LANDING_HERO_ART
 
   return (
     <div className="min-h-screen bg-white">
       {}
-      <div
-        className={`relative overflow-hidden ${
-          hasHero ? "min-h-[520px] lg:min-h-[580px]" : ""
-        }`}
-      >
-        {}
-        {hasHero && !isDefaultHero && (
-          <div
-            className="absolute inset-y-0 left-0 flex"
-            style={{
-              width: `${heroTotal * 100}%`,
+      <div className="relative isolate overflow-hidden bg-[#f7fbf8]">
+        <div
+          className="pointer-events-none absolute inset-0"
+          aria-hidden="true"
+          style={{
+            background:
+              "radial-gradient(circle at 88% 45%, rgba(16,185,129,.13), transparent 32%), radial-gradient(circle at 8% 10%, rgba(255,255,255,.98), transparent 34%), linear-gradient(135deg, #fbfefc 0%, #f1faf5 58%, #e5f5ec 100%)",
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 hidden w-[54%] lg:block"
+          aria-hidden="true"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(247,251,248,1) 0%, rgba(247,251,248,.72) 10%, rgba(247,251,248,0) 42%)",
+          }}
+        />
+        <div
+          className="pointer-events-none absolute -right-32 top-16 hidden h-[34rem] w-[34rem] rounded-full border border-white/80 bg-white/35 shadow-[0_30px_90px_rgba(15,118,110,.1)] lg:block"
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute -left-24 bottom-[-13rem] h-80 w-80 rounded-full bg-emerald-200/20 blur-3xl"
+          aria-hidden="true"
+        />
 
-              transform: `translateX(-${(heroTrack / heroTotal) * 100}%)`,
-
-              transition: heroAnim
-                ? "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)"
-                : "none",
-            }}
-            onTransitionEnd={heroTransitionEnd}
-          >
-            {heroItems.map((url, i) => (
-              <div
-                key={`${heroVisibilityStamp}-${i}-${url}`}
-                className="relative h-full flex-shrink-0"
-                style={{
-                  width: `${100 / heroTotal}%`,
-                }}
-              >
-                <OptimizedImage
-                  key={`${heroVisibilityStamp}-hero-${i}-${url}`}
-                  src={url}
-                  alt=""
-                  aria-hidden
-                  sizes="100vw"
-                  loading={i === heroTrack ? "eager" : "lazy"}
-                  decoding="async"
-                  fetchPriority={i === heroTrack ? "high" : "auto"}
-                  onError={(event) => {
-                    event.currentTarget.style.display = "none"
-                  }}
-                  className={`w-full h-full object-cover ${
-                    isDefaultHero ? "opacity-25" : ""
-                  }`}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-        {isDefaultHero && (
-          <div
-            className="pointer-events-none absolute inset-0 overflow-hidden bg-[#f2faf6]"
-            aria-hidden="true"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 76% 44%, rgba(16,185,129,.16), transparent 24%), radial-gradient(circle at 18% 18%, rgba(255,255,255,.9), transparent 28%), linear-gradient(135deg, #f8fcfa 0%, #edf8f3 52%, #e3f3ec 100%)",
-            }}
-          >
-            <div
-              className="absolute inset-0 opacity-40 sm:opacity-60"
-              style={{
-                backgroundImage:
-                  "radial-gradient(rgba(5,150,105,.18) 1px, transparent 1px)",
-
-                backgroundSize: "22px 22px",
-
-                maskImage:
-                  "linear-gradient(90deg, transparent 0%, transparent 43%, black 70%, black 100%)",
-              }}
-            />
-            <div className="absolute -right-32 -top-40 h-[27rem] w-[27rem] rotate-[18deg] rounded-[4rem] border border-white/90 bg-white/30 shadow-[0_32px_90px_rgba(15,118,110,.1)] sm:-right-20 sm:-top-44 sm:h-[38rem] sm:w-[38rem]" />
-            <div className="absolute right-[2%] top-[8%] h-64 w-64 -rotate-[10deg] rounded-[3rem] border border-emerald-100/90 bg-emerald-100/35 shadow-[0_28px_70px_rgba(16,185,129,.12)] sm:right-[10%] sm:top-[7%] sm:h-[22rem] sm:w-[22rem]" />
-            <div className="absolute right-[12%] top-[17%] h-56 w-56 rotate-[7deg] rounded-[2.75rem] border border-white bg-white/60 shadow-[0_24px_55px_rgba(15,23,42,.1)] sm:right-[20%] sm:top-[17%] sm:h-[18rem] sm:w-[18rem]" />
-            <div className="absolute right-[21%] top-[25%] h-44 w-44 -rotate-[5deg] rounded-[2.25rem] border border-emerald-200/80 bg-gradient-to-br from-emerald-100/80 to-teal-50/70 shadow-[0_20px_45px_rgba(5,150,105,.16)] sm:right-[28%] sm:top-[25%] sm:h-56 sm:w-56" />
-            <div className="absolute right-[28%] top-[33%] h-28 w-28 rotate-12 rounded-[1.75rem] border border-white/90 bg-white/90 shadow-[0_18px_36px_rgba(15,23,42,.12)] sm:right-[35%] sm:top-[33%] sm:h-36 sm:w-36" />
-            <div className="absolute right-[34%] top-[41%] h-16 w-16 -rotate-12 rounded-2xl bg-emerald-500/20 shadow-[0_16px_32px_rgba(16,185,129,.1)] sm:right-[40%] sm:top-[42%] sm:h-20 sm:w-20" />
-            <div className="absolute -bottom-28 right-[1%] h-72 w-72 -rotate-[22deg] rounded-[3.5rem] border border-teal-100/90 bg-teal-100/30 shadow-[0_30px_75px_rgba(13,148,136,.12)] sm:-bottom-40 sm:right-[8%] sm:h-[28rem] sm:w-[28rem]" />
-            <div className="absolute bottom-[13%] left-[8%] h-28 w-28 -rotate-[14deg] rounded-[2rem] border border-white/90 bg-white/45 shadow-[0_20px_45px_rgba(15,118,110,.08)] sm:left-[17%] sm:h-40 sm:w-40" />
-          </div>
-        )}
-        {hasHero && (
-          <div
-            className="absolute inset-0"
-            style={{
-              background: isDefaultHero
-                ? "linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 50%, rgba(236,253,245,.18) 100%)"
-                : "linear-gradient(135deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.18) 100%)",
-            }}
-          />
-        )}
-        {}
         {hn > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+          <div
+            className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 gap-1.5"
+            aria-label="Hero image slides"
+          >
             {heroUrls.map((_, i) => (
               <span
                 key={i}
                 className={`rounded-full transition-all duration-300 ${
-                  i === heroRealIdx ? "w-4 h-2 bg-white" : "w-2 h-2 bg-white/40"
+                  i === heroRealIdx
+                    ? "w-5 h-2 bg-emerald-600"
+                    : "w-2 h-2 bg-emerald-300/70"
                 }`}
               />
             ))}
           </div>
         )}
+
         {user && (
-          <div className="absolute top-3 right-3 sm:top-5 sm:right-6 z-20 flex items-center gap-2">
-            <div
-              className={`inline-flex items-center gap-1.5 text-[9px] sm:text-[11px] font-bold tracking-[0.08em] uppercase px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-full ${
-                isDefaultHero
-                  ? "text-emerald-800 bg-white/60 border border-white/80 backdrop-blur-sm shadow-sm"
-                  : hasHero
-                    ? "text-emerald-100 bg-white/10 border border-white/25 backdrop-blur-sm shadow-sm"
-                    : "text-emerald-700 bg-emerald-50 border border-emerald-200"
-              }`}
-            >
+          <div className="absolute right-4 top-4 z-20 flex items-center gap-2 sm:right-8 sm:top-6">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-white/90 bg-white/75 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.08em] text-emerald-800 shadow-sm backdrop-blur-sm sm:px-3.5 sm:py-2 sm:text-[11px]">
               <span
-                className="w-1.5 h-1.5 bg-emerald-400 rounded-full shrink-0"
+                className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400"
                 style={{ animation: "pulse 2s infinite" }}
               />
               AY 2026-2027 · 1st Semester
             </div>
             <button
               onClick={() => onNav("profile")}
-              className={`flex items-center justify-center rounded-full p-1.5 transition-colors duration-150 ${
-                isDefaultHero
-                  ? "bg-white/55 text-slate-700 shadow-sm backdrop-blur-sm hover:bg-white/75"
-                  : hasHero
-                    ? "bg-black/20 text-white shadow-sm backdrop-blur-sm hover:bg-black/30"
-                    : "bg-slate-900/5 text-slate-700 hover:bg-slate-900/10"
-              }`}
+              className="flex items-center justify-center rounded-full bg-white/75 p-1.5 text-slate-700 shadow-sm backdrop-blur-sm transition-colors hover:bg-white"
               aria-label="Open profile"
             >
               <ProfileIcon
@@ -3116,88 +3022,88 @@ function LandingPage({
           </div>
         )}
 
-        {}
-        <div
-          className={`relative w-full mx-auto px-5 flex flex-col md:max-w-6xl md:px-6 ${
-            hasHero
-              ? "items-start text-left pt-24 pb-16 md:pt-20 md:pb-20"
-              : "items-center text-center pt-24 pb-16 md:pt-20 md:pb-20"
-          }`}
-        >
-          <AdesseWordmark
-            variant="hero"
-            className={`mb-4 ${hasHero ? "" : "justify-center"}`}
-            textClassName={
-              isDefaultHero
-                ? "text-slate-900"
-                : hasHero
-                  ? "text-white"
-                  : "text-slate-900"
-            }
-          />
-          <h1 className="sr-only">Adesse</h1>
-          <p
-            className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.14em] mb-8 sm:mb-9 leading-[1.6] ${
-              isDefaultHero
-                ? "text-slate-600"
-                : hasHero
-                  ? "text-white/75"
-                  : "text-slate-400"
-            }`}
-          >
-            Student Event Attendance &amp; Records System
-          </p>
-          <p
-            className={`text-[15px] sm:text-[17px] mb-0 leading-[1.95] sm:leading-[2] max-w-[22rem] sm:max-w-md ${
-              isDefaultHero
-                ? "text-slate-700"
-                : hasHero
-                  ? "text-white/80"
-                  : "text-slate-500"
-            }`}
-          >
-            One QR code per student. Real-time attendance logging. Clear event
-            records for students and moderators.
-          </p>
-          <div
-            className={`mt-20 grid w-full max-w-sm grid-cols-2 items-center gap-3 sm:mt-20 sm:flex sm:w-auto sm:max-w-none ${
-              hasHero ? "" : "sm:justify-center"
-            }`}
-          >
-            <button
-              onClick={() => {
-                if (user) {
-                  onNav(user.role === "admin" ? "admin-dashboard" : "dashboard")
+        <div className="relative mx-auto grid min-h-[650px] w-full max-w-6xl items-center gap-8 px-5 pb-16 pt-28 sm:px-8 md:min-h-[600px] md:pb-20 md:pt-24 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-2 lg:px-10 lg:pt-20">
+          <div className="relative z-10 max-w-xl lg:pb-3">
+            <AdesseWordmark
+              variant="hero"
+              className="mb-7"
+              textClassName="text-slate-950"
+            />
+            <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 sm:text-[11px]">
+              Student event management
+            </p>
+            <h1 className="adesse-display max-w-[35rem] text-[2.9rem] leading-[0.98] text-slate-950 sm:text-[4rem] lg:text-[4.35rem]">
+              Attendance, simplified for every campus event.
+            </h1>
+            <p className="mt-6 max-w-[30rem] text-[15px] leading-[1.8] text-slate-600 sm:text-[17px]">
+              Give students one easy way to check in while moderators get
+              accurate, real-time attendance records.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                onClick={() => {
+                  if (user) {
+                    onNav(
+                      user.role === "admin" ? "admin-dashboard" : "dashboard",
+                    )
+                    return
+                  }
 
-                  return
-                }
+                  if (typeof window !== "undefined") {
+                    window.location.assign("/login")
+                  } else {
+                    onNav("login")
+                  }
+                }}
+                className="h-12 rounded-full bg-emerald-600 px-7 text-[12px] font-bold text-white shadow-[0_12px_28px_rgba(16,185,129,.24)] transition-all hover:-translate-y-0.5 hover:bg-emerald-500 hover:shadow-[0_16px_34px_rgba(16,185,129,.3)] sm:text-[13px]"
+              >
+                {user ? "Go to Dashboard" : "Get Started"}
+              </button>
+              <button
+                onClick={() => onNav("events")}
+                className="h-12 rounded-full border border-slate-200/90 bg-white/70 px-7 text-[12px] font-bold text-slate-700 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-white sm:text-[13px]"
+              >
+                Browse Events
+              </button>
+            </div>
+            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-[10px] font-semibold uppercase tracking-[0.09em] text-slate-500 sm:text-[11px]">
+              <span className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                One QR per student
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Real-time confirmation
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Clear records
+              </span>
+            </div>
+          </div>
 
-                if (typeof window !== "undefined") {
-                  window.location.assign("/login")
-                } else {
-                  onNav("login")
-                }
-              }}
-              className="h-12 w-full px-3 text-[12px] font-bold rounded-full bg-emerald-500 text-white transition-all shadow-[0_10px_25px_rgba(16,185,129,.22)] hover:bg-emerald-400 hover:shadow-[0_14px_30px_rgba(16,185,129,.3)] hover:-translate-y-0.5 sm:w-auto sm:px-7 sm:text-[13px]"
-            >
-              {user ? "Go to Dashboard" : "Get Started"}
-            </button>
-            <button
-              onClick={() => onNav("events")}
-              className={`h-12 w-full px-3 text-[12px] font-bold rounded-full transition-all sm:w-auto sm:px-7 sm:text-[13px] ${
-                isDefaultHero
-                  ? "bg-white/60 text-slate-700 border border-white/80 hover:bg-white/80 backdrop-blur-sm"
-                  : hasHero
-                    ? "bg-white/10 text-white border border-white/35 hover:bg-white/20 backdrop-blur-sm"
-                    : "border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
-              }`}
-            >
-              Browse Events
-            </button>
+          <div className="relative z-10 flex min-h-[280px] items-center justify-center lg:min-h-[500px]">
+            <div
+              className="absolute h-64 w-64 rounded-full bg-emerald-300/20 blur-3xl sm:h-96 sm:w-96"
+              aria-hidden="true"
+            />
+            <div className="relative w-full max-w-[680px] overflow-hidden rounded-[2rem] sm:rounded-[2.75rem]">
+              <OptimizedImage
+                key={`${heroVisibilityStamp}-hero-art-${heroRealIdx}-${landingHeroImage}`}
+                src={landingHeroImage}
+                alt="QR attendance confirmation and event records"
+                width={1079}
+                height={740}
+                sizes="(max-width: 768px) 100vw, 56vw"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+                className="relative h-auto w-full object-contain drop-shadow-[0_28px_32px_rgba(15,23,42,.14)]"
+              />
+            </div>
           </div>
         </div>
       </div>
-
       {}
       <div className="w-full mx-auto px-3.5 py-6 md:max-w-6xl md:px-6 md:py-10">
         <div className="grid md:grid-cols-3 gap-4">
