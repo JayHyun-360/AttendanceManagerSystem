@@ -1,45 +1,38 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase"
 
-export type AttendanceMethod = "qr_scan" | "manual";
-export type AttendanceStatus = "present" | "late" | "absent";
+export type AttendanceMethod = "qr_scan" | "manual"
+export type AttendanceStatus = "present" | "late" | "absent"
 
-export type AttendanceRecordResult =
-  | {
-      outcome: "success";
-      action: "time_in" | "time_out";
-      status: "confirmed" | "late" | "absent";
-      recordId: string | number;
-      scannedAt: Date | string;
-    }
-  | {
-      outcome: "duplicate" | "rejected";
-      action: "duplicate" | "time_out_rejected" | "event_not_active";
-      status: "duplicate";
-      recordId: string | number;
-      scannedAt: Date | string;
-      reason:
-        | "existing"
-        | "unique_violation"
-        | "session_not_ended"
-        | "event_not_active";
-    }
-  | {
-      outcome: "error";
-      error: unknown;
-    };
+export type AttendanceRecordResult = {
+  outcome: "success"
+  action: "time_in" | "time_out"
+  status: "confirmed" | "late" | "absent"
+  recordId: string | number
+  scannedAt: Date | string
+} | {
+  outcome: "duplicate" | "rejected"
+  action: "duplicate" | "time_out_rejected" | "event_not_active"
+  status: "duplicate"
+  recordId: string | number
+  scannedAt: Date | string
+  reason: "existing" | "unique_violation" | "session_not_ended" | "event_not_active"
+} | {
+  outcome: "error"
+  error: unknown
+}
 
 type RecordAttendanceInput = {
-  eventId: string;
-  studentId: string;
-  sessionLabel: "morning" | "afternoon";
-  status: AttendanceStatus;
-  scannedBy: string;
-  strictSession: boolean;
-  canTimeOut: boolean;
-  method?: AttendanceMethod;
-  overwrite?: boolean;
-  now?: Date;
-};
+  eventId: string
+  studentId: string
+  sessionLabel: "morning" | "afternoon"
+  status: AttendanceStatus
+  scannedBy: string
+  strictSession: boolean
+  canTimeOut: boolean
+  method?: AttendanceMethod
+  overwrite?: boolean
+  now?: Date
+}
 
 export async function recordAttendance({
   eventId,
@@ -58,10 +51,10 @@ export async function recordAttendance({
       .from("events")
       .select("status")
       .eq("id", eventId)
-      .maybeSingle();
+      .maybeSingle()
 
     if (eventError) {
-      return { outcome: "error", error: eventError };
+      return { outcome: "error", error: eventError }
     }
 
     if (!event || event.status !== "active") {
@@ -72,7 +65,7 @@ export async function recordAttendance({
         recordId: "",
         scannedAt: now,
         reason: "event_not_active",
-      };
+      }
     }
 
     const { data: existing, error: existingError } = await supabase
@@ -81,10 +74,10 @@ export async function recordAttendance({
       .eq("event_id", eventId)
       .eq("student_id", studentId)
       .eq("session_label", sessionLabel)
-      .maybeSingle();
+      .maybeSingle()
 
     if (existingError) {
-      return { outcome: "error", error: existingError };
+      return { outcome: "error", error: existingError }
     }
 
     if (existing && overwrite) {
@@ -97,10 +90,10 @@ export async function recordAttendance({
           method,
           scanned_by: scannedBy,
         })
-        .eq("id", existing.id);
+        .eq("id", existing.id)
 
       if (overwriteError) {
-        return { outcome: "error", error: overwriteError };
+        return { outcome: "error", error: overwriteError }
       }
 
       return {
@@ -114,7 +107,7 @@ export async function recordAttendance({
               : "confirmed",
         recordId: existing.id,
         scannedAt: status === "absent" ? now : now.toISOString(),
-      };
+      }
     }
 
     if (!existing) {
@@ -131,7 +124,7 @@ export async function recordAttendance({
           method,
         })
         .select("id, scan_in_at")
-        .single();
+        .single()
 
       if (insertError) {
         if (insertError.code === "23505") {
@@ -142,10 +135,10 @@ export async function recordAttendance({
             recordId: "",
             scannedAt: now,
             reason: "unique_violation",
-          };
+          }
         }
 
-        return { outcome: "error", error: insertError };
+        return { outcome: "error", error: insertError }
       }
 
       return {
@@ -159,7 +152,7 @@ export async function recordAttendance({
               : "confirmed",
         recordId: inserted.id,
         scannedAt: inserted.scan_in_at ?? now,
-      };
+      }
     }
 
     if (existing.scan_in_at && !existing.scan_out_at) {
@@ -171,7 +164,7 @@ export async function recordAttendance({
           recordId: existing.id,
           scannedAt: existing.scan_in_at ?? now,
           reason: "existing",
-        };
+        }
       }
 
       if (!canTimeOut) {
@@ -182,7 +175,7 @@ export async function recordAttendance({
           recordId: existing.id,
           scannedAt: existing.scan_in_at ?? now,
           reason: "session_not_ended",
-        };
+        }
       }
 
       const { error: updateError } = await supabase
@@ -193,10 +186,10 @@ export async function recordAttendance({
           scanned_by: scannedBy,
           method,
         })
-        .eq("id", existing.id);
+        .eq("id", existing.id)
 
       if (updateError) {
-        return { outcome: "error", error: updateError };
+        return { outcome: "error", error: updateError }
       }
 
       return {
@@ -205,7 +198,7 @@ export async function recordAttendance({
         status: "confirmed",
         recordId: existing.id,
         scannedAt: now,
-      };
+      }
     }
 
     if (!existing.scan_in_at && !existing.scan_out_at) {
@@ -217,10 +210,10 @@ export async function recordAttendance({
           scanned_by: scannedBy,
           method,
         })
-        .eq("id", existing.id);
+        .eq("id", existing.id)
 
       if (updateError) {
-        return { outcome: "error", error: updateError };
+        return { outcome: "error", error: updateError }
       }
 
       return {
@@ -234,7 +227,7 @@ export async function recordAttendance({
               : "confirmed",
         recordId: existing.id,
         scannedAt: now,
-      };
+      }
     }
 
     return {
@@ -244,8 +237,8 @@ export async function recordAttendance({
       recordId: existing.id,
       scannedAt: existing.scan_in_at ?? now,
       reason: "existing",
-    };
+    }
   } catch (error) {
-    return { outcome: "error", error };
+    return { outcome: "error", error }
   }
 }

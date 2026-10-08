@@ -1,78 +1,116 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect, useState } from "react"
+
+import { useRouter } from "next/navigation"
+
+import { Skeleton } from "@/components/ui/skeleton"
+
 import {
   AdminAttendeesPage,
   type EventData,
   type Page,
-} from "../../shared-page";
-import { supabase } from "@/lib/supabase";
-import { getPublicSystemSettings } from "@/lib/systemSettings";
-import { subscribeToTableChanges } from "@/lib/realtime";
-import { useProtectedUser } from "../layout";
-import { FeedbackState } from "@/components/ui/feedback";
-import { toast } from "sonner";
+} from "../../shared-page"
+
+import { supabase } from "@/lib/supabase"
+
+import { getPublicSystemSettings } from "@/lib/systemSettings"
+
+import { subscribeToTableChanges } from "@/lib/realtime"
+
+import { useProtectedUser } from "../layout"
+
+import { FeedbackState } from "@/components/ui/feedback"
+
+import { toast } from "sonner"
 
 export default function AdminAttendeesRoutePage() {
-  const router = useRouter();
-  const { user } = useProtectedUser();
-  const [events, setEvents] = useState<EventData[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [scanState, setScanState] = useState<Record<string, any[]>>({});
-  const [fineRows, setFineRows] = useState<any[]>([]);
+  const router = useRouter()
+
+  const { user } = useProtectedUser()
+
+  const [events, setEvents] = useState<EventData[]>([])
+
+  const [students, setStudents] = useState<any[]>([])
+
+  const [scanState, setScanState] = useState<Record<string, any[]>>({})
+
+  const [fineRows, setFineRows] = useState<any[]>([])
+
   const [approvedExcuseKeys, setApprovedExcuseKeys] = useState<Set<string>>(
     new Set(),
-  );
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  )
+
+  const [isLoading, setIsLoading] = useState(true)
+
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false
 
     async function loadData() {
       try {
-        if (!cancelled) setLoadError(null);
+        if (!cancelled) setLoadError(null)
+
         if (!user || user.role !== "admin") {
-          router.push("/dashboard");
-          return;
+          router.push("/dashboard")
+
+          return
         }
 
         const [eventsResult, studentsResult, settingsResult, excusesResult] =
           await Promise.all([
             supabase
+
               .from("events")
+
               .select("*")
+
               .is("archived_at", null)
+
               .order("event_date", { ascending: false }),
+
             supabase
+
               .from("profiles")
+
               .select("*")
+
               .eq("role", "student")
+
               .order("surname", { ascending: true }),
+
             getPublicSystemSettings(),
+
             supabase
+
               .from("excuse_requests")
+
               .select("event_id, student_id, session_label")
+
               .eq("status", "approved"),
-          ]);
+          ])
 
         if (eventsResult.error) {
-          console.error(eventsResult.error);
-          throw new Error("Events could not be loaded.");
+          console.error(eventsResult.error)
+
+          throw new Error("Events could not be loaded.")
         }
 
         if (studentsResult.error) {
-          console.error(studentsResult.error);
-          throw new Error("Students could not be loaded.");
+          console.error(studentsResult.error)
+
+          throw new Error("Students could not be loaded.")
         }
+
         if (settingsResult.error) {
-          console.error(settingsResult.error);
+          console.error(settingsResult.error)
         }
+
         if (excusesResult.error) {
-          console.error(excusesResult.error);
-          throw new Error("Excuse decisions could not be loaded.");
+          console.error(excusesResult.error)
+
+          throw new Error("Excuse decisions could not be loaded.")
         }
 
         const nextApprovedExcuseKeys = new Set(
@@ -80,30 +118,39 @@ export default function AdminAttendeesRoutePage() {
             (request) =>
               `${request.event_id}:${request.student_id}:${request.session_label}`,
           ),
-        );
-        setApprovedExcuseKeys(nextApprovedExcuseKeys);
+        )
+
+        setApprovedExcuseKeys(nextApprovedExcuseKeys)
 
         const finesEnabled = Boolean(
           (settingsResult.data?.settings as { finesEnabled?: boolean } | null)
             ?.finesEnabled,
-        );
+        )
 
         if (cancelled) {
-          return;
+          return
         }
 
         const mappedEvents = (eventsResult.data ?? []).map((row: any) => ({
           id: String(row.id),
+
           title: row.title,
+
           date: row.event_date,
+
           time:
             row.start_time && row.end_time
               ? `${row.start_time}–${row.end_time}`
               : "",
+
           endTime: row.end_time ?? undefined,
+
           location: row.location,
+
           description: row.description,
+
           program: row.program || "All Programs",
+
           fineAmount:
             finesEnabled && row.multi_session
               ? Number(row.morning_absent_fine ?? 0) +
@@ -111,111 +158,158 @@ export default function AdminAttendeesRoutePage() {
               : finesEnabled
                 ? Number(row.absent_fine ?? 0)
                 : 0,
+
           status: row.status || "upcoming",
+
           attendees: 0,
+
           mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
+
           highlightUrl:
             row.image_url && !row.image_url.startsWith("blob:")
               ? row.image_url
               : undefined,
+
           multiSession: Boolean(row.multi_session),
+
           morningEnd: row.morning_end ?? undefined,
+
           afternoonEnd: row.afternoon_end ?? undefined,
+
           sanctionsEnabled: Boolean(row.sanctions_enabled),
+
           absentFine: finesEnabled ? Number(row.absent_fine ?? 0) : 0,
+
           lateFine: finesEnabled ? Number(row.late_fine ?? 0) : 0,
+
           morningAbsentFine: finesEnabled
             ? Number(row.morning_absent_fine ?? row.absent_fine ?? 0)
             : 0,
+
           morningLateFine: finesEnabled
             ? Number(row.morning_late_fine ?? row.late_fine ?? 0)
             : 0,
+
           afternoonAbsentFine: finesEnabled
             ? Number(row.afternoon_absent_fine ?? row.absent_fine ?? 0)
             : 0,
+
           afternoonLateFine: finesEnabled
             ? Number(row.afternoon_late_fine ?? row.late_fine ?? 0)
             : 0,
-        }));
+        }))
 
-        setEvents(mappedEvents);
+        setEvents(mappedEvents)
 
         setStudents(
           (studentsResult.data ?? []).map((row: any) => ({
             profileId: row.id,
+
             name:
               `${row.first_name ?? ""} ${row.surname ?? ""}`.trim() ||
               row.email ||
               "Student",
+
             id: row.student_id || row.id,
+
             program: row.program || "",
+
             yearLevel: row.year_level || "",
+
             section: row.section || "",
+
             phone: row.phone || "",
+
             email: row.contact_email || row.email || "",
+
             photoUrl: row.photo_url || undefined,
+
             idPhotoUrl: row.id_photo_url || undefined,
+
             joinedDate: new Date(row.created_at).toLocaleDateString("en-US", {
               month: "short",
+
               day: "numeric",
+
               year: "numeric",
             }),
           })),
-        );
+        )
 
         const attendanceResult = await supabase
+
           .from("attendance_scans")
+
           .select(
             "id, event_id, student_id, session_label, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(student_id, first_name, surname, program, section, photo_url)",
           )
-          .order("scan_in_at", { ascending: false });
+
+          .order("scan_in_at", { ascending: false })
 
         const finesResult = await supabase
+
           .from("fines")
+
           .select(
             "id, attendance_scan_id, event_id, session_label, amount, status",
           )
-          .in("status", ["unpaid", "paid", "excused"]);
+
+          .in("status", ["unpaid", "paid", "excused"])
+
         if (!finesResult.error) {
-          setFineRows(finesResult.data ?? []);
+          setFineRows(finesResult.data ?? [])
         }
 
         if (!attendanceResult.error && attendanceResult.data) {
-          const byEvent: Record<string, any[]> = {};
-          const seenStudents = new Set<string>();
+          const byEvent: Record<string, any[]> = {}
+
+          const seenStudents = new Set<string>()
 
           for (const row of attendanceResult.data) {
-            const eventId = String(row.event_id);
-            const studentKey = `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`;
+            const eventId = String(row.event_id)
+
+            const studentKey = `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`
+
             if (seenStudents.has(studentKey)) {
-              continue;
+              continue
             }
-            seenStudents.add(studentKey);
+
+            seenStudents.add(studentKey)
 
             const profile = Array.isArray(row.student_profile)
               ? row.student_profile[0]
-              : row.student_profile;
+              : row.student_profile
+
             const studentName =
-              `${profile?.first_name ?? ""} ${profile?.surname ?? ""}`.trim();
-            const studentId = profile?.student_id || row.student_id;
+              `${profile?.first_name ?? ""} ${profile?.surname ?? ""}`.trim()
+
+            const studentId = profile?.student_id || row.student_id
 
             if (!byEvent[eventId]) {
-              byEvent[eventId] = [];
+              byEvent[eventId] = []
             }
 
             byEvent[eventId].push({
               profileId: String(row.student_id),
+
               name: studentName || "Student",
+
               id: studentId || row.student_id,
+
               program: profile?.program || "",
+
               section: profile?.section || "",
+
               photoUrl: profile?.photo_url || undefined,
+
               time: row.scan_in_at
                 ? new Date(row.scan_in_at).toLocaleTimeString("en-US", {
                     hour: "2-digit",
+
                     minute: "2-digit",
                   })
                 : "",
+
               status:
                 row.status === "late"
                   ? "late"
@@ -224,9 +318,11 @@ export default function AdminAttendeesRoutePage() {
                     : row.status === "duplicate"
                       ? "duplicate"
                       : "present",
+
               excused: nextApprovedExcuseKeys.has(
                 `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`,
               ),
+
               sanctioned:
                 Boolean(
                   mappedEvents.find((event) => event.id === eventId)
@@ -236,123 +332,167 @@ export default function AdminAttendeesRoutePage() {
                 !nextApprovedExcuseKeys.has(
                   `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`,
                 ),
+
               sessionLabel:
                 row.session_label === "afternoon" ? "afternoon" : "morning",
+
               dbId: String(row.id),
+
               fineStatus: undefined,
-            });
+            })
           }
 
           const fineByScan = new Map(
             (finesResult.data ?? []).map((fine: any) => [
               String(fine.attendance_scan_id),
+
               fine,
             ]),
-          );
+          )
+
           for (const records of Object.values(byEvent)) {
             for (const record of records) {
-              const fine = fineByScan.get(String(record.dbId));
+              const fine = fineByScan.get(String(record.dbId))
+
               if (fine) {
-                record.fineStatus = fine.status;
-                record.fineAmount = Number(fine.amount ?? 0);
+                record.fineStatus = fine.status
+
+                record.fineAmount = Number(fine.amount ?? 0)
               }
             }
           }
-          setScanState(byEvent);
+
+          setScanState(byEvent)
         }
       } catch (caughtError) {
-        console.error(caughtError);
-        if (!cancelled) setLoadError("Attendance data could not be loaded.");
+        console.error(caughtError)
+
+        if (!cancelled) setLoadError("Attendance data could not be loaded.")
       } finally {
         if (!cancelled) {
-          setIsLoading(false);
+          setIsLoading(false)
         }
       }
     }
 
-    void loadData();
+    void loadData()
 
     const eventsChannel = subscribeToTableChanges("events", () => {
       if (!cancelled) {
-        void loadData();
+        void loadData()
       }
-    });
+    })
+
     const profilesChannel = subscribeToTableChanges("profiles", () => {
       if (!cancelled) {
-        void loadData();
+        void loadData()
       }
-    });
+    })
+
     const finesChannel = subscribeToTableChanges("fines", () => {
       if (!cancelled) {
-        void loadData();
+        void loadData()
       }
-    });
+    })
+
     const attendanceChannel = subscribeToTableChanges(
       "attendance_scans",
+
       () => {
         if (!cancelled) {
-          void loadData();
+          void loadData()
         }
       },
-    );
+    )
+
     const excusesChannel = subscribeToTableChanges("excuse_requests", () => {
       if (!cancelled) {
-        void loadData();
+        void loadData()
       }
-    });
+    })
 
     return () => {
-      cancelled = true;
-      void eventsChannel.unsubscribe();
-      void profilesChannel.unsubscribe();
-      void finesChannel.unsubscribe();
-      void attendanceChannel.unsubscribe();
-      void excusesChannel.unsubscribe();
-    };
-  }, [router, user]);
+      cancelled = true
+
+      void eventsChannel.unsubscribe()
+
+      void profilesChannel.unsubscribe()
+
+      void finesChannel.unsubscribe()
+
+      void attendanceChannel.unsubscribe()
+
+      void excusesChannel.unsubscribe()
+    }
+  }, [router, user])
 
   const onNav = (page: Page) => {
     const paths: Record<Page, string> = {
       landing: "/",
-      login: "/login",
-      onboarding: "/onboarding",
-      dashboard: "/dashboard",
-      "my-qr": "/my-qr",
-      events: "/events",
-      "event-detail": "/events",
-      announcements: "/announcements",
-      "attendance-history": "/attendance-history",
-      "my-fines": "/my-fines",
-      profile: "/profile",
-      "admin-dashboard": "/admin-dashboard",
-      "admin-events": "/admin-events",
-      "admin-scanner": "/admin-scanner",
-      "admin-attendees": "/admin-attendees",
-      "admin-students": "/admin-students",
-      "admin-announcements": "/admin-announcements",
-      "admin-reports": "/admin-reports",
-      "admin-excuse-requests": "/admin-excuse-requests",
-      "admin-settings": "/admin-settings",
-    };
 
-    router.push(paths[page] ?? "/admin-dashboard");
-  };
+      login: "/login",
+
+      onboarding: "/onboarding",
+
+      dashboard: "/dashboard",
+
+      "my-qr": "/my-qr",
+
+      events: "/events",
+
+      "event-detail": "/events",
+
+      announcements: "/announcements",
+
+      "attendance-history": "/attendance-history",
+
+      "my-fines": "/my-fines",
+
+      profile: "/profile",
+
+      "admin-dashboard": "/admin-dashboard",
+
+      "admin-events": "/admin-events",
+
+      "admin-scanner": "/admin-scanner",
+
+      "admin-attendees": "/admin-attendees",
+
+      "admin-students": "/admin-students",
+
+      "admin-announcements": "/admin-announcements",
+
+      "admin-reports": "/admin-reports",
+
+      "admin-excuse-requests": "/admin-excuse-requests",
+
+      "admin-settings": "/admin-settings",
+    }
+
+    router.push(paths[page] ?? "/admin-dashboard")
+  }
 
   const deleteAttendance = async (dbId: string | number) => {
     const { error } = await supabase
+
       .from("attendance_scans")
+
       .delete()
-      .eq("id", String(dbId));
+
+      .eq("id", String(dbId))
 
     if (error) {
-      console.error("Failed to delete attendance record", error);
-      toast.error("Attendance record could not be deleted. Please try again.");
-      return false;
+      console.error("Failed to delete attendance record", error)
+
+      toast.error("Attendance record could not be deleted. Please try again.")
+
+      return false
     }
 
-    toast.success("Attendance record deleted.");
-    return true;
-  };
+    toast.success("Attendance record deleted.")
+
+    return true
+  }
 
   if (isLoading) {
     return (
@@ -367,7 +507,7 @@ export default function AdminAttendeesRoutePage() {
           <Skeleton key={item} className="h-24 w-full rounded-xl" />
         ))}
       </div>
-    );
+    )
   }
 
   if (loadError) {
@@ -377,7 +517,7 @@ export default function AdminAttendeesRoutePage() {
         message={loadError}
         onRetry={() => window.location.reload()}
       />
-    );
+    )
   }
 
   return (
@@ -390,5 +530,5 @@ export default function AdminAttendeesRoutePage() {
       approvedExcuseKeys={approvedExcuseKeys}
       onDeleteAttendance={deleteAttendance}
     />
-  );
+  )
 }

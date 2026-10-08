@@ -1,14 +1,22 @@
-"use client";
+"use client"
 
-import { Suspense, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Skeleton } from "@/components/ui/skeleton";
-import { EventsPage, type EventData, type Page } from "../../shared-page";
-import { supabase } from "@/lib/supabase";
-import { subscribeToTableChanges } from "@/lib/realtime";
-import { debounce } from "@/lib/debounce";
-import { useProtectedUser } from "../layout";
-import { FeedbackState } from "@/components/ui/feedback";
+import { Suspense, useEffect, useState } from "react"
+
+import { useRouter } from "next/navigation"
+
+import { Skeleton } from "@/components/ui/skeleton"
+
+import { EventsPage, type EventData, type Page } from "../../shared-page"
+
+import { supabase } from "@/lib/supabase"
+
+import { subscribeToTableChanges } from "@/lib/realtime"
+
+import { debounce } from "@/lib/debounce"
+
+import { useProtectedUser } from "../layout"
+
+import { FeedbackState } from "@/components/ui/feedback"
 
 function EventsSkeleton() {
   return (
@@ -56,75 +64,112 @@ function EventsSkeleton() {
         ))}
       </div>
     </div>
-  );
+  )
 }
 
 export default function EventsRoutePage() {
-  const router = useRouter();
+  const router = useRouter()
+
   const { user, authUserId, showFees, eventsSnapshot, setEventsSnapshot } =
-    useProtectedUser();
+    useProtectedUser()
+
   const eventsCacheKey = user
     ? `${authUserId ?? user.studentId}:${user.role}:${showFees}`
-    : "public";
+    : "public"
+
   const cachedEvents =
-    eventsSnapshot?.key === eventsCacheKey ? eventsSnapshot.events : null;
-  const [events, setEvents] = useState<EventData[]>(() => cachedEvents ?? []);
-  const [isLoading, setIsLoading] = useState(() => !cachedEvents);
-  const [loadError, setLoadError] = useState<string | null>(null);
+    eventsSnapshot?.key === eventsCacheKey ? eventsSnapshot.events : null
+
+  const [events, setEvents] = useState<EventData[]>(() => cachedEvents ?? [])
+
+  const [isLoading, setIsLoading] = useState(() => !cachedEvents)
+
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false
 
     async function loadEvents() {
       try {
-        if (!cancelled) setLoadError(null);
+        if (!cancelled) setLoadError(null)
+
         const eventColumns = [
           "id",
+
           "title",
+
           "description",
+
           "location",
+
           "event_date",
+
           "start_time",
+
           "end_time",
+
           "image_url",
+
           "program",
+
           "status",
+
           "multi_session",
+
           "morning_start",
+
           "morning_end",
+
           "afternoon_start",
+
           "afternoon_end",
+
           ...(user?.role === "student" && showFees
             ? ["absent_fine", "morning_absent_fine", "afternoon_absent_fine"]
             : []),
-        ].join(",");
+        ].join(",")
+
         const { data, error } = user
           ? await supabase
+
               .from("events")
+
               .select(eventColumns)
+
               .is("archived_at", null)
+
               .order("event_date", { ascending: false })
-          : await supabase.rpc("get_public_events");
+          : await supabase.rpc("get_public_events")
 
         if (error) {
-          console.error(error);
-          if (!cancelled) setLoadError("Events could not be loaded.");
-          return;
+          console.error(error)
+
+          if (!cancelled) setLoadError("Events could not be loaded.")
+
+          return
         }
 
         if (!cancelled) {
           const mappedEvents: EventData[] = (data ?? []).map((row: any) => ({
             id: String(row.id),
+
             title: row.title,
+
             date: row.event_date,
+
             time:
               row.start_time && row.end_time
                 ? `${row.start_time}–${row.end_time}`
                 : "",
+
             endTime: row.end_time ?? undefined,
+
             location: row.location,
+
             description: row.description,
+
             program: row.program || "All Programs",
+
             fineAmount:
               user?.role === "student" && showFees
                 ? row.multi_session
@@ -132,64 +177,79 @@ export default function EventsRoutePage() {
                     Number(row.afternoon_absent_fine ?? 0)
                   : Number(row.absent_fine ?? 0)
                 : 0,
+
             status: row.status || "upcoming",
+
             attendees: 0,
+
             highlightUrl:
               row.image_url && !row.image_url.startsWith("blob:")
                 ? row.image_url
                 : undefined,
+
             multiSession: Boolean(row.multi_session),
+
             morningStart: row.morning_start ?? undefined,
+
             morningEnd: row.morning_end ?? undefined,
+
             afternoonStart: row.afternoon_start ?? undefined,
+
             afternoonEnd: row.afternoon_end ?? undefined,
-          }));
-          setEvents(mappedEvents);
-          setEventsSnapshot({ key: eventsCacheKey, events: mappedEvents });
+          }))
+
+          setEvents(mappedEvents)
+
+          setEventsSnapshot({ key: eventsCacheKey, events: mappedEvents })
         }
       } catch (caughtError) {
-        console.error(caughtError);
-        if (!cancelled) setLoadError("Events could not be loaded.");
+        console.error(caughtError)
+
+        if (!cancelled) setLoadError("Events could not be loaded.")
       } finally {
         if (!cancelled) {
-          setIsLoading(false);
+          setIsLoading(false)
         }
       }
     }
 
-    void loadEvents();
+    void loadEvents()
 
     const debouncedLoadEvents = debounce(() => {
-      if (!cancelled) void loadEvents();
-    }, 750);
+      if (!cancelled) void loadEvents()
+    }, 750)
 
     const eventsChannel = user
       ? subscribeToTableChanges("events", debouncedLoadEvents)
-      : null;
+      : null
 
     return () => {
-      cancelled = true;
-      debouncedLoadEvents.cancel();
-      if (eventsChannel) void eventsChannel.unsubscribe();
-    };
-  }, [eventsCacheKey, setEventsSnapshot, showFees, user]);
+      cancelled = true
+
+      debouncedLoadEvents.cancel()
+
+      if (eventsChannel) void eventsChannel.unsubscribe()
+    }
+  }, [eventsCacheKey, setEventsSnapshot, showFees, user])
 
   const onNav = (page: Page) => {
     if (page === "login") {
-      router.push("/login");
-      return;
+      router.push("/login")
+
+      return
     }
 
     if (page === "event-detail") {
-      router.push("/events");
-      return;
+      router.push("/events")
+
+      return
     }
 
-    router.push(page === "dashboard" ? "/dashboard" : "/events");
-  };
+    router.push(page === "dashboard" ? "/dashboard" : "/events")
+  }
 
   if (isLoading) {
-    return <EventsSkeleton />;
+    return <EventsSkeleton />
   }
 
   if (loadError && !cachedEvents) {
@@ -199,7 +259,7 @@ export default function EventsRoutePage() {
         message={loadError}
         onRetry={() => window.location.reload()}
       />
-    );
+    )
   }
 
   return (
@@ -211,5 +271,5 @@ export default function EventsRoutePage() {
         events={events}
       />
     </Suspense>
-  );
+  )
 }

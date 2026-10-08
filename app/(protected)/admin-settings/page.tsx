@@ -6,7 +6,7 @@ import { toast } from "sonner"
 
 import { AdminSettingsPage, type SystemSettings } from "../../shared-page"
 
-import { refreshLandingSettings } from "./actions"
+import { refreshLandingSettings, saveLandingSettings } from "./actions"
 
 import { supabase } from "@/lib/supabase"
 
@@ -183,15 +183,7 @@ export default function AdminSettingsRoutePage() {
 
         writesInFlightRef.current += 1
         try {
-          const { error } = await supabase
-            .from("system_settings")
-            .update({
-              settings: settingsToPersist,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", 1)
-
-          if (error) throw error
+          await saveLandingSettings(settingsToPersist)
 
           invalidatePublicSystemSettingsCache()
           try {

@@ -1,10 +1,11 @@
-"use client";
+"use client"
 
-import { useRouter } from "next/navigation";
-import { LoginPage } from "../shared-page";
+import { useRouter } from "next/navigation"
+
+import { LoginPage } from "../shared-page"
 
 export default function LoginRoute() {
-  const router = useRouter();
+  const router = useRouter()
 
-  return <LoginPage onBack={() => router.push("/")} />;
+  return <LoginPage onBack={() => router.push("/")} />
 }

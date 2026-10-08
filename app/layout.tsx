@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/sonner";
+import type { Metadata } from "next"
+import "./globals.css"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { Toaster } from "@/components/ui/sonner"
 
 export const metadata: Metadata = {
   title: "Adesse",
@@ -10,12 +10,12 @@ export const metadata: Metadata = {
     shortcut: "/adesse-favicon.svg",
     apple: "/adesse-favicon.svg",
   },
-};
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <html lang="en">
@@ -26,5 +26,5 @@ export default function RootLayout({
         </TooltipProvider>
       </body>
     </html>
-  );
+  )
 }

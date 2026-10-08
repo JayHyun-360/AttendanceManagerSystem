@@ -1,25 +1,31 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase"
 
 export function subscribeToTableChanges(
   table: string,
+
   callback: () => void,
+
   event: "*" | "INSERT" | "UPDATE" | "DELETE" = "*",
 ) {
-  const channel = supabase.channel(`${table}-changes`);
+  const channel = supabase.channel(`${table}-changes`)
 
   channel.on(
     "postgres_changes",
+
     {
       event,
+
       schema: "public",
+
       table,
     },
+
     () => {
-      callback();
+      callback()
     },
-  );
+  )
 
-  void channel.subscribe();
+  void channel.subscribe()
 
-  return channel;
+  return channel
 }

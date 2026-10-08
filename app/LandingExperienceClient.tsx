@@ -3167,9 +3167,7 @@ function LandingPage({
             <button
               onClick={() => {
                 if (user) {
-                  onNav(
-                    user.role === "admin" ? "admin-dashboard" : "dashboard",
-                  )
+                  onNav(user.role === "admin" ? "admin-dashboard" : "dashboard")
 
                   return
                 }
@@ -5411,9 +5409,7 @@ export function AttendanceHistoryPage({
 
   attendanceRecords?: typeof ATTENDANCE_RECORDS
 }) {
-  const [modal, setModal] = useState<typeof ATTENDANCE_RECORDS[0] | null>(
-    null,
-  )
+  const [modal, setModal] = useState<typeof ATTENDANCE_RECORDS[0] | null>(null)
 
   return (
     <PageShell>
@@ -9092,10 +9088,10 @@ export function AdminReportsPage({
 
     const tableRow = (
       cols: {
-        t: string;
-        x: number;
-        align?: CanvasTextAlign;
-        color?: string;
+        t: string
+        x: number
+        align?: CanvasTextAlign
+        color?: string
       }[],
 
       shade: boolean,
@@ -9663,7 +9659,6 @@ export function AdminSettingsPage({
     const t = i + dir
 
     if (t < 0 || t >= arr.length) return
-
     ;[arr[i], arr[t]] = [arr[t], arr[i]]
 
     update({ carouselSlides: arr })

@@ -1,28 +1,38 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import Link from "next/link"
+
+import { ArrowLeft } from "lucide-react"
 
 const helpTopics = [
   {
     title: "Signing in and updating your profile",
+
     body: "Sign in with the Google account connected to your student profile. If your name, program, or student details are missing or incorrect, contact your school administrator so the profile can be reviewed.",
   },
+
   {
     title: "Finding your attendance QR code",
+
     body: "Open My QR from the student navigation and present the code to the event check-in staff. A scan is recorded for the event session selected by the staff scanner.",
   },
+
   {
     title: "Attendance is missing or incorrect",
+
     body: "Check Attendance History first. If an event or session is missing, or the recorded status looks wrong, contact an event administrator and include the event name and session.",
   },
+
   {
     title: "Understanding fines and excuse requests",
+
     body: "When available, current charges appear under My Fines. If excuse requests are enabled, open the relevant absence in Attendance History to submit it for administrator review.",
   },
+
   {
     title: "Sending system feedback",
+
     body: "Choose Send helpful feedback from the Help & Feedback menu. The form opens in a new tab. Avoid including passwords or other sensitive account information.",
   },
-];
+]
 
 export default function HelpPage() {
   return (
@@ -84,5 +94,5 @@ export default function HelpPage() {
         </aside>
       </div>
     </main>
-  );
+  )
 }

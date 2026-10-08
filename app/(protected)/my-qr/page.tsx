@@ -1,15 +1,18 @@
-"use client";
+"use client"
 
-import { useRouter } from "next/navigation";
-import { MyQRPage } from "../../shared-page";
-import { useProtectedUser } from "../layout";
+import { useRouter } from "next/navigation"
+
+import { MyQRPage } from "../../shared-page"
+
+import { useProtectedUser } from "../layout"
 
 export default function MyQRRoutePage() {
-  const router = useRouter();
-  const { user } = useProtectedUser();
+  const router = useRouter()
+
+  const { user } = useProtectedUser()
 
   if (!user) {
-    return null;
+    return null
   }
 
   return (
@@ -18,5 +21,5 @@ export default function MyQRRoutePage() {
       qrVersion={user.qrVersion ?? 1}
       onBack={() => router.push("/dashboard")}
     />
-  );
+  )
 }

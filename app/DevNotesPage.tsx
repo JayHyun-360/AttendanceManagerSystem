@@ -1,4 +1,6 @@
-"use client";
+"use client"
+
+// Storage can be unavailable in privacy-restricted browser contexts.
 
 import {
   createContext,
@@ -8,78 +10,127 @@ import {
   useMemo,
   useState,
   type ReactNode,
-} from "react";
-import { supabase } from "@/lib/supabase";
-import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader, PageShell } from "./shared-page";
-import { ChevronDown, ChevronUp } from "lucide-react";
+} from "react"
 
-export type DevNoteType = "info" | "warning" | "feature" | "update";
+import { supabase } from "@/lib/supabase"
+
+import { Skeleton } from "@/components/ui/skeleton"
+
+import { PageHeader, PageShell } from "./shared-page"
+
+import { ChevronDown, ChevronUp } from "lucide-react"
+
+export type DevNoteType = "info" | "warning" | "feature" | "update"
 
 export type DevNote = {
-  id: string;
-  title: string;
-  message: string;
-  type: DevNoteType;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
+  id: string
+
+  title: string
+
+  message: string
+
+  type: DevNoteType
+
+  isActive: boolean
+
+  createdAt: string
+
+  updatedAt: string
+}
 
 type DevNotesContextValue = {
-  notes: DevNote[];
-  unreadCount: number;
-  isLoading: boolean;
-  isConnected: boolean;
-  markAllRead: () => void;
-};
+  notes: DevNote[]
 
-const DevNotesContext = createContext<DevNotesContextValue | null>(null);
-const READ_NOTES_STORAGE_KEY = "adesse:dev-notes:read";
+  unreadCount: number
+
+  isLoading: boolean
+
+  isConnected: boolean
+
+  markAllRead: () => void
+}
+
+const DevNotesContext = createContext<DevNotesContextValue | null>(null)
+
+const READ_NOTES_STORAGE_KEY = "adesse:dev-notes:read"
 
 function normalizeNote(row: Record<string, unknown>): DevNote | null {
-  const type = row.type;
+  const type = row.type
+
   if (
-    type !== "info" &&
-    type !== "warning" &&
-    type !== "feature" &&
-    type !== "update"
+    type !==
+      "info" &&
+    type !==
+      "warning" &&
+    type !==
+      "feature" &&
+    type !==
+      "update"
   ) {
-    return null;
+    return null
   }
 
-  const id = String(row.id ?? "");
-  if (!id || typeof row.title !== "string" || typeof row.message !== "string") {
-    return null;
+  const id = String(
+    row.id ??
+      "",
+  )
+
+  if (
+    !id ||
+    typeof row.title !==
+      "string" ||
+    typeof row.message !==
+      "string"
+  ) {
+    return null
   }
 
   return {
     id,
+
     title: row.title,
+
     message: row.message,
+
     type,
-    isActive: row.is_active === true,
-    createdAt: String(row.created_at ?? ""),
+
+    isActive:
+      row.is_active ===
+      true,
+
+    createdAt: String(
+      row.created_at ??
+        "",
+    ),
+
     updatedAt: String(row.updated_at ?? row.created_at ?? ""),
-  };
+  }
 }
 
 function sortNotes(notes: DevNote[]) {
   return [...notes].sort(
-    (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
-  );
+    (a, b) =>
+      Date.parse(b.createdAt) -
+      Date.parse(a.createdAt),
+  )
 }
 
 function readIdsFromStorage() {
-  if (typeof window === "undefined") return new Set<string>();
+  if (
+    typeof window ===
+    "undefined"
+  )
+    return new Set<string>()
 
   try {
     const value = JSON.parse(
-      window.localStorage.getItem(READ_NOTES_STORAGE_KEY) ?? "[]",
-    );
-    return new Set(Array.isArray(value) ? value.map(String) : []);
+      window.localStorage.getItem(READ_NOTES_STORAGE_KEY) ??
+        "[]",
+    )
+
+    return new Set(Array.isArray(value) ? value.map(String) : [])
   } catch {
-    return new Set<string>();
+    return new Set<string>()
   }
 }
 
@@ -87,160 +138,207 @@ function writeReadIds(ids: Set<string>) {
   try {
     window.localStorage.setItem(
       READ_NOTES_STORAGE_KEY,
+
       JSON.stringify(Array.from(ids)),
-    );
-  } catch {
-    // Storage can be unavailable in privacy-restricted browser contexts.
-  }
+    )
+  } catch {}
 }
 
 export function DevNotesProvider({
   children,
+
   enabled = true,
 }: {
-  children: ReactNode;
-  enabled?: boolean;
+  children: ReactNode
+
+  enabled?: boolean
 }) {
-  const [notes, setNotes] = useState<DevNote[]>([]);
-  const [readIds, setReadIds] = useState<Set<string>>(() => new Set());
-  const [isLoading, setIsLoading] = useState(true);
-  const [isConnected, setIsConnected] = useState(false);
+  const [notes, setNotes] = useState<DevNote[]>([])
+
+  const [readIds, setReadIds] = useState<Set<string>>(() => new Set())
+
+  const [isLoading, setIsLoading] = useState(true)
+
+  const [isConnected, setIsConnected] = useState(false)
 
   useEffect(() => {
-    setReadIds(readIdsFromStorage());
-  }, []);
+    setReadIds(readIdsFromStorage())
+  }, [])
 
   const loadNotes = useCallback(async () => {
     const { data, error } = await supabase
+
       .from("dev_notes")
+
       .select("id, title, message, type, is_active, created_at, updated_at")
+
       .eq("is_active", true)
-      .order("created_at", { ascending: false });
+
+      .order("created_at", { ascending: false })
 
     if (error) {
-      console.error("Failed to load Dev Notes", error);
-      return;
+      console.error("Failed to load Dev Notes", error)
+
+      return
     }
 
     setNotes(
       sortNotes(
         (data ?? [])
+
           .map((row) => normalizeNote(row as Record<string, unknown>))
+
           .filter((note): note is DevNote => note !== null),
       ),
-    );
-  }, []);
+    )
+  }, [])
 
   useEffect(() => {
     if (!enabled) {
-      setNotes([]);
-      setIsConnected(false);
-      setIsLoading(false);
-      return;
+      setNotes([])
+
+      setIsConnected(false)
+
+      setIsLoading(false)
+
+      return
     }
 
-    let cancelled = false;
+    let cancelled = false
 
     const refresh = async () => {
-      if (!cancelled) setIsLoading(true);
-      await loadNotes();
-      if (!cancelled) setIsLoading(false);
-    };
+      if (!cancelled) setIsLoading(true)
 
-    void refresh();
+      await loadNotes()
+
+      if (!cancelled) setIsLoading(false)
+    }
+
+    void refresh()
 
     const channel = supabase
+
       .channel("dev-notes-realtime")
+
       .on(
         "postgres_changes",
+
         { event: "*", schema: "public", table: "dev_notes" },
+
         () => {
-          void loadNotes();
+          void loadNotes()
         },
       )
+
       .subscribe((status) => {
-        if (cancelled) return;
-        setIsConnected(status === "SUBSCRIBED");
-        if (status === "SUBSCRIBED") void loadNotes();
-      });
+        if (cancelled) return
+
+        setIsConnected(status === "SUBSCRIBED")
+
+        if (status === "SUBSCRIBED") void loadNotes()
+      })
 
     const handleVisibility = () => {
-      if (document.visibilityState === "visible") void loadNotes();
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
+      if (document.visibilityState === "visible") void loadNotes()
+    }
+
+    document.addEventListener("visibilitychange", handleVisibility)
 
     return () => {
-      cancelled = true;
-      document.removeEventListener("visibilitychange", handleVisibility);
-      void supabase.removeChannel(channel);
-    };
-  }, [enabled, loadNotes]);
+      cancelled = true
+
+      document.removeEventListener("visibilitychange", handleVisibility)
+
+      void supabase.removeChannel(channel)
+    }
+  }, [enabled, loadNotes])
 
   const markAllRead = useCallback(() => {
     setReadIds((current) => {
-      const next = new Set(current);
-      notes.forEach((note) => next.add(note.id));
-      writeReadIds(next);
-      return next;
-    });
-  }, [notes]);
+      const next = new Set(current)
+
+      notes.forEach((note) => next.add(note.id))
+
+      writeReadIds(next)
+
+      return next
+    })
+  }, [notes])
 
   const unreadCount = useMemo(
     () =>
       notes.reduce((count, note) => count + (readIds.has(note.id) ? 0 : 1), 0),
+
     [notes, readIds],
-  );
+  )
 
   const value = useMemo(
     () => ({
       notes,
+
       unreadCount,
+
       isLoading,
+
       isConnected,
+
       markAllRead,
     }),
+
     [isConnected, isLoading, markAllRead, notes, unreadCount],
-  );
+  )
 
   return (
     <DevNotesContext.Provider value={value}>
       {children}
     </DevNotesContext.Provider>
-  );
+  )
 }
 
 export function useDevNotes() {
-  const value = useContext(DevNotesContext);
+  const value = useContext(DevNotesContext)
+
   if (!value) {
-    throw new Error("useDevNotes must be used inside DevNotesProvider");
+    throw new Error("useDevNotes must be used inside DevNotesProvider")
   }
-  return value;
+
+  return value
 }
 
 const typeStyles: Record<DevNoteType, { label: string; className: string }> = {
   info: { label: "Info", className: "bg-sky-50 text-sky-700 ring-sky-200" },
+
   warning: {
     label: "Warning",
+
     className: "bg-amber-50 text-amber-700 ring-amber-200",
   },
+
   feature: {
     label: "Feature",
+
     className: "bg-emerald-50 text-emerald-700 ring-emerald-200",
   },
+
   update: {
     label: "Update",
+
     className: "bg-slate-100 text-slate-700 ring-slate-200",
   },
-};
+}
 
 function formatDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) return ""
+
   return date.toLocaleDateString("en-US", {
     month: "short",
+
     day: "numeric",
+
     year: "numeric",
-  });
+  })
 }
 
 function DevNotesSkeleton() {
@@ -277,18 +375,19 @@ function DevNotesSkeleton() {
         </article>
       ))}
     </div>
-  );
+  )
 }
 
 export default function DevNotesPage() {
-  const { notes, isLoading, isConnected, markAllRead } = useDevNotes();
+  const { notes, isLoading, isConnected, markAllRead } = useDevNotes()
+
   const [expandedNoteIds, setExpandedNoteIds] = useState<Set<string>>(
     new Set(),
-  );
+  )
 
   useEffect(() => {
-    markAllRead();
-  }, [markAllRead]);
+    markAllRead()
+  }, [markAllRead])
 
   return (
     <PageShell>
@@ -329,7 +428,8 @@ export default function DevNotesPage() {
           ) : (
             <div className="space-y-3">
               {notes.map((note) => {
-                const style = typeStyles[note.type];
+                const style = typeStyles[note.type]
+
                 return (
                   <article
                     key={note.id}
@@ -362,10 +462,12 @@ export default function DevNotesPage() {
                         type="button"
                         onClick={() =>
                           setExpandedNoteIds((current) => {
-                            const next = new Set(current);
-                            if (next.has(note.id)) next.delete(note.id);
-                            else next.add(note.id);
-                            return next;
+                            const next = new Set(current)
+
+                            if (next.has(note.id)) next.delete(note.id)
+                            else next.add(note.id)
+
+                            return next
                           })
                         }
                         aria-expanded={expandedNoteIds.has(note.id)}
@@ -382,14 +484,14 @@ export default function DevNotesPage() {
                       </button>
                     )}
                   </article>
-                );
+                )
               })}
             </div>
           )}
         </>
       )}
     </PageShell>
-  );
+  )
 }
 
-export { READ_NOTES_STORAGE_KEY };
+export { READ_NOTES_STORAGE_KEY }

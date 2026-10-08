@@ -1,18 +1,19 @@
-import * as React from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import * as React from "react"
+import { motion, useReducedMotion } from "framer-motion"
+import { cn } from "@/lib/utils"
 
 export function Skeleton({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion()
 
   return (
     <div
       {...props}
       className={cn(
         "relative isolate overflow-hidden rounded-xl bg-slate-200/80",
+
         className,
       )}
     >
@@ -28,5 +29,5 @@ export function Skeleton({
         />
       )}
     </div>
-  );
+  )
 }

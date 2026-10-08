@@ -35,7 +35,7 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
+  },
 )
 
 function Button({
@@ -47,12 +47,11 @@ function Button({
   loadingLabel,
   children,
   ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-    loading?: boolean
-    loadingLabel?: React.ReactNode
-  }) {
+}: React.ComponentProps<"button"> & VariantProps<typeof buttonVariants> & {
+  asChild?: boolean
+  loading?: boolean
+  loadingLabel?: React.ReactNode
+}) {
   const Comp = asChild ? Slot.Root : "button"
 
   return (
@@ -66,7 +65,7 @@ function Button({
       {...props}
     >
       {loading && <Loader2 className="animate-spin" aria-hidden="true" />}
-      {loading ? loadingLabel ?? "Working..." : children}
+      {loading ? (loadingLabel ?? "Working...") : children}
     </Comp>
   )
 }
