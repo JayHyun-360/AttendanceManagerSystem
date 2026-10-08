@@ -2968,7 +2968,7 @@ function LandingPage({
               Give students one easy way to check in while moderators get
               accurate, real-time attendance records.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-8 grid w-full max-w-sm grid-cols-2 items-center gap-3 sm:flex sm:w-auto sm:max-w-none sm:items-center">
               <button
                 onClick={() => {
                   if (user) {
@@ -2984,13 +2984,13 @@ function LandingPage({
                     onNav("login")
                   }
                 }}
-                className="h-12 rounded-full bg-emerald-600 px-7 text-[12px] font-bold text-white shadow-[0_12px_28px_rgba(16,185,129,.24)] transition-all hover:-translate-y-0.5 hover:bg-emerald-500 hover:shadow-[0_16px_34px_rgba(16,185,129,.3)] sm:text-[13px]"
+                className="h-12 w-full rounded-full bg-emerald-600 px-3 text-[12px] font-bold text-white shadow-[0_12px_28px_rgba(16,185,129,.24)] transition-all hover:-translate-y-0.5 hover:bg-emerald-500 hover:shadow-[0_16px_34px_rgba(16,185,129,.3)] sm:w-auto sm:px-7 sm:text-[13px]"
               >
                 {user ? "Go to Dashboard" : "Get Started"}
               </button>
               <button
                 onClick={() => onNav("events")}
-                className="h-12 rounded-full border border-slate-200/90 bg-white/70 px-7 text-[12px] font-bold text-slate-700 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-white sm:text-[13px]"
+                className="h-12 w-full rounded-full border border-slate-200/90 bg-white/70 px-3 text-[12px] font-bold text-slate-700 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-white sm:w-auto sm:px-7 sm:text-[13px]"
               >
                 Browse Events
               </button>
