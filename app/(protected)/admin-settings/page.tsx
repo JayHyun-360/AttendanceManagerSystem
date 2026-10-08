@@ -6,7 +6,7 @@ import { toast } from "sonner"
 
 import { AdminSettingsPage, type SystemSettings } from "../../shared-page"
 
-import { refreshLandingSettings, saveLandingSettings } from "./actions"
+import { saveLandingSettings } from "./actions"
 
 import { supabase } from "@/lib/supabase"
 
@@ -186,21 +186,6 @@ export default function AdminSettingsRoutePage() {
           await saveLandingSettings(settingsToPersist)
 
           invalidatePublicSystemSettingsCache()
-          try {
-            await refreshLandingSettings()
-          } catch (revalidationError) {
-            console.error(
-              "Failed to refresh public landing settings",
-
-              revalidationError,
-            )
-
-            if (settingsRef.current === localState) {
-              toast.warning(
-                "Settings saved, but the landing page may take a minute to update.",
-              )
-            }
-          }
 
           const previousSettings = persistedSettingsRef.current
           persistedSettingsRef.current = settingsToPersist
