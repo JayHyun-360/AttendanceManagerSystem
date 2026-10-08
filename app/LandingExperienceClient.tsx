@@ -193,7 +193,23 @@ import { formatTimeRange12Hour } from "@/lib/time"
 
 const adesseLogoSrc = "/adesse-a.svg"
 
-const LANDING_HERO_ART = "/enhanced-image-with-white-wrapper.jpg"
+const LANDING_QR_PATTERN = [
+  "111111100101111",
+  "100000101101001",
+  "101110101001101",
+  "101110100111101",
+  "101110101010101",
+  "100000101110001",
+  "111111101010101",
+  "000000001101100",
+  "110111101011111",
+  "001010001100101",
+  "111011111011100",
+  "100101001101011",
+  "101111101010111",
+  "100000001110001",
+  "111111101011111",
+]
 
 function useDashboardDateLabel() {
   const [label, setLabel] = useState("")
@@ -2897,60 +2913,9 @@ function LandingPage({
 
   user: User | null
 }) {
-  const configuredHeroUrls = settings.heroImageUrls.filter(
-    (url) => !!url && !url.startsWith("blob:"),
-  )
-
-  const hasConfiguredHero = configuredHeroUrls.length > 0
-
-  const heroUrls = hasConfiguredHero ? configuredHeroUrls : [LANDING_HERO_ART]
-
   const carouselSlides = settings.carouselSlides.filter(
     (slide) => !!slide.imageUrl && !slide.imageUrl.startsWith("blob:"),
   )
-
-  const hn = heroUrls.length
-
-  const [heroTrack, setHeroTrack] = useState(0)
-
-  const [heroVisibilityStamp, setHeroVisibilityStamp] = useState(0)
-
-  const heroRealIdx = heroTrack % (hn || 1)
-
-  const heroAdvance = () => {
-    setHeroTrack((i) => (i + 1) % hn)
-  }
-
-  useEffect(() => {
-    if (hn <= 1) return
-
-    const t = setInterval(() => {
-      if (document.visibilityState === "visible") heroAdvance()
-    }, 5000)
-
-    return () => clearInterval(t)
-  }, [hn])
-
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        setHeroTrack(0)
-
-        setHeroVisibilityStamp((v) => v + 1)
-      }
-    }
-
-    document.addEventListener("visibilitychange", handleVisibility)
-
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibility)
-  }, [hn])
-
-  useEffect(() => {
-    setHeroTrack(0)
-  }, [hn])
-
-  const landingHeroImage = heroUrls[heroRealIdx] ?? LANDING_HERO_ART
 
   return (
     <div className="min-h-screen bg-white">
@@ -2980,24 +2945,6 @@ function LandingPage({
           className="pointer-events-none absolute -left-24 bottom-[-13rem] h-80 w-80 rounded-full bg-emerald-200/20 blur-3xl"
           aria-hidden="true"
         />
-
-        {hn > 1 && (
-          <div
-            className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 gap-1.5"
-            aria-label="Hero image slides"
-          >
-            {heroUrls.map((_, i) => (
-              <span
-                key={i}
-                className={`rounded-full transition-all duration-300 ${
-                  i === heroRealIdx
-                    ? "w-5 h-2 bg-emerald-600"
-                    : "w-2 h-2 bg-emerald-300/70"
-                }`}
-              />
-            ))}
-          </div>
-        )}
 
         {user && (
           <div className="absolute right-4 top-4 z-20 flex items-center gap-2 sm:right-8 sm:top-6">
@@ -3073,19 +3020,82 @@ function LandingPage({
               className="absolute h-56 w-56 rounded-full bg-emerald-300/20 blur-3xl sm:h-80 sm:w-80"
               aria-hidden="true"
             />
-            <div className="relative w-full max-w-[620px] overflow-visible sm:max-w-[650px] lg:translate-x-4">
-              <OptimizedImage
-                key={`${heroVisibilityStamp}-hero-art-${heroRealIdx}-${landingHeroImage}`}
-                src={landingHeroImage}
-                alt="QR attendance confirmation and event records"
-                width={1079}
-                height={740}
-                sizes="(max-width: 768px) 100vw, 56vw"
-                loading="eager"
-                decoding="async"
-                fetchPriority="high"
-                className="relative h-auto w-full object-contain drop-shadow-[0_22px_28px_rgba(15,23,42,.12)]"
-              />
+            <div
+              className="relative h-[300px] w-full max-w-[600px] sm:h-[370px] lg:translate-x-4"
+              aria-label="Attendance confirmation and event records preview"
+              role="img"
+            >
+              <div className="absolute left-[10%] top-[5%] h-[90%] w-[72%] rotate-[-8deg] rounded-[2.5rem] border border-white/80 bg-white/35 shadow-[0_24px_55px_rgba(15,118,110,.12)] backdrop-blur-sm" />
+              <div className="absolute right-[4%] top-[7%] h-24 w-44 rotate-[7deg] rounded-[1.5rem] border border-white/80 bg-emerald-100/70 shadow-[0_18px_40px_rgba(15,118,110,.12)] sm:h-32 sm:w-56">
+                <div className="flex items-start gap-3 p-4 text-emerald-800 sm:p-5">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/70">
+                    <Icons.Users />
+                  </span>
+                  <div className="space-y-2 pt-1">
+                    <div className="h-2 w-24 rounded-full bg-emerald-700/25 sm:w-32" />
+                    <div className="h-2 w-16 rounded-full bg-emerald-700/15 sm:w-24" />
+                  </div>
+                </div>
+              </div>
+              <div className="absolute left-[16%] top-[12%] w-[46%] rotate-[-3deg] rounded-[1.75rem] border border-white bg-white/95 p-4 shadow-[0_25px_45px_rgba(15,23,42,.14)] sm:p-5">
+                <div className="mx-auto flex w-fit rounded-xl bg-white p-1.5 shadow-inner ring-1 ring-slate-100">
+                  <div className="grid grid-cols-15 gap-[2px] rounded-lg bg-white p-1">
+                    {LANDING_QR_PATTERN.flatMap((row, rowIndex) =>
+                      [...row].map((cell, cellIndex) => (
+                        <span
+                          key={`${rowIndex}-${cellIndex}`}
+                          className={`h-1.5 w-1.5 sm:h-2 sm:w-2 ${
+                            cell === "1" ? "bg-slate-900" : "bg-white"
+                          }`}
+                        />
+                      )),
+                    )}
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-center gap-1.5 rounded-full bg-emerald-50 px-2 py-1.5 text-[9px] font-semibold text-emerald-700 ring-1 ring-emerald-100 sm:text-[10px]">
+                  <Icons.CheckCircle />
+                  Attendance confirmed
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                    <Icons.User />
+                  </span>
+                  <div className="space-y-1.5">
+                    <div className="h-1.5 w-20 rounded-full bg-slate-200" />
+                    <div className="h-1.5 w-14 rounded-full bg-slate-100" />
+                  </div>
+                </div>
+              </div>
+              <div className="absolute bottom-[5%] right-[4%] w-[52%] rotate-[6deg] rounded-[1.75rem] border border-white/80 bg-white/95 p-4 shadow-[0_22px_42px_rgba(15,23,42,.14)] sm:p-5">
+                <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 sm:text-base">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                    <Icons.Calendar />
+                  </span>
+                  Events
+                </div>
+                <div className="mt-4 space-y-3">
+                  {["Student Leadership Forum", "Campus Orientation"].map(
+                    (event, index) => (
+                      <div
+                        key={event}
+                        className="flex items-center gap-2 rounded-xl bg-slate-50/80 px-2.5 py-2"
+                      >
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200/70 text-slate-400">
+                          <Icons.User />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-[9px] font-medium text-slate-500 sm:text-[10px]">
+                          {event}
+                        </span>
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            index === 0 ? "bg-emerald-500" : "bg-emerald-200"
+                          }`}
+                        />
+                      </div>
+                    ),
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
