@@ -3022,7 +3022,7 @@ function LandingPage({
           </div>
         )}
 
-        <div className="relative mx-auto grid min-h-[650px] w-full max-w-6xl items-center gap-8 px-5 pb-16 pt-28 sm:px-8 md:min-h-[600px] md:pb-20 md:pt-24 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-2 lg:px-10 lg:pt-20">
+        <div className="relative mx-auto grid min-h-[520px] w-full max-w-6xl items-center gap-6 px-5 pb-12 pt-24 sm:px-8 md:min-h-[520px] md:pb-14 md:pt-20 lg:min-h-[580px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-2 lg:px-10 lg:pt-16">
           <div className="relative z-10 max-w-xl lg:pb-3">
             <AdesseWordmark
               variant="hero"
@@ -3032,7 +3032,7 @@ function LandingPage({
             <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 sm:text-[11px]">
               Student event management
             </p>
-            <h1 className="adesse-display max-w-[35rem] text-[2.9rem] leading-[0.98] text-slate-950 sm:text-[4rem] lg:text-[4.35rem]">
+            <h1 className="adesse-display max-w-[31rem] text-[2.35rem] leading-[1.02] text-slate-950 sm:text-[3.15rem] lg:text-[3.45rem]">
               Attendance, simplified for every campus event.
             </h1>
             <p className="mt-6 max-w-[30rem] text-[15px] leading-[1.8] text-slate-600 sm:text-[17px]">
@@ -3066,28 +3066,14 @@ function LandingPage({
                 Browse Events
               </button>
             </div>
-            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-[10px] font-semibold uppercase tracking-[0.09em] text-slate-500 sm:text-[11px]">
-              <span className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                One QR per student
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Real-time confirmation
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Clear records
-              </span>
-            </div>
           </div>
 
-          <div className="relative z-10 flex min-h-[280px] items-center justify-center lg:min-h-[500px]">
+          <div className="relative z-10 flex min-h-[230px] items-center justify-center lg:min-h-[430px]">
             <div
-              className="absolute h-64 w-64 rounded-full bg-emerald-300/20 blur-3xl sm:h-96 sm:w-96"
+              className="absolute h-56 w-56 rounded-full bg-emerald-300/20 blur-3xl sm:h-80 sm:w-80"
               aria-hidden="true"
             />
-            <div className="relative w-full max-w-[680px] overflow-hidden rounded-[2rem] sm:rounded-[2.75rem]">
+            <div className="relative w-full max-w-[620px] overflow-visible sm:max-w-[650px] lg:translate-x-4">
               <OptimizedImage
                 key={`${heroVisibilityStamp}-hero-art-${heroRealIdx}-${landingHeroImage}`}
                 src={landingHeroImage}
@@ -3098,7 +3084,7 @@ function LandingPage({
                 loading="eager"
                 decoding="async"
                 fetchPriority="high"
-                className="relative h-auto w-full object-contain drop-shadow-[0_28px_32px_rgba(15,23,42,.14)]"
+                className="relative h-auto w-full object-contain drop-shadow-[0_22px_28px_rgba(15,23,42,.12)]"
               />
             </div>
           </div>
