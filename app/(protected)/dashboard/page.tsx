@@ -52,8 +52,17 @@ export default function DashboardRoute() {
 
   useEffect(() => {
     let cancelled = false
+    let loadInFlight = false
+    let refreshQueued = false
 
     async function loadDashboardAnnouncements() {
+      if (loadInFlight) {
+        refreshQueued = true
+        return
+      }
+
+      loadInFlight = true
+
       try {
         if (!cancelled) setLoadError(null)
         const { data, error } = await supabase
@@ -91,8 +100,15 @@ export default function DashboardRoute() {
         console.error(caughtError)
         if (!cancelled) setLoadError("Dashboard data could not be loaded.")
       } finally {
+        loadInFlight = false
         if (!cancelled) {
           setAnnouncementsReady(true)
+          if (refreshQueued) {
+            refreshQueued = false
+            void loadDashboardAnnouncements()
+          }
+        } else {
+          refreshQueued = false
         }
       }
     }
@@ -116,8 +132,17 @@ export default function DashboardRoute() {
 
   useEffect(() => {
     let cancelled = false
+    let loadInFlight = false
+    let refreshQueued = false
 
     async function loadDashboardFines() {
+      if (loadInFlight) {
+        refreshQueued = true
+        return
+      }
+
+      loadInFlight = true
+
       try {
         if (!authUserId) {
           return
@@ -126,7 +151,9 @@ export default function DashboardRoute() {
         const [eventsResult, attendanceResult, fineResult] = await Promise.all([
           supabase
             .from("events")
-            .select("*")
+            .select(
+              "id, title, event_date, location, status, multi_session, media_urls",
+            )
             .is("archived_at", null)
             .order("event_date", { ascending: true }),
           supabase
@@ -213,8 +240,15 @@ export default function DashboardRoute() {
         console.error(caughtError)
         if (!cancelled) setLoadError("Dashboard data could not be loaded.")
       } finally {
+        loadInFlight = false
         if (!cancelled) {
           setFinesReady(true)
+          if (refreshQueued) {
+            refreshQueued = false
+            void loadDashboardFines()
+          }
+        } else {
+          refreshQueued = false
         }
       }
     }
