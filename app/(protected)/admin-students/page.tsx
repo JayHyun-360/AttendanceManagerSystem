@@ -41,7 +41,9 @@ export default function AdminStudentsRoutePage() {
 
             .from("profiles")
 
-            .select("*")
+            .select(
+              "id, first_name, surname, email, student_id, program, year_level, section, phone, contact_email, photo_url, id_photo_url, created_at",
+            )
 
             .eq("role", "student")
 
@@ -51,7 +53,9 @@ export default function AdminStudentsRoutePage() {
 
             .from("events")
 
-            .select("*")
+            .select(
+              "id, title, event_date, start_time, end_time, location, description, program, absent_fine, status, multi_session, strict_morning, strict_afternoon, morning_start, morning_end, morning_late_cutoff, afternoon_start, afternoon_end, afternoon_late_cutoff",
+            )
 
             .order("event_date", { ascending: false }),
         ])

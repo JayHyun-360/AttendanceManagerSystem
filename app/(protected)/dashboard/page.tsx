@@ -67,7 +67,7 @@ export default function DashboardRoute() {
         if (!cancelled) setLoadError(null)
         const { data, error } = await supabase
           .from("announcements")
-          .select("*")
+          .select("id, title, created_at, target_role")
           .eq("target_role", "student")
           .order("created_at", { ascending: false })
           .limit(2)
@@ -84,15 +84,12 @@ export default function DashboardRoute() {
             (data ?? []).map((row: any) => ({
               id: row.id,
               title: row.title,
-              body: row.content,
               date: new Date(row.created_at).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
               }),
-              author: row.posted_by ? "Admin" : "Adesse",
               badge: row.target_role === "admin" ? "Admin" : "General",
-              photoUrl: row.media_url ?? "",
             })),
           )
         }
@@ -162,9 +159,8 @@ export default function DashboardRoute() {
             .eq("student_id", authUserId),
           supabase
             .from("fines")
-            .select("*")
-            .eq("student_id", authUserId)
-            .order("created_at", { ascending: false }),
+            .select("amount, status")
+            .eq("student_id", authUserId),
         ])
 
         if (eventsResult.error) {
