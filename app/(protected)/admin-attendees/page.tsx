@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -54,6 +54,10 @@ export default function AdminAttendeesRoutePage() {
   );
 
   const [isLoading, setIsLoading] = useState(true);
+
+  const [isAttendanceRefreshing, setIsAttendanceRefreshing] = useState(false);
+
+  const hasLoadedAttendance = useRef(false);
 
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -251,7 +255,7 @@ export default function AdminAttendeesRoutePage() {
     async function loadSelectedAttendance() {
       if (!selectedEventId || !students.length) return;
 
-      setIsLoading(true);
+      setIsAttendanceRefreshing(true);
       try {
         let scanRows: any[];
         let fineQuery: any;
@@ -431,7 +435,11 @@ export default function AdminAttendeesRoutePage() {
         console.error(caughtError);
         if (!cancelled) setLoadError("Attendance data could not be loaded.");
       } finally {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) {
+          hasLoadedAttendance.current = true;
+          setIsAttendanceRefreshing(false);
+          setIsLoading(false);
+        }
       }
     }
 
@@ -509,7 +517,7 @@ export default function AdminAttendeesRoutePage() {
     return true;
   };
 
-  if (isLoading) {
+  if (isLoading || (isAttendanceRefreshing && !hasLoadedAttendance.current)) {
     return (
       <div className="space-y-3 pt-2">
         <Skeleton className="h-8 w-40 rounded-lg" />
@@ -544,6 +552,7 @@ export default function AdminAttendeesRoutePage() {
       fineRows={fineRows}
       approvedExcuseKeys={approvedExcuseKeys}
       onDeleteAttendance={deleteAttendance}
+      isAttendanceLoading={isAttendanceRefreshing}
       onSelectionChange={(eventId, search) => {
         setSelectedEventId(eventId);
         setStudentSearch(search);

@@ -14116,6 +14116,8 @@ export function AdminAttendeesPage({
 
   onDeleteAttendance,
 
+  isAttendanceLoading = false,
+
   onSelectionChange,
 }: {
   onNav: (p: Page) => void;
@@ -14131,6 +14133,8 @@ export function AdminAttendeesPage({
   approvedExcuseKeys?: ReadonlySet<string>;
 
   onDeleteAttendance?: (dbId: string | number) => Promise<boolean>;
+
+  isAttendanceLoading?: boolean;
 
   onSelectionChange?: (eventId: string, studentSearch: string) => void;
 }) {
@@ -14722,7 +14726,17 @@ export function AdminAttendeesPage({
           Duplicates ({duplicates.length})
         </button>
       </div>
-      {allEventsSelected ? (
+      {isAttendanceLoading ? (
+        <div
+          role="status"
+          aria-label="Loading attendance records"
+          className="space-y-3 rounded-xl border border-slate-100 bg-white p-4"
+        >
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-14 w-full" />
+          <Skeleton className="h-14 w-full" />
+        </div>
+      ) : allEventsSelected ? (
         <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
           {!studentSearch.trim() ? (
             <p className="py-8 text-center text-sm text-slate-400">
