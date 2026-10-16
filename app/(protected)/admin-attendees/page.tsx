@@ -78,7 +78,9 @@ export default function AdminAttendeesRoutePage() {
           fetchAllPages((from, to) =>
             supabase
               .from("events")
-              .select("*")
+              .select(
+                "id, title, event_date, start_time, end_time, location, description, program, status, media_urls, image_url, multi_session, sanctions_enabled, morning_end, afternoon_end, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+              )
               .is("archived_at", null)
               .order("event_date", { ascending: false })
               .order("id", { ascending: true })

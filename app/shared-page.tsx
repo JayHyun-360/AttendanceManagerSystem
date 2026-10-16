@@ -16962,11 +16962,7 @@ export function AdminReportsPage({
 
     ctx.textAlign = "left";
 
-    ctx.fillText(
-      "Adesse — Attendance & Fees Report (Current Event Page)",
-      pad,
-      38,
-    );
+    ctx.fillText("Adesse — Attendance & Fees Report", pad, 38);
 
     ctx.font = "12px system-ui, sans-serif";
 
@@ -17309,7 +17305,8 @@ export function AdminReportsPage({
         </div>
       </div>
       <p className="-mt-2 mb-5 text-xs text-slate-500">
-        Attendance and fee summaries reflect the events displayed on this page.
+        Program and fee summaries cover the selected date range. Event details
+        below are paginated.
       </p>
       <SectionLabel>Attendance by program</SectionLabel>
       {programRows.length === 0 && (

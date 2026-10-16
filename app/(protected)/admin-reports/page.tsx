@@ -5,30 +5,9 @@ import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AdminReportsPage, type EventData } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
-import { getPublicSystemSettings } from "@/lib/systemSettings";
 import { useProtectedUser } from "../layout";
-import {
-  buildAttendanceSessionRecords,
-  getSchoolDate,
-  type FineEventLike,
-  type FineRowLike,
-  type FineScanLike,
-} from "@/lib/attendance-fines";
 
 const EVENT_PAGE_SIZE = 5;
-const QUERY_PAGE_SIZE = 100;
-
-async function fetchAllPages(buildQuery: (from: number, to: number) => any) {
-  const rows: any[] = [];
-
-  for (let from = 0; ; from += QUERY_PAGE_SIZE) {
-    const { data, error } = await buildQuery(from, from + QUERY_PAGE_SIZE - 1);
-    if (error) throw error;
-
-    rows.push(...(data ?? []));
-    if (!data || data.length < QUERY_PAGE_SIZE) return rows;
-  }
-}
 
 type ReportPayload = {
   events: EventData[];
@@ -104,216 +83,62 @@ export default function AdminReportsRoutePage() {
         if (dateFrom) eventsQuery = eventsQuery.gte("event_date", dateFrom);
         if (dateTo) eventsQuery = eventsQuery.lte("event_date", dateTo);
 
-        const eventsResult = await eventsQuery.range(
-          (eventPage - 1) * EVENT_PAGE_SIZE,
-          eventPage * EVENT_PAGE_SIZE - 1,
-        );
-        const eventRows = eventsResult.data ?? [];
-        const scopedEventIds = new Set(
-          eventRows.map((row: any) => String(row.id)),
-        );
-        const eventIds = Array.from(scopedEventIds);
-        const [
-          profileRows,
-          attendanceRows,
-          fineRows,
-          settingsResult,
-          approvedExcuseRows,
-        ] = await Promise.all([
-          fetchAllPages((from, to) =>
-            supabase
-              .from("profiles")
-              .select("id, program")
-              .eq("role", "student")
-              .order("id", { ascending: true })
-              .range(from, to),
+        const [eventsResult, aggregatesResult] = await Promise.all([
+          eventsQuery.range(
+            (eventPage - 1) * EVENT_PAGE_SIZE,
+            eventPage * EVENT_PAGE_SIZE - 1,
           ),
-          eventIds.length
-            ? fetchAllPages((from, to) =>
-                supabase
-                  .from("attendance_scans")
-                  .select(
-                    "id, event_id, student_id, session_label, status, scan_in_at",
-                  )
-                  .in("event_id", eventIds)
-                  .order("event_id", { ascending: true })
-                  .order("id", { ascending: true })
-                  .range(from, to),
-              )
-            : Promise.resolve([]),
-          eventIds.length
-            ? fetchAllPages((from, to) =>
-                supabase
-                  .from("fines")
-                  .select(
-                    "id, student_id, event_id, attendance_scan_id, session_label, amount, status",
-                  )
-                  .in("event_id", eventIds)
-                  .order("event_id", { ascending: true })
-                  .order("id", { ascending: true })
-                  .range(from, to),
-              )
-            : Promise.resolve([]),
-          getPublicSystemSettings(),
-          eventIds.length
-            ? fetchAllPages((from, to) =>
-                supabase
-                  .from("excuse_requests")
-                  .select("student_id, event_id, session_label")
-                  .eq("status", "approved")
-                  .in("event_id", eventIds)
-                  .order("event_id", { ascending: true })
-                  .order("id", { ascending: true })
-                  .range(from, to),
-              )
-            : Promise.resolve([]),
+          supabase.rpc("get_admin_report_aggregates", {
+            p_date_from: dateFrom || null,
+            p_date_to: dateTo || null,
+            p_event_offset: (eventPage - 1) * EVENT_PAGE_SIZE,
+            p_event_limit: EVENT_PAGE_SIZE,
+          }),
         ]);
 
         if (eventsResult.error) throw eventsResult.error;
-        if (settingsResult.error) console.error(settingsResult.error);
-
+        if (aggregatesResult.error) throw aggregatesResult.error;
         if (cancelled) return;
 
-        const finesEnabled = Boolean(
-          (settingsResult.data?.settings as { finesEnabled?: boolean } | null)
-            ?.finesEnabled,
-        );
-
-        const studentRows = profileRows;
-        const recordsByStudent = new Map<
-          string,
-          ReturnType<typeof buildAttendanceSessionRecords>
-        >();
-        for (const student of studentRows) {
-          const approvedExcuseKeys = new Set(
-            approvedExcuseRows
-              .filter(
-                (request: any) =>
-                  request.student_id === student.id &&
-                  request.event_id &&
-                  request.session_label,
-              )
-              .map(
-                (request: any) =>
-                  `${request.event_id}:${request.session_label}`,
-              ),
-          );
-          recordsByStudent.set(
-            student.id,
-            buildAttendanceSessionRecords(
-              eventRows as FineEventLike[],
-              attendanceRows.filter(
-                (scan: any) => scan.student_id === student.id,
-              ) as FineScanLike[],
-              fineRows.filter(
-                (fine: any) => fine.student_id === student.id,
-              ) as FineRowLike[],
-              student.program,
-              getSchoolDate(),
-              finesEnabled,
-              approvedExcuseKeys,
-            ),
-          );
-        }
-
-        const programTotals = new Map<
-          string,
-          {
-            total: number;
+        const eventRows = eventsResult.data ?? [];
+        const reportAggregates = aggregatesResult.data as {
+          program_stats: Array<{
+            label: string;
             present: number;
+            total: number;
+            rate: number;
             absent: number;
             excused: number;
             late: number;
-            fineTotal: number;
+            fine_total: number;
             sanctioned: number;
-            sanctionedLate: number;
-            sanctionedAbsent: number;
-          }
-        >();
-        for (const student of studentRows) {
-          const program = student.program || "Unassigned";
-          const stats = programTotals.get(program) ?? {
-            total: 0,
-            present: 0,
-            absent: 0,
-            excused: 0,
-            late: 0,
-            fineTotal: 0,
-            sanctioned: 0,
-            sanctionedLate: 0,
-            sanctionedAbsent: 0,
+            sanctioned_late: number;
+            sanctioned_absent: number;
+          }>;
+          fee_summary: {
+            fine_count: number;
+            assessed: number;
+            collected: number;
+            outstanding: number;
+            waived: number;
           };
-          for (const record of recordsByStudent.get(student.id) ?? []) {
-            if (!record.excused) stats.total += 1;
-            if (record.status === "present" && !!record.scan?.scan_in_at)
-              stats.present += 1;
-            if (record.status === "late" && !!record.scan?.scan_in_at) {
-              stats.present += 1;
-              stats.late += 1;
-            }
-            if (record.excused) {
-              stats.excused += 1;
-            } else if (
-              record.status === "absent" ||
-              record.status === "no_record"
-            ) {
-              stats.absent += 1;
-            }
-            if (record.sanctioned) {
-              stats.sanctioned += 1;
-              if (record.status === "late") stats.sanctionedLate += 1;
-              if (record.status === "absent") stats.sanctionedAbsent += 1;
-            }
-          }
-          stats.fineTotal += fineRows
-            .filter(
-              (fine: any) =>
-                fine.student_id === student.id &&
-                scopedEventIds.has(String(fine.event_id)),
-            )
-            .reduce(
-              (sum: number, fine: any) => sum + Number(fine.amount ?? 0),
-              0,
-            );
-          programTotals.set(program, stats);
-        }
-
-        const programStats = Array.from(programTotals.entries())
-          .map(([label, stats]) => ({
-            label,
-            present: stats.present,
-            total: stats.total,
-            rate:
-              stats.total > 0
-                ? Math.round((stats.present / stats.total) * 100)
-                : 0,
-            absent: stats.absent,
-            excused: stats.excused,
-            late: stats.late,
-            fineTotal: stats.fineTotal,
-            sanctioned: stats.sanctioned,
-            sanctionedLate: stats.sanctionedLate,
-            sanctionedAbsent: stats.sanctionedAbsent,
-          }))
-          .sort((a, b) => b.total - a.total);
+          event_stats: Array<{
+            event_id: string;
+            attendees: number;
+            report_attended_sessions: number;
+            report_absent_sessions: number;
+            report_excused_sessions: number;
+            report_late_sessions: number;
+            report_sanctioned_sessions: number;
+            report_fine_total: number;
+          }>;
+        };
+        const statsByEvent = new Map(
+          reportAggregates.event_stats.map((stats) => [stats.event_id, stats]),
+        );
 
         const eventData: EventData[] = eventRows.map((row: any) => {
-          const eventId = String(row.id);
-          const eventRecords = studentRows.flatMap((student: any) =>
-            (recordsByStudent.get(student.id) ?? []).filter(
-              (record) => record.eventId === eventId,
-            ),
-          );
-          const attendeeIds = new Set(
-            attendanceRows
-              .filter(
-                (scan: any) =>
-                  scan.event_id === eventId &&
-                  (scan.status === "present" || scan.status === "late") &&
-                  !!scan.scan_in_at,
-              )
-              .map((scan: any) => scan.student_id),
-          );
+          const stats = statsByEvent.get(String(row.id));
           const eventDate = row.event_date ? new Date(row.event_date) : null;
 
           return {
@@ -356,32 +181,17 @@ export default function AdminReportsRoutePage() {
               row.afternoon_late_fine ?? row.late_fine ?? 0,
             ),
             status: row.status ?? "upcoming",
-            attendees: attendeeIds.size,
-            reportAttendedSessions: eventRecords.filter(
-              (record) =>
-                (record.status === "present" || record.status === "late") &&
-                !!record.scan?.scan_in_at,
-            ).length,
-            reportAbsentSessions: eventRecords.filter(
-              (record) =>
-                !record.excused &&
-                (record.status === "absent" || record.status === "no_record"),
-            ).length,
-            reportExcusedSessions: eventRecords.filter(
-              (record) => record.excused,
-            ).length,
-            reportLateSessions: eventRecords.filter(
-              (record) => record.status === "late",
-            ).length,
-            reportFineTotal: fineRows
-              .filter((fine: any) => String(fine.event_id) === eventId)
-              .reduce(
-                (total: number, fine: any) => total + Number(fine.amount ?? 0),
-                0,
-              ),
-            reportSanctionedSessions: eventRecords.filter(
-              (record) => record.sanctioned,
-            ).length,
+            attendees: Number(stats?.attendees ?? 0),
+            reportAttendedSessions: Number(
+              stats?.report_attended_sessions ?? 0,
+            ),
+            reportAbsentSessions: Number(stats?.report_absent_sessions ?? 0),
+            reportExcusedSessions: Number(stats?.report_excused_sessions ?? 0),
+            reportLateSessions: Number(stats?.report_late_sessions ?? 0),
+            reportFineTotal: Number(stats?.report_fine_total ?? 0),
+            reportSanctionedSessions: Number(
+              stats?.report_sanctioned_sessions ?? 0,
+            ),
             mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
             highlightUrl:
               row.image_url && !row.image_url.startsWith("blob:")
@@ -390,56 +200,61 @@ export default function AdminReportsRoutePage() {
           };
         });
 
-        const scopedFineRows = fineRows.filter((row: any) =>
-          scopedEventIds.has(String(row.event_id)),
-        );
-        const totalFeesIssued = scopedFineRows.reduce(
-          (sum, row: any) => sum + Number(row.amount ?? 0),
-          0,
-        );
-        const collectedFees = scopedFineRows
-          .filter((row: any) => row.status === "paid")
-          .reduce((sum, row: any) => sum + Number(row.amount ?? 0), 0);
-        const pendingFees = scopedFineRows
-          .filter((row: any) => row.status === "unpaid")
-          .reduce((sum, row: any) => sum + Number(row.amount ?? 0), 0);
-        const excusedFees = scopedFineRows
-          .filter((row: any) => row.status === "excused")
-          .reduce((sum, row: any) => sum + Number(row.amount ?? 0), 0);
+        const feeSummary = reportAggregates.fee_summary;
+        const eventCount = eventsResult.count ?? 0;
+        const firstEvent =
+          eventCount === 0 ? 0 : (eventPage - 1) * EVENT_PAGE_SIZE + 1;
+        const lastEvent = Math.min(eventPage * EVENT_PAGE_SIZE, eventCount);
+        const dateLabel =
+          dateFrom || dateTo
+            ? `${dateFrom || "Beginning"} – ${dateTo || "Today"}`
+            : "All recorded events";
+        const programStats: ReportPayload["programStats"] =
+          reportAggregates.program_stats.map((stats) => ({
+            label: stats.label,
+            present: Number(stats.present),
+            total: Number(stats.total),
+            rate: Number(stats.rate),
+            absent: Number(stats.absent),
+            excused: Number(stats.excused),
+            late: Number(stats.late),
+            fineTotal: Number(stats.fine_total),
+            sanctioned: Number(stats.sanctioned),
+            sanctionedLate: Number(stats.sanctioned_late),
+            sanctionedAbsent: Number(stats.sanctioned_absent),
+          }));
 
-        if (!cancelled) {
-          setReportData({
-            events: eventData,
-            periodLabel: `Events ${(eventPage - 1) * EVENT_PAGE_SIZE + 1}-${Math.min(eventPage * EVENT_PAGE_SIZE, eventsResult.count ?? 0)} of ${eventsResult.count ?? 0} · ${dateFrom || dateTo ? `${dateFrom || "Beginning"} – ${dateTo || "Today"}` : "All recorded events"}`,
-            eventCount: eventsResult.count ?? 0,
-            programStats,
-            feeSummary:
-              scopedFineRows.length === 0
-                ? []
-                : [
-                    {
-                      label: "Total assessed",
-                      value: `₱${totalFeesIssued.toLocaleString()}`,
-                      color: "text-red-600",
-                    },
-                    {
-                      label: "Collected",
-                      value: `₱${collectedFees.toLocaleString()}`,
-                      color: "text-emerald-500",
-                    },
-                    {
-                      label: "Outstanding",
-                      value: `₱${pendingFees.toLocaleString()}`,
-                      color: "text-amber-600",
-                    },
-                    {
-                      label: "Waived / excused",
-                      value: `₱${excusedFees.toLocaleString()}`,
-                      color: "text-violet-600",
-                    },
-                  ],
-          });
-        }
+        setReportData({
+          events: eventData,
+          periodLabel: `Events ${firstEvent}-${lastEvent} of ${eventCount} · ${dateLabel}`,
+          eventCount,
+          programStats,
+          feeSummary:
+            feeSummary.fine_count === 0
+              ? []
+              : [
+                  {
+                    label: "Total assessed",
+                    value: `₱${Number(feeSummary.assessed).toLocaleString()}`,
+                    color: "text-red-600",
+                  },
+                  {
+                    label: "Collected",
+                    value: `₱${Number(feeSummary.collected).toLocaleString()}`,
+                    color: "text-emerald-500",
+                  },
+                  {
+                    label: "Outstanding",
+                    value: `₱${Number(feeSummary.outstanding).toLocaleString()}`,
+                    color: "text-amber-600",
+                  },
+                  {
+                    label: "Waived / excused",
+                    value: `₱${Number(feeSummary.waived).toLocaleString()}`,
+                    color: "text-violet-600",
+                  },
+                ],
+        });
       } catch (caughtError) {
         console.error(caughtError);
       } finally {
