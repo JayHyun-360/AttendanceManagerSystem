@@ -250,7 +250,12 @@ export function useDevNotes() {
   return value
 }
 
-const typeStyles: Record<DevNoteType, { label: string className: string }> = {
+type DevNoteStyle = {
+  label: string
+  className: string
+}
+
+const typeStyles: Record<DevNoteType, DevNoteStyle> = {
   info: { label: "Info", className: "bg-sky-50 text-sky-700 ring-sky-200" },
 
   warning: {
