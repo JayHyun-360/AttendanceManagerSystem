@@ -1,135 +1,117 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
 
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton";
 
 import {
   AdminAttendeesPage,
   type EventData,
   type Page,
-} from "../../shared-page"
+} from "../../shared-page";
 
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase";
 
-import { getPublicSystemSettings } from "@/lib/systemSettings"
+import { getPublicSystemSettings } from "@/lib/systemSettings";
 
-import { useProtectedUser } from "../layout"
+import { useProtectedUser } from "../layout";
 
-import { FeedbackState } from "@/components/ui/feedback"
+import { FeedbackState } from "@/components/ui/feedback";
 
-import { toast } from "sonner"
+import { toast } from "sonner";
+
+const QUERY_PAGE_SIZE = 100;
+
+async function fetchAllPages(buildQuery: (from: number, to: number) => any) {
+  const rows: any[] = [];
+
+  for (let from = 0; ; from += QUERY_PAGE_SIZE) {
+    const { data, error } = await buildQuery(from, from + QUERY_PAGE_SIZE - 1);
+    if (error) throw error;
+
+    rows.push(...(data ?? []));
+    if (!data || data.length < QUERY_PAGE_SIZE) return rows;
+  }
+}
 
 export default function AdminAttendeesRoutePage() {
-  const router = useRouter()
+  const router = useRouter();
 
-  const { user } = useProtectedUser()
+  const { user } = useProtectedUser();
 
-  const [events, setEvents] = useState<EventData[]>([])
+  const [events, setEvents] = useState<EventData[]>([]);
 
-  const [students, setStudents] = useState<any[]>([])
+  const [students, setStudents] = useState<any[]>([]);
 
-  const [scanState, setScanState] = useState<Record<string, any[]>>({})
+  const [scanState, setScanState] = useState<Record<string, any[]>>({});
 
-  const [fineRows, setFineRows] = useState<any[]>([])
+  const [fineRows, setFineRows] = useState<any[]>([]);
 
   const [approvedExcuseKeys, setApprovedExcuseKeys] = useState<Set<string>>(
     new Set(),
-  )
+  );
 
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const [selectedEventId, setSelectedEventId] = useState("");
+
+  const [studentSearch, setStudentSearch] = useState("");
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function loadData() {
       try {
-        if (!cancelled) setLoadError(null)
+        if (!cancelled) setLoadError(null);
 
         if (!user || user.role !== "admin") {
-          router.push("/dashboard")
+          router.push("/dashboard");
 
-          return
+          return;
         }
 
-        const [eventsResult, studentsResult, settingsResult, excusesResult] =
-          await Promise.all([
+        const [eventRows, studentRows, settingsResult] = await Promise.all([
+          fetchAllPages((from, to) =>
             supabase
-
               .from("events")
-
               .select("*")
-
               .is("archived_at", null)
-
-              .order("event_date", { ascending: false }),
-
+              .order("event_date", { ascending: false })
+              .order("id", { ascending: true })
+              .range(from, to),
+          ),
+          fetchAllPages((from, to) =>
             supabase
-
               .from("profiles")
-
-              .select("*")
-
+              .select(
+                "id, first_name, surname, email, student_id, program, year_level, section, phone, contact_email, photo_url, id_photo_url, created_at",
+              )
               .eq("role", "student")
-
-              .order("surname", { ascending: true }),
-
-            getPublicSystemSettings(),
-
-            supabase
-
-              .from("excuse_requests")
-
-              .select("event_id, student_id, session_label")
-
-              .eq("status", "approved"),
-          ])
-
-        if (eventsResult.error) {
-          console.error(eventsResult.error)
-
-          throw new Error("Events could not be loaded.")
-        }
-
-        if (studentsResult.error) {
-          console.error(studentsResult.error)
-
-          throw new Error("Students could not be loaded.")
-        }
+              .order("surname", { ascending: true })
+              .order("id", { ascending: true })
+              .range(from, to),
+          ),
+          getPublicSystemSettings(),
+        ]);
 
         if (settingsResult.error) {
-          console.error(settingsResult.error)
+          console.error(settingsResult.error);
         }
-
-        if (excusesResult.error) {
-          console.error(excusesResult.error)
-
-          throw new Error("Excuse decisions could not be loaded.")
-        }
-
-        const nextApprovedExcuseKeys = new Set(
-          (excusesResult.data ?? []).map(
-            (request) =>
-              `${request.event_id}:${request.student_id}:${request.session_label}`,
-          ),
-        )
-
-        setApprovedExcuseKeys(nextApprovedExcuseKeys)
 
         const finesEnabled = Boolean(
           (settingsResult.data?.settings as { finesEnabled?: boolean } | null)
             ?.finesEnabled,
-        )
+        );
 
         if (cancelled) {
-          return
+          return;
         }
 
-        const mappedEvents = (eventsResult.data ?? []).map((row: any) => ({
+        const mappedEvents = eventRows.map((row: any) => ({
           id: String(row.id),
 
           title: row.title,
@@ -195,12 +177,13 @@ export default function AdminAttendeesRoutePage() {
           afternoonLateFine: finesEnabled
             ? Number(row.afternoon_late_fine ?? row.late_fine ?? 0)
             : 0,
-        }))
+        }));
 
-        setEvents(mappedEvents)
+        setEvents(mappedEvents);
+        setSelectedEventId((current) => current || mappedEvents[0]?.id || "");
 
         setStudents(
-          (studentsResult.data ?? []).map((row: any) => ({
+          studentRows.map((row: any) => ({
             profileId: row.id,
 
             name:
@@ -232,162 +215,229 @@ export default function AdminAttendeesRoutePage() {
               year: "numeric",
             }),
           })),
-        )
-
-        const attendanceResult = await supabase
-
-          .from("attendance_scans")
-
-          .select(
-            "id, event_id, student_id, session_label, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(student_id, first_name, surname, program, section, photo_url)",
-          )
-
-          .order("scan_in_at", { ascending: false })
-
-        const finesResult = await supabase
-
-          .from("fines")
-
-          .select(
-            "id, attendance_scan_id, event_id, session_label, amount, status",
-          )
-
-          .in("status", ["unpaid", "paid", "excused"])
-
-        if (!finesResult.error) {
-          setFineRows(finesResult.data ?? [])
-        }
-
-        if (!attendanceResult.error && attendanceResult.data) {
-          const byEvent: Record<string, any[]> = {}
-
-          const seenStudents = new Set<string>()
-
-          for (const row of attendanceResult.data) {
-            const eventId = String(row.event_id)
-
-            const studentKey = `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`
-
-            if (seenStudents.has(studentKey)) {
-              continue
-            }
-
-            seenStudents.add(studentKey)
-
-            const profile = Array.isArray(row.student_profile)
-              ? row.student_profile[0]
-              : row.student_profile
-
-            const studentName =
-              `${profile?.first_name ?? ""} ${profile?.surname ?? ""}`.trim()
-
-            const studentId = profile?.student_id || row.student_id
-
-            if (!byEvent[eventId]) {
-              byEvent[eventId] = []
-            }
-
-            byEvent[eventId].push({
-              profileId: String(row.student_id),
-
-              name: studentName || "Student",
-
-              id: studentId || row.student_id,
-
-              program: profile?.program || "",
-
-              section: profile?.section || "",
-
-              photoUrl: profile?.photo_url || undefined,
-
-              time: row.scan_in_at
-                ? new Date(row.scan_in_at).toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-
-                    minute: "2-digit",
-                  })
-                : "",
-
-              status:
-                row.status === "late"
-                  ? "late"
-                  : row.status === "absent"
-                    ? "absent"
-                    : row.status === "duplicate"
-                      ? "duplicate"
-                      : "present",
-
-              excused: nextApprovedExcuseKeys.has(
-                `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`,
-              ),
-
-              sanctioned:
-                Boolean(
-                  mappedEvents.find((event) => event.id === eventId)
-                    ?.sanctionsEnabled,
-                ) &&
-                (row.status === "late" || row.status === "absent") &&
-                !nextApprovedExcuseKeys.has(
-                  `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`,
-                ),
-
-              sessionLabel:
-                row.session_label === "afternoon" ? "afternoon" : "morning",
-
-              dbId: String(row.id),
-
-              fineStatus: undefined,
-            })
-          }
-
-          const fineByScan = new Map(
-            (finesResult.data ?? []).map((fine: any) => [
-              String(fine.attendance_scan_id),
-
-              fine,
-            ]),
-          )
-
-          for (const records of Object.values(byEvent)) {
-            for (const record of records) {
-              const fine = fineByScan.get(String(record.dbId))
-
-              if (fine) {
-                record.fineStatus = fine.status
-
-                record.fineAmount = Number(fine.amount ?? 0)
-              }
-            }
-          }
-
-          setScanState(byEvent)
-        }
+        );
       } catch (caughtError) {
-        console.error(caughtError)
+        console.error(caughtError);
 
-        if (!cancelled) setLoadError("Attendance data could not be loaded.")
+        if (!cancelled) setLoadError("Attendance data could not be loaded.");
       } finally {
         if (!cancelled) {
-          setIsLoading(false)
+          setIsLoading(false);
         }
       }
     }
 
-    void loadData()
+    void loadData();
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible" && !cancelled) {
-        void loadData()
+        void loadData();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [router, user]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSelectedAttendance() {
+      if (!selectedEventId || !students.length) return;
+
+      setIsLoading(true);
+      try {
+        let scanRows: any[];
+        let fineQuery: any;
+        let excuseQuery: any;
+
+        if (selectedEventId === "__all_events__") {
+          const search = studentSearch.trim().toLowerCase();
+          const student = search
+            ? students.find((candidate) =>
+                [
+                  candidate.name,
+                  candidate.id,
+                  candidate.program,
+                  candidate.section,
+                ]
+                  .filter(Boolean)
+                  .some((value: string) =>
+                    value.toLowerCase().includes(search),
+                  ),
+              )
+            : null;
+
+          if (!student) {
+            setScanState({});
+            setFineRows([]);
+            setApprovedExcuseKeys(new Set());
+            return;
+          }
+
+          scanRows = await fetchAllPages((from, to) =>
+            supabase
+              .from("attendance_scans")
+              .select(
+                "id, event_id, student_id, session_label, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(student_id, first_name, surname, program, section, photo_url)",
+              )
+              .eq("student_id", student.profileId)
+              .order("scan_in_at", { ascending: false })
+              .range(from, to),
+          );
+          fineQuery = () =>
+            fetchAllPages((from, to) =>
+              supabase
+                .from("fines")
+                .select(
+                  "id, attendance_scan_id, event_id, session_label, amount, status",
+                )
+                .eq("student_id", student.profileId)
+                .range(from, to),
+            );
+          excuseQuery = () =>
+            fetchAllPages((from, to) =>
+              supabase
+                .from("excuse_requests")
+                .select("event_id, student_id, session_label")
+                .eq("student_id", student.profileId)
+                .eq("status", "approved")
+                .range(from, to),
+            );
+        } else {
+          scanRows = await fetchAllPages((from, to) =>
+            supabase
+              .from("attendance_scans")
+              .select(
+                "id, event_id, student_id, session_label, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(student_id, first_name, surname, program, section, photo_url)",
+              )
+              .eq("event_id", selectedEventId)
+              .order("scan_in_at", { ascending: false })
+              .range(from, to),
+          );
+          fineQuery = () =>
+            fetchAllPages((from, to) =>
+              supabase
+                .from("fines")
+                .select(
+                  "id, attendance_scan_id, event_id, session_label, amount, status",
+                )
+                .eq("event_id", selectedEventId)
+                .in("status", ["unpaid", "paid", "excused"])
+                .range(from, to),
+            );
+          excuseQuery = () =>
+            fetchAllPages((from, to) =>
+              supabase
+                .from("excuse_requests")
+                .select("event_id, student_id, session_label")
+                .eq("event_id", selectedEventId)
+                .eq("status", "approved")
+                .range(from, to),
+            );
+        }
+
+        const [fines, excuses] = await Promise.all([
+          fineQuery(),
+          excuseQuery(),
+        ]);
+        if (cancelled) return;
+
+        const nextApprovedExcuseKeys = new Set<string>(
+          excuses.map(
+            (request: any) =>
+              `${request.event_id}:${request.student_id}:${request.session_label}`,
+          ),
+        );
+        const byEvent: Record<string, any[]> = {};
+        const seenStudents = new Set<string>();
+
+        for (const row of scanRows) {
+          const eventId = String(row.event_id);
+          const studentKey = `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`;
+          if (seenStudents.has(studentKey)) continue;
+          seenStudents.add(studentKey);
+
+          const profile = Array.isArray(row.student_profile)
+            ? row.student_profile[0]
+            : row.student_profile;
+          const studentName =
+            `${profile?.first_name ?? ""} ${profile?.surname ?? ""}`.trim();
+          const studentId = profile?.student_id || row.student_id;
+          if (!byEvent[eventId]) byEvent[eventId] = [];
+
+          byEvent[eventId].push({
+            profileId: String(row.student_id),
+            name: studentName || "Student",
+            id: studentId || row.student_id,
+            program: profile?.program || "",
+            section: profile?.section || "",
+            photoUrl: profile?.photo_url || undefined,
+            time: row.scan_in_at
+              ? new Date(row.scan_in_at).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "",
+            status:
+              row.status === "late"
+                ? "late"
+                : row.status === "absent"
+                  ? "absent"
+                  : row.status === "duplicate"
+                    ? "duplicate"
+                    : "present",
+            excused: nextApprovedExcuseKeys.has(
+              `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`,
+            ),
+            sanctioned:
+              Boolean(
+                events.find((event) => event.id === eventId)?.sanctionsEnabled,
+              ) &&
+              (row.status === "late" || row.status === "absent") &&
+              !nextApprovedExcuseKeys.has(
+                `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`,
+              ),
+            sessionLabel:
+              row.session_label === "afternoon" ? "afternoon" : "morning",
+            dbId: String(row.id),
+            fineStatus: undefined,
+          });
+        }
+
+        const fineByScan = new Map(
+          fines.map((fine: any) => [String(fine.attendance_scan_id), fine]),
+        );
+        for (const records of Object.values(byEvent)) {
+          for (const record of records) {
+            const fine = fineByScan.get(String(record.dbId)) as any;
+            if (fine) {
+              record.fineStatus = fine.status;
+              record.fineAmount = Number(fine.amount ?? 0);
+            }
+          }
+        }
+
+        setApprovedExcuseKeys(nextApprovedExcuseKeys);
+        setFineRows(fines);
+        setScanState(byEvent);
+      } catch (caughtError) {
+        console.error(caughtError);
+        if (!cancelled) setLoadError("Attendance data could not be loaded.");
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     }
 
-    document.addEventListener("visibilitychange", handleVisibilityChange)
-
+    void loadSelectedAttendance();
     return () => {
-      cancelled = true
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
-    }
-  }, [router, user])
+      cancelled = true;
+    };
+  }, [events, selectedEventId, studentSearch, students]);
 
   const onNav = (page: Page) => {
     const paths: Record<Page, string> = {
@@ -430,10 +480,10 @@ export default function AdminAttendeesRoutePage() {
       "admin-excuse-requests": "/admin-excuse-requests",
 
       "admin-settings": "/admin-settings",
-    }
+    };
 
-    router.push(paths[page] ?? "/admin-dashboard")
-  }
+    router.push(paths[page] ?? "/admin-dashboard");
+  };
 
   const deleteAttendance = async (dbId: string | number) => {
     const { error } = await supabase
@@ -442,20 +492,20 @@ export default function AdminAttendeesRoutePage() {
 
       .delete()
 
-      .eq("id", String(dbId))
+      .eq("id", String(dbId));
 
     if (error) {
-      console.error("Failed to delete attendance record", error)
+      console.error("Failed to delete attendance record", error);
 
-      toast.error("Attendance record could not be deleted. Please try again.")
+      toast.error("Attendance record could not be deleted. Please try again.");
 
-      return false
+      return false;
     }
 
-    toast.success("Attendance record deleted.")
+    toast.success("Attendance record deleted.");
 
-    return true
-  }
+    return true;
+  };
 
   if (isLoading) {
     return (
@@ -470,7 +520,7 @@ export default function AdminAttendeesRoutePage() {
           <Skeleton key={item} className="h-24 w-full rounded-xl" />
         ))}
       </div>
-    )
+    );
   }
 
   if (loadError) {
@@ -480,7 +530,7 @@ export default function AdminAttendeesRoutePage() {
         message={loadError}
         onRetry={() => window.location.reload()}
       />
-    )
+    );
   }
 
   return (
@@ -492,6 +542,10 @@ export default function AdminAttendeesRoutePage() {
       fineRows={fineRows}
       approvedExcuseKeys={approvedExcuseKeys}
       onDeleteAttendance={deleteAttendance}
+      onSelectionChange={(eventId, search) => {
+        setSelectedEventId(eventId);
+        setStudentSearch(search);
+      }}
     />
-  )
+  );
 }

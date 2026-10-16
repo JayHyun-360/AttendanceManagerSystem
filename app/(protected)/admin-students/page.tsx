@@ -1,52 +1,68 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
 
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton";
 
-import { AdminStudentsPage, type EventData } from "../../shared-page"
+import { AdminStudentsPage, type EventData } from "../../shared-page";
 
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase";
 
-import { useProtectedUser } from "../layout"
+import { useProtectedUser } from "../layout";
+
+const PAGE_SIZE = 50;
 
 export default function AdminStudentsRoutePage() {
-  const router = useRouter()
+  const router = useRouter();
 
-  const { user, authUserId } = useProtectedUser()
+  const { user, authUserId } = useProtectedUser();
 
-  const [students, setStudents] = useState<any[]>([])
+  const [students, setStudents] = useState<any[]>([]);
 
-  const [events, setEvents] = useState<EventData[]>([])
+  const [events, setEvents] = useState<EventData[]>([]);
 
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [page, setPage] = useState(1);
+
+  const [totalCount, setTotalCount] = useState(0);
+
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function loadStudents() {
       try {
+        if (!cancelled) setIsLoading(true);
         if (!user || user.role !== "admin") {
-          router.push("/dashboard")
+          router.push("/dashboard");
 
-          return
+          return;
+        }
+
+        let studentsQuery = supabase
+          .from("profiles")
+          .select(
+            "id, first_name, surname, email, student_id, program, year_level, section, phone, contact_email, photo_url, id_photo_url, created_at",
+            { count: "exact" },
+          )
+          .eq("role", "student")
+          .order("surname", { ascending: true })
+          .order("id", { ascending: true })
+          .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+
+        const searchTerm = search.trim().replace(/[^a-zA-Z0-9@._ -]/g, " ");
+        if (searchTerm) {
+          studentsQuery = studentsQuery.or(
+            `first_name.ilike.%${searchTerm}%,surname.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,student_id.ilike.%${searchTerm}%,program.ilike.%${searchTerm}%,section.ilike.%${searchTerm}%`,
+          );
         }
 
         const [studentsResult, eventsResult] = await Promise.all([
-          supabase
-
-            .from("profiles")
-
-            .select(
-              "id, first_name, surname, email, student_id, program, year_level, section, phone, contact_email, photo_url, id_photo_url, created_at",
-            )
-
-            .eq("role", "student")
-
-            .order("surname", { ascending: true }),
-
+          studentsQuery,
           supabase
 
             .from("events")
@@ -55,22 +71,24 @@ export default function AdminStudentsRoutePage() {
               "id, title, event_date, start_time, end_time, location, description, program, absent_fine, status, multi_session, strict_morning, strict_afternoon, morning_start, morning_end, morning_late_cutoff, afternoon_start, afternoon_end, afternoon_late_cutoff",
             )
 
-            .order("event_date", { ascending: false }),
-        ])
+            .order("event_date", { ascending: false })
+            .limit(100),
+        ]);
 
         if (studentsResult.error) {
-          console.error(studentsResult.error)
+          console.error(studentsResult.error);
         }
 
         if (eventsResult.error) {
-          console.error(eventsResult.error)
+          console.error(eventsResult.error);
         }
 
         if (studentsResult.error || eventsResult.error) {
-          return
+          return;
         }
 
         if (!cancelled) {
+          setTotalCount(studentsResult.count ?? 0);
           setStudents(
             (studentsResult.data ?? []).map((row: any) => ({
               profileId: row.id,
@@ -104,7 +122,7 @@ export default function AdminStudentsRoutePage() {
                 year: "numeric",
               }),
             })),
-          )
+          );
 
           setEvents(
             (eventsResult.data ?? []).map((row: any) => ({
@@ -149,32 +167,32 @@ export default function AdminStudentsRoutePage() {
 
               afternoonLateCutoff: row.afternoon_late_cutoff,
             })),
-          )
+          );
         }
       } catch (caughtError) {
-        console.error(caughtError)
+        console.error(caughtError);
       } finally {
         if (!cancelled) {
-          setIsLoading(false)
+          setIsLoading(false);
         }
       }
     }
 
-    void loadStudents()
+    void loadStudents();
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible" && !cancelled) {
-        void loadStudents()
+        void loadStudents();
       }
-    }
+    };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange)
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      cancelled = true
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
-    }
-  }, [router, user])
+      cancelled = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [page, router, search, user]);
 
   if (isLoading) {
     return (
@@ -184,7 +202,7 @@ export default function AdminStudentsRoutePage() {
           <Skeleton key={item} className="h-20 w-full rounded-xl" />
         ))}
       </div>
-    )
+    );
   }
 
   return (
@@ -192,6 +210,15 @@ export default function AdminStudentsRoutePage() {
       students={students}
       events={events}
       authUserId={authUserId}
+      page={page}
+      pageSize={PAGE_SIZE}
+      totalCount={totalCount}
+      onPageChange={setPage}
+      searchValue={search}
+      onSearchChange={(value) => {
+        setSearch(value);
+        setPage(1);
+      }}
     />
-  )
+  );
 }

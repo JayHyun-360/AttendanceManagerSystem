@@ -36,6 +36,8 @@ type ManilaClock = {
   minutes: number;
 };
 
+const EVENT_PAGE_SIZE = 25;
+
 function getManilaClock(now: Date): ManilaClock {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Manila",
@@ -102,11 +104,16 @@ export default function AttendanceHistoryRoutePage() {
 
   const [allowExcuseRequests, setAllowExcuseRequests] = useState(true);
 
+  const [eventPage, setEventPage] = useState(1);
+
+  const [eventCount, setEventCount] = useState(0);
+
   useEffect(() => {
     let cancelled = false;
 
     async function loadData() {
       try {
+        setIsLoading(true);
         setLoadError(null);
 
         if (!authUserId) {
@@ -115,69 +122,69 @@ export default function AttendanceHistoryRoutePage() {
           return;
         }
 
-        const [
-          finesResult,
-
-          excuseResult,
-
-          attendanceResult,
-
-          profileResult,
-
-          eventsResult,
-
-          settingsResult,
-        ] = await Promise.all([
+        const [profileResult, settingsResult] = await Promise.all([
           supabase
-
-            .from("fines")
-
-            .select("*")
-
-            .eq("student_id", authUserId)
-
-            .order("created_at", { ascending: false }),
-
-          supabase
-
-            .from("excuse_requests")
-
-            .select("*, events(title)")
-
-            .eq("student_id", authUserId)
-
-            .order("created_at", { ascending: false }),
-
-          supabase
-
-            .from("attendance_scans")
-
-            .select("*, events(title, event_date, start_time, end_time)")
-
-            .eq("student_id", authUserId)
-
-            .order("scan_in_at", { ascending: false }),
-
-          supabase
-
             .from("profiles")
-
             .select("program")
-
             .eq("id", authUserId)
-
             .single(),
-
-          supabase
-
-            .from("events")
-
-            .select(
-              "id, title, event_date, status, program, multi_session, sanctions_enabled, start_time, end_time, morning_end, afternoon_end, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
-            ),
-
           getPublicSystemSettings(),
         ]);
+
+        let eventsQuery = supabase
+          .from("events")
+          .select(
+            "id, title, event_date, status, program, multi_session, sanctions_enabled, start_time, end_time, morning_end, afternoon_end, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+            { count: "exact" },
+          )
+          .lte("event_date", getSchoolDate())
+          .neq("status", "upcoming")
+          .neq("status", "cancelled")
+          .order("event_date", { ascending: false })
+          .order("id", { ascending: true });
+
+        if (profileResult.data?.program) {
+          eventsQuery = eventsQuery.or(
+            `program.eq.All Programs,program.is.null,program.eq.${profileResult.data.program}`,
+          );
+        }
+
+        const eventsResult = await eventsQuery.range(
+          (eventPage - 1) * EVENT_PAGE_SIZE,
+          eventPage * EVENT_PAGE_SIZE - 1,
+        );
+
+        const eventIds = (eventsResult.data ?? []).map((event) => event.id);
+        const [finesResult, excuseResult, attendanceResult] = await Promise.all(
+          [
+            eventIds.length
+              ? supabase
+                  .from("fines")
+                  .select("*, events(title)")
+                  .eq("student_id", authUserId)
+                  .in("event_id", eventIds)
+                  .order("created_at", { ascending: false })
+              : Promise.resolve({ data: [], error: null }),
+            eventIds.length
+              ? supabase
+                  .from("excuse_requests")
+                  .select("*, events(title)")
+                  .eq("student_id", authUserId)
+                  .in("event_id", eventIds)
+                  .order("created_at", { ascending: false })
+              : Promise.resolve({ data: [], error: null }),
+            eventIds.length
+              ? supabase
+                  .from("attendance_scans")
+                  .select("*, events(title, event_date, start_time, end_time)")
+                  .eq("student_id", authUserId)
+                  .in("event_id", eventIds)
+                  .order("scan_in_at", { ascending: false })
+              : Promise.resolve({ data: [], error: null }),
+          ],
+        );
+
+        setEventCount(eventsResult.count ?? 0);
 
         if (finesResult.error) {
           console.error(finesResult.error);
@@ -476,7 +483,7 @@ export default function AttendanceHistoryRoutePage() {
       cancelled = true;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [authUserId]);
+  }, [authUserId, eventPage]);
 
   const handleSubmitExcuse = async (
     record: ExcuseRequest,
@@ -576,6 +583,10 @@ export default function AttendanceHistoryRoutePage() {
       onSubmitExcuse={handleSubmitExcuse}
       onBack={() => router.push("/dashboard")}
       attendanceRecords={attendanceRecords}
+      page={eventPage}
+      pageSize={EVENT_PAGE_SIZE}
+      totalCount={eventCount}
+      onPageChange={setEventPage}
     />
   );
 }

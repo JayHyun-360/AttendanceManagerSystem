@@ -1,58 +1,68 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
 
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton";
 
-import { AdminExcuseRequestsPage, type ExcuseRequest } from "../../shared-page"
+import { AdminExcuseRequestsPage, type ExcuseRequest } from "../../shared-page";
 
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase";
 
-import { subscribeToAdminTableChanges } from "@/lib/realtime"
+import { subscribeToAdminTableChanges } from "@/lib/realtime";
 
-import { useProtectedUser } from "../layout"
+import { useProtectedUser } from "../layout";
 
-import { toast } from "sonner"
+import { toast } from "sonner";
+
+const PAGE_SIZE = 25;
 
 export default function AdminExcuseRequestsRoutePage() {
-  const router = useRouter()
+  const router = useRouter();
 
-  const { user } = useProtectedUser()
+  const { user } = useProtectedUser();
 
-  const [requests, setRequests] = useState<ExcuseRequest[]>([])
+  const [requests, setRequests] = useState<ExcuseRequest[]>([]);
 
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [page, setPage] = useState(1);
+
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function loadRequests() {
       try {
         if (!user || user.role !== "admin") {
-          router.push("/dashboard")
+          router.push("/dashboard");
 
-          return
+          return;
         }
 
-        const { data, error } = await supabase
+        const { data, error, count } = await supabase
 
           .from("excuse_requests")
 
           .select(
             "*, events(title, event_date), student_profile:profiles!excuse_requests_student_id_fkey(first_name, surname, student_id, photo_url), reviewer:profiles!excuse_requests_reviewed_by_fkey(first_name, surname)",
+            { count: "exact" },
           )
 
           .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
+          .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
         if (error) {
-          console.error(error)
+          console.error(error);
 
-          return
+          return;
         }
 
         if (!cancelled) {
+          setTotalCount(count ?? 0);
           setRequests(
             (data ?? []).map((row: any) => ({
               id: String(row.id),
@@ -111,35 +121,35 @@ export default function AdminExcuseRequestsRoutePage() {
                 },
               ),
             })),
-          )
+          );
         }
       } catch (caughtError) {
-        console.error(caughtError)
+        console.error(caughtError);
       } finally {
         if (!cancelled) {
-          setIsLoading(false)
+          setIsLoading(false);
         }
       }
     }
 
-    void loadRequests()
+    void loadRequests();
 
     const requestsChannel = subscribeToAdminTableChanges(
       user?.role === "admin",
       "excuse_requests",
       () => {
         if (!cancelled) {
-          void loadRequests()
+          void loadRequests();
         }
       },
-    )
+    );
 
     return () => {
-      cancelled = true
+      cancelled = true;
 
-      if (requestsChannel) void requestsChannel.unsubscribe()
-    }
-  }, [router, user])
+      if (requestsChannel) void requestsChannel.unsubscribe();
+    };
+  }, [page, router, user]);
 
   const handleViewAttachment = async (path: string): Promise<string | null> => {
     try {
@@ -147,29 +157,29 @@ export default function AdminExcuseRequestsRoutePage() {
 
         .from("excuse-documents")
 
-        .createSignedUrl(path, 300)
+        .createSignedUrl(path, 300);
 
       if (error || !data?.signedUrl) {
-        console.error(error)
+        console.error(error);
 
         toast.error(
           "The attachment could not be opened. It may have been submitted before file uploads were available.",
-        )
+        );
 
-        return null
+        return null;
       }
 
-      return data.signedUrl
+      return data.signedUrl;
     } catch (caughtError) {
-      console.error(caughtError)
+      console.error(caughtError);
 
       toast.error(
         "The attachment could not be opened. Check your connection and try again.",
-      )
+      );
 
-      return null
+      return null;
     }
-  }
+  };
 
   const handleAction = async (id: string, action: "approved" | "denied") => {
     if (
@@ -179,34 +189,34 @@ export default function AdminExcuseRequestsRoutePage() {
           : "Deny this excuse request?",
       )
     )
-      return
+      return;
 
     const { error } = await supabase.rpc("review_excuse_request", {
       p_request_id: id,
 
       p_decision: action,
-    })
+    });
 
     if (error) {
-      console.error(error)
+      console.error(error);
 
-      toast.error("The request could not be updated. Please try again.")
+      toast.error("The request could not be updated. Please try again.");
 
-      return
+      return;
     }
 
     setRequests((current) =>
       current.map((request) =>
         request.id === id ? { ...request, status: action } : request,
       ),
-    )
+    );
 
     toast.success(
       action === "approved"
         ? "Excuse approved. The event sanction was cleared and any linked unpaid fine was waived."
         : "Excuse request denied.",
-    )
-  }
+    );
+  };
 
   if (isLoading) {
     return (
@@ -216,7 +226,7 @@ export default function AdminExcuseRequestsRoutePage() {
           <Skeleton key={item} className="h-24 w-full rounded-xl" />
         ))}
       </div>
-    )
+    );
   }
 
   return (
@@ -225,6 +235,10 @@ export default function AdminExcuseRequestsRoutePage() {
       onAction={handleAction}
       onViewAttachment={handleViewAttachment}
       onBack={() => router.push("/admin-dashboard")}
+      page={page}
+      pageSize={PAGE_SIZE}
+      totalCount={totalCount}
+      onPageChange={setPage}
     />
-  )
+  );
 }

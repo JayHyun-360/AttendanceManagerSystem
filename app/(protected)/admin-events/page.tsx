@@ -1,22 +1,25 @@
-"use client"
+"use client";
 
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react";
 
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
 
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton";
 
-import { AdminEventsPage, type EventData, type Page } from "../../shared-page"
+import { AdminEventsPage, type EventData, type Page } from "../../shared-page";
 
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase";
 
-import { getPublicSystemSettings } from "@/lib/systemSettings"
+import { getPublicSystemSettings } from "@/lib/systemSettings";
 
-import { debounce } from "@/lib/debounce"
-import { useProtectedUser } from "../layout"
+import { debounce } from "@/lib/debounce";
+import { useProtectedUser } from "../layout";
 
 const EVENT_COLUMNS =
-  "id, title, event_date, start_time, end_time, location, description, program, status, version, archived_at, media_urls, image_url, multi_session, sanctions_enabled, strict_morning, strict_afternoon, morning_start, morning_end, morning_late_cutoff, afternoon_start, afternoon_end, afternoon_late_cutoff, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine"
+  "id, title, event_date, start_time, end_time, location, description, program, status, version, archived_at, media_urls, image_url, multi_session, sanctions_enabled, strict_morning, strict_afternoon, morning_start, morning_end, morning_late_cutoff, afternoon_start, afternoon_end, afternoon_late_cutoff, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine";
+
+const EVENT_PAGE_SIZE = 20;
+const SCAN_PAGE_SIZE = 100;
 
 function mapArchivedEvent(row: any): EventData {
   return {
@@ -88,95 +91,126 @@ function mapArchivedEvent(row: any): EventData {
     afternoonAbsentFine: Number(row.afternoon_absent_fine ?? 0),
 
     afternoonLateFine: Number(row.afternoon_late_fine ?? 0),
-  }
+  };
 }
 
 export default function AdminEventsRoutePage() {
-  const router = useRouter()
+  const router = useRouter();
 
-  const { user } = useProtectedUser()
+  const { user } = useProtectedUser();
 
-  const [events, setEvents] = useState<EventData[]>([])
+  const [events, setEvents] = useState<EventData[]>([]);
 
-  const [archivedEvents, setArchivedEvents] = useState<EventData[]>([])
+  const [archivedEvents, setArchivedEvents] = useState<EventData[]>([]);
 
-  const [isArchivedLoading, setIsArchivedLoading] = useState(false)
+  const [isArchivedLoading, setIsArchivedLoading] = useState(false);
 
-  const [archivedLoaded, setArchivedLoaded] = useState(false)
+  const [archivedLoaded, setArchivedLoaded] = useState(false);
 
-  const [finesEnabled, setFinesEnabled] = useState(false)
+  const [finesEnabled, setFinesEnabled] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true);
 
-  async function loadArchivedEvents() {
-    if (!user || user.role !== "admin" || isArchivedLoading) return
+  const [activePage, setActivePage] = useState(1);
 
-    setIsArchivedLoading(true)
+  const [activeCount, setActiveCount] = useState(0);
 
-    const { data, error } = await supabase
+  const [archivedPage, setArchivedPage] = useState(1);
+
+  const [archivedCount, setArchivedCount] = useState(0);
+
+  async function loadArchivedEvents(page = archivedPage) {
+    if (!user || user.role !== "admin") return;
+
+    setIsArchivedLoading(true);
+
+    const { data, error, count } = await supabase
       .from("events")
-      .select(EVENT_COLUMNS)
+      .select(EVENT_COLUMNS, { count: "exact" })
       .not("archived_at", "is", null)
       .order("archived_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range((page - 1) * EVENT_PAGE_SIZE, page * EVENT_PAGE_SIZE - 1);
 
     if (error) {
-      console.error(error)
+      console.error(error);
     } else {
-      setArchivedEvents((data ?? []).map(mapArchivedEvent))
+      setArchivedEvents((data ?? []).map(mapArchivedEvent));
+      setArchivedCount(count ?? 0);
+      setArchivedPage(page);
 
-      setArchivedLoaded(true)
+      setArchivedLoaded(true);
     }
 
-    setIsArchivedLoading(false)
+    setIsArchivedLoading(false);
   }
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function loadAdminEvents() {
       try {
         if (!user || user.role !== "admin") {
-          router.push("/dashboard")
+          router.push("/dashboard");
 
-          return
+          return;
         }
 
-        const [{ data: rows, error }, settingsResult] = await Promise.all([
-          supabase
-            .from("events")
-            .select(EVENT_COLUMNS)
-            .is("archived_at", null)
-            .order("event_date", { ascending: false }),
-          getPublicSystemSettings(),
-        ])
+        const [{ data: rows, error, count }, settingsResult] =
+          await Promise.all([
+            supabase
+              .from("events")
+              .select(EVENT_COLUMNS, { count: "exact" })
+              .is("archived_at", null)
+              .order("event_date", { ascending: false })
+              .order("id", { ascending: true })
+              .range(
+                (activePage - 1) * EVENT_PAGE_SIZE,
+                activePage * EVENT_PAGE_SIZE - 1,
+              ),
+            getPublicSystemSettings(),
+          ]);
 
-        const eventIds = (rows ?? []).map((row: any) => String(row.id))
-        const { data: scans, error: scansError } = eventIds.length
-          ? await supabase
+        const eventIds = (rows ?? []).map((row: any) => String(row.id));
+        const scans: any[] = [];
+        let scansError: unknown = null;
+        if (eventIds.length) {
+          for (let from = 0; ; from += SCAN_PAGE_SIZE) {
+            const { data, error } = await supabase
               .from("attendance_scans")
               .select("event_id, student_id, status, scan_in_at")
               .in("event_id", eventIds)
-          : { data: [], error: null }
-        const settingsRow = settingsResult.data
-        const settingsError = settingsResult.error
+              .order("event_id", { ascending: true })
+              .order("id", { ascending: true })
+              .range(from, from + SCAN_PAGE_SIZE - 1);
+            if (error) {
+              scansError = error;
+              break;
+            }
+            scans.push(...(data ?? []));
+            if (!data || data.length < SCAN_PAGE_SIZE) break;
+          }
+        }
+        const settingsRow = settingsResult.data;
+        const settingsError = settingsResult.error;
 
         if (error) {
-          console.error(error)
+          console.error(error);
         }
 
-        if (scansError) console.error(scansError)
+        if (scansError) console.error(scansError);
 
-        if (settingsError) console.error(settingsError)
-        const attendeesByEvent = new Map<string, Set<string>>()
+        if (settingsError) console.error(settingsError);
+        const attendeesByEvent = new Map<string, Set<string>>();
         for (const scan of scans ?? []) {
           if (
             (scan.status === "present" || scan.status === "late") &&
             scan.scan_in_at
           ) {
             const eventAttendees =
-              attendeesByEvent.get(String(scan.event_id)) ?? new Set<string>()
-            eventAttendees.add(String(scan.student_id))
-            attendeesByEvent.set(String(scan.event_id), eventAttendees)
+              attendeesByEvent.get(String(scan.event_id)) ?? new Set<string>();
+            eventAttendees.add(String(scan.student_id));
+            attendeesByEvent.set(String(scan.event_id), eventAttendees);
           }
         }
         if (!settingsError && !cancelled) {
@@ -185,10 +219,11 @@ export default function AdminEventsRoutePage() {
               (settingsRow?.settings as { finesEnabled?: boolean } | null)
                 ?.finesEnabled,
             ),
-          )
+          );
         }
 
         if (!error && !cancelled) {
+          setActiveCount(count ?? 0);
           const mapped: EventData[] = (rows ?? []).map((row: any) => ({
             id: row.id,
 
@@ -213,7 +248,7 @@ export default function AdminEventsRoutePage() {
                 Number(row.afternoon_absent_fine ?? 0)
               : Number(row.absent_fine ?? 0),
 
-            status: row.status as any || "upcoming",
+            status: (row.status as any) || "upcoming",
             attendees: attendeesByEvent.get(String(row.id))?.size ?? 0,
             version: row.version || 1,
 
@@ -255,45 +290,45 @@ export default function AdminEventsRoutePage() {
             afternoonAbsentFine: row.afternoon_absent_fine,
 
             afternoonLateFine: row.afternoon_late_fine,
-          }))
+          }));
 
-          setEvents(mapped)
+          setEvents(mapped);
         }
       } catch (caughtError) {
-        console.error(caughtError)
+        console.error(caughtError);
       } finally {
         if (!cancelled) {
-          setIsLoading(false)
+          setIsLoading(false);
         }
       }
     }
 
-    void loadAdminEvents()
+    void loadAdminEvents();
 
     const debouncedLoadAdminEvents = debounce(() => {
       if (!cancelled) {
-        void loadAdminEvents()
+        void loadAdminEvents();
 
-        if (archivedLoaded) void loadArchivedEvents()
+        if (archivedLoaded) void loadArchivedEvents();
       }
-    }, 750)
+    }, 750);
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible" || cancelled) return
+      if (document.visibilityState !== "visible" || cancelled) return;
 
-      debouncedLoadAdminEvents()
-    }
+      debouncedLoadAdminEvents();
+    };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange)
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      cancelled = true
+      cancelled = true;
 
-      debouncedLoadAdminEvents.cancel()
+      debouncedLoadAdminEvents.cancel();
 
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
-    }
-  }, [router, user, archivedLoaded])
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [activePage, archivedLoaded, archivedPage, router, user]);
 
   const onNav = (page: Page) => {
     const paths: Record<Page, string> = {
@@ -336,12 +371,12 @@ export default function AdminEventsRoutePage() {
       "my-fines": "/my-fines",
 
       profile: "/profile",
-    }
+    };
 
-    const target = paths[page] ?? "/admin-events"
+    const target = paths[page] ?? "/admin-events";
 
-    router.push(target)
-  }
+    router.push(target);
+  };
 
   if (isLoading) {
     return (
@@ -356,7 +391,7 @@ export default function AdminEventsRoutePage() {
           <Skeleton key={item} className="h-28 w-full rounded-xl" />
         ))}
       </div>
-    )
+    );
   }
 
   return (
@@ -370,7 +405,15 @@ export default function AdminEventsRoutePage() {
         onLoadArchived={loadArchivedEvents}
         isArchivedLoading={isArchivedLoading}
         finesEnabled={finesEnabled}
+        activePage={activePage}
+        activePageSize={EVENT_PAGE_SIZE}
+        activeEventCount={activeCount}
+        onActivePageChange={setActivePage}
+        archivedPage={archivedPage}
+        archivedPageSize={EVENT_PAGE_SIZE}
+        archivedEventCount={archivedCount}
+        onArchivedPageChange={(page) => void loadArchivedEvents(page)}
       />
     </Suspense>
-  )
+  );
 }

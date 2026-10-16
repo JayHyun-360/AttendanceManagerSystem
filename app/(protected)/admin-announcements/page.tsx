@@ -1,33 +1,39 @@
-"use client"
+"use client";
 
-import { Suspense, useEffect, useState } from "react"
-import { toast } from "sonner"
+import { Suspense, useEffect, useState } from "react";
+import { toast } from "sonner";
 
-import { FeedbackState } from "@/components/ui/feedback"
-import { Skeleton } from "@/components/ui/skeleton"
-import { deleteImages } from "@/lib/uploadImage"
-import { supabase } from "@/lib/supabase"
-import { AdminAnnouncementsPage } from "../../shared-page"
-import { useProtectedUser } from "../layout"
+import { FeedbackState } from "@/components/ui/feedback";
+import { Skeleton } from "@/components/ui/skeleton";
+import { deleteImages } from "@/lib/uploadImage";
+import { supabase } from "@/lib/supabase";
+import { AdminAnnouncementsPage } from "../../shared-page";
+import { useProtectedUser } from "../layout";
+
+const PAGE_SIZE = 20;
 
 export default function AdminAnnouncementsRoutePage() {
-  const { authUserId } = useProtectedUser()
-  const [posts, setPosts] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const { authUserId } = useProtectedUser();
+  const [posts, setPosts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   async function loadPosts() {
     try {
-      setLoadError(null)
-      const { data, error } = await supabase
+      setLoadError(null);
+      const { data, error, count } = await supabase
         .from("announcements")
-        .select("*")
+        .select("*", { count: "exact" })
         .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
       if (error) {
-        console.error(error)
-        setLoadError("Announcements could not be loaded.")
-        return
+        console.error(error);
+        setLoadError("Announcements could not be loaded.");
+        return;
       }
 
       setPosts(
@@ -44,46 +50,47 @@ export default function AdminAnnouncementsRoutePage() {
           badge: row.target_role === "admin" ? "Admin" : "General",
           photoUrl: row.media_url ?? "",
         })),
-      )
+      );
+      setTotalCount(count ?? 0);
     } catch (caughtError) {
-      console.error(caughtError)
-      setLoadError("Announcements could not be loaded.")
+      console.error(caughtError);
+      setLoadError("Announcements could not be loaded.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     const refreshPosts = async () => {
-      if (!cancelled) await loadPosts()
-    }
+      if (!cancelled) await loadPosts();
+    };
 
-    void refreshPosts()
+    void refreshPosts();
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible" && !cancelled) {
-        void refreshPosts()
+        void refreshPosts();
       }
-    }
+    };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange)
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      cancelled = true
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
-    }
-  }, [])
+      cancelled = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [page]);
 
   const handleCreate = async (payload: {
-    title: string
-    body: string
-    badge: string
-    photoUrl: string | null
+    title: string;
+    body: string;
+    badge: string;
+    photoUrl: string | null;
   }): Promise<boolean> => {
     if (!authUserId) {
-      toast.error("Your session is not ready. Please try again.")
-      return false
+      toast.error("Your session is not ready. Please try again.");
+      return false;
     }
 
     const { error } = await supabase.from("announcements").insert({
@@ -92,27 +99,27 @@ export default function AdminAnnouncementsRoutePage() {
       media_url: payload.photoUrl,
       posted_by: authUserId,
       target_role: "student",
-    })
+    });
 
     if (error) {
-      if (payload.photoUrl) await deleteImages([payload.photoUrl])
-      console.error(error)
-      toast.error("Announcement could not be published. Please try again.")
-      return false
+      if (payload.photoUrl) await deleteImages([payload.photoUrl]);
+      console.error(error);
+      toast.error("Announcement could not be published. Please try again.");
+      return false;
     }
 
-    await loadPosts()
-    toast.success("Announcement published.")
-    return true
-  }
+    await loadPosts();
+    toast.success("Announcement published.");
+    return true;
+  };
 
   const handleUpdate = async (payload: {
-    id: string
-    title: string
-    body: string
-    badge: string
-    photoUrl: string | null
-    previousPhotoUrl?: string
+    id: string;
+    title: string;
+    body: string;
+    badge: string;
+    photoUrl: string | null;
+    previousPhotoUrl?: string;
   }): Promise<boolean> => {
     const { error } = await supabase
       .from("announcements")
@@ -121,60 +128,63 @@ export default function AdminAnnouncementsRoutePage() {
         content: payload.body,
         media_url: payload.photoUrl,
       })
-      .eq("id", payload.id)
+      .eq("id", payload.id);
 
     if (error) {
-      console.error(error)
-      toast.error("Announcement could not be updated. Please try again.")
-      return false
+      console.error(error);
+      toast.error("Announcement could not be updated. Please try again.");
+      return false;
     }
 
-    let cleanupFailed = false
+    let cleanupFailed = false;
     if (
       payload.previousPhotoUrl &&
       payload.previousPhotoUrl !== payload.photoUrl
     ) {
-      const cleanup = await deleteImages([payload.previousPhotoUrl])
+      const cleanup = await deleteImages([payload.previousPhotoUrl]);
       if (cleanup.some((result) => !result.success)) {
-        cleanupFailed = true
+        cleanupFailed = true;
         toast.warning(
           "Announcement updated, but the old image could not be removed.",
-        )
+        );
       }
     }
 
-    await loadPosts()
-    if (!cleanupFailed) toast.success("Announcement updated.")
-    return true
-  }
+    await loadPosts();
+    if (!cleanupFailed) toast.success("Announcement updated.");
+    return true;
+  };
 
   const handleDelete = async (
     id: string,
     photoUrl?: string,
   ): Promise<boolean> => {
-    const { error } = await supabase.from("announcements").delete().eq("id", id)
+    const { error } = await supabase
+      .from("announcements")
+      .delete()
+      .eq("id", id);
 
     if (error) {
-      console.error(error)
-      toast.error("Announcement could not be deleted. Please try again.")
-      return false
+      console.error(error);
+      toast.error("Announcement could not be deleted. Please try again.");
+      return false;
     }
 
-    let cleanupFailed = false
+    let cleanupFailed = false;
     if (photoUrl) {
-      const cleanup = await deleteImages([photoUrl])
+      const cleanup = await deleteImages([photoUrl]);
       if (cleanup.some((result) => !result.success)) {
-        cleanupFailed = true
+        cleanupFailed = true;
         toast.warning(
           "Announcement deleted, but its image could not be removed.",
-        )
+        );
       }
     }
 
-    await loadPosts()
-    if (!cleanupFailed) toast.success("Announcement deleted.")
-    return true
-  }
+    await loadPosts();
+    if (!cleanupFailed) toast.success("Announcement deleted.");
+    return true;
+  };
 
   if (isLoading) {
     return (
@@ -184,7 +194,7 @@ export default function AdminAnnouncementsRoutePage() {
           <Skeleton key={item} className="h-28 w-full rounded-xl" />
         ))}
       </div>
-    )
+    );
   }
 
   if (loadError) {
@@ -194,7 +204,7 @@ export default function AdminAnnouncementsRoutePage() {
         message={loadError}
         onRetry={() => void loadPosts()}
       />
-    )
+    );
   }
 
   return (
@@ -205,7 +215,11 @@ export default function AdminAnnouncementsRoutePage() {
         onCreate={handleCreate}
         onUpdate={handleUpdate}
         onDelete={handleDelete}
+        page={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalCount}
+        onPageChange={setPage}
       />
     </Suspense>
-  )
+  );
 }
