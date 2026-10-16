@@ -10,8 +10,6 @@ import { AnnouncementsPage } from "../../shared-page"
 
 import { supabase } from "@/lib/supabase"
 
-import { subscribeToTableChanges } from "@/lib/realtime"
-
 function AnnouncementsSkeleton() {
   return (
     <div className="space-y-5 pt-2">
@@ -122,20 +120,17 @@ export default function AnnouncementsRoutePage() {
 
     void loadAnnouncements()
 
-    const announcementsChannel = subscribeToTableChanges(
-      "announcements",
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !cancelled) {
+        void loadAnnouncements()
+      }
+    }
 
-      () => {
-        if (!cancelled) {
-          void loadAnnouncements()
-        }
-      },
-    )
+    document.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
       cancelled = true
-
-      void announcementsChannel.unsubscribe()
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
   }, [])
 

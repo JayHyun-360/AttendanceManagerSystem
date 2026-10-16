@@ -10,7 +10,7 @@ import { AdminScannerPage, type EventData } from "../../shared-page"
 
 import { supabase } from "@/lib/supabase"
 
-import { subscribeToTableChanges } from "@/lib/realtime"
+import { subscribeToAdminTableChanges } from "@/lib/realtime"
 
 import { useProtectedUser } from "../layout"
 
@@ -143,16 +143,20 @@ export default function AdminScannerRoutePage() {
 
     void loadEvents()
 
-    const eventsChannel = subscribeToTableChanges("events", () => {
-      if (!cancelled) {
-        void loadEvents()
-      }
-    })
+    const eventsChannel = subscribeToAdminTableChanges(
+      user?.role === "admin",
+      "events",
+      () => {
+        if (!cancelled) {
+          void loadEvents()
+        }
+      },
+    )
 
     return () => {
       cancelled = true
 
-      void eventsChannel.unsubscribe()
+      if (eventsChannel) void eventsChannel.unsubscribe()
     }
   }, [router, user])
 

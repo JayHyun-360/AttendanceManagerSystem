@@ -10,7 +10,7 @@ import { AdminExcuseRequestsPage, type ExcuseRequest } from "../../shared-page"
 
 import { supabase } from "@/lib/supabase"
 
-import { subscribeToTableChanges } from "@/lib/realtime"
+import { subscribeToAdminTableChanges } from "@/lib/realtime"
 
 import { useProtectedUser } from "../layout"
 
@@ -124,16 +124,20 @@ export default function AdminExcuseRequestsRoutePage() {
 
     void loadRequests()
 
-    const requestsChannel = subscribeToTableChanges("excuse_requests", () => {
-      if (!cancelled) {
-        void loadRequests()
-      }
-    })
+    const requestsChannel = subscribeToAdminTableChanges(
+      user?.role === "admin",
+      "excuse_requests",
+      () => {
+        if (!cancelled) {
+          void loadRequests()
+        }
+      },
+    )
 
     return () => {
       cancelled = true
 
-      void requestsChannel.unsubscribe()
+      if (requestsChannel) void requestsChannel.unsubscribe()
     }
   }, [router, user])
 

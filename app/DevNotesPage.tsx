@@ -45,8 +45,6 @@ type DevNotesContextValue = {
 
   isLoading: boolean
 
-  isConnected: boolean
-
   markAllRead: () => void
 }
 
@@ -58,30 +56,17 @@ function normalizeNote(row: Record<string, unknown>): DevNote | null {
   const type = row.type
 
   if (
-    type !==
-      "info" &&
-    type !==
-      "warning" &&
-    type !==
-      "feature" &&
-    type !==
-      "update"
+    type !== "info" &&
+    type !== "warning" &&
+    type !== "feature" &&
+    type !== "update"
   ) {
     return null
   }
 
-  const id = String(
-    row.id ??
-      "",
-  )
+  const id = String(row.id ?? "")
 
-  if (
-    !id ||
-    typeof row.title !==
-      "string" ||
-    typeof row.message !==
-      "string"
-  ) {
+  if (!id || typeof row.title !== "string" || typeof row.message !== "string") {
     return null
   }
 
@@ -94,14 +79,9 @@ function normalizeNote(row: Record<string, unknown>): DevNote | null {
 
     type,
 
-    isActive:
-      row.is_active ===
-      true,
+    isActive: row.is_active === true,
 
-    createdAt: String(
-      row.created_at ??
-        "",
-    ),
+    createdAt: String(row.created_at ?? ""),
 
     updatedAt: String(row.updated_at ?? row.created_at ?? ""),
   }
@@ -109,23 +89,16 @@ function normalizeNote(row: Record<string, unknown>): DevNote | null {
 
 function sortNotes(notes: DevNote[]) {
   return [...notes].sort(
-    (a, b) =>
-      Date.parse(b.createdAt) -
-      Date.parse(a.createdAt),
+    (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
   )
 }
 
 function readIdsFromStorage() {
-  if (
-    typeof window ===
-    "undefined"
-  )
-    return new Set<string>()
+  if (typeof window === "undefined") return new Set<string>()
 
   try {
     const value = JSON.parse(
-      window.localStorage.getItem(READ_NOTES_STORAGE_KEY) ??
-        "[]",
+      window.localStorage.getItem(READ_NOTES_STORAGE_KEY) ?? "[]",
     )
 
     return new Set(Array.isArray(value) ? value.map(String) : [])
@@ -158,8 +131,6 @@ export function DevNotesProvider({
   const [readIds, setReadIds] = useState<Set<string>>(() => new Set())
 
   const [isLoading, setIsLoading] = useState(true)
-
-  const [isConnected, setIsConnected] = useState(false)
 
   useEffect(() => {
     setReadIds(readIdsFromStorage())
@@ -197,8 +168,6 @@ export function DevNotesProvider({
     if (!enabled) {
       setNotes([])
 
-      setIsConnected(false)
-
       setIsLoading(false)
 
       return
@@ -216,30 +185,10 @@ export function DevNotesProvider({
 
     void refresh()
 
-    const channel = supabase
-
-      .channel("dev-notes-realtime")
-
-      .on(
-        "postgres_changes",
-
-        { event: "*", schema: "public", table: "dev_notes" },
-
-        () => {
-          void loadNotes()
-        },
-      )
-
-      .subscribe((status) => {
-        if (cancelled) return
-
-        setIsConnected(status === "SUBSCRIBED")
-
-        if (status === "SUBSCRIBED") void loadNotes()
-      })
-
     const handleVisibility = () => {
-      if (document.visibilityState === "visible") void loadNotes()
+      if (!cancelled && document.visibilityState === "visible") {
+        void loadNotes()
+      }
     }
 
     document.addEventListener("visibilitychange", handleVisibility)
@@ -248,8 +197,6 @@ export function DevNotesProvider({
       cancelled = true
 
       document.removeEventListener("visibilitychange", handleVisibility)
-
-      void supabase.removeChannel(channel)
     }
   }, [enabled, loadNotes])
 
@@ -280,12 +227,10 @@ export function DevNotesProvider({
 
       isLoading,
 
-      isConnected,
-
       markAllRead,
     }),
 
-    [isConnected, isLoading, markAllRead, notes, unreadCount],
+    [isLoading, markAllRead, notes, unreadCount],
   )
 
   return (
@@ -305,7 +250,7 @@ export function useDevNotes() {
   return value
 }
 
-const typeStyles: Record<DevNoteType, { label: string; className: string }> = {
+const typeStyles: Record<DevNoteType, { label: string className: string }> = {
   info: { label: "Info", className: "bg-sky-50 text-sky-700 ring-sky-200" },
 
   warning: {
@@ -379,11 +324,9 @@ function DevNotesSkeleton() {
 }
 
 export default function DevNotesPage() {
-  const { notes, isLoading, isConnected, markAllRead } = useDevNotes()
+  const { notes, isLoading, markAllRead } = useDevNotes()
 
-  const [expandedNoteIds, setExpandedNoteIds] = useState<Set<string>>(
-    new Set(),
-  )
+  const [expandedNoteIds, setExpandedNoteIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     markAllRead()
@@ -398,22 +341,6 @@ export default function DevNotesPage() {
           <PageHeader
             title="Dev Notes"
             subtitle="Developer notifications and system updates"
-            action={
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ${
-                  isConnected
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "bg-slate-100 text-slate-500"
-                }`}
-              >
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    isConnected ? "bg-emerald-500" : "bg-slate-400"
-                  }`}
-                />
-                {isConnected ? "Live" : "Reconnecting"}
-              </span>
-            }
           />
 
           {notes.length === 0 ? (

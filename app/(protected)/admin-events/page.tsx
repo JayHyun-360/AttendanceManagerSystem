@@ -12,8 +12,6 @@ import { supabase } from "@/lib/supabase"
 
 import { getPublicSystemSettings } from "@/lib/systemSettings"
 
-import { subscribeToTableChanges } from "@/lib/realtime"
-
 import { debounce } from "@/lib/debounce"
 import { useProtectedUser } from "../layout"
 
@@ -280,32 +278,20 @@ export default function AdminEventsRoutePage() {
       }
     }, 750)
 
-    const debouncedLoadAdminAttendance = debounce(() => {
-      if (!cancelled) void loadAdminEvents()
-    }, 750)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible" || cancelled) return
 
-    const eventsChannel = subscribeToTableChanges(
-      "events",
+      debouncedLoadAdminEvents()
+    }
 
-      debouncedLoadAdminEvents,
-    )
-
-    const attendanceChannel = subscribeToTableChanges(
-      "attendance_scans",
-
-      debouncedLoadAdminAttendance,
-    )
+    document.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
       cancelled = true
 
       debouncedLoadAdminEvents.cancel()
 
-      debouncedLoadAdminAttendance.cancel()
-
-      void eventsChannel.unsubscribe()
-
-      void attendanceChannel.unsubscribe()
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
   }, [router, user, archivedLoaded])
 

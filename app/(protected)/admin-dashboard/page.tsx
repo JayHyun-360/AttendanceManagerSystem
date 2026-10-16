@@ -9,8 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { AdminDashboard } from "../../shared-page"
 
 import { supabase } from "@/lib/supabase"
-import { subscribeToTableChanges } from "@/lib/realtime"
+
 import { debounce } from "@/lib/debounce"
+
 import { useProtectedUser } from "../layout"
 
 export default function AdminDashboardRoute() {
@@ -42,12 +43,15 @@ export default function AdminDashboardRoute() {
 
   useEffect(() => {
     let cancelled = false
+
     let loadInFlight = false
+
     let refreshQueued = false
 
     async function loadAdminDashboardRequests() {
       if (loadInFlight) {
         refreshQueued = true
+
         return
       }
 
@@ -56,6 +60,7 @@ export default function AdminDashboardRoute() {
       try {
         if (!user || user.role !== "admin") {
           router.push("/dashboard")
+
           return
         }
 
@@ -65,35 +70,61 @@ export default function AdminDashboardRoute() {
 
         const [
           excuseResult,
+
           eventsResult,
+
           profileResult,
+
           scannedTodayResult,
+
           recentScansResult,
         ] = await Promise.all([
           supabase
+
             .from("excuse_requests")
+
             .select("id, status")
+
             .order("created_at", { ascending: false }),
+
           supabase
+
             .from("events")
+
             .select("id, title, event_date, status")
+
             .is("archived_at", null)
+
             .order("event_date", { ascending: true }),
+
           supabase.from("profiles").select("id").eq("role", "student"),
+
           supabase
+
             .from("attendance_scans")
+
             .select("id", { count: "exact", head: true })
+
             .in("status", ["present", "late"])
+
             .not("scan_in_at", "is", null)
+
             .gte("scan_in_at", today.toISOString()),
+
           supabase
+
             .from("attendance_scans")
+
             .select(
               "id, event_id, student_id, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(first_name, surname, student_id, program, section, photo_url), events(title)",
             )
+
             .in("status", ["present", "late"])
+
             .not("scan_in_at", "is", null)
+
             .order("scan_in_at", { ascending: false })
+
             .limit(5),
         ])
 
@@ -137,31 +168,29 @@ export default function AdminDashboardRoute() {
 
         const duplicates = 0
 
-        const recent = (recentScansResult.data ?? [])
+        const recent = (recentScansResult.data ?? []).map((row: any) => ({
+          name:
+            `${row.student_profile?.first_name ?? ""} ${row.student_profile?.surname ?? ""}`.trim() ||
+            "Student",
 
-          .map((row: any) => ({
-            name:
-              `${row.student_profile?.first_name ?? ""} ${row.student_profile?.surname ?? ""}`.trim() ||
-              "Student",
+          id: row.student_profile?.student_id || row.student_id,
 
-            id: row.student_profile?.student_id || row.student_id,
+          program: row.student_profile?.program || "",
 
-            program: row.student_profile?.program || "",
+          section: row.student_profile?.section || "",
 
-            section: row.student_profile?.section || "",
+          photoUrl: row.student_profile?.photo_url || undefined,
 
-            photoUrl: row.student_profile?.photo_url || undefined,
+          time: row.scan_in_at
+            ? new Date(row.scan_in_at).toLocaleTimeString("en-US", {
+                hour: "2-digit",
 
-            time: row.scan_in_at
-              ? new Date(row.scan_in_at).toLocaleTimeString("en-US", {
-                  hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "",
 
-                  minute: "2-digit",
-                })
-              : "",
-
-            status: "confirmed",
-          }))
+          status: "confirmed",
+        }))
 
         setRequests(excuseResult.data ?? [])
 
@@ -187,10 +216,13 @@ export default function AdminDashboardRoute() {
         console.error(caughtError)
       } finally {
         loadInFlight = false
+
         if (!cancelled) {
           setIsLoading(false)
+
           if (refreshQueued) {
             refreshQueued = false
+
             debouncedLoadAdminDashboard()
           }
         }
@@ -203,31 +235,20 @@ export default function AdminDashboardRoute() {
 
     void loadAdminDashboardRequests()
 
-    const requestsChannel = subscribeToTableChanges("excuse_requests", () => {
-      if (!cancelled) debouncedLoadAdminDashboard()
-    })
-    const eventsChannel = subscribeToTableChanges("events", () => {
-      if (!cancelled) debouncedLoadAdminDashboard()
-    })
-    const profilesChannel = subscribeToTableChanges("profiles", () => {
-      if (!cancelled) debouncedLoadAdminDashboard()
-    })
-    const attendanceChannel = subscribeToTableChanges(
-      "attendance_scans",
-      () => {
-        if (!cancelled) debouncedLoadAdminDashboard()
-      },
-    )
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !cancelled) {
+        debouncedLoadAdminDashboard()
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
       cancelled = true
+
       debouncedLoadAdminDashboard.cancel()
-      void requestsChannel.unsubscribe()
-      void eventsChannel.unsubscribe()
 
-      void profilesChannel.unsubscribe()
-
-      void attendanceChannel.unsubscribe()
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
   }, [router, user])
 

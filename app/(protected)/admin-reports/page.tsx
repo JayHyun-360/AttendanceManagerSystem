@@ -6,7 +6,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { AdminReportsPage, type EventData } from "../../shared-page"
 import { supabase } from "@/lib/supabase"
 import { getPublicSystemSettings } from "@/lib/systemSettings"
-import { subscribeToTableChanges } from "@/lib/realtime"
 import { useProtectedUser } from "../layout"
 import {
   buildAttendanceSessionRecords,
@@ -416,33 +415,18 @@ export default function AdminReportsRoutePage() {
 
     void loadReports()
 
-    const eventsChannel = subscribeToTableChanges("events", () => {
-      if (!cancelled) scheduleRefresh()
-    })
-    const profilesChannel = subscribeToTableChanges("profiles", () => {
-      if (!cancelled) scheduleRefresh()
-    })
-    const attendanceChannel = subscribeToTableChanges(
-      "attendance_scans",
-      () => {
-        if (!cancelled) scheduleRefresh()
-      },
-    )
-    const finesChannel = subscribeToTableChanges("fines", () => {
-      if (!cancelled) scheduleRefresh()
-    })
-    const excusesChannel = subscribeToTableChanges("excuse_requests", () => {
-      if (!cancelled) scheduleRefresh()
-    })
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !cancelled) {
+        scheduleRefresh(0)
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
       cancelled = true
       if (refreshTimer) clearTimeout(refreshTimer)
-      void eventsChannel.unsubscribe()
-      void profilesChannel.unsubscribe()
-      void attendanceChannel.unsubscribe()
-      void finesChannel.unsubscribe()
-      void excusesChannel.unsubscribe()
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
   }, [dateFrom, dateTo, router, user])
 

@@ -10,8 +10,6 @@ import { AdminStudentsPage, type EventData } from "../../shared-page"
 
 import { supabase } from "@/lib/supabase"
 
-import { subscribeToTableChanges } from "@/lib/realtime"
-
 import { useProtectedUser } from "../layout"
 
 export default function AdminStudentsRoutePage() {
@@ -164,16 +162,17 @@ export default function AdminStudentsRoutePage() {
 
     void loadStudents()
 
-    const profilesChannel = subscribeToTableChanges("profiles", () => {
-      if (!cancelled) {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !cancelled) {
         void loadStudents()
       }
-    })
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
       cancelled = true
-
-      void profilesChannel.unsubscribe()
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
   }, [router, user])
 

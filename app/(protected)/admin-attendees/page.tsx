@@ -16,8 +16,6 @@ import { supabase } from "@/lib/supabase"
 
 import { getPublicSystemSettings } from "@/lib/systemSettings"
 
-import { subscribeToTableChanges } from "@/lib/realtime"
-
 import { useProtectedUser } from "../layout"
 
 import { FeedbackState } from "@/components/ui/feedback"
@@ -377,52 +375,17 @@ export default function AdminAttendeesRoutePage() {
 
     void loadData()
 
-    const eventsChannel = subscribeToTableChanges("events", () => {
-      if (!cancelled) {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !cancelled) {
         void loadData()
       }
-    })
+    }
 
-    const profilesChannel = subscribeToTableChanges("profiles", () => {
-      if (!cancelled) {
-        void loadData()
-      }
-    })
-
-    const finesChannel = subscribeToTableChanges("fines", () => {
-      if (!cancelled) {
-        void loadData()
-      }
-    })
-
-    const attendanceChannel = subscribeToTableChanges(
-      "attendance_scans",
-
-      () => {
-        if (!cancelled) {
-          void loadData()
-        }
-      },
-    )
-
-    const excusesChannel = subscribeToTableChanges("excuse_requests", () => {
-      if (!cancelled) {
-        void loadData()
-      }
-    })
+    document.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
       cancelled = true
-
-      void eventsChannel.unsubscribe()
-
-      void profilesChannel.unsubscribe()
-
-      void finesChannel.unsubscribe()
-
-      void attendanceChannel.unsubscribe()
-
-      void excusesChannel.unsubscribe()
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
   }, [router, user])
 

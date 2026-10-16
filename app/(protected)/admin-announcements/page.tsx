@@ -6,7 +6,6 @@ import { toast } from "sonner"
 import { FeedbackState } from "@/components/ui/feedback"
 import { Skeleton } from "@/components/ui/skeleton"
 import { deleteImages } from "@/lib/uploadImage"
-import { subscribeToTableChanges } from "@/lib/realtime"
 import { supabase } from "@/lib/supabase"
 import { AdminAnnouncementsPage } from "../../shared-page"
 import { useProtectedUser } from "../layout"
@@ -62,16 +61,17 @@ export default function AdminAnnouncementsRoutePage() {
     }
 
     void refreshPosts()
-    const announcementsChannel = subscribeToTableChanges(
-      "announcements",
-      () => {
-        if (!cancelled) void refreshPosts()
-      },
-    )
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !cancelled) {
+        void refreshPosts()
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
       cancelled = true
-      void announcementsChannel.unsubscribe()
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
   }, [])
 

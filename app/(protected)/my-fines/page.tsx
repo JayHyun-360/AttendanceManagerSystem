@@ -14,8 +14,6 @@ import { supabase } from "@/lib/supabase"
 
 import { getPublicSystemSettings } from "@/lib/systemSettings"
 
-import { subscribeToTableChanges } from "@/lib/realtime"
-
 import { useProtectedUser } from "../layout"
 
 import {
@@ -243,16 +241,17 @@ export default function MyFinesRoutePage() {
 
     void loadFines()
 
-    const finesChannel = subscribeToTableChanges("fines", () => {
-      if (!cancelled) {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !cancelled) {
         void loadFines()
       }
-    })
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
       cancelled = true
-
-      void finesChannel.unsubscribe()
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
   }, [authUserId, showFees])
 

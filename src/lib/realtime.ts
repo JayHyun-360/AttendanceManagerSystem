@@ -1,12 +1,13 @@
 import { supabase } from "@/lib/supabase"
 
-export function subscribeToTableChanges(
+export function subscribeToAdminTableChanges(
+  isAdmin: boolean,
   table: string,
-
   callback: () => void,
-
   event: "*" | "INSERT" | "UPDATE" | "DELETE" = "*",
 ) {
+  if (!isAdmin) return null
+
   const channel = supabase.channel(`${table}-changes`)
 
   channel.on(

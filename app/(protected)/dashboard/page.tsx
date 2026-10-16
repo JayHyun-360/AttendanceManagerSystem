@@ -1,38 +1,37 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Skeleton } from "@/components/ui/skeleton"
-import { DashboardPage, type EventData } from "../../shared-page"
-import { supabase } from "@/lib/supabase"
-import { subscribeToTableChanges } from "@/lib/realtime"
-import { debounce } from "@/lib/debounce"
-import { useProtectedUser } from "../layout"
-import { FeedbackState } from "@/components/ui/feedback"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardPage, type EventData } from "../../shared-page";
+import { supabase } from "@/lib/supabase";
+import { debounce } from "@/lib/debounce";
+import { useProtectedUser } from "../layout";
+import { FeedbackState } from "@/components/ui/feedback";
 
 export default function DashboardRoute() {
-  const router = useRouter()
+  const router = useRouter();
   const {
     user,
     authUserId,
     showFees,
     dashboardSnapshot,
     setDashboardSnapshot,
-  } = useProtectedUser()
+  } = useProtectedUser();
   const cachedDashboard =
-    dashboardSnapshot?.authUserId === authUserId ? dashboardSnapshot : null
-  const [fines, setFines] = useState<any[]>(() => cachedDashboard?.fines ?? [])
+    dashboardSnapshot?.authUserId === authUserId ? dashboardSnapshot : null;
+  const [fines, setFines] = useState<any[]>(() => cachedDashboard?.fines ?? []);
   const [announcements, setAnnouncements] = useState<any[]>(
     () => cachedDashboard?.announcements ?? [],
-  )
+  );
   const [events, setEvents] = useState<any[]>(
     () => cachedDashboard?.events ?? [],
-  )
+  );
   const [announcementsReady, setAnnouncementsReady] = useState(() =>
     Boolean(cachedDashboard),
-  )
-  const [finesReady, setFinesReady] = useState(() => Boolean(cachedDashboard))
-  const [loadError, setLoadError] = useState<string | null>(null)
+  );
+  const [finesReady, setFinesReady] = useState(() => Boolean(cachedDashboard));
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [attendanceStats, setAttendanceStats] = useState(
     () =>
       cachedDashboard?.attendanceStats ?? {
@@ -41,42 +40,42 @@ export default function DashboardRoute() {
         upcoming: 0,
         totalSessions: 0,
       },
-  )
+  );
 
   useEffect(() => {
     if (user?.role === "admin") {
-      router.replace("/admin-dashboard")
-      return
+      router.replace("/admin-dashboard");
+      return;
     }
-  }, [router, user])
+  }, [router, user]);
 
   useEffect(() => {
-    let cancelled = false
-    let loadInFlight = false
-    let refreshQueued = false
+    let cancelled = false;
+    let loadInFlight = false;
+    let refreshQueued = false;
 
     async function loadDashboardAnnouncements() {
       if (loadInFlight) {
-        refreshQueued = true
-        return
+        refreshQueued = true;
+        return;
       }
 
-      loadInFlight = true
+      loadInFlight = true;
 
       try {
-        if (!cancelled) setLoadError(null)
+        if (!cancelled) setLoadError(null);
         const { data, error } = await supabase
           .from("announcements")
           .select("id, title, created_at, target_role")
           .eq("target_role", "student")
           .order("created_at", { ascending: false })
-          .limit(2)
+          .limit(2);
 
         if (error) {
-          console.error(error)
+          console.error(error);
           if (!cancelled)
-            setLoadError("Announcements are temporarily unavailable.")
-          return
+            setLoadError("Announcements are temporarily unavailable.");
+          return;
         }
 
         if (!cancelled) {
@@ -91,58 +90,57 @@ export default function DashboardRoute() {
               }),
               badge: row.target_role === "admin" ? "Admin" : "General",
             })),
-          )
+          );
         }
       } catch (caughtError) {
-        console.error(caughtError)
-        if (!cancelled) setLoadError("Dashboard data could not be loaded.")
+        console.error(caughtError);
+        if (!cancelled) setLoadError("Dashboard data could not be loaded.");
       } finally {
-        loadInFlight = false
+        loadInFlight = false;
         if (!cancelled) {
-          setAnnouncementsReady(true)
+          setAnnouncementsReady(true);
           if (refreshQueued) {
-            refreshQueued = false
-            void loadDashboardAnnouncements()
+            refreshQueued = false;
+            void loadDashboardAnnouncements();
           }
         } else {
-          refreshQueued = false
+          refreshQueued = false;
         }
       }
     }
 
-    void loadDashboardAnnouncements()
+    void loadDashboardAnnouncements();
 
-    const announcementsChannel = subscribeToTableChanges(
-      "announcements",
-      () => {
-        if (!cancelled) {
-          void loadDashboardAnnouncements()
-        }
-      },
-    )
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !cancelled) {
+        void loadDashboardAnnouncements();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      cancelled = true
-      void announcementsChannel.unsubscribe()
-    }
-  }, [])
+      cancelled = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
-    let cancelled = false
-    let loadInFlight = false
-    let refreshQueued = false
+    let cancelled = false;
+    let loadInFlight = false;
+    let refreshQueued = false;
 
     async function loadDashboardFines() {
       if (loadInFlight) {
-        refreshQueued = true
-        return
+        refreshQueued = true;
+        return;
       }
 
-      loadInFlight = true
+      loadInFlight = true;
 
       try {
         if (!authUserId) {
-          return
+          return;
         }
 
         const [eventsResult, attendanceResult, fineResult] = await Promise.all([
@@ -161,38 +159,38 @@ export default function DashboardRoute() {
             .from("fines")
             .select("amount, status")
             .eq("student_id", authUserId),
-        ])
+        ]);
 
         if (eventsResult.error) {
-          console.error(eventsResult.error)
-          if (!cancelled) setLoadError("Dashboard data could not be loaded.")
+          console.error(eventsResult.error);
+          if (!cancelled) setLoadError("Dashboard data could not be loaded.");
         }
 
         if (attendanceResult.error) {
-          console.error(attendanceResult.error)
-          if (!cancelled) setLoadError("Dashboard data could not be loaded.")
+          console.error(attendanceResult.error);
+          if (!cancelled) setLoadError("Dashboard data could not be loaded.");
         }
 
         if (fineResult.error) {
-          console.error(fineResult.error)
-          if (!cancelled) setLoadError("Dashboard data could not be loaded.")
+          console.error(fineResult.error);
+          if (!cancelled) setLoadError("Dashboard data could not be loaded.");
         }
 
         if (cancelled) {
-          return
+          return;
         }
 
-        const eventRows = eventsResult.data ?? []
-        const attendanceRows = attendanceResult.data ?? []
-        const fineRows = fineResult.data ?? []
+        const eventRows = eventsResult.data ?? [];
+        const attendanceRows = attendanceResult.data ?? [];
+        const fineRows = fineResult.data ?? [];
 
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         const todayKey = [
           today.getFullYear(),
           String(today.getMonth() + 1).padStart(2, "0"),
           String(today.getDate()).padStart(2, "0"),
-        ].join("-")
+        ].join("-");
 
         const completedEventIds = new Set(
           eventRows
@@ -201,88 +199,80 @@ export default function DashboardRoute() {
                 row.event_date <= todayKey && row.status !== "upcoming",
             )
             .map((row: any) => row.id),
-        )
+        );
         const completedEventRows = eventRows.filter((row: any) =>
           completedEventIds.has(row.id),
-        )
+        );
         const totalSessions = completedEventRows.reduce(
           (total: number, row: any) => total + (row.multi_session ? 2 : 1),
           0,
-        )
+        );
         const presentCount = attendanceRows.filter(
           (row: any) =>
             completedEventIds.has(row.event_id) &&
             (row.status === "present" || row.status === "late") &&
             !!row.scan_in_at,
-        ).length
+        ).length;
         const absentCount = attendanceRows.filter(
           (row: any) =>
             completedEventIds.has(row.event_id) && row.status === "absent",
-        ).length
-
+        ).length;
         const upcomingCount = eventRows.filter((row: any) => {
-          return row.event_date >= todayKey && row.status !== "closed"
-        }).length
+          return row.event_date >= todayKey && row.status !== "closed";
+        }).length;
 
-        setEvents(eventRows)
-        setFines(fineRows)
+        setEvents(eventRows);
+        setFines(fineRows);
         setAttendanceStats({
           present: presentCount,
           absent: Math.max(absentCount, totalSessions - presentCount),
           upcoming: upcomingCount,
           totalSessions,
-        })
+        });
       } catch (caughtError) {
-        console.error(caughtError)
-        if (!cancelled) setLoadError("Dashboard data could not be loaded.")
+        console.error(caughtError);
+        if (!cancelled) setLoadError("Dashboard data could not be loaded.");
       } finally {
-        loadInFlight = false
+        loadInFlight = false;
         if (!cancelled) {
-          setFinesReady(true)
+          setFinesReady(true);
           if (refreshQueued) {
-            refreshQueued = false
-            void loadDashboardFines()
+            refreshQueued = false;
+            void loadDashboardFines();
           }
         } else {
-          refreshQueued = false
+          refreshQueued = false;
         }
       }
     }
 
-    void loadDashboardFines()
+    void loadDashboardFines();
 
     const debouncedLoadDashboardFines = debounce(() => {
       if (!cancelled) {
-        void loadDashboardFines()
+        void loadDashboardFines();
       }
-    }, 750)
+    }, 750);
 
-    const finesChannel = subscribeToTableChanges(
-      "fines",
-      debouncedLoadDashboardFines,
-    )
-    const attendanceChannel = subscribeToTableChanges(
-      "attendance_scans",
-      debouncedLoadDashboardFines,
-    )
-    const eventsChannel = subscribeToTableChanges(
-      "events",
-      debouncedLoadDashboardFines,
-    )
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !cancelled) {
+        debouncedLoadDashboardFines();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      cancelled = true
-      debouncedLoadDashboardFines.cancel()
-      void finesChannel.unsubscribe()
-      void attendanceChannel.unsubscribe()
-      void eventsChannel.unsubscribe()
-    }
-  }, [authUserId])
+      cancelled = true;
+      debouncedLoadDashboardFines.cancel();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [authUserId]);
 
-  const isLoading = !announcementsReady || !finesReady
+  const isLoading = !announcementsReady || !finesReady;
 
   useEffect(() => {
-    if (!authUserId || !announcementsReady || !finesReady || loadError) return
+    if (!authUserId || !announcementsReady || !finesReady || loadError) return;
 
     setDashboardSnapshot({
       authUserId,
@@ -290,7 +280,7 @@ export default function DashboardRoute() {
       fines,
       events,
       attendanceStats,
-    })
+    });
   }, [
     announcements,
     announcementsReady,
@@ -301,7 +291,7 @@ export default function DashboardRoute() {
     finesReady,
     loadError,
     setDashboardSnapshot,
-  ])
+  ]);
 
   function DashboardPageSkeleton() {
     return (
@@ -387,7 +377,7 @@ export default function DashboardRoute() {
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   const onNav = (page: string) => {
@@ -399,14 +389,14 @@ export default function DashboardRoute() {
       "attendance-history": "/attendance-history",
       "my-fines": "/my-fines",
       profile: "/profile",
-    }
+    };
 
-    const target = paths[page] ?? "/dashboard"
-    router.push(target)
-  }
+    const target = paths[page] ?? "/dashboard";
+    router.push(target);
+  };
 
   if (!user || isLoading) {
-    return <DashboardPageSkeleton />
+    return <DashboardPageSkeleton />;
   }
 
   if (loadError && !cachedDashboard) {
@@ -416,36 +406,36 @@ export default function DashboardRoute() {
         message={loadError}
         onRetry={() => window.location.reload()}
       />
-    )
+    );
   }
 
   const nextEvent: EventData | undefined = (() => {
-    const today = new Date()
+    const today = new Date();
     const todayKey = [
       today.getFullYear(),
       String(today.getMonth() + 1).padStart(2, "0"),
       String(today.getDate()).padStart(2, "0"),
-    ].join("-")
+    ].join("-");
     const row = events.find((event: any) => {
       return (
         event.event_date >= todayKey &&
         event.status !== "closed" &&
         event.status !== "cancelled"
-      )
-    })
+      );
+    });
 
     if (!row) {
-      return undefined
+      return undefined;
     }
 
-    const eventDate = new Date(row.event_date)
+    const eventDate = new Date(row.event_date);
     const formattedDate = Number.isNaN(eventDate.getTime())
       ? (row.date ?? "")
       : eventDate.toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
           year: "numeric",
-        })
+        });
 
     return {
       id: row.id,
@@ -501,8 +491,8 @@ export default function DashboardRoute() {
         row.afternoonLateFine ?? row.afternoon_late_fine ?? 0,
       ),
       version: Number(row.version ?? 0),
-    }
-  })()
+    };
+  })();
 
   return (
     <DashboardPage
@@ -514,5 +504,5 @@ export default function DashboardRoute() {
       nextEvent={nextEvent}
       attendanceStats={attendanceStats}
     />
-  )
+  );
 }

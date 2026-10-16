@@ -1,22 +1,20 @@
-"use client"
+"use client";
 
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react";
 
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
 
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton";
 
-import { EventsPage, type EventData, type Page } from "../../shared-page"
+import { EventsPage, type EventData, type Page } from "../../shared-page";
 
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase";
 
-import { subscribeToTableChanges } from "@/lib/realtime"
+import { debounce } from "@/lib/debounce";
 
-import { debounce } from "@/lib/debounce"
+import { useProtectedUser } from "../layout";
 
-import { useProtectedUser } from "../layout"
-
-import { FeedbackState } from "@/components/ui/feedback"
+import { FeedbackState } from "@/components/ui/feedback";
 
 function EventsSkeleton() {
   return (
@@ -64,34 +62,34 @@ function EventsSkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 export default function EventsRoutePage() {
-  const router = useRouter()
+  const router = useRouter();
 
   const { user, authUserId, showFees, eventsSnapshot, setEventsSnapshot } =
-    useProtectedUser()
+    useProtectedUser();
 
   const eventsCacheKey = user
     ? `${authUserId ?? user.studentId}:${user.role}:${showFees}`
-    : "public"
+    : "public";
 
   const cachedEvents =
-    eventsSnapshot?.key === eventsCacheKey ? eventsSnapshot.events : null
+    eventsSnapshot?.key === eventsCacheKey ? eventsSnapshot.events : null;
 
-  const [events, setEvents] = useState<EventData[]>(() => cachedEvents ?? [])
+  const [events, setEvents] = useState<EventData[]>(() => cachedEvents ?? []);
 
-  const [isLoading, setIsLoading] = useState(() => !cachedEvents)
+  const [isLoading, setIsLoading] = useState(() => !cachedEvents);
 
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function loadEvents() {
       try {
-        if (!cancelled) setLoadError(null)
+        if (!cancelled) setLoadError(null);
 
         const eventColumns = [
           "id",
@@ -127,7 +125,7 @@ export default function EventsRoutePage() {
           ...(user?.role === "student" && showFees
             ? ["absent_fine", "morning_absent_fine", "afternoon_absent_fine"]
             : []),
-        ].join(",")
+        ].join(",");
 
         const { data, error } = user
           ? await supabase
@@ -139,14 +137,14 @@ export default function EventsRoutePage() {
               .is("archived_at", null)
 
               .order("event_date", { ascending: false })
-          : await supabase.rpc("get_public_events")
+          : await supabase.rpc("get_public_events");
 
         if (error) {
-          console.error(error)
+          console.error(error);
 
-          if (!cancelled) setLoadError("Events could not be loaded.")
+          if (!cancelled) setLoadError("Events could not be loaded.");
 
-          return
+          return;
         }
 
         if (!cancelled) {
@@ -196,60 +194,63 @@ export default function EventsRoutePage() {
             afternoonStart: row.afternoon_start ?? undefined,
 
             afternoonEnd: row.afternoon_end ?? undefined,
-          }))
+          }));
 
-          setEvents(mappedEvents)
+          setEvents(mappedEvents);
 
-          setEventsSnapshot({ key: eventsCacheKey, events: mappedEvents })
+          setEventsSnapshot({ key: eventsCacheKey, events: mappedEvents });
         }
       } catch (caughtError) {
-        console.error(caughtError)
+        console.error(caughtError);
 
-        if (!cancelled) setLoadError("Events could not be loaded.")
+        if (!cancelled) setLoadError("Events could not be loaded.");
       } finally {
         if (!cancelled) {
-          setIsLoading(false)
+          setIsLoading(false);
         }
       }
     }
 
-    void loadEvents()
+    void loadEvents();
 
     const debouncedLoadEvents = debounce(() => {
-      if (!cancelled) void loadEvents()
-    }, 750)
+      if (!cancelled) void loadEvents();
+    }, 750);
 
-    const eventsChannel = user
-      ? subscribeToTableChanges("events", debouncedLoadEvents)
-      : null
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !cancelled) {
+        debouncedLoadEvents();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      cancelled = true
+      cancelled = true;
 
-      debouncedLoadEvents.cancel()
-
-      if (eventsChannel) void eventsChannel.unsubscribe()
-    }
-  }, [eventsCacheKey, setEventsSnapshot, showFees, user])
+      debouncedLoadEvents.cancel();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [eventsCacheKey, setEventsSnapshot, showFees, user]);
 
   const onNav = (page: Page) => {
     if (page === "login") {
-      router.push("/login")
+      router.push("/login");
 
-      return
+      return;
     }
 
     if (page === "event-detail") {
-      router.push("/events")
+      router.push("/events");
 
-      return
+      return;
     }
 
-    router.push(page === "dashboard" ? "/dashboard" : "/events")
-  }
+    router.push(page === "dashboard" ? "/dashboard" : "/events");
+  };
 
   if (isLoading) {
-    return <EventsSkeleton />
+    return <EventsSkeleton />;
   }
 
   if (loadError && !cachedEvents) {
@@ -259,7 +260,7 @@ export default function EventsRoutePage() {
         message={loadError}
         onRetry={() => window.location.reload()}
       />
-    )
+    );
   }
 
   return (
@@ -271,5 +272,5 @@ export default function EventsRoutePage() {
         events={events}
       />
     </Suspense>
-  )
+  );
 }
