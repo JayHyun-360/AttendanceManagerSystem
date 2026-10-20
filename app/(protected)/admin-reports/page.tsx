@@ -35,7 +35,7 @@ type ReportPayload = {
 
 export default function AdminReportsRoutePage() {
   const router = useRouter();
-  const { user } = useProtectedUser();
+  const { user, academicPeriod } = useProtectedUser();
   const [reportData, setReportData] = useState<ReportPayload | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -305,6 +305,8 @@ export default function AdminReportsRoutePage() {
     <AdminReportsPage
       events={reportData.events}
       reportData={reportData}
+      academicYear={academicPeriod.academicYear}
+      semester={academicPeriod.semester}
       period={{ dateFrom, dateTo }}
       page={eventPage}
       pageSize={EVENT_PAGE_SIZE}

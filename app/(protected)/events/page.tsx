@@ -68,8 +68,14 @@ function EventsSkeleton() {
 export default function EventsRoutePage() {
   const router = useRouter();
 
-  const { user, authUserId, showFees, eventsSnapshot, setEventsSnapshot } =
-    useProtectedUser();
+  const {
+    user,
+    authUserId,
+    showFees,
+    academicPeriod,
+    eventsSnapshot,
+    setEventsSnapshot,
+  } = useProtectedUser();
 
   const eventsCacheKey = user
     ? `${authUserId ?? user.studentId}:${user.role}:${showFees}`
@@ -269,6 +275,8 @@ export default function EventsRoutePage() {
         onNav={onNav}
         user={user}
         showFees={showFees}
+        academicYear={academicPeriod.academicYear}
+        semester={academicPeriod.semester}
         events={events}
       />
     </Suspense>

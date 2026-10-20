@@ -97,7 +97,7 @@ function mapArchivedEvent(row: any): EventData {
 export default function AdminEventsRoutePage() {
   const router = useRouter();
 
-  const { user } = useProtectedUser();
+  const { user, academicPeriod } = useProtectedUser();
 
   const [events, setEvents] = useState<EventData[]>([]);
 
@@ -399,6 +399,8 @@ export default function AdminEventsRoutePage() {
       <AdminEventsPage
         onNav={onNav}
         events={events}
+        academicYear={academicPeriod.academicYear}
+        semester={academicPeriod.semester}
         setEvents={setEvents}
         archivedEvents={archivedEvents}
         setArchivedEvents={setArchivedEvents}

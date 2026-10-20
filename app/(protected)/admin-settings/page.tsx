@@ -13,6 +13,8 @@ import { deleteImages } from "@/lib/uploadImage"
 
 import { invalidatePublicSystemSettingsCache } from "@/lib/systemSettings"
 
+import { useProtectedUser } from "../layout"
+
 const defaultSettings: SystemSettings = {
   finesEnabled: false,
 
@@ -87,6 +89,8 @@ const withoutEmptySlides = (settings: SystemSettings): SystemSettings => ({
 })
 
 export default function AdminSettingsRoutePage() {
+  const { setAcademicPeriod } = useProtectedUser()
+
   const [settings, setSettings] = useState<SystemSettings>(defaultSettings)
 
   const [settingsReady, setSettingsReady] = useState(false)
@@ -183,6 +187,10 @@ export default function AdminSettingsRoutePage() {
           await saveLandingSettings(settingsToPersist)
 
           invalidatePublicSystemSettingsCache()
+          setAcademicPeriod({
+            academicYear: settingsToPersist.academicYear,
+            semester: settingsToPersist.semester,
+          })
 
           const previousSettings = persistedSettingsRef.current
           persistedSettingsRef.current = settingsToPersist

@@ -2935,7 +2935,7 @@ function LandingPage({
                 className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400"
                 style={{ animation: "pulse 2s infinite" }}
               />
-              AY 2026-2027 · 1st Semester
+              AY {settings.academicYear} · {settings.semester}
             </div>
             <button
               onClick={() => onNav("profile")}
@@ -4703,6 +4703,10 @@ export function EventsPage({
 
   showFees,
 
+  academicYear = "2026-2027",
+
+  semester = "1st Semester",
+
   events,
 }: {
   onNav: (p: Page) => void
@@ -4712,6 +4716,10 @@ export function EventsPage({
   user: User | null
 
   showFees: boolean
+
+  academicYear?: string
+
+  semester?: string
 
   events: EventData[]
 }) {
@@ -4724,7 +4732,10 @@ export function EventsPage({
 
   return (
     <PageShell>
-      <PageHeader title="Events" subtitle="AY 2026-2027, 1st Semester" />
+      <PageHeader
+        title="Events"
+        subtitle={`AY ${academicYear}, ${semester}`}
+      />
       <div className="flex gap-2 sm:gap-2 mb-5 overflow-x-auto pb-1 -mx-1 px-1">
         {[
           { k: "all", l: "All" },
@@ -5264,6 +5275,10 @@ export function AttendanceHistoryPage({
 
   showFees,
 
+  academicYear = "2026-2027",
+
+  semester = "1st Semester",
+
   onSubmitExcuse,
 
   onBack,
@@ -5276,6 +5291,10 @@ export function AttendanceHistoryPage({
 
   showFees: boolean
 
+  academicYear?: string
+
+  semester?: string
+
   onSubmitExcuse: (r: ExcuseRequest) => void
 
   onBack: () => void
@@ -5287,7 +5306,10 @@ export function AttendanceHistoryPage({
   return (
     <PageShell>
       <BackButton onClick={onBack} label="Back to Home" />
-      <PageHeader title="My Attendance" subtitle="AY 2026-2027, 1st Semester" />
+      <PageHeader
+        title="My Attendance"
+        subtitle={`AY ${academicYear}, ${semester}`}
+      />
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
         {attendanceRecords.map((r, i) => {
           const req = excuseRequests.find((x) => x.event === r.event)
@@ -6167,6 +6189,10 @@ export function AdminEventsPage({
 
   setEvents,
 
+  academicYear = "2026-2027",
+
+  semester = "1st Semester",
+
   showFees = false,
 }: {
   onNav: (p: Page) => void
@@ -6174,6 +6200,10 @@ export function AdminEventsPage({
   events: EventData[]
 
   setEvents: React.Dispatch<React.SetStateAction<EventData[]>>
+
+  academicYear?: string
+
+  semester?: string
 
   showFees?: boolean
 }) {
@@ -6943,7 +6973,7 @@ export function AdminEventsPage({
     <PageShell>
       <PageHeader
         title="Events"
-        subtitle="AY 2026-2027, 1st Semester"
+        subtitle={`AY ${academicYear}, ${semester}`}
         action={
           <button
             onClick={() => {
@@ -8821,8 +8851,16 @@ export function AdminReportsPage({
   events = [],
 
   reportData,
+
+  academicYear = "2026-2027",
+
+  semester = "1st Semester",
 }: {
   events?: EventData[]
+
+  academicYear?: string
+
+  semester?: string
 
   reportData?: {
     events?: EventData[]
@@ -8905,7 +8943,7 @@ export function AdminReportsPage({
 
     ctx.textAlign = "right"
 
-    ctx.fillText(`AY 2026-2027 · 1st Semester`, W - pad, 38)
+    ctx.fillText(`AY ${academicYear} · ${semester}`, W - pad, 38)
 
     y = 60
 
@@ -9180,7 +9218,7 @@ export function AdminReportsPage({
     <PageShell>
       <PageHeader
         title="Reports"
-        subtitle="AY 2026-2027, 1st Semester"
+        subtitle={`AY ${academicYear}, ${semester}`}
         action={
           <button
             onClick={exportPDF}

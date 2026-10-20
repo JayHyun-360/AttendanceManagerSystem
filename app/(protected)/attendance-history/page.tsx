@@ -90,7 +90,7 @@ function hasSessionEnded(
 export default function AttendanceHistoryRoutePage() {
   const router = useRouter();
 
-  const { authUserId, showFees } = useProtectedUser();
+  const { authUserId, showFees, academicPeriod } = useProtectedUser();
 
   const [excuseRequests, setExcuseRequests] = useState<ExcuseRequest[]>([]);
 
@@ -579,6 +579,8 @@ export default function AttendanceHistoryRoutePage() {
       excuseRequests={excuseRequests}
       fines={fines}
       showFees={showFees}
+      academicYear={academicPeriod.academicYear}
+      semester={academicPeriod.semester}
       allowExcuseRequests={allowExcuseRequests}
       onSubmitExcuse={handleSubmitExcuse}
       onBack={() => router.push("/dashboard")}

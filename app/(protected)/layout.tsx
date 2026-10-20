@@ -46,6 +46,15 @@ type ProtectedUserContextValue = {
 
   showFees: boolean
 
+  academicPeriod: {
+    academicYear: string
+    semester: string
+  }
+
+  setAcademicPeriod: Dispatch<
+    SetStateAction<{ academicYear: string; semester: string }>
+  >
+
   dashboardSnapshot: DashboardSnapshot | null
 
   setDashboardSnapshot: Dispatch<SetStateAction<DashboardSnapshot | null>>
@@ -165,6 +174,11 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const [settingsReady, setSettingsReady] = useState(false)
 
   const [showFees, setShowFees] = useState(false)
+
+  const [academicPeriod, setAcademicPeriod] = useState({
+    academicYear: "2026-2027",
+    semester: "1st Semester",
+  })
 
   const [dashboardSnapshot, setDashboardSnapshot] =
     useState<DashboardSnapshot | null>(null)
@@ -349,7 +363,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
       }
     }
 
-    if (!hasSession) {
+    if (!hasSession && !isPublicEventsRoute) {
       setShowFees(false)
 
       setSettingsReady(true)
@@ -381,12 +395,23 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
             finesEnabled?: boolean
 
             showFees?: boolean
+
+            academicYear?: string
+
+            semester?: string
           } | null | undefined
 
           setShowFees(
-            savedSettings?.finesEnabled === true &&
+            hasSession &&
+              savedSettings?.finesEnabled === true &&
               savedSettings.showFees === true,
           )
+
+          setAcademicPeriod({
+            academicYear:
+              savedSettings?.academicYear ?? "2026-2027",
+            semester: savedSettings?.semester ?? "1st Semester",
+          })
 
           setSettingsReady(true)
         }
@@ -405,7 +430,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [hasSession, sessionReady])
+  }, [hasSession, isPublicEventsRoute, sessionReady])
 
   useEffect(() => {
     void router.prefetch("/")
@@ -585,6 +610,10 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
         setAuthUserId,
 
         showFees,
+
+        academicPeriod,
+
+        setAcademicPeriod,
 
         dashboardSnapshot,
 

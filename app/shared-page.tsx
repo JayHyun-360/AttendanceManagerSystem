@@ -5270,7 +5270,7 @@ function LandingPage({
               className="w-1.5 h-1.5 bg-emerald-400 rounded-full"
               style={{ animation: "pulse 2s infinite" }}
             />
-            AY 2026-2027 · 1st Semester
+            AY {settings.academicYear} · {settings.semester}
           </div>
           <div
             className={`flex items-center gap-3 mb-4 ${
@@ -7187,6 +7187,10 @@ export function EventsPage({
 
   showFees,
 
+  academicYear,
+
+  semester,
+
   events,
 }: {
   onNav: (p: Page) => void;
@@ -7194,6 +7198,10 @@ export function EventsPage({
   user: User | null;
 
   showFees: boolean;
+
+  academicYear: string;
+
+  semester: string;
 
   events: EventData[];
 }) {
@@ -7234,7 +7242,10 @@ export function EventsPage({
 
   return (
     <>
-      <PageHeader title="Events" subtitle="AY 2026-2027, 1st Semester" />
+      <PageHeader
+        title="Events"
+        subtitle={`AY ${academicYear}, ${semester}`}
+      />
       <div className="mb-4 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 md:mb-5">
         {[
           { k: "all", l: "All" },
@@ -8797,6 +8808,10 @@ export function AttendanceHistoryPage({
 
   showFees,
 
+  academicYear,
+
+  semester,
+
   allowExcuseRequests = true,
 
   onSubmitExcuse,
@@ -8818,6 +8833,10 @@ export function AttendanceHistoryPage({
   fines: FineRecord[];
 
   showFees: boolean;
+
+  academicYear: string;
+
+  semester: string;
 
   allowExcuseRequests?: boolean;
 
@@ -8846,7 +8865,10 @@ export function AttendanceHistoryPage({
   return (
     <>
       <BackButton onClick={onBack} label="Back to Home" />
-      <PageHeader title="My Attendance" subtitle="AY 2026-2027, 1st Semester" />
+      <PageHeader
+        title="My Attendance"
+        subtitle={`AY ${academicYear}, ${semester}`}
+      />
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">
         {attendanceRecords.length === 0 ? (
           <div className="px-5 py-8 text-center md:py-12">
@@ -10394,6 +10416,10 @@ export function AdminEventsPage({
 
   events,
 
+  academicYear,
+
+  semester,
+
   setEvents,
 
   archivedEvents,
@@ -10425,6 +10451,10 @@ export function AdminEventsPage({
   onNav: (p: Page) => void;
 
   events: EventData[];
+
+  academicYear: string;
+
+  semester: string;
 
   setEvents: React.Dispatch<React.SetStateAction<EventData[]>>;
 
@@ -11832,7 +11862,7 @@ export function AdminEventsPage({
       <>
         <PageHeader
           title="Events"
-          subtitle="AY 2026-2027, 1st Semester"
+          subtitle={`AY ${academicYear}, ${semester}`}
           action={
             <div className="flex items-center gap-2">
               <ArchiveDropZone
@@ -16845,6 +16875,10 @@ export function AdminReportsPage({
 
   reportData,
 
+  academicYear,
+
+  semester,
+
   period = { dateFrom: "", dateTo: "" },
 
   onPeriodChange,
@@ -16896,6 +16930,10 @@ export function AdminReportsPage({
       color: string;
     }>;
   };
+
+  academicYear: string;
+
+  semester: string;
 
   period?: { dateFrom: string; dateTo: string };
 
@@ -16988,7 +17026,7 @@ export function AdminReportsPage({
 
     ctx.textAlign = "right";
 
-    ctx.fillText(`AY 2026-2027 · 1st Semester`, W - pad, 38);
+    ctx.fillText(`AY ${academicYear} · ${semester}`, W - pad, 38);
 
     y = 60;
 
