@@ -372,7 +372,11 @@ export default function AdminSettingsRoutePage() {
         </div>
       </div>
 
-      <AdminSettingsPage settings={settings} onSave={handleSave} />
+      <AdminSettingsPage
+        settings={settings}
+        onSave={handleSave}
+        saveState={saveState}
+      />
     </div>
   )
 }

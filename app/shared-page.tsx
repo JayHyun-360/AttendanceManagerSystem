@@ -17601,10 +17601,14 @@ export function AdminSettingsPage({
   settings,
 
   onSave,
+
+  saveState,
 }: {
   settings: SystemSettings;
 
   onSave: (s: SystemSettings) => void;
+
+  saveState: "idle" | "saving" | "saved" | "error";
 }) {
   const isBlobUrl = (value?: string) => !!value && value.startsWith("blob:");
 
@@ -17644,11 +17648,25 @@ export function AdminSettingsPage({
 
   const [feedbackFormError, setFeedbackFormError] = useState("");
 
+  const [feedbackFormSaveState, setFeedbackFormSaveState] = useState<
+    "idle" | "saving" | "saved"
+  >("idle");
+
   useEffect(() => {
     setFeedbackFormDraft(settings.feedbackFormUrl);
 
     setFeedbackFormError("");
   }, [settings.feedbackFormUrl]);
+
+  useEffect(() => {
+    if (feedbackFormSaveState !== "saving") return;
+
+    if (saveState === "saved") {
+      setFeedbackFormSaveState("saved");
+    } else if (saveState === "error") {
+      setFeedbackFormSaveState("idle");
+    }
+  }, [feedbackFormSaveState, saveState]);
 
   const isPublicMediaUrl = (value?: string) =>
     !!value && value.startsWith("https://") && !value.startsWith("blob:");
@@ -17814,6 +17832,15 @@ export function AdminSettingsPage({
 
     setFeedbackFormError("");
 
+    if (
+      value === settings.feedbackFormUrl &&
+      (saveState === "idle" || saveState === "saved")
+    ) {
+      setFeedbackFormSaveState("saved");
+      return;
+    }
+
+    setFeedbackFormSaveState("saving");
     update({ feedbackFormUrl: value });
   };
 
@@ -17957,6 +17984,8 @@ export function AdminSettingsPage({
               setFeedbackFormDraft(event.target.value);
 
               setFeedbackFormError("");
+
+              setFeedbackFormSaveState("idle");
             }}
             placeholder="https://docs.google.com/forms/d/e/.../viewform"
             className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
@@ -17970,9 +17999,15 @@ export function AdminSettingsPage({
             <button
               type="button"
               onClick={saveFeedbackFormUrl}
-              className="h-9 rounded-lg bg-emerald-700 px-3 text-xs font-semibold text-white transition-colors hover:bg-emerald-800"
+              disabled={feedbackFormSaveState === "saving"}
+              aria-live="polite"
+              className="h-9 rounded-lg bg-emerald-700 px-3 text-xs font-semibold text-white transition-colors hover:bg-emerald-800 disabled:cursor-wait disabled:opacity-70"
             >
-              Save link
+              {feedbackFormSaveState === "saving"
+                ? "Saving..."
+                : feedbackFormSaveState === "saved"
+                  ? "Saved"
+                  : "Save link"}
             </button>
             {settings.feedbackFormUrl &&
               isGoogleFormsResponderUrl(settings.feedbackFormUrl) && (
