@@ -737,6 +737,7 @@ import {
   Maximize2,
   Minimize2,
   ExternalLink,
+  RefreshCw,
   Send,
   Star,
   Trash2,
@@ -14537,14 +14538,29 @@ export function AdminAttendeesPage({
       <PageHeader
         title="Attendees"
         action={
-          <button
-            onClick={exportAttendance}
-            disabled={!selectedEvent || scans.length === 0}
-            className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-          >
-            <Icons.Download />
-            Export
-          </button>
+          <div className="flex items-center gap-2">
+            {isAttendanceLoading && (
+              <span
+                role="status"
+                aria-label="Refreshing attendance records"
+                className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400"
+              >
+                <RefreshCw
+                  aria-hidden="true"
+                  className="h-3 w-3 animate-spin"
+                />
+                Refreshing
+              </span>
+            )}
+            <button
+              onClick={exportAttendance}
+              disabled={!selectedEvent || scans.length === 0}
+              className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+            >
+              <Icons.Download />
+              Export
+            </button>
+          </div>
         }
       />
       <div className="mb-5">
@@ -14726,17 +14742,7 @@ export function AdminAttendeesPage({
           Duplicates ({duplicates.length})
         </button>
       </div>
-      {isAttendanceLoading ? (
-        <div
-          role="status"
-          aria-label="Loading attendance records"
-          className="space-y-3 rounded-xl border border-slate-100 bg-white p-4"
-        >
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-14 w-full" />
-          <Skeleton className="h-14 w-full" />
-        </div>
-      ) : allEventsSelected ? (
+      {allEventsSelected ? (
         <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
           {!studentSearch.trim() ? (
             <p className="py-8 text-center text-sm text-slate-400">
