@@ -179,6 +179,8 @@ import QRCode from "qrcode"
 
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
+import { isProfileComplete } from "@/lib/profileCompletion"
+import type { Session } from "@supabase/supabase-js"
 import { invalidateEventMedia } from "@/lib/eventMediaCache"
 import {
   uploadEventVideo,
@@ -2888,12 +2890,21 @@ function LandingPage({
   settings,
 
   user,
+  authState,
+  onRetry,
 }: {
   onNav: (p: Page) => void
 
   settings: SystemSettings
 
   user: User | null
+  authState:
+    | "loading"
+    | "signed-out"
+    | "profile-incomplete"
+    | "authenticated"
+    | "error"
+  onRetry: () => void
 }) {
   const carouselSlides = settings.carouselSlides.filter(
     (slide) => !!slide.imageUrl && !slide.imageUrl.startsWith("blob:"),
@@ -2978,15 +2989,36 @@ function LandingPage({
                     return
                   }
 
+                  if (authState === "loading") return
+
+                  if (authState === "profile-incomplete") {
+                    onNav("onboarding")
+                    return
+                  }
+
+                  if (authState === "error") {
+                    onRetry()
+                    return
+                  }
+
                   if (typeof window !== "undefined") {
                     window.location.assign("/login")
                   } else {
                     onNav("login")
                   }
                 }}
-                className="h-12 w-full rounded-full bg-emerald-600 px-3 text-[12px] font-bold text-white shadow-[0_12px_28px_rgba(16,185,129,.24)] transition-all hover:-translate-y-0.5 hover:bg-emerald-500 hover:shadow-[0_16px_34px_rgba(16,185,129,.3)] sm:w-auto sm:px-7 sm:text-[13px]"
+                disabled={authState === "loading"}
+                className="h-12 w-full rounded-full bg-emerald-600 px-3 text-[12px] font-bold text-white shadow-[0_12px_28px_rgba(16,185,129,.24)] transition-all hover:-translate-y-0.5 hover:bg-emerald-500 hover:shadow-[0_16px_34px_rgba(16,185,129,.3)] disabled:cursor-wait disabled:opacity-80 sm:w-auto sm:px-7 sm:text-[13px]"
               >
-                {user ? "Go to Dashboard" : "Get Started"}
+                {user
+                  ? "Go to Dashboard"
+                  : authState === "loading"
+                    ? "Checking account..."
+                    : authState === "profile-incomplete"
+                      ? "Complete Profile"
+                      : authState === "error"
+                        ? "Try Again"
+                        : "Get Started"}
               </button>
               <button
                 onClick={() => onNav("events")}
@@ -3176,14 +3208,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
       console.error(profileError)
     }
 
-    const incomplete =
-      !profile ||
-      !profile.first_name ||
-      !profile.surname ||
-      (profile.role !== "admin" &&
-        (!profile.student_id || !profile.program || !profile.year_level))
-
-    if (incomplete) {
+    if (!isProfileComplete(profile)) {
       router.push("/onboarding?freshLogin=1")
 
       return
@@ -10063,109 +10088,150 @@ export default function LandingExperienceClient({
   const router = useRouter()
 
   const [user, setUser] = useState<User | null>(null)
+  const [authState, setAuthState] = useState<
+    "loading" | "signed-out" | "profile-incomplete" | "authenticated" | "error"
+  >("loading")
 
   useEffect(() => {
     let cancelled = false
+    let generation = 0
 
-    async function loadAuthenticatedUser() {
+    async function loadAuthenticatedUser(
+      session: Session | null,
+      requestGeneration: number,
+      redirectAfterLogin = false,
+    ) {
+      const isCurrentRequest = () =>
+        !cancelled && requestGeneration === generation
+
+      if (!session?.user) {
+        if (isCurrentRequest()) {
+          setUser(null)
+          setAuthState("signed-out")
+        }
+
+        return
+      }
+
       try {
-        const {
-          data: { session },
-
-          error: sessionError,
-        } = await supabase.auth.getSession()
-
-        if (sessionError) {
-          console.error("Failed to load landing session", sessionError)
-        }
-
-        if (!session?.user) {
-          if (!cancelled) {
-            setUser(null)
-          }
-
-          return
-        }
-
         const { data: profile, error: profileError } = await supabase
-
           .from("profiles")
-
           .select("*")
-
           .eq("id", session.user.id)
-
           .maybeSingle()
 
-        if (profileError && profileError.code !== "PGRST116") {
-          console.error("Failed to load landing profile", profileError)
+        if (profileError) {
+          throw profileError
         }
 
-        if (!profile) {
-          if (!cancelled) {
+        if (!isProfileComplete(profile)) {
+          if (isCurrentRequest()) {
             setUser(null)
+            setAuthState("profile-incomplete")
+
+            if (redirectAfterLogin) {
+              router.replace("/onboarding?freshLogin=1")
+            }
           }
 
           return
         }
 
-        const profileIsComplete =
-          !!profile.first_name &&
-          !!profile.surname &&
-          !!profile.student_id &&
-          !!profile.program &&
-          !!profile.year_level
-
-        if (!profileIsComplete) {
-          if (!cancelled) {
-            setUser(null)
-          }
-
-          return
-        }
-
-        if (!cancelled) {
-          setUser({
+        if (isCurrentRequest()) {
+          const hydratedUser: User = {
             firstName: profile.first_name ?? "",
-
             middleInitial: profile.middle_initial ?? "",
-
             surname: profile.surname ?? "",
-
             studentId: profile.student_id ?? "",
-
             program: profile.program ?? "",
-
             yearLevel: profile.year_level ?? "",
-
             section: profile.section ?? "",
-
             phone: profile.phone ?? "",
-
             contactEmail: profile.contact_email ?? profile.email ?? "",
-
             role: profile.role ?? "student",
-
             photoUrl: profile.photo_url ?? undefined,
-
             idPhotoUrl: profile.id_photo_url ?? undefined,
-          })
+          }
+
+          setUser(hydratedUser)
+          setAuthState("authenticated")
+
+          if (redirectAfterLogin) {
+            router.replace(
+              hydratedUser.role === "admin" ? "/admin-dashboard" : "/dashboard",
+            )
+          }
         }
       } catch (caughtError) {
         console.error(caughtError)
 
-        if (!cancelled) {
+        if (isCurrentRequest()) {
           setUser(null)
+          setAuthState("error")
         }
       }
     }
 
-    void loadAuthenticatedUser()
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        generation += 1
+        setUser(null)
+        setAuthState("signed-out")
+        return
+      }
+
+      if (
+        event === "INITIAL_SESSION" ||
+        event === "SIGNED_IN" ||
+        event === "TOKEN_REFRESHED"
+      ) {
+        if (event === "SIGNED_IN") {
+          setUser(null)
+          setAuthState("loading")
+        }
+
+        const requestGeneration = ++generation
+
+        window.setTimeout(() => {
+          void loadAuthenticatedUser(
+            session,
+            requestGeneration,
+            event === "SIGNED_IN",
+          )
+        }, 0)
+      }
+    })
+
+    const initialGeneration = generation
+
+    void supabase.auth
+      .getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          throw error
+        }
+
+        if (initialGeneration === generation) {
+          const requestGeneration = ++generation
+          void loadAuthenticatedUser(session, requestGeneration)
+        }
+      })
+      .catch((caughtError: unknown) => {
+        console.error("Failed to load landing session", caughtError)
+
+        if (!cancelled && initialGeneration === generation) {
+          setUser(null)
+          setAuthState("error")
+        }
+      })
 
     return () => {
       cancelled = true
+      subscription.unsubscribe()
     }
-  }, [])
+  }, [router])
 
   const handleLandingNav = (page: Page) => {
     const routeFromPage: Record<Page, string> = {
@@ -10221,7 +10287,13 @@ export default function LandingExperienceClient({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4, ease: "easeInOut" }}
     >
-      <LandingPage onNav={handleLandingNav} settings={settings} user={user} />
+      <LandingPage
+        onNav={handleLandingNav}
+        settings={settings}
+        user={user}
+        authState={authState}
+        onRetry={() => window.location.reload()}
+      />
     </motion.div>
   )
 }

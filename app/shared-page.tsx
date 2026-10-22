@@ -771,6 +771,7 @@ import QRCode from "qrcode";
 import { toast } from "sonner";
 
 import { supabase } from "@/lib/supabase";
+import { isProfileComplete } from "@/lib/profileCompletion";
 
 import {
   getPublicSystemSettings,
@@ -5441,18 +5442,13 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
 
       .maybeSingle();
 
-    if (profileError && profileError.code !== "PGRST116") {
+    if (profileError) {
       console.error(profileError);
+      toast.error("Your profile could not be loaded. Please try again.");
+      return;
     }
 
-    const incomplete =
-      !profile ||
-      !profile.first_name ||
-      !profile.surname ||
-      (profile.role !== "admin" &&
-        (!profile.student_id || !profile.program || !profile.year_level));
-
-    if (incomplete) {
+    if (!profile || !isProfileComplete(profile)) {
       router.push("/onboarding?freshLogin=1");
 
       return;
@@ -18518,14 +18514,7 @@ export default function LandingExperienceClient({
           return;
         }
 
-        const profileIsComplete =
-          !!profile.first_name &&
-          !!profile.surname &&
-          !!profile.student_id &&
-          !!profile.program &&
-          !!profile.year_level;
-
-        if (!profileIsComplete) {
+        if (!isProfileComplete(profile)) {
           if (!cancelled) {
             setUser(null);
           }

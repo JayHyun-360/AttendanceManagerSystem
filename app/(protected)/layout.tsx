@@ -28,6 +28,7 @@ import {
 import { DevNotesProvider, useDevNotes } from "../DevNotesPage"
 
 import { supabase } from "@/lib/supabase"
+import { isProfileComplete } from "@/lib/profileCompletion"
 
 import { getPublicSystemSettings } from "@/lib/systemSettings"
 
@@ -248,8 +249,9 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
           .maybeSingle()
 
-        if (profileError && profileError.code !== "PGRST116") {
+        if (profileError) {
           console.error(profileError)
+          throw profileError
         }
 
         const googleAvatarUrl =
@@ -282,13 +284,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           }
         }
 
-        const profileIsIncomplete =
-          !profile.first_name ||
-          !profile.surname ||
-          (profile.role !== "admin" &&
-            (!profile.student_id || !profile.program || !profile.year_level))
-
-        if (profileIsIncomplete) {
+        if (!isProfileComplete(profile)) {
           router.push("/onboarding")
 
           return

@@ -2,34 +2,20 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { createServerClient } from "@supabase/ssr"
 
-// NOTE: The active workspace currently contains one client route machine in app/page.tsx,
-
-// not separate App Router files at /login, /onboarding, /dashboard, or /admin-dashboard.
-
-// To use the clean route paths below safely, the following route files must exist:
-
-//   app/login/page.tsx
-
-//   app/onboarding/page.tsx
-
-//   app/dashboard/page.tsx
-
-//   app/admin-dashboard/page.tsx
-
-// Without those files, redirecting to those URLs will produce a 404 instead of a page.
+import { isProfileComplete } from "@/lib/profileCompletion"
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
 
   const code = requestUrl.searchParams.get("code")
 
-  const origin = requestUrl.searchParams.get("origin") ?? requestUrl.origin
+  const origin = requestUrl.origin
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/login`)
+    return NextResponse.redirect(new URL("/login", origin))
   }
 
-  const redirectResponse = NextResponse.redirect(`${origin}/login`)
+  const redirectResponse = NextResponse.redirect(new URL("/login", origin))
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -58,9 +44,11 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.exchangeCodeForSession(code)
 
   if (exchangeError || !session?.user) {
-    console.error(exchangeError)
+    if (exchangeError) {
+      console.error("Failed to exchange OAuth code for a session", exchangeError)
+    }
 
-    return NextResponse.redirect(`${origin}/login`)
+    return redirectResponse
   }
 
   const uid = session.user.id
@@ -75,22 +63,18 @@ export async function GET(request: NextRequest) {
 
     .maybeSingle()
 
-  if (profileError && profileError.code !== "PGRST116") {
+  if (profileError) {
     console.error(profileError)
+
+    redirectResponse.headers.set("location", new URL("/", origin).toString())
+
+    return redirectResponse
   }
 
-  const incomplete =
-    !profile ||
-    !profile.first_name ||
-    !profile.surname ||
-    (profile.role !== "admin" &&
-      (!profile.student_id || !profile.program || !profile.year_level))
-
-  if (incomplete) {
+  if (!profile || !isProfileComplete(profile)) {
     redirectResponse.headers.set(
       "location",
-
-      `${origin}/onboarding?freshLogin=1`,
+      new URL("/onboarding?freshLogin=1", origin).toString(),
     )
 
     return redirectResponse
@@ -100,8 +84,7 @@ export async function GET(request: NextRequest) {
 
   redirectResponse.headers.set(
     "location",
-
-    `${origin}/${targetPage}?freshLogin=1`,
+    new URL(`/${targetPage}?freshLogin=1`, origin).toString(),
   )
 
   return redirectResponse
