@@ -140,9 +140,9 @@
 
 // ─── MODERATOR: Management & Settings ────────────────────────────────────────
 
-/* Fee Visibility */ /* Attendance & Requests */ /* Academic Information */ /* Landing Page */ /* Hero images */ /* Carousel slides */ /* Thumbnail */ /* Fields */ /* Controls */ /* System Info */
+/* Fee Visibility */ /* Attendance & Requests */ /* Academic Information */ /* Carousel slides */ /* Thumbnail */ /* Fields */ /* Controls */ /* System Info */
 
-import { useState, useRef, useEffect, useMemo } from "react"
+import { useState, useRef, useEffect } from "react"
 
 import { OptimizedImage } from "@/components/OptimizedImage"
 import { ProgramSelect } from "@/components/ProgramSelect"
@@ -2907,26 +2907,6 @@ function LandingPage({
     | "error"
   onRetry: () => void
 }) {
-  const heroUrls = useMemo(
-    () =>
-      settings.heroImageUrls.filter(
-        (url) => !!url && !url.startsWith("blob:"),
-      ),
-    [settings.heroImageUrls],
-  )
-  const [heroIndex, setHeroIndex] = useState(0)
-  const activeHeroIndex = heroUrls.length ? heroIndex % heroUrls.length : 0
-
-  useEffect(() => {
-    if (heroUrls.length <= 1) return
-
-    const intervalId = window.setInterval(() => {
-      setHeroIndex((current) => (current + 1) % heroUrls.length)
-    }, 5000)
-
-    return () => window.clearInterval(intervalId)
-  }, [heroUrls])
-
   const carouselSlides = settings.carouselSlides.filter(
     (slide) => !!slide.imageUrl && !slide.imageUrl.startsWith("blob:"),
   )
@@ -2935,27 +2915,8 @@ function LandingPage({
     <div className="min-h-screen bg-white">
       {}
       <div className="relative isolate overflow-hidden bg-[#f7fbf8]">
-        {heroUrls.length > 0 && (
-          <>
-            <OptimizedImage
-              src={heroUrls[activeHeroIndex]}
-              alt=""
-              aria-hidden
-              sizes="100vw"
-              loading={activeHeroIndex === 0 ? "eager" : "lazy"}
-              fetchPriority={activeHeroIndex === 0 ? "high" : "auto"}
-              className="absolute inset-0 z-[-2] h-full w-full object-cover"
-            />
-            <div
-              className="pointer-events-none absolute inset-0 z-[-1] bg-slate-950/55"
-              aria-hidden="true"
-            />
-          </>
-        )}
         <div
-          className={`pointer-events-none absolute inset-0 ${
-            heroUrls.length > 0 ? "hidden" : ""
-          }`}
+          className="pointer-events-none absolute inset-0"
           aria-hidden="true"
           style={{
             background:
@@ -2963,9 +2924,7 @@ function LandingPage({
           }}
         />
         <div
-          className={`pointer-events-none absolute inset-y-0 right-0 ${
-            heroUrls.length > 0 ? "hidden" : "hidden w-[54%] lg:block"
-          }`}
+          className="pointer-events-none absolute inset-y-0 right-0 hidden w-[54%] lg:block"
           aria-hidden="true"
           style={{
             background:
@@ -2973,17 +2932,11 @@ function LandingPage({
           }}
         />
         <div
-          className={`pointer-events-none absolute -right-32 top-16 ${
-            heroUrls.length > 0
-              ? "hidden"
-              : "hidden h-[34rem] w-[34rem] rounded-full border border-white/80 bg-white/35 shadow-[0_30px_90px_rgba(15,118,110,.1)] lg:block"
-          }`}
+          className="pointer-events-none absolute -right-32 top-16 hidden h-[34rem] w-[34rem] rounded-full border border-white/80 bg-white/35 shadow-[0_30px_90px_rgba(15,118,110,.1)] lg:block"
           aria-hidden="true"
         />
         <div
-          className={`pointer-events-none absolute -left-24 bottom-[-13rem] h-80 w-80 rounded-full bg-emerald-200/20 blur-3xl ${
-            heroUrls.length > 0 ? "hidden" : ""
-          }`}
+          className="pointer-events-none absolute -left-24 bottom-[-13rem] h-80 w-80 rounded-full bg-emerald-200/20 blur-3xl"
           aria-hidden="true"
         />
 
@@ -3015,29 +2968,15 @@ function LandingPage({
             <AdesseWordmark
               variant="hero"
               className="mb-7"
-              textClassName={
-                heroUrls.length > 0 ? "text-white" : "text-slate-950"
-              }
+              textClassName="text-slate-950"
             />
-            <p
-              className={`mb-4 text-[10px] font-bold uppercase tracking-[0.18em] sm:text-[11px] ${
-                heroUrls.length > 0 ? "text-emerald-200" : "text-emerald-700"
-              }`}
-            >
+            <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 sm:text-[11px]">
               Student event management
             </p>
-            <h1
-              className={`adesse-display max-w-[31rem] text-[2.35rem] leading-[1.02] sm:text-[3.15rem] lg:text-[3.45rem] ${
-                heroUrls.length > 0 ? "text-white" : "text-slate-950"
-              }`}
-            >
+            <h1 className="adesse-display max-w-[31rem] text-[2.35rem] leading-[1.02] text-slate-950 sm:text-[3.15rem] lg:text-[3.45rem]">
               Attendance, simplified for every campus event.
             </h1>
-            <p
-              className={`mt-6 max-w-[30rem] text-[15px] leading-[1.8] sm:text-[17px] ${
-                heroUrls.length > 0 ? "text-white/85" : "text-slate-600"
-              }`}
-            >
+            <p className="mt-6 max-w-[30rem] text-[15px] leading-[1.8] text-slate-600 sm:text-[17px]">
               Give students one easy way to check in while moderators get
               accurate, real-time attendance records.
             </p>
@@ -3084,11 +3023,7 @@ function LandingPage({
               </button>
               <button
                 onClick={() => onNav("events")}
-                className={`h-12 w-full rounded-full px-3 text-[12px] font-bold shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 sm:w-auto sm:px-7 sm:text-[13px] ${
-                  heroUrls.length > 0
-                    ? "border border-white/35 bg-white/15 text-white hover:bg-white/25"
-                    : "border border-slate-200/90 bg-white/70 text-slate-700 hover:border-emerald-200 hover:bg-white"
-                }`}
+                className="h-12 w-full rounded-full border border-slate-200/90 bg-white/70 px-3 text-[12px] font-bold text-slate-700 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-white sm:w-auto sm:px-7 sm:text-[13px]"
               >
                 Browse Events
               </button>
@@ -9404,8 +9339,6 @@ export interface SystemSettings {
 
   institution: string
 
-  heroImageUrls: string[]
-
   carouselSlides: CarouselSlide[]
 }
 
@@ -9419,8 +9352,6 @@ export function AdminSettingsPage({
   onSave: (s: SystemSettings) => void
 }) {
   const isBlobUrl = (value?: string) => !!value && value.startsWith("blob:")
-
-  const heroImageUrls = settings.heroImageUrls.filter((url) => !isBlobUrl(url))
 
   const carouselSlides = settings.carouselSlides.map((slide) => ({
     ...slide,
@@ -9438,9 +9369,6 @@ export function AdminSettingsPage({
     error?: string
   }
 
-  const [heroUploadSlots, setHeroUploadSlots] =
-    useState<Record<string, UploadSlot>>({})
-
   const [slideUploadSlots, setSlideUploadSlots] =
     useState<Record<number, UploadSlot>>({})
 
@@ -9449,69 +9377,6 @@ export function AdminSettingsPage({
 
   const isPublicMediaUrl = (value?: string) =>
     !!value && value.startsWith("https://") && !value.startsWith("blob:")
-
-  const handleHeroImageUpload = async (files: File[]) => {
-    if (!files.length) return
-
-    const slots = files.map((file, index) => ({
-      id: `hero-${Date.now()}-${index}`,
-
-      file,
-    }))
-
-    setHeroUploadSlots((current) => ({
-      ...current,
-
-      ...Object.fromEntries(
-        slots.map(({ id, file }) => [id, { file, status: "uploading" }]),
-      ),
-    }))
-
-    const uploaded = await Promise.all(
-      slots.map(async ({ id, file }) => {
-        const result = await uploadPromotionalImage(file)
-
-        if ("error" in result || !isPublicMediaUrl(result.url)) {
-          const error =
-            "error" in result
-              ? result.error
-              : "Upload did not return a valid public image URL."
-
-          setHeroUploadSlots((current) => ({
-            ...current,
-
-            [id]: { file, status: "error", error },
-          }))
-
-          return null
-        }
-
-        return { id, url: result.url }
-      }),
-    )
-
-    const validUploads = uploaded.filter(
-      (upload): upload is { id: string; url: string } => !!upload,
-    )
-
-    if (validUploads.length) {
-      update({
-        heroImageUrls: [
-          ...settings.heroImageUrls,
-
-          ...validUploads.map((upload) => upload.url),
-        ],
-      })
-
-      setHeroUploadSlots((current) => {
-        const next = { ...current }
-
-        validUploads.forEach(({ id }) => delete next[id])
-
-        return next
-      })
-    }
-  }
 
   const handleSlideImageUpload = async (i: number, file: File) => {
     setSlideUploadSlots((current) => ({
@@ -9600,13 +9465,6 @@ export function AdminSettingsPage({
 
   const toggle = (k: "showFees" | "allowExcuseRequests") =>
     onSave({ ...settings, [k]: !settings[k] })
-
-  const heroRef = useRef<HTMLInputElement>(null)
-
-  const addHero = () => heroRef.current?.click()
-
-  const removeHero = (i: number) =>
-    update({ heroImageUrls: settings.heroImageUrls.filter((_, j) => j !== i) })
 
   const slideRefs = useRef<(HTMLInputElement | null)[]>([])
 
@@ -9739,150 +9597,6 @@ export function AdminSettingsPage({
               <option>Summer</option>
             </FieldSelect>
           </div>
-        </div>
-      </div>
-
-      {}
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-        Landing Page
-      </p>
-
-      {}
-      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-3">
-        <div className="px-5 py-4">
-          <div className="flex items-center justify-between mb-0.5">
-            <p className="text-sm font-semibold text-slate-900">Hero images</p>
-            <span className="text-[11px] text-slate-400 font-medium">
-              {settings.heroImageUrls.length}/6
-            </span>
-          </div>
-          <p className="text-xs text-slate-400 mb-3">
-            Each image shows for 4 seconds before crossfading to the next. A
-            gradient keeps text readable.
-          </p>
-          <input
-            ref={heroRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            className="hidden"
-            onChange={async (e) => {
-              const files = Array.from(e.target.files ?? [])
-
-              const remaining = 6 - settings.heroImageUrls.length
-
-              const toAdd = files.slice(0, remaining)
-
-              if (toAdd.length) {
-                await handleHeroImageUpload(toAdd)
-              }
-
-              e.target.value = ""
-            }}
-          />
-          {heroImageUrls.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              {heroImageUrls.map((url, i) => (
-                <div
-                  key={i}
-                  className="relative rounded-xl overflow-hidden border border-slate-200 aspect-video"
-                >
-                  <OptimizedImage
-                    src={url}
-                    alt={`Hero ${i + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/25" />
-                  <span className="absolute top-2 left-2 text-[10px] font-bold text-white/80 bg-black/30 px-1.5 py-0.5 rounded">
-                    {i + 1}
-                  </span>
-                  <button
-                    onClick={() => removeHero(i)}
-                    className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow transition-colors"
-                  >
-                    <Icons.X />
-                  </button>
-                </div>
-              ))}
-              {Object.entries(heroUploadSlots).map(([slotId, slot]) =>
-                slot.status === "uploading" ? (
-                  <Skeleton key={slotId} className="aspect-video rounded-xl" />
-                ) : (
-                  <div
-                    key={slotId}
-                    className="aspect-video rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2 px-3 text-center"
-                  >
-                    <p className="text-[11px] font-semibold text-red-600">
-                      Upload failed
-                    </p>
-                    <button
-                      onClick={() => {
-                        setHeroUploadSlots((current) => {
-                          const next = { ...current }
-
-                          delete next[slotId]
-
-                          return next
-                        })
-
-                        void handleHeroImageUpload([slot.file])
-                      }}
-                      className="h-7 px-2.5 rounded-lg border border-red-200 bg-white text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                ),
-              )}
-            </div>
-          )}
-          {heroImageUrls.length === 0 &&
-            Object.entries(heroUploadSlots).length > 0 && (
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                {Object.entries(heroUploadSlots).map(([slotId, slot]) =>
-                  slot.status === "uploading" ? (
-                    <Skeleton
-                      key={slotId}
-                      className="aspect-video rounded-xl"
-                    />
-                  ) : (
-                    <div
-                      key={slotId}
-                      className="aspect-video rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2 px-3 text-center"
-                    >
-                      <p className="text-[11px] font-semibold text-red-600">
-                        Upload failed
-                      </p>
-                      <button
-                        onClick={() => {
-                          setHeroUploadSlots((current) => {
-                            const next = { ...current }
-
-                            delete next[slotId]
-
-                            return next
-                          })
-
-                          void handleHeroImageUpload([slot.file])
-                        }}
-                        className="h-7 px-2.5 rounded-lg border border-red-200 bg-white text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
-                      >
-                        Retry
-                      </button>
-                    </div>
-                  ),
-                )}
-              </div>
-            )}
-          {heroImageUrls.length < 6 && (
-            <button
-              onClick={addHero}
-              className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center gap-2 transition-colors"
-            >
-              <Icons.Image />
-              Add hero photo{heroImageUrls.length > 0 ? "s" : ""}
-            </button>
-          )}
         </div>
       </div>
 

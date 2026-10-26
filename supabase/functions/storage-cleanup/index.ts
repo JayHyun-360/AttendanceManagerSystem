@@ -127,7 +127,6 @@ async function loadReferenceIndex(): Promise<Set<string>> {
   for (const row of excuses.data ?? []) add(row.document_url)
   for (const row of settings.data ?? []) {
     const value = row.settings as Record<string, unknown> | null
-    addArray(value?.heroImageUrls)
     if (Array.isArray(value?.carouselSlides)) {
       for (const slide of value.carouselSlides) {
         if (!slide || typeof slide !== "object") continue

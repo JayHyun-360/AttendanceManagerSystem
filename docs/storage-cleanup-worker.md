@@ -6,7 +6,7 @@ The repository contains the already-deployed `storage-cleanup` Edge Function at:
 supabase/functions/storage-cleanup/index.ts
 ```
 
-It processes eligible rows in `public.storage_cleanup_queue`, checks all known database media references, and deletes only unreferenced objects from the `public-images` bucket. Migration `039_storage_cleanup_queue.sql` creates or upgrades the queue and enqueues old media references after replacements or removals.
+It processes eligible rows in `public.storage_cleanup_queue`, checks all known database media references, and deletes only unreferenced objects from the `public-images` bucket. Migration `039_storage_cleanup_queue.sql` creates or upgrades the queue and enqueues old media references after replacements or removals. Migration `046_remove_hero_images.sql` removes retired hero image URLs and queues their files for cleanup.
 
 The worker waits at least 24 hours after a queue row is created by default. It supports retries, concurrent-worker claiming, and quarantine handling. The deployed function authenticates the caller with the private `CLEANUP_FUNCTION_SECRET` sent in the `x-cleanup-secret` header.
 
@@ -103,7 +103,7 @@ The worker processes only rows with:
 - `available_at` in the past
 - `created_at` older than the configured minimum age
 
-Rows still referenced by profiles, events, announcements, system settings, carousel posters, or excuse requests are not deleted and are quarantined.
+Rows still referenced by profiles, events, announcements, settings carousel media, or excuse requests are not deleted and are quarantined.
 
 ## 5. Verify scheduled execution
 

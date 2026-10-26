@@ -144,7 +144,7 @@
 
 // ─── MODERATOR: Management & Settings ────────────────────────────────────────
 
-/* Fee Visibility */ /* Attendance & Requests */ /* Academic Information */ /* Landing Page */ /* Hero images */ /* Carousel slides */ /* Thumbnail */ /* Fields */ /* Controls */ /* System Info */
+/* Fee Visibility */ /* Attendance & Requests */ /* Academic Information */ /* Carousel slides */ /* Thumbnail */ /* Fields */ /* Controls */ /* System Info */
 
 /*
 import { deleteImages, uploadImage } from "@/lib/uploadImage";
@@ -5087,158 +5087,20 @@ function LandingPage({
 
   user: User | null;
 }) {
-  const heroUrls = settings.heroImageUrls.filter(
-    (url) => !!url && !url.startsWith("blob:"),
-  );
-
   const carouselSlides = settings.carouselSlides.filter(
     (slide) => !!slide.imageUrl && !slide.imageUrl.startsWith("blob:"),
   );
 
-  const hasHero = heroUrls.length > 0;
-
-  const hn = heroUrls.length;
-
-  const [heroTrack, setHeroTrack] = useState(0);
-
-  const [heroAnim, setHeroAnim] = useState(true);
-
-  const [heroVisibilityStamp, setHeroVisibilityStamp] = useState(0);
-
-  const heroRealIdx = heroTrack % (hn || 1);
-
-  const heroItems = hn > 1 ? [...heroUrls, heroUrls[0]] : heroUrls;
-
-  const heroTotal = heroItems.length;
-
-  const heroAdvance = () => {
-    setHeroAnim(true);
-
-    setHeroTrack((i) => i + 1);
-  };
-
-  const heroTransitionEnd = () => {
-    if (heroTrack === hn) {
-      setHeroAnim(false);
-
-      setHeroTrack(0);
-    }
-  };
-
-  useEffect(() => {
-    if (hn <= 1) return;
-
-    const t = setInterval(() => {
-      if (document.visibilityState === "visible") heroAdvance();
-    }, 5000);
-
-    return () => clearInterval(t);
-  }, [hn]);
-
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        setHeroTrack(0);
-
-        setHeroAnim(false);
-
-        setHeroVisibilityStamp((v) => v + 1);
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibility);
-  }, [hn]);
-
-  useEffect(() => {
-    setHeroTrack(0);
-
-    setHeroAnim(false);
-  }, [hn]);
-
   return (
     <div className="min-h-screen bg-white">
       {}
-      <div
-        className={`relative overflow-hidden ${
-          hasHero ? "min-h-[520px] lg:min-h-[580px]" : ""
-        }`}
-      >
-        {}
-        {hasHero && (
-          <div
-            className="absolute inset-y-0 left-0 flex"
-            style={{
-              width: `${heroTotal * 100}%`,
-
-              transform: `translateX(-${(heroTrack / heroTotal) * 100}%)`,
-
-              transition: heroAnim
-                ? "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)"
-                : "none",
-            }}
-            onTransitionEnd={heroTransitionEnd}
-          >
-            {heroItems.map((url, i) => (
-              <div
-                key={`${heroVisibilityStamp}-${i}-${url}`}
-                className="relative h-full flex-shrink-0"
-                style={{
-                  width: `${100 / heroTotal}%`,
-                }}
-              >
-                <OptimizedImage
-                  key={`${heroVisibilityStamp}-hero-${i}-${url}`}
-                  src={url}
-                  alt=""
-                  aria-hidden
-                  sizes="100vw"
-                  loading={i === heroTrack ? "eager" : "lazy"}
-                  decoding="async"
-                  fetchPriority={i === heroTrack ? "high" : "auto"}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        )}
-        {hasHero && (
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.18) 100%)",
-            }}
-          />
-        )}
-        {}
-        {hn > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
-            {heroUrls.map((_, i) => (
-              <span
-                key={i}
-                className={`rounded-full transition-all duration-300 ${
-                  i === heroRealIdx ? "w-4 h-2 bg-white" : "w-2 h-2 bg-white/40"
-                }`}
-              />
-            ))}
-          </div>
-        )}
-        {}
-        {!hasHero && (
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gradient-to-b from-emerald-50 to-transparent rounded-full blur-3xl opacity-60 pointer-events-none" />
-        )}
+      <div className="relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gradient-to-b from-emerald-50 to-transparent rounded-full blur-3xl opacity-60 pointer-events-none" />
 
         {user && (
           <button
             onClick={() => onNav("profile")}
-            className={`absolute top-5 right-6 z-20 flex items-center justify-center rounded-full p-1.5 transition-colors duration-150 ${
-              hasHero
-                ? "bg-black/20 text-white shadow-sm backdrop-blur-sm hover:bg-black/30"
-                : "bg-slate-900/5 text-slate-700 hover:bg-slate-900/10"
-            }`}
+            className="absolute top-5 right-6 z-20 flex items-center justify-center rounded-full bg-slate-900/5 p-1.5 text-slate-700 transition-colors duration-150 hover:bg-slate-900/10"
             aria-label="Open profile"
           >
             <ProfileIcon
@@ -5250,60 +5112,28 @@ function LandingPage({
         )}
 
         {}
-        <div
-          className={`relative w-full mx-auto px-3.5 flex flex-col md:max-w-6xl md:px-6 ${
-            hasHero
-              ? "items-start text-left pt-6 pb-6 md:pt-10 md:pb-12"
-              : "items-center text-center pt-6 pb-6 md:pt-10 md:pb-12"
-          }`}
-        >
-          <div
-            className={`inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full mb-8 ${
-              hasHero
-                ? "text-emerald-200 bg-white/10 border border-white/25 backdrop-blur-sm"
-                : "text-emerald-700 bg-emerald-50 border border-emerald-200"
-            }`}
-          >
+        <div className="relative mx-auto flex w-full flex-col items-center px-3.5 pt-6 pb-6 text-center md:max-w-6xl md:px-6 md:pt-10 md:pb-12">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
             <span
               className="w-1.5 h-1.5 bg-emerald-400 rounded-full"
               style={{ animation: "pulse 2s infinite" }}
             />
             AY {settings.academicYear} · {settings.semester}
           </div>
-          <div
-            className={`flex items-center gap-3 mb-4 ${
-              hasHero ? "" : "justify-center"
-            }`}
-          >
+          <div className="mb-4 flex items-center justify-center gap-3">
             <AdesseMark className="w-14 h-14" />
           </div>
-          <h1
-            className={`text-5xl font-extrabold tracking-tight leading-tight mb-2 ${
-              hasHero ? "text-white" : "text-slate-900"
-            }`}
-          >
+          <h1 className="mb-2 text-5xl font-extrabold leading-tight tracking-tight text-slate-900">
             Adesse
           </h1>
-          <p
-            className={`text-base font-semibold mb-6 ${
-              hasHero ? "text-white/70" : "text-slate-400"
-            }`}
-          >
+          <p className="mb-6 text-base font-semibold text-slate-400">
             Student Event Attendance &amp; Fee Tracking System
           </p>
-          <p
-            className={`text-lg mb-10 leading-relaxed ${
-              hasHero ? "text-white/80 max-w-md" : "text-slate-500 max-w-lg"
-            }`}
-          >
+          <p className="mb-10 max-w-lg text-lg leading-relaxed text-slate-500">
             One QR code per student. Real-time attendance logging. Automatic fee
             tracking.
           </p>
-          <div
-            className={`mt-3 flex items-center gap-3 md:mt-6 ${
-              hasHero ? "" : "justify-center"
-            }`}
-          >
+          <div className="mt-3 flex items-center justify-center gap-3 md:mt-6">
             <button
               onClick={() => {
                 if (user) {
@@ -5326,11 +5156,7 @@ function LandingPage({
             </button>
             <button
               onClick={() => onNav("events")}
-              className={`h-11 px-6 text-sm font-semibold rounded-xl transition-all ${
-                hasHero
-                  ? "bg-white/15 text-white border border-white/30 hover:bg-white/25 backdrop-blur-sm"
-                  : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-              }`}
+              className="h-11 rounded-xl border border-slate-200 px-6 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50"
             >
               Browse Events
             </button>
@@ -17585,8 +17411,6 @@ export interface SystemSettings {
 
   feedbackFormUrl: string;
 
-  heroImageUrls: string[];
-
   carouselSlides: CarouselSlide[];
 }
 
@@ -17605,8 +17429,6 @@ export function AdminSettingsPage({
 }) {
   const isBlobUrl = (value?: string) => !!value && value.startsWith("blob:");
 
-  const heroImageUrls = settings.heroImageUrls.filter((url) => !isBlobUrl(url));
-
   const carouselSlides = settings.carouselSlides.map((slide) => ({
     ...slide,
 
@@ -17622,10 +17444,6 @@ export function AdminSettingsPage({
 
     error?: string;
   };
-
-  const [heroUploadSlots, setHeroUploadSlots] = useState<
-    Record<string, UploadSlot>
-  >({});
 
   const [slideUploadSlots, setSlideUploadSlots] = useState<
     Record<number, UploadSlot>
@@ -17663,69 +17481,6 @@ export function AdminSettingsPage({
 
   const isPublicMediaUrl = (value?: string) =>
     !!value && value.startsWith("https://") && !value.startsWith("blob:");
-
-  const handleHeroImageUpload = async (files: File[]) => {
-    if (!files.length) return;
-
-    const slots = files.map((file, index) => ({
-      id: `hero-${Date.now()}-${index}`,
-
-      file,
-    }));
-
-    setHeroUploadSlots((current) => ({
-      ...current,
-
-      ...Object.fromEntries(
-        slots.map(({ id, file }) => [id, { file, status: "uploading" }]),
-      ),
-    }));
-
-    const uploaded = await Promise.all(
-      slots.map(async ({ id, file }) => {
-        const result = await uploadPromotionalImage(file);
-
-        if ("error" in result || !isPublicMediaUrl(result.url)) {
-          const error =
-            "error" in result
-              ? result.error
-              : "Upload did not return a valid public image URL.";
-
-          setHeroUploadSlots((current) => ({
-            ...current,
-
-            [id]: { file, status: "error", error },
-          }));
-
-          return null;
-        }
-
-        return { id, url: result.url };
-      }),
-    );
-
-    const validUploads = uploaded.filter(
-      (upload): upload is { id: string; url: string } => !!upload,
-    );
-
-    if (validUploads.length) {
-      update({
-        heroImageUrls: [
-          ...settings.heroImageUrls,
-
-          ...validUploads.map((upload) => upload.url),
-        ],
-      });
-
-      setHeroUploadSlots((current) => {
-        const next = { ...current };
-
-        validUploads.forEach(({ id }) => delete next[id]);
-
-        return next;
-      });
-    }
-  };
 
   const handleSlideImageUpload = async (i: number, file: File) => {
     setSlideUploadSlots((current) => ({
@@ -17840,13 +17595,6 @@ export function AdminSettingsPage({
   const toggle = (
     k: "finesEnabled" | "showFees" | "allowExcuseRequests",
   ) => onSave({ ...settings, [k]: !settings[k] });
-
-  const heroRef = useRef<HTMLInputElement>(null);
-
-  const addHero = () => heroRef.current?.click();
-
-  const removeHero = (i: number) =>
-    update({ heroImageUrls: settings.heroImageUrls.filter((_, j) => j !== i) });
 
   const slideRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -18069,150 +17817,6 @@ export function AdminSettingsPage({
       </div>
 
       <AdminProgramCatalog />
-
-      {}
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-        Landing Page
-      </p>
-
-      {}
-      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-3">
-        <div className="px-5 py-4">
-          <div className="flex items-center justify-between mb-0.5">
-            <p className="text-sm font-semibold text-slate-900">Hero images</p>
-            <span className="text-[11px] text-slate-400 font-medium">
-              {settings.heroImageUrls.length}/6
-            </span>
-          </div>
-          <p className="text-xs text-slate-400 mb-3">
-            Each image shows for 4 seconds before crossfading to the next. A
-            gradient keeps text readable.
-          </p>
-          <input
-            ref={heroRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            className="hidden"
-            onChange={async (e) => {
-              const files = Array.from(e.target.files ?? []);
-
-              const remaining = 6 - settings.heroImageUrls.length;
-
-              const toAdd = files.slice(0, remaining);
-
-              if (toAdd.length) {
-                await handleHeroImageUpload(toAdd);
-              }
-
-              e.target.value = "";
-            }}
-          />
-          {heroImageUrls.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              {heroImageUrls.map((url, i) => (
-                <div
-                  key={i}
-                  className="relative rounded-xl overflow-hidden border border-slate-200 aspect-video"
-                >
-                  <OptimizedImage
-                    src={url}
-                    alt={`Hero ${i + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/25" />
-                  <span className="absolute top-2 left-2 text-[10px] font-bold text-white/80 bg-black/30 px-1.5 py-0.5 rounded">
-                    {i + 1}
-                  </span>
-                  <button
-                    onClick={() => removeHero(i)}
-                    className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow transition-colors"
-                  >
-                    <Icons.X />
-                  </button>
-                </div>
-              ))}
-              {Object.entries(heroUploadSlots).map(([slotId, slot]) =>
-                slot.status === "uploading" ? (
-                  <Skeleton key={slotId} className="aspect-video rounded-xl" />
-                ) : (
-                  <div
-                    key={slotId}
-                    className="aspect-video rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2 px-3 text-center"
-                  >
-                    <p className="text-[11px] font-semibold text-red-600">
-                      Upload failed
-                    </p>
-                    <button
-                      onClick={() => {
-                        setHeroUploadSlots((current) => {
-                          const next = { ...current };
-
-                          delete next[slotId];
-
-                          return next;
-                        });
-
-                        void handleHeroImageUpload([slot.file]);
-                      }}
-                      className="h-7 px-2.5 rounded-lg border border-red-200 bg-white text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                ),
-              )}
-            </div>
-          )}
-          {heroImageUrls.length === 0 &&
-            Object.entries(heroUploadSlots).length > 0 && (
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                {Object.entries(heroUploadSlots).map(([slotId, slot]) =>
-                  slot.status === "uploading" ? (
-                    <Skeleton
-                      key={slotId}
-                      className="aspect-video rounded-xl"
-                    />
-                  ) : (
-                    <div
-                      key={slotId}
-                      className="aspect-video rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-2 px-3 text-center"
-                    >
-                      <p className="text-[11px] font-semibold text-red-600">
-                        Upload failed
-                      </p>
-                      <button
-                        onClick={() => {
-                          setHeroUploadSlots((current) => {
-                            const next = { ...current };
-
-                            delete next[slotId];
-
-                            return next;
-                          });
-
-                          void handleHeroImageUpload([slot.file]);
-                        }}
-                        className="h-7 px-2.5 rounded-lg border border-red-200 bg-white text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
-                      >
-                        Retry
-                      </button>
-                    </div>
-                  ),
-                )}
-              </div>
-            )}
-          {heroImageUrls.length < 6 && (
-            <button
-              onClick={addHero}
-              className="w-full h-10 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-emerald-400 hover:text-emerald-500 flex items-center justify-center gap-2 transition-colors"
-            >
-              <Icons.Image />
-              Add hero photo{heroImageUrls.length > 0 ? "s" : ""}
-            </button>
-          )}
-        </div>
-      </div>
 
       {}
       <div className="bg-white border border-slate-100 rounded-xl overflow-hidden mb-5">

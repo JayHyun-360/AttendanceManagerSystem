@@ -58,11 +58,21 @@ export async function refreshLandingSettings() {
 
 export async function saveLandingSettings(settings: SettingsPayload) {
   const supabase = await getAdminSupabase()
+  const persistedSettings: SettingsPayload = {
+    finesEnabled: settings.finesEnabled,
+    showFees: settings.showFees,
+    allowExcuseRequests: settings.allowExcuseRequests,
+    academicYear: settings.academicYear,
+    semester: settings.semester,
+    institution: settings.institution,
+    feedbackFormUrl: settings.feedbackFormUrl,
+    carouselSlides: settings.carouselSlides,
+  }
 
   const { error } = await supabase
     .from("system_settings")
     .update({
-      settings,
+      settings: persistedSettings,
       updated_at: new Date().toISOString(),
     })
     .eq("id", 1)

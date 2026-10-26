@@ -30,8 +30,6 @@ const defaultSettings: SystemSettings = {
 
   feedbackFormUrl: "",
 
-  heroImageUrls: [],
-
   carouselSlides: [],
 }
 
@@ -56,10 +54,6 @@ const normalizeSettings = (
 
   feedbackFormUrl:
     rawSettings?.feedbackFormUrl ?? defaultSettings.feedbackFormUrl,
-
-  heroImageUrls: (
-    rawSettings?.heroImageUrls ?? defaultSettings.heroImageUrls
-  ).filter((url) => !!stripBlobUrls(url)),
 
   carouselSlides: (
     rawSettings?.carouselSlides ?? defaultSettings.carouselSlides
@@ -192,7 +186,6 @@ export default function AdminSettingsRoutePage() {
           persistedSettingsRef.current = settingsToPersist
 
           const retainedUrls = new Set([
-            ...settingsToPersist.heroImageUrls,
             ...settingsToPersist.carouselSlides.flatMap((slide) => [
               slide.imageUrl,
               slide.posterUrl ?? "",
@@ -200,8 +193,6 @@ export default function AdminSettingsRoutePage() {
           ])
 
           const cleanupUrls = [
-            ...previousSettings.heroImageUrls,
-
             ...previousSettings.carouselSlides.flatMap((slide) => [
               slide.imageUrl,
 
@@ -260,10 +251,6 @@ export default function AdminSettingsRoutePage() {
   const handleSave = (nextSettings: SystemSettings) => {
     const sanitizedSettings: SystemSettings = {
       ...nextSettings,
-
-      heroImageUrls: nextSettings.heroImageUrls.filter(
-        (url) => !!stripBlobUrls(url),
-      ),
 
       carouselSlides: nextSettings.carouselSlides.map((slide) => ({
         ...slide,

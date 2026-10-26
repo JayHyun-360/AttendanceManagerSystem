@@ -17,8 +17,6 @@ const DEFAULT_SETTINGS: SystemSettings = {
 
   institution: "Adesse",
 
-  heroImageUrls: [],
-
   carouselSlides: [],
 }
 
@@ -28,13 +26,16 @@ const sanitizeSettings = (
   const next = value ?? DEFAULT_SETTINGS
 
   return {
-    ...DEFAULT_SETTINGS,
+    showFees: next.showFees ?? DEFAULT_SETTINGS.showFees,
 
-    ...next,
+    allowExcuseRequests:
+      next.allowExcuseRequests ?? DEFAULT_SETTINGS.allowExcuseRequests,
 
-    heroImageUrls: (next.heroImageUrls ?? DEFAULT_SETTINGS.heroImageUrls)
+    academicYear: next.academicYear ?? DEFAULT_SETTINGS.academicYear,
 
-      .filter((url) => !!url && !url.startsWith("blob:")),
+    semester: next.semester ?? DEFAULT_SETTINGS.semester,
+
+    institution: next.institution ?? DEFAULT_SETTINGS.institution,
 
     carouselSlides: (next.carouselSlides ?? DEFAULT_SETTINGS.carouselSlides)
 
