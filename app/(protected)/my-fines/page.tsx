@@ -13,6 +13,8 @@ import { MyFinesPage, type FineRecord } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 
 import { getPublicSystemSettings } from "@/lib/systemSettings";
+import { getProgramCatalog } from "@/lib/programCatalog";
+import { buildProgramEventFilter } from "@/lib/programMatching";
 
 import { useProtectedUser } from "../layout";
 
@@ -61,13 +63,14 @@ export default function MyFinesRoutePage() {
           return;
         }
 
-        const [profileResult, settingsResult] = await Promise.all([
+        const [profileResult, settingsResult, programsResult] = await Promise.all([
           supabase
             .from("profiles")
             .select("program")
             .eq("id", authUserId)
             .single(),
           getPublicSystemSettings(),
+          getProgramCatalog(),
         ]);
 
         let eventsQuery = supabase
@@ -83,8 +86,19 @@ export default function MyFinesRoutePage() {
           .order("id", { ascending: true });
 
         if (profileResult.data?.program) {
+          if (programsResult.error) {
+            console.error(
+              "Failed to load programs for fine filtering",
+              programsResult.error,
+            );
+            setLoadError("Programs could not be loaded. Please try again.");
+            return;
+          }
           eventsQuery = eventsQuery.or(
-            `program.eq.All Programs,program.is.null,program.eq.${profileResult.data.program}`,
+            buildProgramEventFilter(
+              profileResult.data.program,
+              programsResult.data ?? [],
+            ),
           );
         }
 
@@ -134,6 +148,7 @@ export default function MyFinesRoutePage() {
           profileResult.error ||
           eventsResult.error ||
           settingsResult.error ||
+          programsResult.error ||
           excusesError;
 
         if (queryError) {

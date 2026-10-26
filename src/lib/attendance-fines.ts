@@ -1,3 +1,5 @@
+import { eventMatchesProgram } from "@/lib/programMatching"
+
 export type SessionLabel = "morning" | "afternoon"
 
 export type AttendanceStatus = "present" | "late" | "absent" | "confirmed" | "duplicate"
@@ -224,9 +226,7 @@ export function buildAttendanceSessionRecords(
       event.event_date <= today &&
       event.status !== "upcoming" &&
       event.status !== "cancelled" &&
-      (!event.program ||
-        event.program === "All Programs" ||
-        event.program === studentProgram),
+      eventMatchesProgram(event.program, studentProgram),
   )
 
   const scanByKey = new Map(

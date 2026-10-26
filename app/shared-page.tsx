@@ -411,18 +411,11 @@ import { Skeleton } from "@/components/ui/skeleton";
                             value={draft.studentId}
                             onChange={setF("studentId")}
                           />
-                          <FieldSelect
+                          <ProgramSelect
                             label="Program"
                             value={draft.program}
                             onChange={setF("program")}
-                          >
-                            <option value="">Select program</option>
-                            <option>BSIT - Information Technology</option>
-                            <option>BSCS - Computer Science</option>
-                            <option>BSBA - Business Administration</option>
-                            <option>BSEd - Secondary Education</option>
-                            <option>BSHM - Hospitality Management</option>
-                          </FieldSelect>
+                          />
                           <FieldSelect
                             label="Year Level"
                             value={draft.yearLevel}
@@ -802,6 +795,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { PaginationControls } from "@/components/ui/pagination-controls";
+import { ProgramSelect } from "@/components/ProgramSelect";
+import { AdminProgramCatalog } from "@/components/AdminProgramCatalog";
+import { getProgramCatalog, type Program } from "@/lib/programCatalog";
+import { eventMatchesProgram } from "@/lib/programMatching";
 
 const adesseLogoSrc = "/adesse-a.svg";
 
@@ -6039,19 +6036,12 @@ export function OnboardingPage({
             )}
             {step === 4 && (
               <>
-                <FieldSelect
+                <ProgramSelect
                   label="Program"
                   required
                   value={f.program}
                   onChange={set("program")}
-                >
-                  <option value="">Select program</option>
-                  <option>BSIT - Information Technology</option>
-                  <option>BSCS - Computer Science</option>
-                  <option>BSBA - Business Administration</option>
-                  <option>BSEd - Secondary Education</option>
-                  <option>BSHM - Hospitality Management</option>
-                </FieldSelect>
+                />
                 <FieldSelect
                   label="Year Level"
                   required
@@ -9720,18 +9710,11 @@ export function ProfilePage({
                       value={draft.studentId}
                       onChange={setF("studentId")}
                     />
-                    <FieldSelect
+                    <ProgramSelect
                       label="Program"
                       value={draft.program}
                       onChange={setF("program")}
-                    >
-                      <option value="">Select program</option>
-                      <option>BSIT - Information Technology</option>
-                      <option>BSCS - Computer Science</option>
-                      <option>BSBA - Business Administration</option>
-                      <option>BSEd - Secondary Education</option>
-                      <option>BSHM - Hospitality Management</option>
-                    </FieldSelect>
+                    />
                     <FieldSelect
                       label="Year Level"
                       value={draft.yearLevel}
@@ -11991,17 +11974,12 @@ export function AdminEventsPage({
                     value={draft.date}
                     onChange={setD("date")}
                   />
-                  <FieldSelect
+                  <ProgramSelect
                     label="Program"
                     value={draft.program}
                     onChange={setD("program")}
-                  >
-                    <option>All Programs</option>
-                    <option>BSIT / BSCS</option>
-                    <option>BSIT</option>
-                    <option>BSCS</option>
-                    <option>BSBA</option>
-                  </FieldSelect>
+                    includeAllPrograms
+                  />
                 </div>
                 <FieldInput
                   label="Location"
@@ -12442,7 +12420,7 @@ export function AdminEventsPage({
                       )
                     }
                   />
-                  <FieldSelect
+                  <ProgramSelect
                     label="Program"
                     value={editDraft.program}
                     onChange={(e) =>
@@ -12450,13 +12428,8 @@ export function AdminEventsPage({
                         d ? { ...d, program: e.target.value } : d,
                       )
                     }
-                  >
-                    <option>All Programs</option>
-                    <option>BSIT / BSCS</option>
-                    <option>BSIT</option>
-                    <option>BSCS</option>
-                    <option>BSBA</option>
-                  </FieldSelect>
+                    includeAllPrograms
+                  />
                 </div>
                 <FieldInput
                   label="Location"
@@ -14181,6 +14154,30 @@ export function AdminAttendeesPage({
 
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
 
+  const [programCatalog, setProgramCatalog] = useState<Program[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getProgramCatalog().then(
+      ({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          console.error("Failed to load programs for event matching", error);
+          return;
+        }
+        setProgramCatalog(data ?? []);
+      },
+      (error: unknown) => {
+        if (!cancelled) {
+          console.error("Failed to load programs for event matching", error);
+        }
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [selectedSession, setSelectedSession] = useState<
     "morning" | "afternoon"
   >("morning");
@@ -14252,9 +14249,11 @@ export function AdminAttendeesPage({
 
   const eligibleStudents = students.filter(
     (student) =>
-      !selectedEvent?.program ||
-      selectedEvent.program === "All Programs" ||
-      student.program === selectedEvent.program,
+      eventMatchesProgram(
+        selectedEvent?.program,
+        student.program,
+        programCatalog,
+      ),
   );
 
   const searchQuery = studentSearch.trim().toLowerCase();
@@ -18076,6 +18075,8 @@ export function AdminSettingsPage({
           </div>
         </div>
       </div>
+
+      <AdminProgramCatalog />
 
       {}
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">

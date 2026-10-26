@@ -11,6 +11,8 @@ import { EventsPage, type EventData, type Page } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 
 import { debounce } from "@/lib/debounce";
+import { getProgramCatalog } from "@/lib/programCatalog";
+import { buildProgramEventFilter } from "@/lib/programMatching";
 
 import { useProtectedUser } from "../layout";
 
@@ -133,16 +135,31 @@ export default function EventsRoutePage() {
             : []),
         ].join(",");
 
-        const { data, error } = user
-          ? await supabase
-
+        let eventQuery = user
+          ? supabase
               .from("events")
-
               .select(eventColumns)
-
               .is("archived_at", null)
-
               .order("event_date", { ascending: false })
+          : null;
+
+        if (user?.role === "student" && user.program) {
+          const { data: programs, error: programsError } =
+            await getProgramCatalog();
+          if (programsError) {
+            console.error("Failed to load programs for event filtering", programsError);
+            if (!cancelled)
+              setLoadError("Programs could not be loaded. Please try again.");
+            return;
+          }
+          eventQuery =
+            eventQuery?.or(
+              buildProgramEventFilter(user.program, programs ?? []),
+            ) ?? null;
+        }
+
+        const { data, error } = eventQuery
+          ? await eventQuery
           : await supabase.rpc("get_public_events");
 
         if (error) {

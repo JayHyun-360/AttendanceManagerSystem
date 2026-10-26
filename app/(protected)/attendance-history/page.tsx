@@ -15,6 +15,8 @@ import {
 import { supabase } from "@/lib/supabase";
 
 import { getPublicSystemSettings } from "@/lib/systemSettings";
+import { getProgramCatalog } from "@/lib/programCatalog";
+import { buildProgramEventFilter } from "@/lib/programMatching";
 
 import { useProtectedUser } from "../layout";
 
@@ -122,13 +124,14 @@ export default function AttendanceHistoryRoutePage() {
           return;
         }
 
-        const [profileResult, settingsResult] = await Promise.all([
+        const [profileResult, settingsResult, programsResult] = await Promise.all([
           supabase
             .from("profiles")
             .select("program")
             .eq("id", authUserId)
             .single(),
           getPublicSystemSettings(),
+          getProgramCatalog(),
         ]);
 
         let eventsQuery = supabase
@@ -142,10 +145,20 @@ export default function AttendanceHistoryRoutePage() {
           .neq("status", "cancelled")
           .order("event_date", { ascending: false })
           .order("id", { ascending: true });
-
         if (profileResult.data?.program) {
+          if (programsResult.error) {
+            console.error(
+              "Failed to load programs for attendance filtering",
+              programsResult.error,
+            );
+            setLoadError("Programs could not be loaded. Please try again.");
+            return;
+          }
           eventsQuery = eventsQuery.or(
-            `program.eq.All Programs,program.is.null,program.eq.${profileResult.data.program}`,
+            buildProgramEventFilter(
+              profileResult.data.program,
+              programsResult.data ?? [],
+            ),
           );
         }
 
@@ -203,6 +216,7 @@ export default function AttendanceHistoryRoutePage() {
         if (eventsResult.error) console.error(eventsResult.error);
 
         if (settingsResult.error) console.error(settingsResult.error);
+        if (programsResult.error) console.error(programsResult.error);
 
         const queryError =
           finesResult.error ||
@@ -210,7 +224,8 @@ export default function AttendanceHistoryRoutePage() {
           attendanceResult.error ||
           profileResult.error ||
           eventsResult.error ||
-          settingsResult.error;
+          settingsResult.error ||
+          programsResult.error;
 
         if (queryError) {
           setLoadError("Your attendance records could not be loaded.");

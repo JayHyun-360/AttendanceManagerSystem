@@ -145,6 +145,7 @@
 import { useState, useRef, useEffect } from "react"
 
 import { OptimizedImage } from "@/components/OptimizedImage"
+import { ProgramSelect } from "@/components/ProgramSelect"
 
 import {
   HelpFeedbackMenuItems,
@@ -3783,19 +3784,12 @@ export function OnboardingPage({
             )}
             {step === 4 && (
               <>
-                <FieldSelect
+                <ProgramSelect
                   label="Program"
                   required
                   value={f.program}
                   onChange={set("program")}
-                >
-                  <option value="">Select program</option>
-                  <option>BSIT - Information Technology</option>
-                  <option>BSCS - Computer Science</option>
-                  <option>BSBA - Business Administration</option>
-                  <option>BSEd - Secondary Education</option>
-                  <option>BSHM - Hospitality Management</option>
-                </FieldSelect>
+                />
                 <FieldSelect
                   label="Year Level"
                   required
@@ -5874,18 +5868,11 @@ export function ProfilePage({
                     value={draft.studentId}
                     onChange={setF("studentId")}
                   />
-                  <FieldSelect
+                  <ProgramSelect
                     label="Program"
                     value={draft.program}
                     onChange={setF("program")}
-                  >
-                    <option value="">Select program</option>
-                    <option>BSIT - Information Technology</option>
-                    <option>BSCS - Computer Science</option>
-                    <option>BSBA - Business Administration</option>
-                    <option>BSEd - Secondary Education</option>
-                    <option>BSHM - Hospitality Management</option>
-                  </FieldSelect>
+                  />
                   <FieldSelect
                     label="Year Level"
                     value={draft.yearLevel}
@@ -7052,17 +7039,12 @@ export function AdminEventsPage({
               value={draft.date}
               onChange={setD("date")}
             />
-            <FieldSelect
+            <ProgramSelect
               label="Program"
               value={draft.program}
               onChange={setD("program")}
-            >
-              <option>All Programs</option>
-              <option>BSIT / BSCS</option>
-              <option>BSIT</option>
-              <option>BSCS</option>
-              <option>BSBA</option>
-            </FieldSelect>
+              includeAllPrograms
+            />
           </div>
           <FieldInput
             label="Location"
@@ -7409,19 +7391,14 @@ export function AdminEventsPage({
                 setEditDraft((d) => (d ? { ...d, date: e.target.value } : d))
               }
             />
-            <FieldSelect
+            <ProgramSelect
               label="Program"
               value={editDraft.program}
               onChange={(e) =>
                 setEditDraft((d) => (d ? { ...d, program: e.target.value } : d))
               }
-            >
-              <option>All Programs</option>
-              <option>BSIT / BSCS</option>
-              <option>BSIT</option>
-              <option>BSCS</option>
-              <option>BSBA</option>
-            </FieldSelect>
+              includeAllPrograms
+            />
           </div>
           <FieldInput
             label="Location"
