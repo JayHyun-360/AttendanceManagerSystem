@@ -4436,8 +4436,10 @@ export function TopBar({
               <div className="relative">
                 <button
                   onClick={() => setDotOpen((o) => !o)}
-                  className="hidden md:flex w-8 h-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                  className="flex w-8 h-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
                   aria-label="More options"
+                  aria-haspopup="menu"
+                  aria-expanded={dotOpen}
                 >
                   <svg
                     viewBox="0 0 18 18"
