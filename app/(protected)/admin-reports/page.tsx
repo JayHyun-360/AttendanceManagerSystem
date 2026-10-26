@@ -3,11 +3,150 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AdminReportsPage, type EventData } from "../../shared-page";
+import {
+  AdminReportsPage,
+  type AdminReportPrintData,
+  type EventData,
+  type EventStatus,
+} from "../../shared-page";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 import { useProtectedUser } from "../layout";
 
 const EVENT_PAGE_SIZE = 5;
+const PRINT_EVENT_BATCH_SIZE = 50;
+const PRINT_EVENT_FETCH_SIZE = 500;
+const MAX_PRINT_EVENTS = 500;
+const REPORT_EVENT_COLUMNS =
+  "id, title, event_date, start_time, end_time, location, description, program, status, image_url, media_urls, multi_session, sanctions_enabled, absent_fine, late_fine, morning_end, afternoon_end, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine";
+
+type ReportEventRow = {
+  id: number | string;
+  title: string;
+  event_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  location: string | null;
+  description: string | null;
+  program: string | null;
+  status: string | null;
+  image_url: string | null;
+  media_urls: string[] | null;
+  multi_session: boolean | null;
+  sanctions_enabled: boolean | null;
+  absent_fine: number | null;
+  late_fine: number | null;
+  morning_end: string | null;
+  afternoon_end: string | null;
+  morning_absent_fine: number | null;
+  morning_late_fine: number | null;
+  afternoon_absent_fine: number | null;
+  afternoon_late_fine: number | null;
+};
+
+function isEventStatus(value: string | null): value is EventStatus {
+  return (
+    value === "active" ||
+    value === "upcoming" ||
+    value === "closed" ||
+    value === "cancelled"
+  );
+}
+
+type ReportAggregates = {
+  program_stats: Array<{
+    label: string;
+    present: number;
+    total: number;
+    rate: number;
+    absent: number;
+    excused: number;
+    late: number;
+    fine_total: number;
+    sanctioned: number;
+    sanctioned_late: number;
+    sanctioned_absent: number;
+  }>;
+  fee_summary: {
+    fine_count: number;
+    assessed: number;
+    collected: number;
+    outstanding: number;
+    waived: number;
+  };
+  event_stats: Array<{
+    event_id: string;
+    attendees: number;
+    report_attended_sessions: number;
+    report_absent_sessions: number;
+    report_excused_sessions: number;
+    report_late_sessions: number;
+    report_sanctioned_sessions: number;
+    report_fine_total: number;
+  }>;
+};
+
+function mapReportEvents(
+  rows: ReportEventRow[],
+  statsByEvent: Map<string, ReportAggregates["event_stats"][number]>,
+): EventData[] {
+  return rows.map((row) => {
+    const stats = statsByEvent.get(String(row.id));
+    const eventDate = row.event_date ? new Date(row.event_date) : null;
+
+    return {
+      id: String(row.id),
+      title: row.title,
+      date: eventDate
+        ? eventDate.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
+        : "",
+      time:
+        row.start_time && row.end_time
+          ? `${row.start_time}–${row.end_time}`
+          : "",
+      location: row.location ?? "",
+      description: row.description ?? "",
+      program: row.program ?? "All Programs",
+      fineAmount: Number(
+        row.multi_session
+          ? Number(row.morning_absent_fine ?? 0) +
+              Number(row.afternoon_absent_fine ?? 0)
+          : (row.absent_fine ?? 0),
+      ),
+      absentFine: Number(row.absent_fine ?? 0),
+      lateFine: Number(row.late_fine ?? 0),
+      morningAbsentFine: Number(
+        row.morning_absent_fine ?? row.absent_fine ?? 0,
+      ),
+      morningLateFine: Number(row.morning_late_fine ?? row.late_fine ?? 0),
+      afternoonAbsentFine: Number(
+        row.afternoon_absent_fine ?? row.absent_fine ?? 0,
+      ),
+      afternoonLateFine: Number(
+        row.afternoon_late_fine ?? row.late_fine ?? 0,
+      ),
+      status: isEventStatus(row.status) ? row.status : "upcoming",
+      attendees: Number(stats?.attendees ?? 0),
+      reportAttendedSessions: Number(stats?.report_attended_sessions ?? 0),
+      reportAbsentSessions: Number(stats?.report_absent_sessions ?? 0),
+      reportExcusedSessions: Number(stats?.report_excused_sessions ?? 0),
+      reportLateSessions: Number(stats?.report_late_sessions ?? 0),
+      reportFineTotal: Number(stats?.report_fine_total ?? 0),
+      reportSanctionedSessions: Number(
+        stats?.report_sanctioned_sessions ?? 0,
+      ),
+      mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : [],
+      highlightUrl:
+        row.image_url && !row.image_url.startsWith("blob:")
+          ? row.image_url
+          : undefined,
+    };
+  });
+}
 
 type ReportPayload = {
   events: EventData[];
@@ -40,6 +179,164 @@ export default function AdminReportsRoutePage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [eventPage, setEventPage] = useState(1);
+  const [printReportData, setPrintReportData] =
+    useState<AdminReportPrintData | null>(null);
+  const [isPreparingPrint, setIsPreparingPrint] = useState(false);
+  const [printRequested, setPrintRequested] = useState(false);
+
+  useEffect(() => {
+    if (!printRequested || !printReportData) return;
+
+    const finishPrint = () => {
+      setPrintRequested(false);
+      setPrintReportData(null);
+      setIsPreparingPrint(false);
+    };
+    const frame = window.requestAnimationFrame(() => window.print());
+    window.addEventListener("afterprint", finishPrint);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("afterprint", finishPrint);
+    };
+  }, [printRequested, printReportData]);
+
+  const preparePrintReport = async () => {
+    setIsPreparingPrint(true);
+
+    try {
+      const rows: ReportEventRow[] = [];
+      let eventCount = 0;
+
+      for (let offset = 0; ; offset += PRINT_EVENT_FETCH_SIZE) {
+        let eventsQuery = supabase
+          .from("events")
+          .select(REPORT_EVENT_COLUMNS, { count: "exact" })
+          .order("event_date", { ascending: false })
+          .order("id", { ascending: true })
+          .neq("status", "upcoming");
+
+        if (dateFrom) eventsQuery = eventsQuery.gte("event_date", dateFrom);
+        if (dateTo) eventsQuery = eventsQuery.lte("event_date", dateTo);
+
+        const { data, count, error } = await eventsQuery.range(
+          offset,
+          offset + PRINT_EVENT_FETCH_SIZE - 1,
+        );
+
+        if (error) throw error;
+        if (offset === 0) {
+          eventCount = count ?? 0;
+          if (eventCount > MAX_PRINT_EVENTS) {
+            throw new Error(
+              `This report contains ${eventCount.toLocaleString()} events. Narrow the date range to print up to ${MAX_PRINT_EVENTS} events at a time.`,
+            );
+          }
+        }
+
+        const batch = (data ?? []) as ReportEventRow[];
+        rows.push(...batch);
+        if (rows.length >= eventCount || batch.length < PRINT_EVENT_FETCH_SIZE) {
+          break;
+        }
+      }
+
+      const eventStats: ReportAggregates["event_stats"] = [];
+      let aggregates: ReportAggregates | null = null;
+      const batchOffsets =
+        eventCount === 0
+          ? [0]
+          : Array.from(
+              { length: Math.ceil(eventCount / PRINT_EVENT_BATCH_SIZE) },
+              (_, index) => index * PRINT_EVENT_BATCH_SIZE,
+            );
+
+      for (const offset of batchOffsets) {
+        const limit =
+          eventCount === 0
+            ? 1
+            : Math.min(PRINT_EVENT_BATCH_SIZE, eventCount - offset);
+        const { data, error } = await supabase.rpc(
+          "get_admin_report_aggregates",
+          {
+            p_date_from: dateFrom || null,
+            p_date_to: dateTo || null,
+            p_event_offset: offset,
+            p_event_limit: limit,
+          },
+        );
+
+        if (error) throw error;
+        const batch = data as ReportAggregates;
+        if (!aggregates) aggregates = batch;
+        eventStats.push(...batch.event_stats);
+      }
+
+      if (!aggregates) {
+        throw new Error("The report data could not be prepared for printing.");
+      }
+
+      const statsByEvent = new Map(
+        eventStats.map((stats) => [stats.event_id, stats]),
+      );
+      const dateLabel =
+        dateFrom || dateTo
+          ? `${dateFrom || "Beginning"} – ${dateTo || "Today"}`
+          : "All recorded events";
+
+      setPrintReportData({
+        events: mapReportEvents(rows, statsByEvent),
+        periodLabel: dateLabel,
+        programStats: aggregates.program_stats.map((stats) => ({
+          label: stats.label,
+          present: Number(stats.present),
+          total: Number(stats.total),
+          rate: Number(stats.rate),
+          absent: Number(stats.absent),
+          excused: Number(stats.excused),
+          late: Number(stats.late),
+          fineTotal: Number(stats.fine_total),
+          sanctioned: Number(stats.sanctioned),
+          sanctionedLate: Number(stats.sanctioned_late),
+          sanctionedAbsent: Number(stats.sanctioned_absent),
+        })),
+        feeSummary:
+          aggregates.fee_summary.fine_count === 0
+            ? []
+            : [
+                {
+                  label: "Total assessed",
+                  value: `₱${Number(aggregates.fee_summary.assessed).toLocaleString()}`,
+                  color: "text-red-600",
+                },
+                {
+                  label: "Collected",
+                  value: `₱${Number(aggregates.fee_summary.collected).toLocaleString()}`,
+                  color: "text-emerald-500",
+                },
+                {
+                  label: "Outstanding",
+                  value: `₱${Number(aggregates.fee_summary.outstanding).toLocaleString()}`,
+                  color: "text-amber-600",
+                },
+                {
+                  label: "Waived / excused",
+                  value: `₱${Number(aggregates.fee_summary.waived).toLocaleString()}`,
+                  color: "text-violet-600",
+                },
+              ],
+      });
+      setPrintRequested(true);
+    } catch (caughtError) {
+      console.error("Could not prepare report for printing", caughtError);
+      toast.error(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Could not prepare the report for printing.",
+      );
+      setIsPreparingPrint(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -312,6 +609,9 @@ export default function AdminReportsRoutePage() {
       pageSize={EVENT_PAGE_SIZE}
       totalCount={reportData.eventCount}
       onPageChange={setEventPage}
+      onPrintReport={preparePrintReport}
+      isPreparingPrint={isPreparingPrint}
+      printReportData={printReportData}
       onPeriodChange={(next) => {
         setDateFrom(next.dateFrom);
         setDateTo(next.dateTo);

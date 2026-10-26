@@ -232,6 +232,130 @@ textarea {
   animation: scanner-result-icon 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+.report-print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 14mm;
+  }
+
+  html,
+  body,
+  #root {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .report-print-root,
+  .report-print-root * {
+    visibility: visible !important;
+  }
+
+  .report-print-root {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+    color: #0f172a !important;
+    background: #fff !important;
+    font-family: Arial, sans-serif !important;
+    font-size: 9pt !important;
+    line-height: 1.4 !important;
+  }
+
+  .report-print-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid #059669;
+  }
+
+  .report-print-header h1 {
+    margin: 2px 0 4px;
+    font-size: 20pt;
+  }
+
+  .report-print-header p,
+  .report-print-meta {
+    margin: 0;
+    color: #475569;
+  }
+
+  .report-print-brand {
+    color: #047857 !important;
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+  }
+
+  .report-print-meta {
+    text-align: right;
+  }
+
+  .report-print-section {
+    margin-top: 18px;
+  }
+
+  .report-print-section h2 {
+    margin: 0 0 7px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #cbd5e1;
+    font-size: 12pt;
+    break-after: avoid-page;
+  }
+
+  .report-print-root table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+  }
+
+  .report-print-root thead {
+    display: table-header-group;
+  }
+
+  .report-print-root th,
+  .report-print-root td {
+    padding: 5px 6px;
+    border: 1px solid #cbd5e1;
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+
+  .report-print-root th {
+    color: #0f172a;
+    background: #f1f5f9 !important;
+    font-weight: 700;
+    print-color-adjust: exact;
+  }
+
+  .report-print-root tr {
+    break-inside: avoid;
+  }
+
+  .report-print-footer {
+    margin-top: 20px;
+    padding-top: 7px;
+    border-top: 1px solid #cbd5e1;
+    color: #64748b;
+    font-size: 8pt;
+    text-align: center;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .scanner-enter,
   .scan-sweep,

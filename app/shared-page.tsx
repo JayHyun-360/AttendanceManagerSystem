@@ -16691,6 +16691,44 @@ export function AdminExcuseRequestsPage({
   );
 }
 
+export type AdminReportPrintData = {
+  events: EventData[];
+
+  periodLabel: string;
+
+  programStats: Array<{
+    label: string;
+
+    present: number;
+
+    total: number;
+
+    rate: number;
+
+    absent?: number;
+
+    excused?: number;
+
+    late?: number;
+
+    fineTotal?: number;
+
+    sanctioned?: number;
+
+    sanctionedLate?: number;
+
+    sanctionedAbsent?: number;
+  }>;
+
+  feeSummary: Array<{
+    label: string;
+
+    value: string;
+
+    color: string;
+  }>;
+};
+
 export function AdminReportsPage({
   events = [],
 
@@ -16711,6 +16749,12 @@ export function AdminReportsPage({
   totalCount = 0,
 
   onPageChange,
+
+  onPrintReport,
+
+  isPreparingPrint = false,
+
+  printReportData,
 }: {
   events?: EventData[];
 
@@ -16767,6 +16811,12 @@ export function AdminReportsPage({
   totalCount?: number;
 
   onPageChange?: (page: number) => void;
+
+  onPrintReport?: () => void;
+
+  isPreparingPrint?: boolean;
+
+  printReportData?: AdminReportPrintData | null;
 }) {
   const liveEvents = reportData?.events ?? events ?? [];
 
@@ -16794,351 +16844,138 @@ export function AdminReportsPage({
     0,
   );
 
-  const printReport = () => window.print();
-
-  const exportPDF = () => {
-    const W = 794,
-      pad = 48,
-      dpr = 2;
-
-    const H =
-      80 +
-      32 +
-      20 +
-      24 +
-      (programRows.length * 26 + 16) +
-      20 +
-      24 +
-      (fees.length * 26 + 16) +
-      20 +
-      24 +
-      (eventRows.length * 26 + 16) +
-      48;
-
-    const canvas = document.createElement("canvas");
-
-    canvas.width = W * dpr;
-
-    canvas.height = H * dpr;
-
-    const ctx = canvas.getContext("2d")!;
-
-    ctx.scale(dpr, dpr);
-
-    ctx.fillStyle = "#fff";
-
-    ctx.fillRect(0, 0, W, H);
-
-    let y = 0;
-
-    ctx.fillStyle = "#10b981";
-
-    ctx.fillRect(0, 0, W, 60);
-
-    ctx.fillStyle = "#fff";
-
-    ctx.font = "bold 18px system-ui, sans-serif";
-
-    ctx.textAlign = "left";
-
-    ctx.fillText("Adesse — Attendance & Fees Report", pad, 38);
-
-    ctx.font = "12px system-ui, sans-serif";
-
-    ctx.textAlign = "right";
-
-    ctx.fillText(`AY ${academicYear} · ${semester}`, W - pad, 38);
-
-    y = 60;
-
-    ctx.fillStyle = "#94a3b8";
-
-    ctx.font = "10px system-ui, sans-serif";
-
-    ctx.textAlign = "left";
-
-    ctx.fillText(`Generated ${new Date().toLocaleString()}`, pad, y + 18);
-
-    y += 32;
-
-    const sectionTitle = (title: string) => {
-      ctx.fillStyle = "#f1f5f9";
-
-      ctx.fillRect(pad, y, W - pad * 2, 22);
-
-      ctx.fillStyle = "#334155";
-
-      ctx.font = "bold 11px system-ui, sans-serif";
-
-      ctx.fillText(title.toUpperCase(), pad + 8, y + 15);
-
-      y += 22;
-    };
-
-    const tableHeader = (
-      cols: { t: string; x: number; align?: CanvasTextAlign }[],
-    ) => {
-      ctx.fillStyle = "#f8fafc";
-
-      ctx.fillRect(pad, y, W - pad * 2, 22);
-
-      ctx.strokeStyle = "#e2e8f0";
-
-      ctx.lineWidth = 0.5;
-
-      ctx.strokeRect(pad, y, W - pad * 2, 22);
-
-      cols.forEach((c) => {
-        ctx.fillStyle = "#64748b";
-
-        ctx.font = "bold 10px system-ui, sans-serif";
-
-        ctx.textAlign = c.align ?? "left";
-
-        ctx.fillText(c.t, c.x, y + 15);
-      });
-
-      y += 22;
-    };
-
-    const tableRow = (
-      cols: {
-        t: string;
-
-        x: number;
-
-        align?: CanvasTextAlign;
-
-        color?: string;
-      }[],
-
-      shade: boolean,
-    ) => {
-      if (shade) {
-        ctx.fillStyle = "#fafafa";
-
-        ctx.fillRect(pad, y, W - pad * 2, 24);
-      }
-
-      ctx.strokeStyle = "#f1f5f9";
-
-      ctx.lineWidth = 0.5;
-
-      ctx.beginPath();
-
-      ctx.moveTo(pad, y + 24);
-
-      ctx.lineTo(W - pad, y + 24);
-
-      ctx.stroke();
-
-      cols.forEach((c) => {
-        ctx.fillStyle = c.color ?? "#1e293b";
-
-        ctx.font = "11px system-ui, sans-serif";
-
-        ctx.textAlign = c.align ?? "left";
-
-        ctx.fillText(c.t, c.x, y + 16);
-      });
-
-      y += 24;
-    };
-
-    y += 14;
-
-    sectionTitle("Attendance by Program");
-
-    tableHeader([
-      {
-        t: "Program",
-
-        x: pad + 8,
-      },
-
-      { t: "Present", x: W - pad - 200, align: "right" },
-
-      { t: "Total", x: W - pad - 120, align: "right" },
-
-      { t: "Rate", x: W - pad - 8, align: "right" },
-    ]);
-
-    programRows.forEach((r, i) =>
-      tableRow(
-        [
-          {
-            t: r.label,
-
-            x: pad + 8,
-          },
-
-          { t: r.present.toString(), x: W - pad - 200, align: "right" },
-
-          { t: r.total.toString(), x: W - pad - 120, align: "right" },
-
-          {
-            t: `${r.rate}%`,
-
-            x: W - pad - 8,
-
-            align: "right",
-
-            color:
-              r.rate >= 70 ? "#10b981" : r.rate >= 50 ? "#d97706" : "#dc2626",
-          },
-        ],
-
-        i % 2 === 1,
-      ),
-    );
-
-    y += 14;
-
-    sectionTitle("Fees Summary");
-
-    tableHeader([
-      {
-        t: "Category",
-
-        x: pad + 8,
-      },
-
-      { t: "Amount", x: W - pad - 8, align: "right" },
-    ]);
-
-    const feeColors: Record<string, string> = {
-      "Total fees issued": "#dc2626",
-
-      Collected: "#10b981",
-
-      Pending: "#d97706",
-    };
-
-    fees.forEach((f, i) =>
-      tableRow(
-        [
-          {
-            t: f.label,
-
-            x: pad + 8,
-          },
-
-          {
-            t: f.value,
-
-            x: W - pad - 8,
-
-            align: "right",
-
-            color: feeColors[f.label] ?? "#1e293b",
-          },
-        ],
-
-        i % 2 === 1,
-      ),
-    );
-
-    y += 14;
-
-    sectionTitle("By Event");
-
-    tableHeader([
-      {
-        t: "Event",
-
-        x: pad + 8,
-      },
-
-      { t: "Date", x: W - pad - 200 },
-
-      { t: "Absent / Late", x: W - pad - 100, align: "right" },
-
-      { t: "Attended", x: W - pad - 8, align: "right" },
-    ]);
-
-    eventRows.forEach((e, i) =>
-      tableRow(
-        [
-          {
-            t: e.title.length > 38 ? e.title.slice(0, 36) + "…" : e.title,
-
-            x: pad + 8,
-          },
-
-          { t: e.date, x: W - pad - 200 },
-
-          {
-            t: `₱${e.fineAmount} / ₱${e.lateFine ?? 0}`,
-
-            x: W - pad - 100,
-
-            align: "right",
-          },
-
-          {
-            t: e.attendees.toString(),
-
-            x: W - pad - 8,
-
-            align: "right",
-
-            color: "#10b981",
-          },
-        ],
-
-        i % 2 === 1,
-      ),
-    );
-
-    y += 20;
-
-    ctx.fillStyle = "#e2e8f0";
-
-    ctx.fillRect(pad, y, W - pad * 2, 1);
-
-    ctx.fillStyle = "#94a3b8";
-
-    ctx.font = "10px system-ui, sans-serif";
-
-    ctx.textAlign = "center";
-
-    ctx.fillText(
-      "Adesse · Student Event Attendance & Fee Tracking System",
-
-      W / 2,
-
-      y + 18,
-    );
-
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-
-      a.href = url;
-
-      a.download = `adesse-report-${new Date().toISOString().slice(0, 10)}.png`;
-
-      a.click();
-
-      URL.revokeObjectURL(url);
-    }, "image/png");
-  };
-
   return (
     <>
+      {printReportData && (
+        <article className="report-print-root">
+          <header className="report-print-header">
+            <div>
+              <p className="report-print-brand">ADESSE</p>
+              <h1>Attendance &amp; Fees Report</h1>
+              <p>{printReportData.periodLabel}</p>
+            </div>
+            <div className="report-print-meta">
+              <p>
+                AY {academicYear} · {semester}
+              </p>
+              <p>Generated {new Date().toLocaleString()}</p>
+            </div>
+          </header>
+
+          <section className="report-print-section">
+            <h2>Attendance by program</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Program</th>
+                  <th>Present / late</th>
+                  <th>Total eligible sessions</th>
+                  <th>Absent</th>
+                  <th>Excused</th>
+                  <th>Attendance rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {printReportData.programStats.map((row) => (
+                  <tr key={row.label}>
+                    <td>{row.label}</td>
+                    <td>{row.present}</td>
+                    <td>{row.total}</td>
+                    <td>{row.absent ?? 0}</td>
+                    <td>{row.excused ?? 0}</td>
+                    <td>{row.rate}%</td>
+                  </tr>
+                ))}
+                {printReportData.programStats.length === 0 && (
+                  <tr>
+                    <td colSpan={6}>No attendance data for this period.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </section>
+
+          <section className="report-print-section">
+            <h2>Fees summary</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {printReportData.feeSummary.map((row) => (
+                  <tr key={row.label}>
+                    <td>{row.label}</td>
+                    <td>{row.value}</td>
+                  </tr>
+                ))}
+                {printReportData.feeSummary.length === 0 && (
+                  <tr>
+                    <td colSpan={2}>No fees have been assessed.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </section>
+
+          <section className="report-print-section">
+            <h2>Event details ({printReportData.events.length})</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Event</th>
+                  <th>Date</th>
+                  <th>Program</th>
+                  <th>Students attended</th>
+                  <th>Present / late sessions</th>
+                  <th>Absent</th>
+                  <th>Excused</th>
+                  <th>Late</th>
+                  <th>Fees assessed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {printReportData.events.map((event) => (
+                  <tr key={event.id}>
+                    <td>{event.title}</td>
+                    <td>{event.date}</td>
+                    <td>{event.program}</td>
+                    <td>{event.attendees}</td>
+                    <td>{event.reportAttendedSessions ?? event.attendees}</td>
+                    <td>{event.reportAbsentSessions ?? 0}</td>
+                    <td>{event.reportExcusedSessions ?? 0}</td>
+                    <td>{event.reportLateSessions ?? 0}</td>
+                    <td>
+                      ₱{(event.reportFineTotal ?? 0).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+                {printReportData.events.length === 0 && (
+                  <tr>
+                    <td colSpan={9}>No events for this period.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </section>
+          <footer className="report-print-footer">
+            Adesse · Student Event Attendance &amp; Fee Tracking System
+          </footer>
+        </article>
+      )}
       <PageHeader
         title="Reports"
         subtitle={reportData?.periodLabel ?? "All recorded events"}
         action={
           <button
-            onClick={printReport}
-            className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 flex items-center gap-1.5"
+            onClick={onPrintReport}
+            disabled={isPreparingPrint}
+            className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60 flex items-center gap-1.5"
           >
             <Icons.Download />
-            Print / save PDF
+            {isPreparingPrint ? "Preparing report…" : "Print / save as PDF"}
           </button>
         }
       />

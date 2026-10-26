@@ -18,7 +18,20 @@ This is recommended for the current project because the live Supabase project do
 
 Do not create a Supabase `pg_cron` HTTP job containing `CLEANUP_FUNCTION_SECRET`, a Supabase secret key, or any other private key as SQL text.
 
-The workflow runs every 15 minutes and also supports manual `workflow_dispatch`. It invokes the existing deployed function; no Edge Function code change or redeployment is required.
+The workflow runs every 15 minutes and also supports manual `workflow_dispatch`. It invokes the deployed function; when the Edge Function source changes, deploy the updated function separately using the Supabase CLI.
+
+## Deploy the Edge Function
+
+The function source is `supabase/functions/storage-cleanup/index.ts`. Deploy it from the repository root with the Supabase CLI:
+
+```powershell
+supabase login
+supabase functions deploy storage-cleanup --project-ref YOUR_PROJECT_REF --no-verify-jwt --use-api
+```
+
+Use the project reference from the Supabase Dashboard URL (`https://supabase.com/dashboard/project/YOUR_PROJECT_REF`) or **Project Settings → General**. `--no-verify-jwt` is required because this function authenticates requests with its own `x-cleanup-secret` header. The function secret already configured in Supabase is not changed by deploying code; do not add it to this command or commit it.
+
+In the Supabase Dashboard, open **Edge Functions → `storage-cleanup`** to inspect the deployed function and its logs. Deploy the repository code with the CLI rather than editing the function in the Dashboard.
 
 ## 1. Configure GitHub Actions secrets
 
