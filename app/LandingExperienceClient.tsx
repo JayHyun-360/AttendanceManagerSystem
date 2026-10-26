@@ -142,7 +142,7 @@
 
 /* Fee Visibility */ /* Attendance & Requests */ /* Academic Information */ /* Landing Page */ /* Hero images */ /* Carousel slides */ /* Thumbnail */ /* Fields */ /* Controls */ /* System Info */
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 
 import { OptimizedImage } from "@/components/OptimizedImage"
 import { ProgramSelect } from "@/components/ProgramSelect"
@@ -2907,6 +2907,26 @@ function LandingPage({
     | "error"
   onRetry: () => void
 }) {
+  const heroUrls = useMemo(
+    () =>
+      settings.heroImageUrls.filter(
+        (url) => !!url && !url.startsWith("blob:"),
+      ),
+    [settings.heroImageUrls],
+  )
+  const [heroIndex, setHeroIndex] = useState(0)
+  const activeHeroIndex = heroUrls.length ? heroIndex % heroUrls.length : 0
+
+  useEffect(() => {
+    if (heroUrls.length <= 1) return
+
+    const intervalId = window.setInterval(() => {
+      setHeroIndex((current) => (current + 1) % heroUrls.length)
+    }, 5000)
+
+    return () => window.clearInterval(intervalId)
+  }, [heroUrls])
+
   const carouselSlides = settings.carouselSlides.filter(
     (slide) => !!slide.imageUrl && !slide.imageUrl.startsWith("blob:"),
   )
@@ -2915,8 +2935,27 @@ function LandingPage({
     <div className="min-h-screen bg-white">
       {}
       <div className="relative isolate overflow-hidden bg-[#f7fbf8]">
+        {heroUrls.length > 0 && (
+          <>
+            <OptimizedImage
+              src={heroUrls[activeHeroIndex]}
+              alt=""
+              aria-hidden
+              sizes="100vw"
+              loading={activeHeroIndex === 0 ? "eager" : "lazy"}
+              fetchPriority={activeHeroIndex === 0 ? "high" : "auto"}
+              className="absolute inset-0 z-[-2] h-full w-full object-cover"
+            />
+            <div
+              className="pointer-events-none absolute inset-0 z-[-1] bg-slate-950/55"
+              aria-hidden="true"
+            />
+          </>
+        )}
         <div
-          className="pointer-events-none absolute inset-0"
+          className={`pointer-events-none absolute inset-0 ${
+            heroUrls.length > 0 ? "hidden" : ""
+          }`}
           aria-hidden="true"
           style={{
             background:
@@ -2924,7 +2963,9 @@ function LandingPage({
           }}
         />
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 hidden w-[54%] lg:block"
+          className={`pointer-events-none absolute inset-y-0 right-0 ${
+            heroUrls.length > 0 ? "hidden" : "hidden w-[54%] lg:block"
+          }`}
           aria-hidden="true"
           style={{
             background:
@@ -2932,11 +2973,17 @@ function LandingPage({
           }}
         />
         <div
-          className="pointer-events-none absolute -right-32 top-16 hidden h-[34rem] w-[34rem] rounded-full border border-white/80 bg-white/35 shadow-[0_30px_90px_rgba(15,118,110,.1)] lg:block"
+          className={`pointer-events-none absolute -right-32 top-16 ${
+            heroUrls.length > 0
+              ? "hidden"
+              : "hidden h-[34rem] w-[34rem] rounded-full border border-white/80 bg-white/35 shadow-[0_30px_90px_rgba(15,118,110,.1)] lg:block"
+          }`}
           aria-hidden="true"
         />
         <div
-          className="pointer-events-none absolute -left-24 bottom-[-13rem] h-80 w-80 rounded-full bg-emerald-200/20 blur-3xl"
+          className={`pointer-events-none absolute -left-24 bottom-[-13rem] h-80 w-80 rounded-full bg-emerald-200/20 blur-3xl ${
+            heroUrls.length > 0 ? "hidden" : ""
+          }`}
           aria-hidden="true"
         />
 
@@ -2968,15 +3015,29 @@ function LandingPage({
             <AdesseWordmark
               variant="hero"
               className="mb-7"
-              textClassName="text-slate-950"
+              textClassName={
+                heroUrls.length > 0 ? "text-white" : "text-slate-950"
+              }
             />
-            <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 sm:text-[11px]">
+            <p
+              className={`mb-4 text-[10px] font-bold uppercase tracking-[0.18em] sm:text-[11px] ${
+                heroUrls.length > 0 ? "text-emerald-200" : "text-emerald-700"
+              }`}
+            >
               Student event management
             </p>
-            <h1 className="adesse-display max-w-[31rem] text-[2.35rem] leading-[1.02] text-slate-950 sm:text-[3.15rem] lg:text-[3.45rem]">
+            <h1
+              className={`adesse-display max-w-[31rem] text-[2.35rem] leading-[1.02] sm:text-[3.15rem] lg:text-[3.45rem] ${
+                heroUrls.length > 0 ? "text-white" : "text-slate-950"
+              }`}
+            >
               Attendance, simplified for every campus event.
             </h1>
-            <p className="mt-6 max-w-[30rem] text-[15px] leading-[1.8] text-slate-600 sm:text-[17px]">
+            <p
+              className={`mt-6 max-w-[30rem] text-[15px] leading-[1.8] sm:text-[17px] ${
+                heroUrls.length > 0 ? "text-white/85" : "text-slate-600"
+              }`}
+            >
               Give students one easy way to check in while moderators get
               accurate, real-time attendance records.
             </p>
@@ -3023,7 +3084,11 @@ function LandingPage({
               </button>
               <button
                 onClick={() => onNav("events")}
-                className="h-12 w-full rounded-full border border-slate-200/90 bg-white/70 px-3 text-[12px] font-bold text-slate-700 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-white sm:w-auto sm:px-7 sm:text-[13px]"
+                className={`h-12 w-full rounded-full px-3 text-[12px] font-bold shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 sm:w-auto sm:px-7 sm:text-[13px] ${
+                  heroUrls.length > 0
+                    ? "border border-white/35 bg-white/15 text-white hover:bg-white/25"
+                    : "border border-slate-200/90 bg-white/70 text-slate-700 hover:border-emerald-200 hover:bg-white"
+                }`}
               >
                 Browse Events
               </button>
@@ -9333,8 +9398,6 @@ export interface SystemSettings {
 
   allowExcuseRequests: boolean
 
-  requirePhotoId: boolean
-
   academicYear: string
 
   semester: string
@@ -9535,7 +9598,7 @@ export function AdminSettingsPage({
   const update = (patch: Partial<SystemSettings>) =>
     onSave({ ...settings, ...patch })
 
-  const toggle = (k: "showFees" | "allowExcuseRequests" | "requirePhotoId") =>
+  const toggle = (k: "showFees" | "allowExcuseRequests") =>
     onSave({ ...settings, [k]: !settings[k] })
 
   const heroRef = useRef<HTMLInputElement>(null)
@@ -9644,12 +9707,6 @@ export function AdminSettingsPage({
             onToggle={() => toggle("allowExcuseRequests")}
             label="Accept excuse requests"
             desc="Absent students can submit a reason and supporting document for review."
-          />
-          <Toggle
-            on={settings.requirePhotoId}
-            onToggle={() => toggle("requirePhotoId")}
-            label="Require photo ID on scan"
-            desc="Moderators must verify a photo ID alongside the QR code during check-in."
           />
         </div>
       </div>

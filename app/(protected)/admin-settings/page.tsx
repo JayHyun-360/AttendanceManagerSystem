@@ -22,8 +22,6 @@ const defaultSettings: SystemSettings = {
 
   allowExcuseRequests: true,
 
-  requirePhotoId: true,
-
   academicYear: "2026-2027",
 
   semester: "1st Semester",
@@ -49,8 +47,6 @@ const normalizeSettings = (
 
   allowExcuseRequests:
     rawSettings?.allowExcuseRequests ?? defaultSettings.allowExcuseRequests,
-
-  requirePhotoId: rawSettings?.requirePhotoId ?? defaultSettings.requirePhotoId,
 
   academicYear: rawSettings?.academicYear ?? defaultSettings.academicYear,
 

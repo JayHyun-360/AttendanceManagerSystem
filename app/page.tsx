@@ -11,8 +11,6 @@ const DEFAULT_SETTINGS: SystemSettings = {
 
   allowExcuseRequests: true,
 
-  requirePhotoId: false,
-
   academicYear: "2026-2027",
 
   semester: "1st Semester",

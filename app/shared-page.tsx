@@ -17577,8 +17577,6 @@ export interface SystemSettings {
 
   allowExcuseRequests: boolean;
 
-  requirePhotoId: boolean;
-
   academicYear: string;
 
   semester: string;
@@ -17840,7 +17838,7 @@ export function AdminSettingsPage({
   };
 
   const toggle = (
-    k: "finesEnabled" | "showFees" | "allowExcuseRequests" | "requirePhotoId",
+    k: "finesEnabled" | "showFees" | "allowExcuseRequests",
   ) => onSave({ ...settings, [k]: !settings[k] });
 
   const heroRef = useRef<HTMLInputElement>(null);
@@ -18035,12 +18033,6 @@ export function AdminSettingsPage({
             onToggle={() => toggle("allowExcuseRequests")}
             label="Accept excuse requests"
             desc="Absent students can submit a reason and supporting document for review."
-          />
-          <Toggle
-            on={settings.requirePhotoId}
-            onToggle={() => toggle("requirePhotoId")}
-            label="Require photo ID on scan"
-            desc="Moderators must verify a photo ID alongside the QR code during check-in."
           />
         </div>
       </div>
