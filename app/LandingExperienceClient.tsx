@@ -3847,7 +3847,6 @@ export function OnboardingPage({
                   ref={idPhotoRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
-                  capture="environment"
                   className="hidden"
                   onChange={async (e) => {
                     const file = e.target.files?.[0]

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -25,6 +25,14 @@ export default function AdminStudentsRoutePage() {
 
   const [isLoading, setIsLoading] = useState(true);
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [refreshError, setRefreshError] = useState(false);
+
+  const hasLoadedStudents = useRef(false);
+
+  const eventsLoaded = useRef(false);
+
   const [page, setPage] = useState(1);
 
   const [totalCount, setTotalCount] = useState(0);
@@ -33,10 +41,17 @@ export default function AdminStudentsRoutePage() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
 
     async function loadStudents() {
+      if (hasLoadedStudents.current) {
+        setIsRefreshing(true);
+        setRefreshError(false);
+      } else {
+        setIsLoading(true);
+      }
+
       try {
-        if (!cancelled) setIsLoading(true);
         if (!user || user.role !== "admin") {
           router.push("/dashboard");
 
@@ -61,127 +76,132 @@ export default function AdminStudentsRoutePage() {
           );
         }
 
+        const eventsQuery = eventsLoaded.current
+          ? null
+          : supabase
+              .from("events")
+              .select(
+                "id, title, event_date, start_time, end_time, location, description, program, absent_fine, status, multi_session, strict_morning, strict_afternoon, morning_start, morning_end, morning_late_cutoff, afternoon_start, afternoon_end, afternoon_late_cutoff",
+              )
+              .order("event_date", { ascending: false })
+              .limit(100);
+
         const [studentsResult, eventsResult] = await Promise.all([
-          studentsQuery,
-          supabase
-
-            .from("events")
-
-            .select(
-              "id, title, event_date, start_time, end_time, location, description, program, absent_fine, status, multi_session, strict_morning, strict_afternoon, morning_start, morning_end, morning_late_cutoff, afternoon_start, afternoon_end, afternoon_late_cutoff",
-            )
-
-            .order("event_date", { ascending: false })
-            .limit(100),
+          studentsQuery.abortSignal(controller.signal),
+          eventsQuery
+            ? eventsQuery.abortSignal(controller.signal)
+            : Promise.resolve(null),
         ]);
 
-        if (studentsResult.error) {
+        if (studentsResult.error && !controller.signal.aborted) {
           console.error(studentsResult.error);
+          if (!cancelled) setRefreshError(true);
         }
 
-        if (eventsResult.error) {
+        if (eventsResult?.error && !controller.signal.aborted) {
           console.error(eventsResult.error);
         }
 
-        if (studentsResult.error || eventsResult.error) {
+        if (cancelled || controller.signal.aborted) {
           return;
         }
 
-        if (!cancelled) {
-          setTotalCount(studentsResult.count ?? 0);
-          setStudents(
-            (studentsResult.data ?? []).map((row: any) => ({
-              profileId: row.id,
+        if (eventsResult) {
+          eventsLoaded.current = true;
+        }
 
-              name:
-                `${row.first_name ?? ""} ${row.surname ?? ""}`.trim() ||
-                row.email ||
-                "Student",
-
-              id: row.student_id || row.id,
-
-              program: row.program || "",
-
-              yearLevel: row.year_level || "",
-
-              section: row.section || "",
-
-              phone: row.phone || "",
-
-              email: row.contact_email || row.email || "",
-
-              photoUrl: row.photo_url || undefined,
-
-              idPhotoUrl: row.id_photo_url || undefined,
-
-              joinedDate: new Date(row.created_at).toLocaleDateString("en-US", {
-                month: "short",
-
-                day: "numeric",
-
-                year: "numeric",
-              }),
-            })),
-          );
-
+        if (eventsResult && !eventsResult.error) {
           setEvents(
             (eventsResult.data ?? []).map((row: any) => ({
               id: String(row.id),
-
               title: row.title,
-
               date: row.event_date,
-
               time:
                 row.start_time && row.end_time
                   ? `${row.start_time}–${row.end_time}`
                   : "",
-
               location: row.location || "",
-
               description: row.description || "",
-
               program: row.program || "All Programs",
-
               fineAmount: Number(row.absent_fine || 0),
-
               status: row.status || "upcoming",
-
               attendees: 0,
-
               multiSession: Boolean(row.multi_session),
-
               strictMorning: Boolean(row.strict_morning),
-
               strictAfternoon: Boolean(row.strict_afternoon),
-
               morningStart: row.morning_start,
-
               morningEnd: row.morning_end,
-
               morningLateCutoff: row.morning_late_cutoff,
-
               afternoonStart: row.afternoon_start,
-
               afternoonEnd: row.afternoon_end,
-
               afternoonLateCutoff: row.afternoon_late_cutoff,
             })),
           );
         }
+
+        if (studentsResult.error) return;
+
+        setRefreshError(false);
+        setTotalCount(studentsResult.count ?? 0);
+        setStudents(
+          (studentsResult.data ?? []).map((row: any) => ({
+            profileId: row.id,
+
+            name:
+              `${row.first_name ?? ""} ${row.surname ?? ""}`.trim() ||
+              row.email ||
+              "Student",
+
+            id: row.student_id || row.id,
+
+            program: row.program || "",
+
+            yearLevel: row.year_level || "",
+
+            section: row.section || "",
+
+            phone: row.phone || "",
+
+            email: row.contact_email || row.email || "",
+
+            photoUrl: row.photo_url || undefined,
+
+            idPhotoUrl: row.id_photo_url || undefined,
+
+            joinedDate: new Date(row.created_at).toLocaleDateString("en-US", {
+              month: "short",
+
+              day: "numeric",
+
+              year: "numeric",
+            }),
+          })),
+        );
       } catch (caughtError) {
-        console.error(caughtError);
+        if (!cancelled && !controller.signal.aborted) {
+          console.error(caughtError);
+          setRefreshError(true);
+        }
       } finally {
         if (!cancelled) {
+          hasLoadedStudents.current = true;
           setIsLoading(false);
+          setIsRefreshing(false);
         }
       }
     }
 
-    void loadStudents();
+    const timeoutId = search.trim()
+      ? window.setTimeout(() => void loadStudents(), 300)
+      : null;
+
+    if (!timeoutId) {
+      void loadStudents();
+    }
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible" && !cancelled) {
+        eventsLoaded.current = false;
         void loadStudents();
       }
     };
@@ -190,6 +210,8 @@ export default function AdminStudentsRoutePage() {
 
     return () => {
       cancelled = true;
+      if (timeoutId) window.clearTimeout(timeoutId);
+      controller.abort();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [page, router, search, user]);
@@ -213,6 +235,8 @@ export default function AdminStudentsRoutePage() {
       page={page}
       pageSize={PAGE_SIZE}
       totalCount={totalCount}
+      isRefreshing={isRefreshing}
+      refreshError={refreshError}
       onPageChange={setPage}
       searchValue={search}
       onSearchChange={(value) => {

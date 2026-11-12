@@ -6004,7 +6004,6 @@ export function OnboardingPage({
                   ref={idPhotoRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
-                  capture="environment"
                   className="hidden"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
@@ -15581,6 +15580,10 @@ export function AdminStudentsPage({
 
   totalCount,
 
+  isRefreshing = false,
+
+  refreshError = false,
+
   onPageChange,
 
   searchValue,
@@ -15598,6 +15601,10 @@ export function AdminStudentsPage({
   pageSize?: number;
 
   totalCount?: number;
+
+  isRefreshing?: boolean;
+
+  refreshError?: boolean;
 
   onPageChange?: (page: number) => void;
 
@@ -15863,6 +15870,13 @@ export function AdminStudentsPage({
             Enable bulk selection
           </label>
         </div>
+        <p className="mt-1 min-h-4 text-[11px] text-slate-400" role="status">
+          {isRefreshing
+            ? "Updating results..."
+            : refreshError
+              ? "Could not update results."
+              : ""}
+        </p>
       </div>
       {bulkSelectionEnabled && selectedStudentIds.size > 0 && (
         <div className="mb-5 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 md:px-6">

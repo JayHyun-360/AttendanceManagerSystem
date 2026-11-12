@@ -24,11 +24,17 @@ import { toast } from "sonner";
 
 const QUERY_PAGE_SIZE = 100;
 
-async function fetchAllPages(buildQuery: (from: number, to: number) => any) {
+async function fetchAllPages(
+  buildQuery: (from: number, to: number) => any,
+  signal?: AbortSignal,
+) {
   const rows: any[] = [];
 
   for (let from = 0; ; from += QUERY_PAGE_SIZE) {
-    const { data, error } = await buildQuery(from, from + QUERY_PAGE_SIZE - 1);
+    const query = buildQuery(from, from + QUERY_PAGE_SIZE - 1);
+    const { data, error } = await (signal
+      ? query.abortSignal(signal)
+      : query);
     if (error) throw error;
 
     rows.push(...(data ?? []));
@@ -64,6 +70,43 @@ export default function AdminAttendeesRoutePage() {
   const [selectedEventId, setSelectedEventId] = useState("");
 
   const [studentSearch, setStudentSearch] = useState("");
+
+  const [debouncedStudentSearch, setDebouncedStudentSearch] = useState("");
+
+  const allEventsId = "__all_events__";
+
+  useEffect(() => {
+    const normalizedSearch = studentSearch.trim();
+
+    if (!normalizedSearch) {
+      setDebouncedStudentSearch("");
+      return;
+    }
+
+    const timeoutId = window.setTimeout(
+      () => setDebouncedStudentSearch(normalizedSearch),
+      300,
+    );
+
+    return () => window.clearTimeout(timeoutId);
+  }, [studentSearch]);
+
+  const normalizedStudentSearch = debouncedStudentSearch.toLowerCase();
+  const matchedStudentId =
+    selectedEventId === allEventsId && normalizedStudentSearch
+      ? (students.find((candidate) =>
+          [
+            candidate.name,
+            candidate.id,
+            candidate.program,
+            candidate.section,
+          ]
+            .filter(Boolean)
+            .some((value: string) =>
+              value.toLowerCase().includes(normalizedStudentSearch),
+            ),
+        )?.profileId ?? null)
+      : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -251,6 +294,7 @@ export default function AdminAttendeesRoutePage() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
 
     async function loadSelectedAttendance() {
       if (!selectedEventId || !students.length) return;
@@ -261,22 +305,10 @@ export default function AdminAttendeesRoutePage() {
         let fineQuery: any;
         let excuseQuery: any;
 
-        if (selectedEventId === "__all_events__") {
-          const search = studentSearch.trim().toLowerCase();
-          const student = search
-            ? students.find((candidate) =>
-                [
-                  candidate.name,
-                  candidate.id,
-                  candidate.program,
-                  candidate.section,
-                ]
-                  .filter(Boolean)
-                  .some((value: string) =>
-                    value.toLowerCase().includes(search),
-                  ),
-              )
-            : null;
+        if (selectedEventId === allEventsId) {
+          const student = students.find(
+            (candidate) => candidate.profileId === matchedStudentId,
+          );
 
           if (!student) {
             setScanState({});
@@ -294,6 +326,7 @@ export default function AdminAttendeesRoutePage() {
               .eq("student_id", student.profileId)
               .order("scan_in_at", { ascending: false })
               .range(from, to),
+            controller.signal,
           );
           fineQuery = () =>
             fetchAllPages((from, to) =>
@@ -304,6 +337,7 @@ export default function AdminAttendeesRoutePage() {
                 )
                 .eq("student_id", student.profileId)
                 .range(from, to),
+              controller.signal,
             );
           excuseQuery = () =>
             fetchAllPages((from, to) =>
@@ -313,6 +347,7 @@ export default function AdminAttendeesRoutePage() {
                 .eq("student_id", student.profileId)
                 .eq("status", "approved")
                 .range(from, to),
+              controller.signal,
             );
         } else {
           scanRows = await fetchAllPages((from, to) =>
@@ -324,6 +359,7 @@ export default function AdminAttendeesRoutePage() {
               .eq("event_id", selectedEventId)
               .order("scan_in_at", { ascending: false })
               .range(from, to),
+            controller.signal,
           );
           fineQuery = () =>
             fetchAllPages((from, to) =>
@@ -335,6 +371,7 @@ export default function AdminAttendeesRoutePage() {
                 .eq("event_id", selectedEventId)
                 .in("status", ["unpaid", "paid", "excused"])
                 .range(from, to),
+              controller.signal,
             );
           excuseQuery = () =>
             fetchAllPages((from, to) =>
@@ -344,6 +381,7 @@ export default function AdminAttendeesRoutePage() {
                 .eq("event_id", selectedEventId)
                 .eq("status", "approved")
                 .range(from, to),
+              controller.signal,
             );
         }
 
@@ -351,7 +389,7 @@ export default function AdminAttendeesRoutePage() {
           fineQuery(),
           excuseQuery(),
         ]);
-        if (cancelled) return;
+        if (cancelled || controller.signal.aborted) return;
 
         const nextApprovedExcuseKeys = new Set<string>(
           excuses.map(
@@ -432,8 +470,13 @@ export default function AdminAttendeesRoutePage() {
         setFineRows(fines);
         setScanState(byEvent);
       } catch (caughtError) {
+        if (cancelled || controller.signal.aborted) return;
         console.error(caughtError);
-        if (!cancelled) setLoadError("Attendance data could not be loaded.");
+        if (hasLoadedAttendance.current) {
+          toast.error("Attendance data could not be refreshed.");
+        } else {
+          setLoadError("Attendance data could not be loaded.");
+        }
       } finally {
         if (!cancelled) {
           hasLoadedAttendance.current = true;
@@ -446,8 +489,9 @@ export default function AdminAttendeesRoutePage() {
     void loadSelectedAttendance();
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [events, selectedEventId, studentSearch, students]);
+  }, [allEventsId, events, matchedStudentId, selectedEventId, students]);
 
   const onNav = (page: Page) => {
     const paths: Record<Page, string> = {
