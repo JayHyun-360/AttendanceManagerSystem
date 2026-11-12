@@ -796,6 +796,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { PaginationControls } from "@/components/ui/pagination-controls";
+import { EmptyState } from "@/components/ui/feedback";
 import { ProgramSelect } from "@/components/ProgramSelect";
 import { AdminProgramCatalog } from "@/components/AdminProgramCatalog";
 import { getProgramCatalog, type Program } from "@/lib/programCatalog";
@@ -7143,6 +7144,12 @@ export function EventsPage({
     filter === "all" ? events : events.filter((e) => e.status === filter);
 
   const canSeeFees = user?.role === "student" && showFees;
+  const emptyTitle =
+    events.length === 0
+      ? "No events yet"
+      : filter === "all"
+        ? "No events to show"
+        : `No ${filter === "active" ? "live" : filter} events right now`;
 
   if (selectedEventId) {
     const selectedEvent = events.find((event) => event.id === selectedEventId);
@@ -7201,6 +7208,19 @@ export function EventsPage({
         ))}
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
+        {items.length === 0 && (
+          <div className="md:col-span-2 xl:col-span-3">
+            <EmptyState
+              title={emptyTitle}
+              message={
+                events.length === 0
+                  ? "Check back later for upcoming events."
+                  : "Try another filter to see more events."
+              }
+              icon={<CalendarDays className="h-5 w-5" aria-hidden="true" />}
+            />
+          </div>
+        )}
         {items.map((e) => (
           <div
             key={e.id}
@@ -8666,6 +8686,13 @@ export function AnnouncementsPage({
     <>
       <BackButton onClick={onBack} label="Back" />
       <PageHeader title="Announcements" />
+      {announcements.length === 0 && (
+        <EmptyState
+          title="No announcements yet"
+          message="Updates will appear here when they are posted."
+          icon={<FileText className="h-5 w-5" aria-hidden="true" />}
+        />
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {announcements.map((a) => (
           <div
@@ -13107,6 +13134,23 @@ export function AdminEventsPage({
         {eventView === "active" ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {events.length === 0 && (
+                <div className="md:col-span-2 xl:col-span-3">
+                  <EmptyState
+                    title={
+                      activeEventCount === 0
+                        ? "No events yet"
+                        : "No events on this page"
+                    }
+                    message={
+                      activeEventCount === 0
+                        ? "Create an event to get started."
+                        : "Try another page to find more events."
+                    }
+                    icon={<CalendarDays className="h-5 w-5" aria-hidden="true" />}
+                  />
+                </div>
+              )}
               {events.map((e) => (
                 <DraggableEventCard
                   key={e.id}
@@ -16713,6 +16757,19 @@ export function AdminAnnouncementsPage({
         </FormModal>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {posts.length === 0 && (
+          <div className="md:col-span-2 xl:col-span-3">
+            <EmptyState
+              title={totalCount === 0 ? "No announcements yet" : "No announcements on this page"}
+              message={
+                totalCount === 0
+                  ? "Publish your first announcement to keep students informed."
+                  : "Try another page to find more announcements."
+              }
+              icon={<FileText className="h-5 w-5" aria-hidden="true" />}
+            />
+          </div>
+        )}
         {posts.map((a) => (
           <div
             key={a.id}

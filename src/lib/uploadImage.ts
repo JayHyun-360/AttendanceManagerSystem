@@ -105,17 +105,31 @@ async function compressImage(
 
     bitmap.close()
 
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/webp", options.quality),
-    )
+    const encode = (type: string) =>
+      new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, type, options.quality),
+      )
+
+    let blob = await encode("image/webp")
+
+    if (blob?.type !== "image/webp") {
+      const fallbackType =
+        file.type === "image/webp" ? "image/jpeg" : file.type
+      blob = await encode(fallbackType)
+    }
 
     if (!blob) {
       return "This browser could not compress the selected image."
     }
 
-    if (blob.type !== "image/webp") {
-      return "WebP image compression is not supported in this browser."
+    const extensionByType: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
     }
+    const extension = extensionByType[blob.type]
+
+    if (!extension) return "This browser could not encode the selected image."
 
     if (blob.size > options.maxOutputBytes) {
       const maxOutputMb = Math.floor(options.maxOutputBytes / (1024 * 1024))
@@ -125,10 +139,10 @@ async function compressImage(
 
     if (blob.size >= file.size) return file
 
-    const baseName = file.name.replace(/\.[^.]+$/, "") || "promotion"
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "image"
 
-    return new File([blob], `${baseName}.webp`, {
-      type: "image/webp",
+    return new File([blob], `${baseName}.${extension}`, {
+      type: blob.type,
 
       lastModified: Date.now(),
     })

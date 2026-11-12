@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
 import { Skeleton } from "@/components/ui/skeleton"
+import { FeedbackState } from "@/components/ui/feedback"
 
 import { AnnouncementsPage } from "../../shared-page"
 
@@ -63,6 +64,8 @@ export default function AnnouncementsRoutePage() {
 
   const [isLoading, setIsLoading] = useState(true)
 
+  const [loadError, setLoadError] = useState<string | null>(null)
+
   useEffect(() => {
     let cancelled = false
 
@@ -80,11 +83,15 @@ export default function AnnouncementsRoutePage() {
 
         if (error) {
           console.error(error)
+          if (!cancelled) {
+            setLoadError("Announcements could not be loaded.")
+          }
 
           return
         }
 
         if (!cancelled) {
+          setLoadError(null)
           setAnnouncements(
             (data ?? []).map((row: any) => ({
               id: String(row.id),
@@ -111,6 +118,9 @@ export default function AnnouncementsRoutePage() {
         }
       } catch (caughtError) {
         console.error(caughtError)
+        if (!cancelled) {
+          setLoadError("Announcements could not be loaded.")
+        }
       } finally {
         if (!cancelled) {
           setIsLoading(false)
@@ -136,6 +146,16 @@ export default function AnnouncementsRoutePage() {
 
   if (isLoading) {
     return <AnnouncementsSkeleton />
+  }
+
+  if (loadError) {
+    return (
+      <FeedbackState
+        title="Announcements unavailable"
+        message={loadError}
+        onRetry={() => window.location.reload()}
+      />
+    )
   }
 
   return (
