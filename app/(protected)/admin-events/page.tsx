@@ -16,7 +16,7 @@ import { debounce } from "@/lib/debounce";
 import { useProtectedUser } from "../layout";
 
 const EVENT_COLUMNS =
-  "id, title, event_date, start_time, end_time, location, description, program, status, version, archived_at, media_urls, image_url, multi_session, sanctions_enabled, strict_morning, strict_afternoon, morning_start, morning_end, morning_late_cutoff, afternoon_start, afternoon_end, afternoon_late_cutoff, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine";
+  "id, title, event_date, start_time, end_time, location, description, program, status, feedback_enabled, version, archived_at, media_urls, image_url, multi_session, sanctions_enabled, strict_morning, strict_afternoon, morning_start, morning_end, morning_late_cutoff, afternoon_start, afternoon_end, afternoon_late_cutoff, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine";
 
 const EVENT_PAGE_SIZE = 20;
 const SCAN_PAGE_SIZE = 100;
@@ -46,6 +46,8 @@ function mapArchivedEvent(row: any): EventData {
       : Number(row.absent_fine ?? 0),
 
     status: row.status || "upcoming",
+
+    feedbackEnabled: Boolean(row.feedback_enabled),
 
     attendees: 0,
 
@@ -249,6 +251,9 @@ export default function AdminEventsRoutePage() {
               : Number(row.absent_fine ?? 0),
 
             status: (row.status as any) || "upcoming",
+
+            feedbackEnabled: Boolean(row.feedback_enabled),
+
             attendees: attendeesByEvent.get(String(row.id))?.size ?? 0,
             version: row.version || 1,
 

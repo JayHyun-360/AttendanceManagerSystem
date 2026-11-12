@@ -124,6 +124,7 @@ export default function ProfileRoutePage() {
 
     const cleanupResults = await deleteImages(
       previousMediaUrls.filter((url) => !nextMediaUrls.includes(url)),
+      "student-private-media",
     )
 
     const failedCleanup = cleanupResults.filter((result) => !result.success)
@@ -133,6 +134,14 @@ export default function ProfileRoutePage() {
     )
 
     setUser(nextUser)
+
+    if (nextUser.role !== "admin" && !nextUser.idPhotoUrl) {
+      toast.warning(
+        "Your school ID image was removed. Upload a new one to complete verification.",
+      )
+      router.replace("/onboarding?resubmit=1")
+      return true
+    }
 
     if (failedCleanup.length > 0) {
       toast.warning(

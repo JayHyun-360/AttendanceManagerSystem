@@ -1,20 +1,20 @@
 # Supabase Storage Cleanup Worker
 
-The repository contains the already-deployed `storage-cleanup` Edge Function at:
+The repository contains the `storage-cleanup` Edge Function source at:
 
 ```text
 supabase/functions/storage-cleanup/index.ts
 ```
 
-It processes eligible rows in `public.storage_cleanup_queue`, checks all known database media references, and deletes only unreferenced objects from the `public-images` bucket. Migration `039_storage_cleanup_queue.sql` creates or upgrades the queue and enqueues old media references after replacements or removals. Migration `046_remove_hero_images.sql` removes retired hero image URLs and queues their files for cleanup.
+It processes eligible rows in `public.storage_cleanup_queue` for the three approved buckets: `public-images`, `student-private-media`, and `excuse-documents`. It checks the current database references immediately before deleting an object. In the fresh rebuild, migrations remain archival; the consolidated baseline creates the queue and reference guards.
 
-The worker waits at least 24 hours after a queue row is created by default. It supports retries, concurrent-worker claiming, and quarantine handling. The deployed function authenticates the caller with the private `CLEANUP_FUNCTION_SECRET` sent in the `x-cleanup-secret` header.
+Application uploads register an intent before writing to Storage. Those rows become eligible only after a 48-hour grace period, allowing onboarding/profile edits to finish. Linking an object cancels its cleanup candidate; later removal or replacement enqueues it again. The worker also respects the request's minimum-age setting, uses retries and concurrent-worker claims, and quarantines rows after repeated failures. The function authenticates requests with the private `CLEANUP_FUNCTION_SECRET` in the `x-cleanup-secret` header.
 
 ## Recommended Vault-free scheduler
 
 Use the repository workflow [`storage-cleanup.yml`](../.github/workflows/storage-cleanup.yml) with GitHub Actions scheduled execution.
 
-This is recommended for the current project because the live Supabase project does not provide the Vault extension. Supabase’s documented `pg_cron` → `pg_net` Edge Function pattern requires Vault, or would otherwise require storing a secret directly in SQL. The GitHub Actions workflow keeps the cleanup secret in GitHub Actions encrypted repository secrets and sends it only at runtime.
+This is the recommended scheduler for a fresh project because it keeps the cleanup secret in GitHub Actions encrypted repository secrets and sends it only at runtime. It does not depend on `pg_cron`, `pg_net`, or Vault.
 
 Do not create a Supabase `pg_cron` HTTP job containing `CLEANUP_FUNCTION_SECRET`, a Supabase secret key, or any other private key as SQL text.
 
@@ -74,11 +74,11 @@ GitHub Actions may start scheduled workflows a few minutes after the nominal tim
 {"limit":25,"minimumAgeHours":24}
 ```
 
-The 24-hour minimum age is intentionally preserved as a recovery window.
+The 24-hour worker age floor is retained as a recovery window; new upload-intent records also have their own 48-hour `available_at` delay.
 
 ## 3. Verify the deployed function manually
 
-The function is already deployed and its `CLEANUP_FUNCTION_SECRET` is already configured. If a manual check is needed, use the same secret locally without committing it:
+After deploying the function and configuring its `CLEANUP_FUNCTION_SECRET` in the target project, a manual check can use the same secret locally without committing it:
 
 ```powershell
 curl.exe --fail-with-body --request POST `
@@ -111,12 +111,12 @@ order by created_at desc;
 
 The worker processes only rows with:
 
-- `bucket_id = 'public-images'`
+- `bucket_id` equal to one of `public-images`, `student-private-media`, or `excuse-documents`
 - `status` equal to `pending` or `failed`
 - `available_at` in the past
 - `created_at` older than the configured minimum age
 
-Rows still referenced by profiles, events, announcements, settings carousel media, or excuse requests are not deleted and are quarantined.
+For each claimed row, the worker checks whether the object exists, fetches the latest references across profiles/events/announcements/excuse requests/settings, and only then deletes. Referenced objects are marked `cancelled`; when their database reference is later removed, a trigger creates a new cleanup row. Missing objects are marked `completed`. Failed deletions keep their queue records and retry; repeated failures are quarantined.
 
 ## 5. Verify scheduled execution
 
@@ -137,7 +137,7 @@ group by status
 order by status;
 ```
 
-New candidates should be processed only after their 24-hour delay. A successful workflow run can legitimately report `selected: 0` when no eligible candidates exist.
+Database-removal candidates are eligible after the 24-hour worker age floor; upload-intent candidates are held for at least 48 hours and extended while an onboarding/profile edit remains active. A successful workflow run can legitimately report `selected: 0` when no eligible candidates exist.
 
 ## Production-only configuration
 
@@ -145,7 +145,7 @@ The following must be configured outside the repository:
 
 - GitHub Actions must be enabled for the repository.
 - Repository Actions secret `SUPABASE_URL` must be configured.
-- Repository Actions secret `CLEANUP_FUNCTION_SECRET` must match the deployed Supabase Function secret.
+- Repository Actions secret `CLEANUP_FUNCTION_SECRET` must match the Supabase Function secret configured in the target project.
 - The default branch must contain `.github/workflows/storage-cleanup.yml`.
 - The workflow must be allowed to run on schedule.
 
@@ -157,5 +157,7 @@ No `pg_cron`, `pg_net`, or Vault setup is required for this recommended schedule
 - Never place a Supabase secret key or service-role key in the workflow file. This worker uses its existing dedicated cleanup secret instead.
 - GitHub Actions exposes the secret only to the workflow process at runtime; review repository collaborators and Actions permissions accordingly.
 - Database triggers enqueue candidates only; they never delete Storage objects.
-- The worker performs a complete database reference check before deletion.
+- The worker checks the latest database references for each object before deletion.
+- Private student media is downloaded by authenticated app clients; the worker never creates or persists image URLs.
+- The service-role key remains only in the Edge Function environment and is never exposed to browser code.
 - Failed rows retry with backoff up to five attempts, then become `quarantined` for review.

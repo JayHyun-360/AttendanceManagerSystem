@@ -38,7 +38,7 @@ function getProfileSaveErrorMessage(error: {
 async function cleanupUploadedIdPhoto(url?: string) {
   if (!url) return
 
-  const result = await deleteImage(url)
+  const result = await deleteImage(url, "student-private-media")
   if (!result.success) {
     console.error("Failed to clean up onboarding ID photo", result.error)
   }

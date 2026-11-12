@@ -22,7 +22,13 @@ const admin = createClient(supabaseUrl, serviceRoleKey, {
   },
 })
 
-const bucketId = "public-images"
+const bucketIds = [
+  "public-images",
+  "student-private-media",
+  "excuse-documents",
+] as const
+
+type BucketId = typeof bucketIds[number]
 
 const defaultLimit = 25
 
@@ -56,83 +62,99 @@ function getNonNegativeNumber(value: string | null, fallback: number): number {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback
 }
 
-function publicUrlCandidates(objectPath: string): Set<string> {
-  const decodedPath = decodeURIComponent(objectPath)
+function normalizeReference(bucketId: BucketId, value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim() || value.startsWith("blob:")) {
+    return null
+  }
 
-  const encodedPath = decodedPath
+  if (bucketId === "public-images" && /^[a-z][a-z0-9+.-]*:\/\//i.test(value)) {
+    try {
+      const url = new URL(value)
+      const prefix = "/storage/v1/object/public/public-images/"
+      if (!url.pathname.includes(prefix)) return null
+      return decodeURIComponent(
+        url.pathname.slice(url.pathname.indexOf(prefix) + prefix.length),
+      )
+    } catch {
+      return null
+    }
+  }
 
-    .split("/")
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) return null
 
-    .map((segment) => encodeURIComponent(segment))
+  const path = value.replace(/^\/+/, "").split(/[?#]/, 1)[0]
+  return path && !path.includes("..") && !path.includes("//") ? path : null
+}
 
-    .join("/")
+async function loadAllReferenceRows(
+  table: "profiles" | "events" | "announcements" | "system_settings" | "excuse_requests",
+  columns: string,
+): Promise<Record<string, unknown>[]> {
+  const pageSize = 1000
+  const rows: Record<string, unknown>[] = []
 
-  const base = `${supabaseUrl}/storage/v1/object/public/${bucketId}`
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await admin
+      .from(table)
+      .select(columns)
+      .order("id", { ascending: true })
+      .range(offset, offset + pageSize - 1)
 
-  return new Set([
-    `${base}/${objectPath}`,
+    if (error) {
+      throw new Error(`Reference check failed for ${table}: ${error.message}`)
+    }
 
-    `${base}/${decodedPath}`,
-
-    `${base}/${encodedPath}`,
-
-    objectPath,
-
-    decodedPath,
-  ])
+    const page = data ?? []
+    rows.push(...page)
+    if (page.length < pageSize) return rows
+  }
 }
 
 async function loadReferenceIndex(): Promise<Set<string>> {
   const [profiles, events, announcements, settings, excuses] =
     await Promise.all([
-      admin
-
-        .from("profiles")
-
-        .select("photo_url,cover_photo_url,id_photo_url"),
-
-      admin.from("events").select("image_url,media_urls"),
-
-      admin.from("announcements").select("media_url"),
-
-      admin.from("system_settings").select("settings"),
-
-      admin.from("excuse_requests").select("document_url"),
+      loadAllReferenceRows(
+        "profiles",
+        "id,photo_url,cover_photo_url,id_photo_url",
+      ),
+      loadAllReferenceRows("events", "id,image_url,media_urls"),
+      loadAllReferenceRows("announcements", "id,media_url"),
+      loadAllReferenceRows("system_settings", "id,settings"),
+      loadAllReferenceRows("excuse_requests", "id,document_url"),
     ])
 
-  for (const result of [profiles, events, announcements, settings, excuses]) {
-    if (result.error) {
-      throw new Error(`Reference check failed: ${result.error.message}`)
-    }
-  }
-
   const references = new Set<string>()
-  const add = (value: unknown) => {
-    if (typeof value === "string" && value) references.add(value)
+  const add = (bucketId: BucketId, value: unknown) => {
+    const path = normalizeReference(bucketId, value)
+    if (path) references.add(`${bucketId}:${path}`)
   }
-  const addArray = (value: unknown) => {
-    if (Array.isArray(value)) value.forEach(add)
+  const addArray = (bucketId: BucketId, value: unknown) => {
+    if (Array.isArray(value)) value.forEach((item) => add(bucketId, item))
   }
 
-  for (const row of profiles.data ?? []) {
-    add(row.photo_url)
-    add(row.cover_photo_url)
-    add(row.id_photo_url)
+  for (const row of profiles) {
+    add("student-private-media", row.photo_url)
+    add("student-private-media", row.cover_photo_url)
+    add("student-private-media", row.id_photo_url)
   }
-  for (const row of events.data ?? []) {
-    add(row.image_url)
-    addArray(row.media_urls)
+  for (const row of events) {
+    add("public-images", row.image_url)
+    addArray("public-images", row.media_urls)
   }
-  for (const row of announcements.data ?? []) add(row.media_url)
-  for (const row of excuses.data ?? []) add(row.document_url)
-  for (const row of settings.data ?? []) {
+  for (const row of announcements) {
+    add("public-images", row.media_url)
+  }
+  for (const row of excuses) {
+    add("excuse-documents", row.document_url)
+  }
+  for (const row of settings) {
     const value = row.settings as Record<string, unknown> | null
     if (Array.isArray(value?.carouselSlides)) {
       for (const slide of value.carouselSlides) {
         if (!slide || typeof slide !== "object") continue
         const item = slide as Record<string, unknown>
-        add(item.imageUrl)
-        add(item.posterUrl)
+        add("public-images", item.imageUrl)
+        add("public-images", item.posterUrl)
       }
     }
   }
@@ -141,12 +163,33 @@ async function loadReferenceIndex(): Promise<Set<string>> {
 }
 
 function isObjectReferenced(
+  bucketId: BucketId,
   objectPath: string,
   references: Set<string>,
 ): boolean {
-  return [...publicUrlCandidates(objectPath)].some((candidate) =>
-    references.has(candidate),
-  )
+  return references.has(`${bucketId}:${objectPath}`)
+}
+
+async function storageObjectExists(
+  bucketId: BucketId,
+  objectPath: string,
+): Promise<boolean> {
+  const separator = objectPath.lastIndexOf("/")
+  const folder = separator < 0 ? "" : objectPath.slice(0, separator)
+  const fileName = separator < 0 ? objectPath : objectPath.slice(separator + 1)
+
+  const { data, error } = await admin.storage.from(bucketId).list(folder, {
+    limit: 100,
+    search: fileName,
+  })
+
+  if (error) {
+    throw new Error(
+      `Could not inspect ${bucketId}/${objectPath}: ${error.message}`,
+    )
+  }
+
+  return Boolean(data?.some((item) => item.name === fileName && item.id))
 }
 
 async function markFailed(
@@ -195,7 +238,7 @@ async function processQueue(limit: number, minimumAgeHours: number) {
       available_at: now.toISOString(),
       last_error: "Recovered stale processing lease.",
     })
-    .eq("bucket_id", bucketId)
+    .in("bucket_id", [...bucketIds])
     .eq("status", "processing")
     .lte("available_at", staleProcessingCutoff)
 
@@ -213,7 +256,7 @@ async function processQueue(limit: number, minimumAgeHours: number) {
 
     .in("status", ["pending", "failed"])
 
-    .eq("bucket_id", bucketId)
+    .in("bucket_id", [...bucketIds])
 
     .lte("available_at", now.toISOString())
 
@@ -227,10 +270,6 @@ async function processQueue(limit: number, minimumAgeHours: number) {
     throw new Error(`Could not read cleanup queue: ${listError.message}`)
   }
 
-  const references = rows?.length
-    ? await loadReferenceIndex()
-    : new Set<string>()
-
   const summary = {
     selected: rows?.length ?? 0,
 
@@ -243,9 +282,23 @@ async function processQueue(limit: number, minimumAgeHours: number) {
     quarantined: 0,
 
     skippedByAnotherWorker: 0,
-  }
 
+    missingObjects: 0,
+
+    cancelled: 0,
+  }
   for (const row of rows ?? []) {
+    const bucketId = bucketIds.find((value) => value === row.bucket_id)
+    if (!bucketId) {
+      await markFailed(
+        row.id,
+        Number(row.attempts ?? 0) + 1,
+        `Unsupported cleanup bucket: ${row.bucket_id}`,
+      )
+      summary.failed += 1
+      continue
+    }
+
     const attempts = Number(row.attempts ?? 0) + 1
 
     if (attempts > maxAttempts) {
@@ -301,16 +354,43 @@ async function processQueue(limit: number, minimumAgeHours: number) {
     }
 
     try {
-      if (isObjectReferenced(claimed.object_path, references)) {
+      const claimedBucket = bucketIds.find(
+        (value) => value === claimed.bucket_id,
+      )
+      if (!claimedBucket) {
+        throw new Error(`Unsupported cleanup bucket: ${claimed.bucket_id}`)
+      }
+
+      const objectExists = await storageObjectExists(
+        claimedBucket,
+        claimed.object_path,
+      )
+      if (!objectExists) {
+        const { error } = await admin
+          .from("storage_cleanup_queue")
+          .update({
+            status: "completed",
+            last_error: "Object was already absent from Storage.",
+            processed_at: new Date().toISOString(),
+          })
+          .eq("id", claimed.id)
+
+        if (error) throw error
+        summary.missingObjects += 1
+        continue
+      }
+
+      const references = await loadReferenceIndex()
+      if (isObjectReferenced(claimedBucket, claimed.object_path, references)) {
         const { error } = await admin
 
           .from("storage_cleanup_queue")
 
           .update({
-            status: "quarantined",
+            status: "cancelled",
 
             last_error:
-              "Object is still referenced by at least one database record.",
+              "Object is linked to an application record; future removal will enqueue it again.",
 
             processed_at: new Date().toISOString(),
           })
@@ -321,14 +401,14 @@ async function processQueue(limit: number, minimumAgeHours: number) {
 
         summary.stillReferenced += 1
 
-        summary.quarantined += 1
+        summary.cancelled += 1
 
         continue
       }
 
       const { error: removeError } = await admin.storage
 
-        .from(claimed.bucket_id)
+        .from(claimedBucket)
 
         .remove([claimed.object_path])
 
@@ -407,7 +487,12 @@ serve(async (request) => {
 
     const result = await processQueue(limit, minimumAgeHours)
 
-    return json({ ok: true, bucket: bucketId, minimumAgeHours, ...result })
+    return json({
+      ok: true,
+      buckets: bucketIds,
+      minimumAgeHours,
+      ...result,
+    })
   } catch (error) {
     console.error(error)
 

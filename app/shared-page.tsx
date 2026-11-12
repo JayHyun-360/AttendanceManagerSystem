@@ -786,6 +786,7 @@ import { formatTime12Hour, formatTimeRange12Hour } from "@/lib/time";
 import {
   deleteImages,
   deleteImage,
+  extendStorageUploadLease,
   uploadEventVideo,
   uploadProfileImage,
   uploadPromotionalImage,
@@ -1282,6 +1283,8 @@ export interface EventData {
   location: string;
 
   status: EventStatus;
+
+  feedbackEnabled?: boolean;
 
   attendees: number;
 
@@ -5690,6 +5693,7 @@ export function OnboardingPage({
 
   const idPhotoRef = useRef<HTMLInputElement>(null);
   const idPhotoUrlRef = useRef<string | undefined>(undefined);
+  const originalIdPhotoUrlRef = useRef<string | undefined>(undefined);
   const onboardingMountedRef = useRef(true);
   const completionCommittedRef = useRef(false);
 
@@ -5697,14 +5701,117 @@ export function OnboardingPage({
     onboardingMountedRef.current = true;
     return () => {
       onboardingMountedRef.current = false;
-      if (!completionCommittedRef.current && idPhotoUrlRef.current) {
-        void deleteImage(idPhotoUrlRef.current);
+      if (
+        !completionCommittedRef.current &&
+        idPhotoUrlRef.current &&
+        idPhotoUrlRef.current !== originalIdPhotoUrlRef.current
+      ) {
+        void deleteImage(
+          idPhotoUrlRef.current,
+          "student-private-media",
+        );
       }
     };
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadExistingProfile() {
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError) {
+        console.error(
+          "Could not check the current onboarding profile",
+          authError,
+        );
+        return;
+      }
+
+      if (!authUser) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select(
+          "first_name,middle_initial,surname,phone,contact_email,student_id,program,year_level,section,id_photo_url",
+        )
+        .eq("id", authUser.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error(
+          "Could not prefill the existing onboarding profile",
+          error,
+        );
+        return;
+      }
+
+      if (!data || cancelled) return;
+
+      originalIdPhotoUrlRef.current = data.id_photo_url ?? undefined;
+      setF((current) => {
+        if (
+          current.firstName ||
+          current.surname ||
+          current.studentId ||
+          current.idPhotoUrl
+        ) {
+          return current;
+        }
+
+        return {
+          ...current,
+          firstName: data.first_name ?? "",
+          middleInitial: data.middle_initial ?? "",
+          surname: data.surname ?? "",
+          phone: data.phone ?? "",
+          contactEmail: data.contact_email ?? "",
+          studentId: data.student_id ?? "",
+          program: data.program ?? "",
+          yearLevel: data.year_level ?? "",
+          section: data.section ?? "",
+          idPhotoUrl: data.id_photo_url ?? undefined,
+        };
+      });
+    }
+
+    void loadExistingProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     idPhotoUrlRef.current = f.idPhotoUrl;
+  }, [f.idPhotoUrl]);
+
+  useEffect(() => {
+    const path = f.idPhotoUrl;
+    if (!path || path === originalIdPhotoUrlRef.current) return;
+
+    let active = true;
+    const extendLease = async () => {
+      try {
+        await extendStorageUploadLease("student-private-media", path);
+      } catch (error) {
+        if (active) {
+          console.error(
+            "Could not extend the onboarding image cleanup lease",
+            error,
+          );
+        }
+      }
+    };
+
+    void extendLease();
+    const interval = window.setInterval(() => void extendLease(), 6 * 60 * 60 * 1000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
   }, [f.idPhotoUrl]);
 
   const set =
@@ -5908,7 +6015,6 @@ export function OnboardingPage({
                     setIdPhotoUploadState("uploading");
 
                     try {
-                      const previousPhotoUrl = idPhotoUrlRef.current;
                       const result = await uploadVerificationImage(file);
 
                       if ("error" in result) {
@@ -5920,7 +6026,7 @@ export function OnboardingPage({
                       }
 
                       if (!onboardingMountedRef.current) {
-                        await deleteImage(result.url);
+                        await deleteImage(result.path, "student-private-media");
                         return;
                       }
 
@@ -5929,12 +6035,8 @@ export function OnboardingPage({
                       setF((p) => ({
                         ...p,
 
-                        idPhotoUrl: result.url,
+                        idPhotoUrl: result.path,
                       }));
-
-                      if (previousPhotoUrl && previousPhotoUrl !== result.url) {
-                        void deleteImage(previousPhotoUrl);
-                      }
                     } catch (caughtError) {
                       setIdPhotoUploadState("error");
 
@@ -5977,11 +6079,21 @@ export function OnboardingPage({
                       className="w-full h-full object-cover"
                     />
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         const photoUrl = f.idPhotoUrl;
-
+                        if (photoUrl) {
+                          const result = await deleteImage(
+                            photoUrl,
+                            "student-private-media",
+                          );
+                          if (!result.success) {
+                            toast.error(
+                              "This ID image is still attached to a profile. Remove it from Profile settings first.",
+                            );
+                            return;
+                          }
+                        }
                         setF((p) => ({ ...p, idPhotoUrl: undefined }));
-                        if (photoUrl) void deleteImage(photoUrl);
                       }}
                       className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
                     >
@@ -6111,7 +6223,10 @@ export function OnboardingPage({
                 });
                 if (completed === true) {
                   completionCommittedRef.current = true;
-                } else if (f.idPhotoUrl) {
+                } else if (
+                  f.idPhotoUrl &&
+                  f.idPhotoUrl !== originalIdPhotoUrlRef.current
+                ) {
                   setF((current) => ({ ...current, idPhotoUrl: undefined }));
                 }
               }}
@@ -7389,11 +7504,18 @@ type StudentFeedbackStatus =
   | "loading"
   | "eligible"
   | "submitted"
+  | "disabled"
   | "ineligible"
   | "not_open"
   | "error";
 
-function StudentEventFeedback({ eventId }: { eventId: string }) {
+function StudentEventFeedback({
+  eventId,
+  eventStatus,
+}: {
+  eventId: string;
+  eventStatus: EventStatus;
+}) {
   const [status, setStatus] = useState<StudentFeedbackStatus>("loading");
 
   const [rating, setRating] = useState(0);
@@ -7454,6 +7576,22 @@ function StudentEventFeedback({ eventId }: { eventId: string }) {
     if (error) {
       console.error(error);
 
+      if (error.message.includes("Feedback is disabled for this event.")) {
+        setStatus("disabled");
+
+        return;
+      }
+
+      if (
+        error.message.includes(
+          "Feedback can only be submitted after an event is closed.",
+        )
+      ) {
+        setStatus("not_open");
+
+        return;
+      }
+
       setSubmitError(
         "Your feedback could not be sent. Please try again in a moment.",
       );
@@ -7471,6 +7609,8 @@ function StudentEventFeedback({ eventId }: { eventId: string }) {
   };
 
   if (status === "loading") {
+    if (eventStatus !== "closed") return null;
+
     return (
       <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
         <p className="text-sm text-slate-500">
@@ -7478,6 +7618,14 @@ function StudentEventFeedback({ eventId }: { eventId: string }) {
         </p>
       </section>
     );
+  }
+
+  if (
+    eventStatus !== "closed" &&
+    status !== "submitted" &&
+    status !== "error"
+  ) {
+    return null;
   }
 
   if (status === "error") {
@@ -7515,13 +7663,15 @@ function StudentEventFeedback({ eventId }: { eventId: string }) {
     );
   }
 
+  if (status === "not_open") return null;
+
   if (status !== "eligible") {
     return (
       <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
         <h3 className="text-sm font-semibold text-slate-900">Event feedback</h3>
         <p className="mt-1 text-sm leading-relaxed text-slate-600">
-          {status === "not_open"
-            ? "Feedback opens after the event is closed."
+          {status === "disabled"
+            ? "Event administrators have disabled new feedback submissions."
             : "Feedback is available to students recorded as present or late for this event."}
         </p>
       </section>
@@ -7622,56 +7772,117 @@ type AdminEventFeedbackRow = {
   } | null;
 };
 
+const ADMIN_FEEDBACK_PAGE_SIZE = 25;
+
 function AdminEventFeedbackPanel({
   eventId,
-
-  isActive,
+  eventStatus,
 }: {
   eventId: string;
-
-  isActive: boolean;
+  eventStatus: EventStatus;
 }) {
   const [feedback, setFeedback] = useState<AdminEventFeedbackRow[]>([]);
 
+  const [totalCount, setTotalCount] = useState(0);
+
+  const [averageRating, setAverageRating] = useState<number | null>(null);
+
+  const [page, setPage] = useState(0);
+
   const [isLoading, setIsLoading] = useState(false);
 
-  const [hasError, setHasError] = useState(false);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
 
-  const [retryKey, setRetryKey] = useState(0);
+  const [hasPageError, setHasPageError] = useState(false);
+
+  const [hasSummaryError, setHasSummaryError] = useState(false);
+
+  const [summaryRetryKey, setSummaryRetryKey] = useState(0);
+
+  const [pageRetryKey, setPageRetryKey] = useState(0);
+
+  const hasError = hasPageError || hasSummaryError;
+
+  const retryFailedRequests = () => {
+    if (hasPageError) setPageRetryKey((current) => current + 1);
+    if (hasSummaryError) setSummaryRetryKey((current) => current + 1);
+  };
 
   useEffect(() => {
-    if (!isActive) return;
-
     let cancelled = false;
 
-    setIsLoading(true);
+    setIsSummaryLoading(true);
 
-    setHasError(false);
+    setHasSummaryError(false);
 
-    async function loadFeedback() {
-      const { data, error } = await supabase
-
-        .from("event_feedback")
-
-        .select(
-          "id, student_id, rating, comment, created_at, student:profiles!event_feedback_student_id_fkey(first_name, surname, student_id)",
-        )
-
-        .eq("event_id", eventId)
-
-        .order("created_at", { ascending: false });
+    async function loadSummary() {
+      const { data, error } = await supabase.rpc(
+        "get_admin_event_feedback_summary",
+        { p_event_id: eventId },
+      );
 
       if (cancelled) return;
 
       if (error) {
         console.error(error);
+        setHasSummaryError(true);
+      } else {
+        const summary = data?.[0];
+        setTotalCount(Number(summary?.response_count ?? 0));
+        setAverageRating(
+          summary?.average_rating == null
+            ? null
+            : Number(summary.average_rating),
+        );
+      }
 
-        setHasError(true);
+      setIsSummaryLoading(false);
+    }
+
+    void loadSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, summaryRetryKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setIsLoading(true);
+    setHasPageError(false);
+
+    if (eventStatus !== "closed" && totalCount === 0) {
+      setFeedback([]);
+      setIsLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    async function loadFeedbackPage() {
+      const { data, error } = await supabase
+        .from("event_feedback")
+        .select(
+          "id, student_id, rating, comment, created_at, student:profiles!event_feedback_student_id_fkey(first_name, surname, student_id)",
+        )
+        .eq("event_id", eventId)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(
+          page * ADMIN_FEEDBACK_PAGE_SIZE,
+          (page + 1) * ADMIN_FEEDBACK_PAGE_SIZE - 1,
+        );
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error(error);
+        setHasPageError(true);
       } else {
         setFeedback(
           (data ?? []).map((row: any) => ({
             ...row,
-
             student: Array.isArray(row.student)
               ? (row.student[0] ?? null)
               : (row.student ?? null),
@@ -7682,14 +7893,14 @@ function AdminEventFeedbackPanel({
       setIsLoading(false);
     }
 
-    void loadFeedback();
+    void loadFeedbackPage();
 
     return () => {
       cancelled = true;
     };
-  }, [eventId, isActive, retryKey]);
+  }, [eventId, eventStatus, page, pageRetryKey, totalCount]);
 
-  if (isLoading) {
+  if (isLoading || isSummaryLoading) {
     return (
       <div className="rounded-2xl border border-slate-100 bg-white p-5 text-sm text-slate-500 shadow-sm">
         Loading event feedback...
@@ -7705,7 +7916,7 @@ function AdminEventFeedbackPanel({
         </p>
         <button
           type="button"
-          onClick={() => setRetryKey((current) => current + 1)}
+          onClick={retryFailedRequests}
           className="mt-3 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
         >
           Try again
@@ -7714,7 +7925,9 @@ function AdminEventFeedbackPanel({
     );
   }
 
-  if (feedback.length === 0) {
+  if (totalCount === 0) {
+    if (eventStatus !== "closed") return null;
+
     return (
       <div className="rounded-2xl border border-slate-100 bg-white p-6 text-center shadow-sm">
         <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
@@ -7730,10 +7943,6 @@ function AdminEventFeedbackPanel({
     );
   }
 
-  const averageRating =
-    feedback.reduce((total, response) => total + response.rating, 0) /
-    feedback.length;
-
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
       <header className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-4 py-3.5">
@@ -7742,15 +7951,17 @@ function AdminEventFeedbackPanel({
             Student feedback
           </h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            Private responses for this event
+            Showing {page * ADMIN_FEEDBACK_PAGE_SIZE + 1}–
+            {Math.min((page + 1) * ADMIN_FEEDBACK_PAGE_SIZE, totalCount)} of{" "}
+            {totalCount} responses
           </p>
         </div>
         <div className="shrink-0 text-right">
           <p className="text-sm font-bold text-slate-900">
-            {averageRating.toFixed(1)} / 5
+            {averageRating === null ? "—" : `${averageRating.toFixed(1)} / 5`}
           </p>
           <p className="text-xs text-slate-500">
-            {feedback.length} {feedback.length === 1 ? "response" : "responses"}
+            Overall average
           </p>
         </div>
       </header>
@@ -7801,6 +8012,32 @@ function AdminEventFeedbackPanel({
           );
         })}
       </div>
+      <footer className="flex items-center justify-between gap-3 border-t border-slate-100 px-4 py-3">
+        <p className="text-xs text-slate-500">
+          Page {page + 1} of{" "}
+          {Math.max(1, Math.ceil(totalCount / ADMIN_FEEDBACK_PAGE_SIZE))}
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={page === 0 || isLoading}
+            onClick={() => setPage((current) => Math.max(0, current - 1))}
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            disabled={
+              (page + 1) * ADMIN_FEEDBACK_PAGE_SIZE >= totalCount || isLoading
+            }
+            onClick={() => setPage((current) => current + 1)}
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </footer>
     </section>
   );
 }
@@ -8058,13 +8295,17 @@ function EventDetailPageView({
                 </p>
               </div>
 
-              {role === "student" && event.status === "closed" && (
-                <StudentEventFeedback eventId={event.id} />
-              )}
-              {role === "admin" && event.status === "closed" && (
-                <AdminEventFeedbackPanel
+              {role === "student" && (
+                <StudentEventFeedback
                   eventId={event.id}
-                  isActive={event.status === "closed"}
+                  eventStatus={event.status}
+                />
+              )}
+              {role === "admin" && (
+                <AdminEventFeedbackPanel
+                  key={event.id}
+                  eventId={event.id}
+                  eventStatus={event.status}
                 />
               )}
 
@@ -9089,11 +9330,17 @@ export function ProfilePage({
     "idle" | "uploading" | "error"
   >("idle");
 
+  const [idPhotoUploadState, setIdPhotoUploadState] = useState<
+    "idle" | "uploading" | "error"
+  >("idle");
+
   const [draft, setDraft] = useState({ ...user });
 
   const photoRef = useRef<HTMLInputElement>(null);
 
   const coverPhotoRef = useRef<HTMLInputElement>(null);
+
+  const idPhotoRef = useRef<HTMLInputElement>(null);
 
   const setF =
     (k: keyof User) =>
@@ -9125,7 +9372,7 @@ export function ProfilePage({
 
     setPhotoUploadState("idle");
 
-    setDraft((d) => ({ ...d, photoUrl: result.url }));
+    setDraft((d) => ({ ...d, photoUrl: result.path }));
   };
 
   const handleCoverPhotoChange = async (
@@ -9141,7 +9388,7 @@ export function ProfilePage({
 
     setCoverPhotoUploadState("uploading");
 
-    const result = await uploadProfileImage(file);
+    const result = await uploadProfileImage(file, "cover");
 
     if ("error" in result) {
       setCoverPhotoUploadState("error");
@@ -9153,7 +9400,26 @@ export function ProfilePage({
 
     setCoverPhotoUploadState("idle");
 
-    setDraft((d) => ({ ...d, coverPhotoUrl: result.url }));
+    setDraft((d) => ({ ...d, coverPhotoUrl: result.path }));
+  };
+
+  const handleIdPhotoChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.currentTarget.value = "";
+    if (!file) return;
+
+    setIdPhotoUploadState("uploading");
+    const result = await uploadVerificationImage(file);
+    if ("error" in result) {
+      setIdPhotoUploadState("error");
+      toast.error(result.error);
+      return;
+    }
+
+    setIdPhotoUploadState("idle");
+    setDraft((d) => ({ ...d, idPhotoUrl: result.path }));
   };
 
   useEffect(() => {
@@ -9167,6 +9433,57 @@ export function ProfilePage({
       }
     };
   }, []);
+
+  useEffect(() => {
+    const pendingPaths = [
+      [draft.photoUrl, user.photoUrl],
+      [draft.coverPhotoUrl, user.coverPhotoUrl],
+      [draft.idPhotoUrl, user.idPhotoUrl],
+    ]
+      .flatMap(([path, previousPath]) =>
+        typeof path === "string" &&
+        path !== previousPath &&
+        !path.includes("://") &&
+        !path.startsWith("blob:") &&
+        !path.startsWith("data:")
+          ? [path]
+          : [],
+      );
+
+    if (pendingPaths.length === 0) return;
+
+    let active = true;
+    const extendLeases = async () => {
+      const results = await Promise.allSettled(
+        pendingPaths.map((path) =>
+          extendStorageUploadLease("student-private-media", path),
+        ),
+      );
+      if (!active) return;
+      results.forEach((result) => {
+        if (result.status === "rejected") {
+          console.error("Could not extend a profile image cleanup lease", result.reason);
+        }
+      });
+    };
+
+    void extendLeases();
+    const interval = window.setInterval(
+      () => void extendLeases(),
+      6 * 60 * 60 * 1000,
+    );
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [
+    draft.photoUrl,
+    draft.coverPhotoUrl,
+    draft.idPhotoUrl,
+    user.photoUrl,
+    user.coverPhotoUrl,
+    user.idPhotoUrl,
+  ]);
 
   const profile = editing ? draft : user;
 
@@ -9298,6 +9615,20 @@ export function ProfilePage({
                     >
                       <Icons.Camera />
                     </button>
+                    {draft.photoUrl && (
+                      <button
+                        onClick={() =>
+                          setDraft((current) => ({
+                            ...current,
+                            photoUrl: undefined,
+                          }))
+                        }
+                        aria-label="Remove profile photo"
+                        className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white shadow-md transition-colors hover:bg-red-700"
+                      >
+                        <Icons.X />
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -9577,8 +9908,17 @@ export function ProfilePage({
             </section>
           )}
 
-          {!isMod && profile.idPhotoUrl && (
+          {!isMod && (profile.idPhotoUrl || editing) && (
             <>
+              {editing && (
+                <input
+                  ref={idPhotoRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleIdPhotoChange}
+                />
+              )}
               <details className="rounded-2xl border border-slate-100 bg-white shadow-sm md:hidden">
                 <summary className="flex cursor-pointer list-none items-center justify-between p-5 text-base font-semibold text-slate-900">
                   <span>School ID</span>
@@ -9589,12 +9929,44 @@ export function ProfilePage({
                 </summary>
                 <div className="border-t border-slate-100 p-5">
                   <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-slate-100 bg-slate-50/80">
-                    <OptimizedImage
-                      src={profile.idPhotoUrl}
-                      alt="School ID"
-                      className="h-full w-full object-contain"
-                    />
+                    {profile.idPhotoUrl ? (
+                      <OptimizedImage
+                        src={profile.idPhotoUrl}
+                        alt="School ID"
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                        No school ID image
+                      </div>
+                    )}
                   </div>
+                  {editing && (
+                    <div className="mt-3 flex justify-center gap-2">
+                      <button
+                        onClick={() => idPhotoRef.current?.click()}
+                        disabled={idPhotoUploadState === "uploading"}
+                        className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 disabled:opacity-60"
+                      >
+                        {idPhotoUploadState === "uploading"
+                          ? "Uploading..."
+                          : "Change ID image"}
+                      </button>
+                      {profile.idPhotoUrl && (
+                        <button
+                          onClick={() =>
+                            setDraft((current) => ({
+                              ...current,
+                              idPhotoUrl: undefined,
+                            }))
+                          }
+                          className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <p className="mt-3 text-center text-[11px] text-slate-400">
                     Used for identity verification by moderators
                   </p>
@@ -9610,12 +9982,44 @@ export function ProfilePage({
                   </span>
                 </div>
                 <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-slate-100 bg-slate-50/80">
-                  <OptimizedImage
-                    src={profile.idPhotoUrl}
-                    alt="School ID"
-                    className="h-full w-full object-contain"
-                  />
+                  {profile.idPhotoUrl ? (
+                    <OptimizedImage
+                      src={profile.idPhotoUrl}
+                      alt="School ID"
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                      No school ID image
+                    </div>
+                  )}
                 </div>
+                {editing && (
+                  <div className="mt-3 flex justify-center gap-2">
+                    <button
+                      onClick={() => idPhotoRef.current?.click()}
+                      disabled={idPhotoUploadState === "uploading"}
+                      className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 disabled:opacity-60"
+                    >
+                      {idPhotoUploadState === "uploading"
+                        ? "Uploading..."
+                        : "Change ID image"}
+                    </button>
+                    {profile.idPhotoUrl && (
+                      <button
+                        onClick={() =>
+                          setDraft((current) => ({
+                            ...current,
+                            idPhotoUrl: undefined,
+                          }))
+                        }
+                        className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                )}
                 <p className="mt-3 text-center text-[11px] text-slate-400">
                   Used for identity verification by moderators
                 </p>
@@ -10699,6 +11103,8 @@ export function AdminEventsPage({
 
           status: (row.status as any) || "upcoming",
 
+          feedbackEnabled: Boolean(row.feedback_enabled),
+
           attendees: 0,
 
           version: 1,
@@ -10941,6 +11347,8 @@ export function AdminEventsPage({
       p_session_label: pendingSessionExtension.sessionLabel,
 
       p_extension_minutes: pendingSessionExtension.minutes,
+
+      p_expected_version: editDraft.version ?? 1,
     });
 
     if (error) {
@@ -11048,7 +11456,7 @@ export function AdminEventsPage({
         (current.version ?? 1) !== (editOriginal.version ?? 1)
       ) {
         toast.error(
-          "Another admin modified this event — please review and try again.",
+          "Another administrator changed this event. Refresh the page and retry.",
         );
 
         setEditId(null);
@@ -11089,6 +11497,8 @@ export function AdminEventsPage({
 
             afternoonLate: editOriginal?.afternoonLateFine ?? 0,
           };
+
+      const expectedVersion = editOriginal?.version ?? 1;
 
       const payload = {
         title: editDraft.title,
@@ -11147,22 +11557,35 @@ export function AdminEventsPage({
 
         afternoon_late_fine: savedFineValues.afternoonLate,
 
-        version: (editOriginal?.version ?? 1) + 1,
+        version: expectedVersion + 1,
       };
 
-      const { error } = await supabase
+      const { data, error } = await supabase
 
         .from("events")
 
         .update(payload)
 
-        .eq("id", editDraft.id);
+        .eq("id", editDraft.id)
+        .eq("version", expectedVersion)
+        .select("version")
+        .maybeSingle();
 
       if (error) {
         toast.error(`Failed to update event: ${error.message}`);
 
         console.error(error);
 
+        return;
+      }
+
+      if (!data) {
+        toast.error(
+          "Another administrator changed this event. Refresh the page and retry.",
+        );
+        setEditId(null);
+        setEditDraft(null);
+        setEditOriginal(null);
         return;
       }
 
@@ -11186,7 +11609,7 @@ export function AdminEventsPage({
           ...nextGalleryUrls,
         ],
 
-        version: (editOriginal?.version ?? 1) + 1,
+        version: data.version,
 
         fineAmount: editDraft.multiSession
           ? savedFineValues.morningAbsent + savedFineValues.afternoonAbsent
@@ -11530,25 +11953,36 @@ export function AdminEventsPage({
         }
       }
 
+      const expectedVersion = current.version ?? 1;
       const payload = {
         status,
 
-        version: (current.version ?? 1) + 1,
+        version: expectedVersion + 1,
       };
 
-      const { error } = await supabase
+      const { data, error } = await supabase
 
         .from("events")
 
         .update(payload)
 
-        .eq("id", id);
+        .eq("id", id)
+        .eq("version", expectedVersion)
+        .select("version")
+        .maybeSingle();
 
       if (error) {
         toast.error(`Failed to update event status: ${error.message}`);
 
         console.error(error);
 
+        return;
+      }
+
+      if (!data) {
+        toast.error(
+          "Another administrator changed this event. Refresh the page and try again.",
+        );
         return;
       }
 
@@ -11560,7 +11994,7 @@ export function AdminEventsPage({
 
                 status,
 
-                version: (e.version ?? 1) + 1,
+                version: data.version,
               }
             : e,
         ),
@@ -11571,6 +12005,63 @@ export function AdminEventsPage({
       console.error(caughtError);
 
       toast.error("An error occurred while updating event status");
+    }
+  };
+
+  const toggleFeedback = async (id: string) => {
+    const current = events.find((event) => event.id === id);
+
+    if (!current) {
+      toast.error("Event not found");
+      return;
+    }
+
+    const expectedVersion = current.version ?? 1;
+    const feedbackEnabled = !current.feedbackEnabled;
+
+    try {
+      const { data, error } = await supabase
+        .from("events")
+        .update({
+          feedback_enabled: feedbackEnabled,
+          version: expectedVersion + 1,
+        })
+        .eq("id", id)
+        .eq("version", expectedVersion)
+        .select("feedback_enabled, version")
+        .maybeSingle();
+
+      if (error) {
+        console.error(error);
+        toast.error(`Could not update feedback availability: ${error.message}`);
+        return;
+      }
+
+      if (!data) {
+        toast.error(
+          "Another administrator changed this event. Refresh the page and try again.",
+        );
+        return;
+      }
+
+      setEvents((items) =>
+        items.map((event) =>
+          event.id === id
+            ? {
+                ...event,
+                feedbackEnabled: data.feedback_enabled,
+                version: data.version,
+              }
+            : event,
+        ),
+      );
+
+      toast.success(
+        `Post-event feedback ${data.feedback_enabled ? "enabled" : "disabled"}.`,
+      );
+    } catch (caughtError) {
+      console.error(caughtError);
+      toast.error("Could not update post-event feedback.");
     }
   };
 
@@ -12642,7 +13133,13 @@ export function AdminEventsPage({
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/25 via-transparent to-slate-900/10" />
 
                       <div className="absolute top-3 left-3 z-10">
-                        <Badge status={e.status} />
+                        <div className="flex flex-wrap gap-1.5">
+                          <Badge status={e.status} />
+                          <span className="rounded-full border border-white/30 bg-slate-900/25 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
+                            Feedback{" "}
+                            {e.feedbackEnabled ? "enabled" : "disabled"}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="absolute top-3 right-3 z-10 flex max-w-[78%] flex-wrap items-start justify-end gap-1.5">
@@ -12664,6 +13161,14 @@ export function AdminEventsPage({
 
                                 onClick: () => setStatus(e.id, o.status),
                               })),
+
+                              {
+                                label: e.feedbackEnabled
+                                  ? "Disable post-event feedback"
+                                  : "Enable post-event feedback",
+
+                                onClick: () => void toggleFeedback(e.id),
+                              },
 
                               {
                                 label: "Edit",

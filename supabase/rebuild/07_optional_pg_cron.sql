@@ -1,0 +1,2 @@
+-- Retired: event closure is administrator-controlled.
+-- This file intentionally performs no database or pg_cron operations.

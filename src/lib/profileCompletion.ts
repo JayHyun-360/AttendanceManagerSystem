@@ -10,6 +10,8 @@ type ProfileCompletionFields = {
   program?: string | null
 
   year_level?: string | null
+
+  id_photo_url?: string | null
 }
 
 export function isProfileComplete(
@@ -19,6 +21,9 @@ export function isProfileComplete(
     !!profile?.first_name &&
     !!profile.surname &&
     (profile.role === "admin" ||
-      (!!profile.student_id && !!profile.program && !!profile.year_level))
+      (!!profile.student_id &&
+        !!profile.program &&
+        !!profile.year_level &&
+        !!profile.id_photo_url))
   )
 }

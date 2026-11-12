@@ -1,14 +1,52 @@
 import { supabase } from "@/lib/supabase"
 
-export type UploadImageResult = { url: string; path: string } | { error: string }
+import type { User } from "@supabase/supabase-js"
+
+export type UploadImageResult = {
+  url: string
+  path: string
+} | { error: string }
+
+export type PrivateUploadResult = { path: string } | { error: string }
+
+type DeleteImageResult = {
+  success: boolean
+  error?: string
+}
+
+type StorageBucket = "public-images" | "student-private-media" | "excuse-documents"
+
+async function getAuthenticatedUser(): Promise<{ user: User } | {
+  error: string
+}> {
+  try {
+    const { data, error } = await supabase.auth.getUser()
+
+    if (error) return { error: error.message }
+
+    if (!data.user) return { error: "Sign in before uploading a file." }
+
+    return { user: data.user }
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not verify the session.",
+    }
+  }
+}
 
 const MAX_PROMOTIONAL_IMAGE_INPUT_BYTES = 20 * 1024 * 1024
 
 const MAX_PROMOTIONAL_IMAGE_OUTPUT_BYTES = 5 * 1024 * 1024
 
 const MAX_PROFILE_IMAGE_OUTPUT_BYTES = 4 * 1024 * 1024
+
 const MAX_VERIFICATION_IMAGE_OUTPUT_BYTES = 8 * 1024 * 1024
+
 const MAX_USER_IMAGE_INPUT_BYTES = 20 * 1024 * 1024
+
 const MAX_EXCUSE_ATTACHMENT_BYTES = 20 * 1024 * 1024
 
 const MAX_EVENT_VIDEO_BYTES = 50 * 1024 * 1024
@@ -119,17 +157,19 @@ export async function uploadPromotionalImage(
 
 export async function uploadProfileImage(
   file: File,
-): Promise<UploadImageResult> {
+
+  category: "profile" | "cover" = "profile",
+): Promise<PrivateUploadResult> {
   if (!file.type.startsWith("image/")) {
     return { error: "Choose an image file." }
   }
 
-  if (file.size > MAX_USER_IMAGE_INPUT_BYTES) {
-    return { error: "Profile and cover photos must be 20 MB or smaller." }
+  if (!PROMOTIONAL_IMAGE_TYPES.has(file.type)) {
+    return { error: "Profile and cover photos must be JPEG, PNG, or WebP." }
   }
 
-  if (!PROMOTIONAL_IMAGE_TYPES.has(file.type)) {
-    return uploadImage(file)
+  if (file.size > MAX_USER_IMAGE_INPUT_BYTES) {
+    return { error: "Profile and cover photos must be 20 MB or smaller." }
   }
 
   const compressed = await compressImage(file, {
@@ -144,27 +184,29 @@ export async function uploadProfileImage(
     return { error: compressed }
   }
 
-  return uploadImage(compressed)
+  return uploadPrivateImage(compressed, category)
 }
 
 export async function uploadVerificationImage(
   file: File,
-): Promise<UploadImageResult> {
+): Promise<PrivateUploadResult> {
   if (!file.type.startsWith("image/")) {
     return { error: "Choose an image file." }
+  }
+
+  if (!PROMOTIONAL_IMAGE_TYPES.has(file.type)) {
+    return { error: "ID photos must be JPEG, PNG, or WebP." }
   }
 
   if (file.size > MAX_USER_IMAGE_INPUT_BYTES) {
     return { error: "ID photos must be 20 MB or smaller." }
   }
 
-  if (!PROMOTIONAL_IMAGE_TYPES.has(file.type)) {
-    return uploadImage(file)
-  }
-
   const compressed = await compressImage(file, {
     maxDimension: 1800,
+
     quality: 0.9,
+
     maxOutputBytes: MAX_VERIFICATION_IMAGE_OUTPUT_BYTES,
   })
 
@@ -172,18 +214,21 @@ export async function uploadVerificationImage(
     return { error: compressed }
   }
 
-  return uploadImage(compressed)
+  return uploadPrivateImage(compressed, "id")
 }
 
 export async function uploadExcuseAttachment(
   file: File,
 
   folderPrefix: string,
-): Promise<UploadImageResult> {
+): Promise<PrivateUploadResult> {
   const isPdf =
     file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
 
-  if (!file.type.startsWith("image/") && !isPdf) {
+  if (
+    (!PROMOTIONAL_IMAGE_TYPES.has(file.type) && !isPdf) ||
+    (isPdf && file.type !== "application/pdf")
+  ) {
     return { error: "Supporting documents must be an image or PDF." }
   }
 
@@ -191,7 +236,27 @@ export async function uploadExcuseAttachment(
     return { error: "Supporting documents must be 20 MB or smaller." }
   }
 
-  return uploadImage(file, "excuse-documents", folderPrefix, "300")
+  const auth = await getAuthenticatedUser()
+
+  if ("error" in auth) return { error: auth.error }
+
+  if (folderPrefix !== auth.user.id) {
+    return {
+      error: "Supporting documents must use the signed-in student's ID.",
+    }
+  }
+
+  const result = await uploadObject(
+    file,
+
+    "excuse-documents",
+
+    auth.user.id,
+
+    "300",
+  )
+
+  return "error" in result ? result : { path: result.path }
 }
 
 export async function uploadEventVideo(file: File): Promise<UploadImageResult> {
@@ -204,6 +269,28 @@ export async function uploadEventVideo(file: File): Promise<UploadImageResult> {
   }
 
   return uploadImage(file)
+}
+
+async function uploadPrivateImage(
+  file: File,
+
+  category: "profile" | "cover" | "id",
+): Promise<PrivateUploadResult> {
+  const auth = await getAuthenticatedUser()
+
+  if ("error" in auth) return { error: auth.error }
+
+  const result = await uploadObject(
+    file,
+
+    "student-private-media",
+
+    `${auth.user.id}/${category}`,
+
+    "3600",
+  )
+
+  return "error" in result ? result : { path: result.path }
 }
 
 function getOwnedObjectPath(value: string, bucketName: string) {
@@ -236,7 +323,7 @@ export async function deleteImage(
   value: string,
 
   bucketName = "public-images",
-): Promise<{ success: boolean; error?: string }> {
+): Promise<DeleteImageResult> {
   try {
     const objectPath = getOwnedObjectPath(value, bucketName)
 
@@ -279,12 +366,26 @@ export async function deleteImages(
   )
 }
 
+export async function extendStorageUploadLease(
+  bucketName: StorageBucket,
+
+  objectPath: string,
+) {
+  const { error } = await supabase.rpc("extend_storage_upload_intent", {
+    p_bucket_id: bucketName,
+
+    p_object_path: objectPath,
+  })
+
+  if (error) {
+    throw new Error(
+      `Could not extend the Storage upload grace period: ${error.message}`,
+    )
+  }
+}
+
 export async function uploadImage(
   file: File,
-
-  bucketName = "public-images",
-
-  folderPrefix?: string,
 
   cacheControl = "31536000",
 ): Promise<UploadImageResult> {
@@ -292,47 +393,94 @@ export async function uploadImage(
     return { error: "No file was provided." }
   }
 
-  const lastDot = file.name.lastIndexOf(".")
+  const auth = await getAuthenticatedUser()
 
-  const extension = lastDot >= 0 ? file.name.slice(lastDot) : ""
+  if ("error" in auth) return { error: auth.error }
 
-  const fileName = `${Date.now()}-${crypto.randomUUID()}${extension}`
+  const bucketName = "public-images"
 
-  const objectPath = folderPrefix ? `${folderPrefix}/${fileName}` : fileName
+  const result = await uploadObject(
+    file,
 
-  const { error } = await supabase.storage
+    bucketName,
+
+    `admin/${auth.user.id}/public-media`,
+
+    cacheControl,
+  )
+
+  if ("error" in result) return result
+
+  const { data: publicUrl } = supabase.storage
 
     .from(bucketName)
 
-    .upload(objectPath, file, {
-      cacheControl,
+    .getPublicUrl(result.path)
 
-      contentType:
-        file.type ||
-        (file.name.toLowerCase().endsWith(".pdf")
-          ? "application/pdf"
-          : undefined),
-
-      upsert: false,
-    })
-
-  if (error) {
+  if (!publicUrl?.publicUrl) {
     return {
-      error: error.message || "Image upload failed.",
+      error: "Upload succeeded, but a public URL could not be generated.",
     }
   }
 
-  const { data } = supabase.storage.from(bucketName).getPublicUrl(objectPath)
+  return { url: publicUrl.publicUrl, path: result.path }
+}
 
-  if (!data?.publicUrl) {
-    return {
-      error: "Image upload succeeded, but a public URL could not be generated.",
+async function uploadObject(
+  file: File,
+
+  bucketName: StorageBucket,
+
+  objectPrefix: string,
+
+  cacheControl: string,
+): Promise<{ path: string } | { error: string }> {
+  if (!file) return { error: "No file was provided." }
+
+  const extension = file.name.match(/\.[a-z0-9]+$/i)?.[0] ?? ""
+
+  const objectPath = `${objectPrefix}/${crypto.randomUUID()}${extension}`
+
+  try {
+    const { error: registrationError } = await supabase.rpc(
+      "register_storage_upload",
+
+      {
+        p_bucket_id: bucketName,
+
+        p_object_path: objectPath,
+      },
+    )
+
+    if (registrationError) {
+      return {
+        error: `Upload could not be registered for safe cleanup: ${registrationError.message}`,
+      }
     }
-  }
 
-  return {
-    url: data.publicUrl,
+    const { error } = await supabase.storage
+      .from(bucketName)
+      .upload(objectPath, file, {
+        cacheControl,
 
-    path: objectPath,
+        contentType:
+          file.type ||
+          (file.name.toLowerCase().endsWith(".pdf")
+            ? "application/pdf"
+            : undefined),
+
+        upsert: false,
+      })
+
+    if (error) return { error: error.message || "File upload failed." }
+
+    return { path: objectPath }
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "File upload or cleanup registration failed.",
+    }
   }
 }

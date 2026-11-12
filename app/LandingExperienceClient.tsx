@@ -184,6 +184,8 @@ import { isProfileComplete } from "@/lib/profileCompletion"
 import type { Session } from "@supabase/supabase-js"
 import { invalidateEventMedia } from "@/lib/eventMediaCache"
 import {
+  deleteImage,
+  extendStorageUploadLease,
   uploadEventVideo,
   uploadProfileImage,
   uploadPromotionalImage,
@@ -3615,6 +3617,35 @@ export function OnboardingPage({
     section: "",
   })
 
+  useEffect(() => {
+    const path = f.idPhotoUrl
+    if (!path) return
+
+    let active = true
+    const extendLease = async () => {
+      try {
+        await extendStorageUploadLease("student-private-media", path)
+      } catch (error) {
+        if (active) {
+          console.error(
+            "Could not extend the onboarding image cleanup lease",
+            error,
+          )
+        }
+      }
+    }
+
+    void extendLease()
+    const interval = window.setInterval(
+      () => void extendLease(),
+      6 * 60 * 60 * 1000,
+    )
+    return () => {
+      active = false
+      window.clearInterval(interval)
+    }
+  }, [f.idPhotoUrl])
+
   const [agreed, setAgreed] = useState(false)
 
   const idPhotoRef = useRef<HTMLInputElement>(null)
@@ -3840,7 +3871,7 @@ export function OnboardingPage({
                     setF((p) => ({
                       ...p,
 
-                      idPhotoUrl: result.url,
+                      idPhotoUrl: result.path,
                     }))
                   }}
                 />
@@ -3875,11 +3906,19 @@ export function OnboardingPage({
                       className="w-full h-full object-cover"
                     />
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (f.idPhotoUrl) {
-                          URL.revokeObjectURL(f.idPhotoUrl)
+                          const result = await deleteImage(
+                            f.idPhotoUrl,
+                            "student-private-media",
+                          )
+                          if (!result.success) {
+                            toast.error(
+                              "This ID image is still attached to a profile and cannot be deleted here.",
+                            )
+                            return
+                          }
                         }
-
                         setF((p) => ({ ...p, idPhotoUrl: undefined }))
                       }}
                       className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
@@ -5597,6 +5636,43 @@ export function ProfilePage({
 
   const photoRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    const path = draft.photoUrl
+    if (
+      !path ||
+      path === user.photoUrl ||
+      path.includes("://") ||
+      path.startsWith("blob:") ||
+      path.startsWith("data:")
+    ) {
+      return
+    }
+
+    let active = true
+    const extendLease = async () => {
+      try {
+        await extendStorageUploadLease("student-private-media", path)
+      } catch (error) {
+        if (active) {
+          console.error(
+            "Could not extend the profile image cleanup lease",
+            error,
+          )
+        }
+      }
+    }
+
+    void extendLease()
+    const interval = window.setInterval(
+      () => void extendLease(),
+      6 * 60 * 60 * 1000,
+    )
+    return () => {
+      active = false
+      window.clearInterval(interval)
+    }
+  }, [draft.photoUrl, user.photoUrl])
+
   const setF =
     (k: keyof User) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -5627,7 +5703,7 @@ export function ProfilePage({
 
     setPhotoUploadState("idle")
 
-    setDraft((d) => ({ ...d, photoUrl: result.url }))
+    setDraft((d) => ({ ...d, photoUrl: result.path }))
   }
 
   useEffect(() => {
@@ -6709,7 +6785,7 @@ export function AdminEventsPage({
         (current.version ?? 1) !== (editOriginal.version ?? 1)
       ) {
         toast.error(
-          "Another admin modified this event — please review and try again.",
+          "Another administrator changed this event. Refresh the page and retry.",
         )
 
         setEditId(null)
@@ -6750,6 +6826,8 @@ export function AdminEventsPage({
 
             afternoonLate: editOriginal?.afternoonLateFine ?? 0,
           }
+
+      const expectedVersion = editOriginal?.version ?? 1
 
       const payload = {
         title: editDraft.title,
@@ -6800,21 +6878,38 @@ export function AdminEventsPage({
 
         afternoon_late_fine: savedFineValues.afternoonLate,
 
-        version: (editOriginal?.version ?? 1) + 1,
+        version: expectedVersion + 1,
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
 
         .from("events")
 
         .update(payload)
 
         .eq("id", editDraft.id)
+        .eq("version", expectedVersion)
+        .select("version")
+        .maybeSingle()
 
       if (error) {
         toast.error(`Failed to update event: ${error.message}`)
 
         console.error(error)
+
+        return
+      }
+
+      if (!data) {
+        toast.error(
+          "Another administrator changed this event. Refresh the page and retry.",
+        )
+
+        setEditId(null)
+
+        setEditDraft(null)
+
+        setEditOriginal(null)
 
         return
       }
@@ -6826,7 +6921,7 @@ export function AdminEventsPage({
 
         mediaUrls: persistedHighlightUrl ? [persistedHighlightUrl] : [],
 
-        version: (editOriginal?.version ?? 1) + 1,
+        version: data.version,
 
         fineAmount: editDraft.multiSession
           ? savedFineValues.morningAbsent + savedFineValues.afternoonAbsent
@@ -6904,24 +6999,37 @@ export function AdminEventsPage({
         return
       }
 
+      const expectedVersion = current.version ?? 1
+
       const payload = {
         status,
 
-        version: (current.version ?? 1) + 1,
+        version: expectedVersion + 1,
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
 
         .from("events")
 
         .update(payload)
 
         .eq("id", id)
+        .eq("version", expectedVersion)
+        .select("version")
+        .maybeSingle()
 
       if (error) {
         toast.error(`Failed to update event status: ${error.message}`)
 
         console.error(error)
+
+        return
+      }
+
+      if (!data) {
+        toast.error(
+          "Another administrator changed this event. Refresh the page and try again.",
+        )
 
         return
       }
@@ -6934,7 +7042,7 @@ export function AdminEventsPage({
 
                 status,
 
-                version: (e.version ?? 1) + 1,
+                version: data.version,
               }
             : e,
         ),

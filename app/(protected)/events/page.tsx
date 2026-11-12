@@ -120,6 +120,8 @@ export default function EventsRoutePage() {
 
           "status",
 
+          "feedback_enabled",
+
           "multi_session",
 
           "morning_start",
@@ -200,6 +202,8 @@ export default function EventsRoutePage() {
                 : 0,
 
             status: row.status || "upcoming",
+
+            feedbackEnabled: Boolean(row.feedback_enabled),
 
             attendees: 0,
 
