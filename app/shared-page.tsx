@@ -6003,7 +6003,7 @@ export function OnboardingPage({
                 <input
                   ref={idPhotoRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   capture="environment"
                   className="hidden"
                   onChange={async (e) => {
@@ -6381,7 +6381,7 @@ function ExcuseModal({
               <input
                 ref={ref}
                 type="file"
-                accept="image/*,.pdf"
+                accept="image/jpeg,image/png,image/webp,application/pdf,.pdf"
                 className="hidden"
                 onChange={(event) => {
                   setFile(event.currentTarget.files?.[0] ?? null);
@@ -9381,6 +9381,8 @@ export function ProfilePage({
 
     if (!file) return;
 
+    e.currentTarget.value = "";
+
     if (draft.photoUrl && draft.photoUrl.startsWith("blob:")) {
       URL.revokeObjectURL(draft.photoUrl);
     }
@@ -9408,6 +9410,8 @@ export function ProfilePage({
     const file = e.target.files?.[0];
 
     if (!file) return;
+
+    e.currentTarget.value = "";
 
     if (draft.coverPhotoUrl && draft.coverPhotoUrl.startsWith("blob:")) {
       URL.revokeObjectURL(draft.coverPhotoUrl);
@@ -9586,7 +9590,7 @@ export function ProfilePage({
                   <input
                     ref={coverPhotoRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     className="hidden"
                     onChange={handleCoverPhotoChange}
                   />
@@ -9632,7 +9636,7 @@ export function ProfilePage({
                     <input
                       ref={photoRef}
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp"
                       className="hidden"
                       onChange={handlePhotoChange}
                     />
@@ -12489,6 +12493,8 @@ export function AdminEventsPage({
 
                       if (!f) return;
 
+                      e.currentTarget.value = "";
+
                       setHighlightUploadState("uploading");
 
                       const result = await uploadPromotionalImage(f);
@@ -13021,6 +13027,8 @@ export function AdminEventsPage({
                       const f = e.target.files?.[0];
 
                       if (!f) return;
+
+                      e.currentTarget.value = "";
 
                       setEditHighlightUploadState("uploading");
 
@@ -16550,12 +16558,14 @@ export function AdminAnnouncementsPage({
               <input
                 ref={photoRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 className="hidden"
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
 
                   if (!f) return;
+
+                  e.currentTarget.value = "";
 
                   await uploadNewPhoto(f);
                 }}
@@ -16703,12 +16713,14 @@ export function AdminAnnouncementsPage({
               <input
                 ref={editPhotoRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 className="hidden"
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
 
                   if (!f) return;
+
+                  e.currentTarget.value = "";
 
                   await uploadEditPhoto(f);
                 }}
@@ -18266,9 +18278,11 @@ export function AdminSettingsPage({
                         onChange={async (e) => {
                           const f = e.target.files?.[0];
 
-                          if (f) {
-                            await handleSlideImageUpload(i, f);
-                          }
+                          if (!f) return;
+
+                          e.currentTarget.value = "";
+
+                          await handleSlideImageUpload(i, f);
                         }}
                       />
                       {slideUploadSlots[i]?.status === "uploading" ? (

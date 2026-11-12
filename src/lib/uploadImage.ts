@@ -68,6 +68,8 @@ async function compressImage(
     quality: number
 
     maxOutputBytes: number
+
+    fallbackType?: "image/jpeg" | "image/png"
   },
 ): Promise<File | string> {
   if (!PROMOTIONAL_IMAGE_TYPES.has(file.type)) {
@@ -114,7 +116,8 @@ async function compressImage(
 
     if (blob?.type !== "image/webp") {
       const fallbackType =
-        file.type === "image/webp" ? "image/jpeg" : file.type
+        options.fallbackType ??
+        (file.type === "image/webp" ? "image/jpeg" : file.type)
       blob = await encode(fallbackType)
     }
 
@@ -132,6 +135,8 @@ async function compressImage(
     if (!extension) return "This browser could not encode the selected image."
 
     if (blob.size > options.maxOutputBytes) {
+      if (file.size <= options.maxOutputBytes) return file
+
       const maxOutputMb = Math.floor(options.maxOutputBytes / (1024 * 1024))
 
       return `The compressed image is still larger than ${maxOutputMb} MB. Choose a smaller image.`
@@ -192,6 +197,8 @@ export async function uploadProfileImage(
     quality: 0.86,
 
     maxOutputBytes: MAX_PROFILE_IMAGE_OUTPUT_BYTES,
+
+    fallbackType: "image/jpeg",
   })
 
   if (typeof compressed === "string") {
@@ -222,6 +229,8 @@ export async function uploadVerificationImage(
     quality: 0.9,
 
     maxOutputBytes: MAX_VERIFICATION_IMAGE_OUTPUT_BYTES,
+
+    fallbackType: "image/jpeg",
   })
 
   if (typeof compressed === "string") {
@@ -236,12 +245,24 @@ export async function uploadExcuseAttachment(
 
   folderPrefix: string,
 ): Promise<PrivateUploadResult> {
+  const hasPdfExtension = file.name.toLowerCase().endsWith(".pdf")
   const isPdf =
-    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
+    file.type === "application/pdf" ||
+    (hasPdfExtension &&
+      (file.type === "" || file.type === "application/octet-stream"))
+  const hasConflictingPdfType =
+    hasPdfExtension &&
+    file.type !== "" &&
+    file.type !== "application/pdf" &&
+    file.type !== "application/octet-stream"
 
   if (
+    hasConflictingPdfType ||
     (!PROMOTIONAL_IMAGE_TYPES.has(file.type) && !isPdf) ||
-    (isPdf && file.type !== "application/pdf")
+    (isPdf &&
+      file.type !== "" &&
+      file.type !== "application/octet-stream" &&
+      file.type !== "application/pdf")
   ) {
     return { error: "Supporting documents must be an image or PDF." }
   }
@@ -260,8 +281,16 @@ export async function uploadExcuseAttachment(
     }
   }
 
+  const uploadFile =
+    isPdf && file.type !== "application/pdf"
+      ? new File([file], file.name, {
+          type: "application/pdf",
+          lastModified: file.lastModified,
+        })
+      : file
+
   const result = await uploadObject(
-    file,
+    uploadFile,
 
     "excuse-documents",
 
@@ -453,9 +482,9 @@ async function uploadObject(
 
   const extension = file.name.match(/\.[a-z0-9]+$/i)?.[0] ?? ""
 
-  const objectPath = `${objectPrefix}/${crypto.randomUUID()}${extension}`
-
   try {
+    const objectPath = `${objectPrefix}/${crypto.randomUUID()}${extension}`
+
     const { error: registrationError } = await supabase.rpc(
       "register_storage_upload",
 
