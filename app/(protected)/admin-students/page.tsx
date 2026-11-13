@@ -9,11 +9,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AdminStudentsPage, type EventData } from "../../shared-page";
 
 import { supabase } from "@/lib/supabase";
-import { getStudentIdException } from "@/lib/profileCompletion";
+import {
+  getStudentIdException,
+  isProfileComplete,
+} from "@/lib/profileCompletion";
 
 import { useProtectedUser } from "../layout";
 
 const PAGE_SIZE = 50;
+const STUDENT_FETCH_BATCH_SIZE = 500;
 
 export default function AdminStudentsRoutePage() {
   const router = useRouter();
@@ -59,23 +63,29 @@ export default function AdminStudentsRoutePage() {
           return;
         }
 
-        let studentsQuery = supabase
-          .from("profiles")
-          .select(
-            "id, first_name, surname, email, student_id, program, year_level, section, phone, contact_email, photo_url, id_photo_url, created_at,student_id_exception_requests(status,requested_at,approved_by,approved_at,attendance_eligible_from,continued_at)",
-            { count: "exact" },
-          )
-          .eq("role", "student")
-          .order("surname", { ascending: true })
-          .order("id", { ascending: true })
-          .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+        const loadAllStudents = async () => {
+          const rows: any[] = [];
 
-        const searchTerm = search.trim().replace(/[^a-zA-Z0-9@._ -]/g, " ");
-        if (searchTerm) {
-          studentsQuery = studentsQuery.or(
-            `first_name.ilike.%${searchTerm}%,surname.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,student_id.ilike.%${searchTerm}%,program.ilike.%${searchTerm}%,section.ilike.%${searchTerm}%`,
-          );
-        }
+          for (let from = 0; ; from += STUDENT_FETCH_BATCH_SIZE) {
+            const { data, error } = await supabase
+              .from("profiles")
+              .select(
+                "id, role, first_name, surname, email, student_id, program, year_level, section, photo_url, id_photo_url, created_at,student_id_exception_requests(status)",
+              )
+              .eq("role", "student")
+              .order("surname", { ascending: true })
+              .order("id", { ascending: true })
+              .range(from, from + STUDENT_FETCH_BATCH_SIZE - 1)
+              .abortSignal(controller.signal);
+
+            if (error) throw error;
+
+            const batch = data ?? [];
+            rows.push(...batch);
+
+            if (batch.length < STUDENT_FETCH_BATCH_SIZE) return rows;
+          }
+        };
 
         const eventsQuery = eventsLoaded.current
           ? null
@@ -87,17 +97,12 @@ export default function AdminStudentsRoutePage() {
               .order("event_date", { ascending: false })
               .limit(100);
 
-        const [studentsResult, eventsResult] = await Promise.all([
-          studentsQuery.abortSignal(controller.signal),
+        const [studentRows, eventsResult] = await Promise.all([
+          loadAllStudents(),
           eventsQuery
             ? eventsQuery.abortSignal(controller.signal)
             : Promise.resolve(null),
         ]);
-
-        if (studentsResult.error && !controller.signal.aborted) {
-          console.error(studentsResult.error);
-          if (!cancelled) setRefreshError(true);
-        }
 
         if (eventsResult?.error && !controller.signal.aborted) {
           console.error(eventsResult.error);
@@ -141,12 +146,10 @@ export default function AdminStudentsRoutePage() {
           );
         }
 
-        if (studentsResult.error) return;
-
         setRefreshError(false);
-        setTotalCount(studentsResult.count ?? 0);
+        setTotalCount(studentRows.length);
         setStudents(
-          (studentsResult.data ?? []).map((row: any) => ({
+          studentRows.map((row: any) => ({
             profileId: row.id,
 
             name:
@@ -162,15 +165,17 @@ export default function AdminStudentsRoutePage() {
 
             section: row.section || "",
 
-            phone: row.phone || "",
+            phone: "",
 
-            email: row.contact_email || row.email || "",
+            email: row.email || "",
 
             photoUrl: row.photo_url || undefined,
 
             idPhotoUrl: row.id_photo_url || undefined,
 
             idException: getStudentIdException(row),
+
+            profileComplete: isProfileComplete(row),
 
             joinedDate: new Date(row.created_at).toLocaleDateString("en-US", {
               month: "short",
@@ -195,13 +200,7 @@ export default function AdminStudentsRoutePage() {
       }
     }
 
-    const timeoutId = search.trim()
-      ? window.setTimeout(() => void loadStudents(), 300)
-      : null;
-
-    if (!timeoutId) {
-      void loadStudents();
-    }
+    void loadStudents();
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible" && !cancelled) {
@@ -214,11 +213,10 @@ export default function AdminStudentsRoutePage() {
 
     return () => {
       cancelled = true;
-      if (timeoutId) window.clearTimeout(timeoutId);
       controller.abort();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [page, router, search, user]);
+  }, [router, user]);
 
   if (isLoading) {
     return (

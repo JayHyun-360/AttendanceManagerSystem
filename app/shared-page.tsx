@@ -1473,6 +1473,8 @@ export interface StudentProfile {
 
   idPhotoUrl?: string;
 
+  profileComplete?: boolean;
+
   idException?: StudentIdException | null;
 
   joinedDate: string;
@@ -15925,11 +15927,19 @@ export function AdminStudentsPage({
 
   onSearchChange?: (value: string) => void;
 }) {
+  type StudentFilter =
+    | "all"
+    | "incomplete"
+    | "pending"
+    | "temporarily_approved"
+    | "id_uploaded";
+
   const router = useRouter();
 
   const [localQuery, setLocalQuery] = useState("");
 
   const query = searchValue ?? localQuery;
+  const [studentFilter, setStudentFilter] = useState<StudentFilter>("all");
   const [bulkSelectionEnabled, setBulkSelectionEnabled] = useState(false);
 
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(
@@ -15948,20 +15958,61 @@ export function AdminStudentsPage({
 
   const [isMarking, setIsMarking] = useState(false);
 
-  const filtered = students.filter((s) => {
+  const searchedStudents = students.filter((s) => {
     const q = query.toLowerCase();
 
     return (
       s.name.toLowerCase().includes(q) ||
-      s.id.includes(q) ||
+      s.id.toLowerCase().includes(q) ||
       s.program.toLowerCase().includes(q) ||
-      s.section.toLowerCase().includes(q)
+      s.section.toLowerCase().includes(q) ||
+      s.email.toLowerCase().includes(q)
     );
   });
 
+  const filtered = searchedStudents.filter((student) => {
+    switch (studentFilter) {
+      case "incomplete":
+        return !student.profileComplete;
+      case "pending":
+        return student.idException?.status === "pending";
+      case "temporarily_approved":
+        return student.idException?.status === "temporarily_approved";
+      case "id_uploaded":
+        return Boolean(student.idPhotoUrl?.trim());
+      default:
+        return true;
+    }
+  });
+
+  const pendingRequestCount = students.filter(
+    (student) => student.idException?.status === "pending",
+  ).length;
+  const filterLabels: Record<StudentFilter, string> = {
+    all: "All Students",
+    incomplete: "Incomplete Profiles",
+    pending: "Pending ID Requests",
+    temporarily_approved: "Temporarily Approved",
+    id_uploaded: "ID Uploaded",
+  };
+  const lastPage = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const visiblePage = Math.min(page, lastPage);
+  const visibleStudents = onPageChange
+    ? filtered.slice(
+        (visiblePage - 1) * pageSize,
+        visiblePage * pageSize,
+      )
+    : filtered;
+
+  useEffect(() => {
+    if (onPageChange && page !== visiblePage) onPageChange(visiblePage);
+  }, [onPageChange, page, visiblePage]);
+
   const selectedEvent = events.find((event) => event.id === selectedEventId);
 
-  const visibleIds = filtered.map((student) => student.profileId ?? student.id);
+  const visibleIds = visibleStudents.map(
+    (student) => student.profileId ?? student.id,
+  );
 
   const allVisibleSelected =
     visibleIds.length > 0 &&
@@ -16190,6 +16241,50 @@ export function AdminStudentsPage({
               ? "Could not update results."
               : ""}
         </p>
+        <div
+          className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap"
+          role="group"
+          aria-label="Filter students"
+        >
+          {(
+            [
+              "all",
+              "incomplete",
+              "pending",
+              "temporarily_approved",
+              "id_uploaded",
+            ] as StudentFilter[]
+          ).map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              aria-pressed={studentFilter === filter}
+              onClick={() => {
+                setStudentFilter(filter);
+                onPageChange?.(1);
+              }}
+              className={`flex min-h-10 min-w-0 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors sm:justify-start ${
+                studentFilter === filter
+                  ? "border-emerald-600 bg-emerald-600 text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700"
+              }`}
+            >
+              <span className="truncate">{filterLabels[filter]}</span>
+              {filter === "pending" && (
+                <span
+                  className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] leading-none ${
+                    studentFilter === filter
+                      ? "bg-white/20 text-white"
+                      : "bg-amber-100 text-amber-800"
+                  }`}
+                  aria-label={`${pendingRequestCount} pending ID requests`}
+                >
+                  {pendingRequestCount}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
       {bulkSelectionEnabled && selectedStudentIds.size > 0 && (
         <div className="mb-5 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 md:px-6">
@@ -16285,9 +16380,27 @@ export function AdminStudentsPage({
           )}
         </div>
       )}
-      {filtered.length === 0 ? (
+      {refreshError && students.length === 0 ? (
+        <div
+          className="w-full rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-8 text-center md:px-6"
+          role="alert"
+        >
+          <p className="text-sm font-semibold text-rose-800">
+            Could not load students.
+          </p>
+          <p className="mt-1 text-xs text-rose-700">
+            Refresh the page to try again.
+          </p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="w-full bg-white border border-slate-100 rounded-xl px-3.5 py-10 text-center md:px-6">
-          <p className="text-slate-400 text-sm">No students match "{query}"</p>
+          <p className="text-slate-400 text-sm">
+            {query.trim()
+              ? `No students match "${query}" in ${filterLabels[studentFilter]}.`
+              : studentFilter === "all"
+                ? "No students are registered yet."
+                : `No students in ${filterLabels[studentFilter]}.`}
+          </p>
         </div>
       ) : (
         <div className="w-full overflow-hidden rounded-xl border border-slate-100 bg-white">
@@ -16312,11 +16425,13 @@ export function AdminStudentsPage({
             <span className="col-span-3">Section</span>
             <span className="col-span-1"></span>
           </div>
-          {filtered.map((s, i) => (
+          {visibleStudents.map((s, i) => (
             <Fragment key={s.profileId ?? s.id}>
               <div
                 className={`flex w-full items-center gap-3 px-3.5 py-3.5 transition-colors hover:bg-slate-50/80 active:bg-slate-100 md:hidden ${
-                  i < filtered.length - 1 ? "border-b border-gray-100" : ""
+                  i < visibleStudents.length - 1
+                    ? "border-b border-gray-100"
+                    : ""
                 }`}
               >
                 {bulkSelectionEnabled && (
@@ -16361,7 +16476,9 @@ export function AdminStudentsPage({
               </div>
               <div
                 className={`hidden w-full px-5 py-3.5 md:grid md:grid-cols-12 md:items-center md:text-left md:hover:bg-slate-50 md:transition-colors ${
-                  i < filtered.length - 1 ? "border-b border-slate-50" : ""
+                  i < visibleStudents.length - 1
+                    ? "border-b border-slate-50"
+                    : ""
                 }`}
               >
                 {bulkSelectionEnabled && (
@@ -16406,9 +16523,9 @@ export function AdminStudentsPage({
       )}
       {onPageChange && (
         <PaginationControls
-          page={page}
+          page={visiblePage}
           pageSize={pageSize}
-          totalCount={totalCount ?? students.length}
+          totalCount={filtered.length}
           itemName="students"
           onPageChange={onPageChange}
         />
