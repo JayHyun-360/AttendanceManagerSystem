@@ -764,6 +764,7 @@ import QRCode from "qrcode";
 import { toast } from "sonner";
 
 import { supabase } from "@/lib/supabase";
+import { validateEmail } from "@/lib/validateEmail";
 import { isProfileComplete } from "@/lib/profileCompletion";
 
 import {
@@ -5238,6 +5239,8 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
 
   const [email, setEmail] = useState("");
 
+  const [confirmEmail, setConfirmEmail] = useState("");
+
   const [password, setPassword] = useState("");
 
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -5318,6 +5321,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
 
   const handleEmailSubmit = async () => {
     const trimmedEmail = email.trim();
+    let emailForSignUp = trimmedEmail;
 
     if (!trimmedEmail || !password) {
       toast.error("Please enter both your email and password.");
@@ -5326,6 +5330,30 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
     }
 
     if (mode === "signup") {
+      const emailValidation = validateEmail(email);
+
+      if (!emailValidation.isValid) {
+        toast.error(emailValidation.error);
+
+        return;
+      }
+
+      if (!confirmEmail.trim()) {
+        toast.error("Please confirm your email.");
+
+        return;
+      }
+
+      if (
+        emailValidation.normalizedEmail !== confirmEmail.trim().toLowerCase()
+      ) {
+        toast.error("Email addresses do not match.");
+
+        return;
+      }
+
+      emailForSignUp = emailValidation.normalizedEmail;
+
       if (!confirmPassword) {
         toast.error("Please confirm your password.");
 
@@ -5352,7 +5380,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
         });
       } else {
         result = await supabase.auth.signUp({
-          email: trimmedEmail,
+          email: emailForSignUp,
 
           password,
         });
@@ -5395,6 +5423,8 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
           );
 
           setMode("signin");
+
+          setConfirmEmail("");
 
           setPassword("");
 
@@ -5475,7 +5505,10 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                 <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1 mb-5">
                   <button
                     type="button"
-                    onClick={() => setMode("signin")}
+                    onClick={() => {
+                      setMode("signin");
+                      setConfirmEmail("");
+                    }}
                     className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-all ${
                       mode === "signin"
                         ? "bg-white text-slate-900 shadow-sm"
@@ -5486,7 +5519,10 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setMode("signup")}
+                    onClick={() => {
+                      setMode("signup");
+                      setConfirmEmail("");
+                    }}
                     className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-all ${
                       mode === "signup"
                         ? "bg-white text-slate-900 shadow-sm"
@@ -5510,6 +5546,21 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                       className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all"
                     />
                   </label>
+
+                  {mode === "signup" && (
+                    <label className="block">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
+                        Confirm email
+                      </span>
+                      <input
+                        type="email"
+                        value={confirmEmail}
+                        onChange={(e) => setConfirmEmail(e.target.value)}
+                        placeholder="Re-enter your email"
+                        className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all"
+                      />
+                    </label>
+                  )}
 
                   <label className="block">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
@@ -5583,6 +5634,8 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                     onClick={() => {
                       setMode(mode === "signin" ? "signup" : "signin");
 
+                      setConfirmEmail("");
+
                       setPassword("");
 
                       setConfirmPassword("");
@@ -5597,6 +5650,8 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                   type="button"
                   onClick={() => {
                     setShowEmailFlow(false);
+
+                    setConfirmEmail("");
 
                     setPassword("");
 
@@ -17339,11 +17394,10 @@ export function AdminReportsPage({
   totalCount = 0,
 
   onPageChange,
-
   onPrintReport,
-
+  onExportReport,
   isPreparingPrint = false,
-
+  exportingFormat = null,
   printReportData,
 }: {
   events?: EventData[];
@@ -17404,7 +17458,11 @@ export function AdminReportsPage({
 
   onPrintReport?: () => void;
 
+  onExportReport?: (format: "csv" | "excel") => void;
+
   isPreparingPrint?: boolean;
+
+  exportingFormat?: "csv" | "excel" | null;
 
   printReportData?: AdminReportPrintData | null;
 }) {
@@ -17433,6 +17491,8 @@ export function AdminReportsPage({
 
     0,
   );
+
+  const isReportActionBusy = isPreparingPrint || exportingFormat !== null;
 
   return (
     <>
@@ -17559,16 +17619,50 @@ export function AdminReportsPage({
         title="Reports"
         subtitle={reportData?.periodLabel ?? "All recorded events"}
         action={
-          <button
-            onClick={onPrintReport}
-            disabled={isPreparingPrint}
-            className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60 flex items-center gap-1.5"
-          >
-            <Icons.Download />
-            {isPreparingPrint ? "Preparing report…" : "Print / save as PDF"}
-          </button>
+          <div className="flex max-w-[72%] flex-wrap justify-end gap-2">
+            {onExportReport && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onExportReport("csv")}
+                  disabled={isReportActionBusy}
+                  aria-live="polite"
+                  className="h-9 px-3 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60 flex items-center gap-1.5"
+                >
+                  <Icons.Download />
+                  {exportingFormat === "csv" ? "Creating CSV…" : "Export CSV"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onExportReport("excel")}
+                  disabled={isReportActionBusy}
+                  aria-live="polite"
+                  className="h-9 px-3 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60 flex items-center gap-1.5"
+                >
+                  <Icons.Download />
+                  {exportingFormat === "excel"
+                    ? "Creating Excel…"
+                    : "Export Excel"}
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={onPrintReport}
+              disabled={isReportActionBusy}
+              className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60 flex items-center gap-1.5"
+            >
+              <Icons.Download />
+              {isPreparingPrint ? "Preparing report…" : "Print / save as PDF"}
+            </button>
+          </div>
         }
       />
+      {exportingFormat && (
+        <p className="-mt-4 mb-4 text-xs text-emerald-700" role="status">
+          Creating your {exportingFormat === "csv" ? "CSV file" : "Excel workbook"}…
+        </p>
+      )}
       <div className="bg-white border border-slate-100 rounded-xl px-4 py-3 mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-bold text-slate-800">Report period</p>

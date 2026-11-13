@@ -180,6 +180,7 @@ import QRCode from "qrcode"
 
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
+import { validateEmail } from "@/lib/validateEmail"
 import { isProfileComplete } from "@/lib/profileCompletion"
 import type { Session } from "@supabase/supabase-js"
 import { invalidateEventMedia } from "@/lib/eventMediaCache"
@@ -3174,6 +3175,8 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
 
   const [email, setEmail] = useState("")
 
+  const [confirmEmail, setConfirmEmail] = useState("")
+
   const [password, setPassword] = useState("")
 
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -3252,6 +3255,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
 
   const handleEmailSubmit = async () => {
     const trimmedEmail = email.trim()
+    let emailForSignUp = trimmedEmail
 
     if (!trimmedEmail || !password) {
       toast.error("Please enter both your email and password.")
@@ -3260,6 +3264,30 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
     }
 
     if (mode === "signup") {
+      const emailValidation = validateEmail(email)
+
+      if (!emailValidation.isValid) {
+        toast.error(emailValidation.error)
+
+        return
+      }
+
+      if (!confirmEmail.trim()) {
+        toast.error("Please confirm your email.")
+
+        return
+      }
+
+      if (
+        emailValidation.normalizedEmail !== confirmEmail.trim().toLowerCase()
+      ) {
+        toast.error("Email addresses do not match.")
+
+        return
+      }
+
+      emailForSignUp = emailValidation.normalizedEmail
+
       if (!confirmPassword) {
         toast.error("Please confirm your password.")
 
@@ -3286,7 +3314,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
         })
       } else {
         result = await supabase.auth.signUp({
-          email: trimmedEmail,
+          email: emailForSignUp,
 
           password,
         })
@@ -3329,6 +3357,8 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
           )
 
           setMode("signin")
+
+          setConfirmEmail("")
 
           setPassword("")
 
@@ -3411,7 +3441,10 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                 <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1 mb-5">
                   <button
                     type="button"
-                    onClick={() => setMode("signin")}
+                    onClick={() => {
+                      setMode("signin")
+                      setConfirmEmail("")
+                    }}
                     className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-all ${
                       mode === "signin"
                         ? "bg-white text-slate-900 shadow-sm"
@@ -3422,7 +3455,10 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setMode("signup")}
+                    onClick={() => {
+                      setMode("signup")
+                      setConfirmEmail("")
+                    }}
                     className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-all ${
                       mode === "signup"
                         ? "bg-white text-slate-900 shadow-sm"
@@ -3446,6 +3482,21 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                       className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all"
                     />
                   </label>
+
+                  {mode === "signup" && (
+                    <label className="block">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
+                        Confirm email
+                      </span>
+                      <input
+                        type="email"
+                        value={confirmEmail}
+                        onChange={(e) => setConfirmEmail(e.target.value)}
+                        placeholder="Re-enter your email"
+                        className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all"
+                      />
+                    </label>
+                  )}
 
                   <label className="block">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
@@ -3519,6 +3570,8 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                     onClick={() => {
                       setMode(mode === "signin" ? "signup" : "signin")
 
+                      setConfirmEmail("")
+
                       setPassword("")
 
                       setConfirmPassword("")
@@ -3533,6 +3586,8 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
                   type="button"
                   onClick={() => {
                     setShowEmailFlow(false)
+
+                    setConfirmEmail("")
 
                     setPassword("")
 
