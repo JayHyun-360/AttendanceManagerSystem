@@ -34,6 +34,7 @@ Follow the consolidated sequence in [README.md](./README.md); configure Supabase
 - [ ] Five program catalog entries. There is no profile-derived import.
 - [ ] `dev_notes` exists with zero rows. The app can read active rows; only project administrators manage rows through Table Editor.
 - [ ] No seeded Auth users or admin profile. Fresh signups get the student role from the Auth trigger.
+- [ ] `student_id_exception_requests` exists with RLS enabled and no rows; students have read-only access to their own request, and only the protected RPCs can create, approve, or acknowledge requests.
 - [ ] Storage buckets are empty. No old object metadata is imported.
 - [ ] Exactly the three approved buckets are configured: public `public-images`; private `student-private-media`; private `excuse-documents`. No `avatars`, `media`, or other unused bucket exists.
 - [ ] `student-private-media` contains only `<auth.uid()>/<profile|cover|id>/<uuid>.<extension>` paths; `public-images` uses administrator-managed `admin/<uid>/public-media/<uuid>.<extension>` paths; excuse objects retain `<auth.uid()>/<uuid>.<extension>`.
@@ -68,6 +69,7 @@ Follow the consolidated sequence in [README.md](./README.md); configure Supabase
 - [ ] The rebuild does not unschedule jobs in separately deployed databases; inspect those databases and manually remove any existing automatic-closure job.
 - [ ] Confirm effective role privileges and memberships from `06_verify.sql`; do not infer safety from direct ACL text alone.
 - [ ] Verify student upload, private retrieval, replacement, deletion after reference clearing, administrator access, and anonymous denial with disposable accounts before production use.
+- [ ] Verify the temporary ID exception workflow and its attendance safeguards with disposable accounts. For existing deployments, use the separate manual-upgrade instructions in [README.md](./README.md); never apply the fresh-project rebuild package to an existing database.
 
 ## Feedback and event lifecycle validation
 

@@ -27,10 +27,12 @@ import { uploadExcuseAttachment } from "@/lib/uploadImage";
 import {
   buildAttendanceSessionRecords,
   getSchoolDate,
+  isAttendanceSessionEligibleForAbsence,
   type FineEventLike,
   type FineRowLike,
   type FineScanLike,
 } from "@/lib/attendance-fines";
+import { getStudentIdException } from "@/lib/profileCompletion";
 
 type ManilaClock = {
   date: string;
@@ -127,7 +129,9 @@ export default function AttendanceHistoryRoutePage() {
         const [profileResult, settingsResult, programsResult] = await Promise.all([
           supabase
             .from("profiles")
-            .select("program")
+            .select(
+              "program,student_id_exception_requests(status,attendance_eligible_from)",
+            )
             .eq("id", authUserId)
             .single(),
           getPublicSystemSettings(),
@@ -137,7 +141,7 @@ export default function AttendanceHistoryRoutePage() {
         let eventsQuery = supabase
           .from("events")
           .select(
-            "id, title, event_date, status, program, multi_session, sanctions_enabled, start_time, end_time, morning_end, afternoon_end, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+            "id, title, event_date, status, program, multi_session, sanctions_enabled, start_time, end_time, morning_start, morning_end, afternoon_start, afternoon_end, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
             { count: "exact" },
           )
           .lte("event_date", getSchoolDate())
@@ -363,7 +367,18 @@ export default function AttendanceHistoryRoutePage() {
 
                 return (
                   !scannedSessionKeys.has(`${event.id}:${sessionLabel}`) &&
-                  hasSessionEnded(event.event_date, sessionEnd, manilaNow)
+                  hasSessionEnded(event.event_date, sessionEnd, manilaNow) &&
+                  isAttendanceSessionEligibleForAbsence(
+                    {
+                      event_date: event.event_date,
+                      multi_session: event.multi_session,
+                      start_time: event.start_time,
+                      morning_start: event.morning_start,
+                      afternoon_start: event.afternoon_start,
+                    },
+                    sessionLabel,
+                    getStudentIdException(profileResult.data),
+                  )
                 );
               })
 
@@ -413,6 +428,7 @@ export default function AttendanceHistoryRoutePage() {
 
               .map((row: any) => `${row.event_id}:${row.session_label}`),
           ),
+          getStudentIdException(profileResult.data),
         );
 
         const canonicalFines = records

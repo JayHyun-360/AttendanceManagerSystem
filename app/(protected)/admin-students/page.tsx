@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AdminStudentsPage, type EventData } from "../../shared-page";
 
 import { supabase } from "@/lib/supabase";
+import { getStudentIdException } from "@/lib/profileCompletion";
 
 import { useProtectedUser } from "../layout";
 
@@ -61,7 +62,7 @@ export default function AdminStudentsRoutePage() {
         let studentsQuery = supabase
           .from("profiles")
           .select(
-            "id, first_name, surname, email, student_id, program, year_level, section, phone, contact_email, photo_url, id_photo_url, created_at",
+            "id, first_name, surname, email, student_id, program, year_level, section, phone, contact_email, photo_url, id_photo_url, created_at,student_id_exception_requests(status,requested_at,approved_by,approved_at,attendance_eligible_from,continued_at)",
             { count: "exact" },
           )
           .eq("role", "student")
@@ -116,6 +117,7 @@ export default function AdminStudentsRoutePage() {
               id: String(row.id),
               title: row.title,
               date: row.event_date,
+              startTime: row.start_time ?? undefined,
               time:
                 row.start_time && row.end_time
                   ? `${row.start_time}–${row.end_time}`
@@ -167,6 +169,8 @@ export default function AdminStudentsRoutePage() {
             photoUrl: row.photo_url || undefined,
 
             idPhotoUrl: row.id_photo_url || undefined,
+
+            idException: getStudentIdException(row),
 
             joinedDate: new Date(row.created_at).toLocaleDateString("en-US", {
               month: "short",

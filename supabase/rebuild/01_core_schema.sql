@@ -30,6 +30,40 @@ create table public.profiles (
   created_at timestamptz default now()
 );
 
+create table public.student_id_exception_requests (
+  student_id uuid primary key references public.profiles(id) on delete cascade,
+  status text not null default 'pending'
+    check (status in ('pending', 'temporarily_approved', 'resolved_by_photo')),
+  requested_at timestamptz not null default now(),
+  approved_by uuid,
+  approved_at timestamptz,
+  attendance_eligible_from timestamptz,
+  continued_at timestamptz,
+  constraint student_id_exception_request_state_check check (
+    (
+      status = 'pending'
+      and approved_by is null
+      and approved_at is null
+      and attendance_eligible_from is null
+      and continued_at is null
+    )
+    or (
+      status = 'temporarily_approved'
+      and approved_by is not null
+      and approved_at is not null
+      and attendance_eligible_from = approved_at
+      and (continued_at is null or continued_at >= approved_at)
+    )
+    or (
+      status = 'resolved_by_photo'
+      and approved_by is null
+      and approved_at is null
+      and attendance_eligible_from is not null
+      and continued_at is null
+    )
+  )
+);
+
 create table public.events (
   id uuid primary key default gen_random_uuid(),
   title text not null,
@@ -276,6 +310,7 @@ create index announcements_target_created_id_idx
   on public.announcements (target_role, created_at desc, id asc);
 
 alter table public.profiles enable row level security;
+alter table public.student_id_exception_requests enable row level security;
 alter table public.events enable row level security;
 alter table public.attendance_logs enable row level security;
 alter table public.attendance_scans enable row level security;

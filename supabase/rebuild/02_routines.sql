@@ -50,6 +50,245 @@ begin
 end;
 $$;
 
+create or replace function public.submit_student_id_exception(
+  p_first_name text,
+  p_middle_initial text,
+  p_surname text,
+  p_student_id text,
+  p_program text,
+  p_year_level text,
+  p_section text,
+  p_phone text,
+  p_contact_email text
+)
+returns public.student_id_exception_requests
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_student_id uuid := auth.uid();
+  v_profile public.profiles%rowtype;
+  v_request public.student_id_exception_requests%rowtype;
+begin
+  if v_student_id is null then
+    raise exception 'Sign in before submitting an ID exception request.'
+      using errcode = '42501';
+  end if;
+
+  select *
+  into v_profile
+  from public.profiles
+  where id = v_student_id
+  for update;
+
+  if not found or v_profile.role <> 'student' then
+    raise exception 'Only student accounts can submit an ID exception request.'
+      using errcode = '42501';
+  end if;
+
+  if nullif(btrim(v_profile.id_photo_url), '') is not null then
+    raise exception 'An ID photo is already on file.'
+      using errcode = '22023';
+  end if;
+
+  if nullif(btrim(p_first_name), '') is null
+     or nullif(btrim(p_surname), '') is null
+     or nullif(btrim(p_student_id), '') is null
+     or p_student_id !~ '^[0-9]{7,}$'
+     or nullif(btrim(p_program), '') is null
+     or lower(btrim(coalesce(p_year_level, ''))) <> '1st year'
+     or nullif(btrim(p_phone), '') is null
+     or regexp_replace(btrim(p_phone), '[^0-9+]', '', 'g')
+       !~ '^(09[0-9]{9}|\+639[0-9]{9})$'
+     or nullif(btrim(p_contact_email), '') is null
+     or btrim(p_contact_email) !~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$' then
+    raise exception 'Complete the required student information before requesting an ID exception.'
+      using errcode = '22023';
+  end if;
+
+  select *
+  into v_request
+  from public.student_id_exception_requests
+  where student_id = v_student_id
+  for update;
+
+  if found then
+    if v_request.status = 'pending' then
+      return v_request;
+    end if;
+
+    raise exception 'This ID exception request is no longer pending.'
+      using errcode = '22023';
+  end if;
+
+  insert into public.student_id_exception_requests (student_id)
+  values (v_student_id)
+  returning * into v_request;
+
+  update public.profiles
+  set
+    first_name = btrim(p_first_name),
+    middle_initial = btrim(coalesce(p_middle_initial, '')),
+    surname = btrim(p_surname),
+    student_id = btrim(p_student_id),
+    program = btrim(p_program),
+    year_level = btrim(p_year_level),
+    section = btrim(coalesce(p_section, '')),
+    phone = btrim(p_phone),
+    contact_email = btrim(p_contact_email)
+  where id = v_student_id;
+
+  return v_request;
+end;
+$$;
+
+create or replace function public.approve_student_id_exception(
+  p_student_id uuid
+)
+returns public.student_id_exception_requests
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_profile public.profiles%rowtype;
+  v_request public.student_id_exception_requests%rowtype;
+  v_approved_at timestamptz;
+begin
+  if auth.uid() is null or not public.is_admin() then
+    raise exception 'Only administrators can approve ID exception requests.'
+      using errcode = '42501';
+  end if;
+
+  select *
+  into v_profile
+  from public.profiles
+  where id = p_student_id
+  for update;
+
+  if not found
+     or v_profile.role <> 'student'
+     or lower(btrim(coalesce(v_profile.year_level, ''))) <> '1st year' then
+    raise exception 'This student is not eligible for an ID exception approval.'
+      using errcode = '22023';
+  end if;
+
+  if nullif(btrim(v_profile.first_name), '') is null
+     or nullif(btrim(v_profile.surname), '') is null
+     or nullif(btrim(v_profile.student_id), '') is null
+     or v_profile.student_id !~ '^[0-9]{7,}$'
+     or nullif(btrim(v_profile.program), '') is null
+     or nullif(btrim(v_profile.phone), '') is null
+     or regexp_replace(btrim(v_profile.phone), '[^0-9+]', '', 'g')
+       !~ '^(09[0-9]{9}|\+639[0-9]{9})$'
+     or nullif(btrim(v_profile.contact_email), '') is null
+     or btrim(v_profile.contact_email)
+       !~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$' then
+    raise exception 'Complete student profile information is required before approval.'
+      using errcode = '22023';
+  end if;
+
+  select *
+  into v_request
+  from public.student_id_exception_requests
+  where student_id = p_student_id
+  for update;
+
+  if not found or v_request.status <> 'pending' then
+    raise exception 'The ID exception request is no longer pending.'
+      using errcode = '22023';
+  end if;
+
+  if nullif(btrim(v_profile.id_photo_url), '') is not null then
+    raise exception 'An ID photo is already on file; the exception request cannot be approved.'
+      using errcode = '22023';
+  end if;
+
+  v_approved_at := clock_timestamp();
+
+  update public.student_id_exception_requests
+  set
+    status = 'temporarily_approved',
+    approved_by = auth.uid(),
+    approved_at = v_approved_at,
+    attendance_eligible_from = v_approved_at
+  where student_id = p_student_id
+  returning * into v_request;
+
+  return v_request;
+end;
+$$;
+
+create or replace function public.acknowledge_student_id_exception()
+returns public.student_id_exception_requests
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_student_id uuid := auth.uid();
+  v_profile public.profiles%rowtype;
+  v_request public.student_id_exception_requests%rowtype;
+begin
+  if v_student_id is null then
+    raise exception 'Sign in before continuing.'
+      using errcode = '42501';
+  end if;
+
+  select *
+  into v_profile
+  from public.profiles
+  where id = v_student_id
+  for update;
+
+  if not found or v_profile.role <> 'student' then
+    raise exception 'Only student accounts can continue from this screen.'
+      using errcode = '42501';
+  end if;
+
+  select *
+  into v_request
+  from public.student_id_exception_requests
+  where student_id = v_student_id
+  for update;
+
+  if not found or v_request.status <> 'temporarily_approved' then
+    raise exception 'There is no approved ID exception to continue from.'
+      using errcode = '22023';
+  end if;
+
+  update public.student_id_exception_requests
+  set continued_at = coalesce(continued_at, clock_timestamp())
+  where student_id = v_student_id
+  returning * into v_request;
+
+  return v_request;
+end;
+$$;
+
+create or replace function public.resolve_pending_id_exception_by_photo()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.id_photo_url is not null
+     and nullif(btrim(new.id_photo_url), '') is not null
+     and nullif(btrim(old.id_photo_url), '') is null then
+    update public.student_id_exception_requests
+    set
+      status = 'resolved_by_photo',
+      attendance_eligible_from = clock_timestamp()
+    where student_id = new.id
+      and status = 'pending';
+  end if;
+
+  return new;
+end;
+$$;
+
 create or replace function public.clear_student_fields_for_admin()
 returns trigger
 language plpgsql
@@ -133,6 +372,21 @@ as $$
   where e.id = p_event_id;
 $$;
 
+create or replace function public.event_session_starts_at(
+  p_event_date date,
+  p_session_start time
+)
+returns timestamptz
+language sql
+stable
+set search_path = public
+as $$
+  select case
+    when p_event_date is null or p_session_start is null then null
+    else (p_event_date + p_session_start) at time zone 'Asia/Manila'
+  end;
+$$;
+
 create or replace function public.is_fines_enabled()
 returns boolean
 language sql
@@ -179,6 +433,10 @@ as $$
 declare
   calculated_amount numeric(10,2);
   existing_fine_id uuid;
+  v_exception_status text;
+  v_eligible_from timestamptz;
+  v_event_date date;
+  v_session_start time;
 begin
   select f.id
   into existing_fine_id
@@ -188,6 +446,34 @@ begin
 
   if new.status in ('absent', 'late')
      and coalesce(new.fine_policy_enabled, false) then
+    select
+      request.status,
+      request.attendance_eligible_from,
+      event.event_date,
+      case
+        when new.session_label = 'afternoon' then event.afternoon_start
+        when coalesce(event.multi_session, false) then event.morning_start
+        else coalesce(event.morning_start, event.start_time)
+      end
+    into
+      v_exception_status,
+      v_eligible_from,
+      v_event_date,
+      v_session_start
+    from public.student_id_exception_requests request
+    left join public.events event on event.id = new.event_id
+    where request.student_id = new.student_id;
+
+    if found and (
+      v_exception_status = 'pending'
+      or v_eligible_from is null
+      or public.event_session_starts_at(v_event_date, v_session_start) is null
+      or public.event_session_starts_at(v_event_date, v_session_start)
+        < v_eligible_from
+    ) then
+      return new;
+    end if;
+
     calculated_amount := public.event_session_fine_amount(
       new.event_id,
       new.session_label,
@@ -365,6 +651,8 @@ as $$
 declare
   v_inserted integer := 0;
   v_profile public.profiles%rowtype;
+  v_request public.student_id_exception_requests%rowtype;
+  v_has_exception boolean := false;
 begin
   select *
   into v_profile
@@ -376,6 +664,16 @@ begin
   end if;
 
   if nullif(trim(coalesce(v_profile.program, '')), '') is null then
+    return 0;
+  end if;
+
+  select *
+  into v_request
+  from public.student_id_exception_requests
+  where student_id = p_student_id;
+
+  v_has_exception := found;
+  if v_has_exception and v_request.status = 'pending' then
     return 0;
   end if;
 
@@ -401,12 +699,17 @@ begin
         'morning'::text,
         case
           when coalesce(event_row.multi_session, false)
+            then event_row.morning_start
+          else coalesce(event_row.morning_start, event_row.start_time)
+        end,
+        case
+          when coalesce(event_row.multi_session, false)
             then event_row.morning_end
           else coalesce(event_row.morning_end, event_row.end_time)
         end
       ),
-      ('afternoon'::text, event_row.afternoon_end)
-  ) as sessions(session_label, session_end)
+      ('afternoon'::text, event_row.afternoon_start, event_row.afternoon_end)
+  ) as sessions(session_label, session_start, session_end)
   where public.event_session_has_ended(event_row.event_date, sessions.session_end)
     and coalesce(event_row.status, '') not in ('upcoming', 'cancelled')
     and (
@@ -415,6 +718,17 @@ begin
       or coalesce(event_row.multi_session, false) = true
     )
     and public.event_program_matches(event_row.program, v_profile.program)
+    and (
+      not v_has_exception
+      or (
+        v_request.status in ('temporarily_approved', 'resolved_by_photo')
+        and v_request.attendance_eligible_from is not null
+        and public.event_session_starts_at(
+          event_row.event_date,
+          sessions.session_start
+        ) >= v_request.attendance_eligible_from
+      )
+    )
     and not exists (
       select 1
       from public.attendance_scans as existing_scan
@@ -473,16 +787,34 @@ begin
         'morning'::text,
         case
           when coalesce(v_event.multi_session, false)
+            then v_event.morning_start
+          else coalesce(v_event.morning_start, v_event.start_time)
+        end,
+        case
+          when coalesce(v_event.multi_session, false)
             then v_event.morning_end
           else coalesce(v_event.morning_end, v_event.end_time)
         end
       ),
-      ('afternoon'::text, v_event.afternoon_end)
-  ) as sessions(session_label, session_end)
+      ('afternoon'::text, v_event.afternoon_start, v_event.afternoon_end)
+  ) as sessions(session_label, session_start, session_end)
+  left join public.student_id_exception_requests request
+    on request.student_id = profile.id
   where profile.role = 'student'
     and nullif(trim(coalesce(profile.program, '')), '') is not null
     and public.event_session_has_ended(v_event.event_date, sessions.session_end)
     and public.event_program_matches(v_event.program, profile.program)
+    and (
+      request.student_id is null
+      or (
+        request.status in ('temporarily_approved', 'resolved_by_photo')
+        and request.attendance_eligible_from is not null
+        and public.event_session_starts_at(
+          v_event.event_date,
+          sessions.session_start
+        ) >= request.attendance_eligible_from
+      )
+    )
     and (
       (coalesce(v_event.multi_session, false) = false
         and sessions.session_label = 'morning')
@@ -2180,9 +2512,12 @@ begin
         event.status,
         event.program,
         event.multi_session,
+        event.start_time,
         event.sanctions_enabled,
         event.end_time,
+        event.morning_start,
         event.morning_end,
+        event.afternoon_start,
         event.afternoon_end,
         event.absent_fine,
         event.late_fine,
@@ -2205,6 +2540,7 @@ begin
     completed_sessions as materialized (
       select
         event.id as event_id,
+        event.event_date,
         event.program as event_program,
         event.sanctions_enabled,
         event.absent_fine,
@@ -2214,6 +2550,7 @@ begin
         event.afternoon_absent_fine,
         event.afternoon_late_fine,
         session.session_label,
+        session.session_start,
         session.session_end
       from filtered_events event
       cross join lateral (
@@ -2222,12 +2559,17 @@ begin
             'morning'::text,
             case
               when coalesce(event.multi_session, false)
+                then event.morning_start
+              else coalesce(event.morning_start, event.start_time)
+            end,
+            case
+              when coalesce(event.multi_session, false)
                 then event.morning_end
               else coalesce(event.morning_end, event.end_time)
             end
           ),
-          ('afternoon'::text, event.afternoon_end)
-      ) as session(session_label, session_end)
+          ('afternoon'::text, event.afternoon_start, event.afternoon_end)
+      ) as session(session_label, session_start, session_end)
       where coalesce(event.status::text, '') not in ('upcoming', 'cancelled')
         and (
           (not coalesce(event.multi_session, false)
@@ -2251,6 +2593,17 @@ begin
         coalesce(nullif(profile.program, ''), 'Unassigned') as program_label,
         coalesce(scan.status::text, 'no_record') as record_status,
         scan.scan_in_at,
+        case
+          when request.student_id is null then true
+          when request.status = 'pending' then false
+          when request.status in ('temporarily_approved', 'resolved_by_photo')
+               and request.attendance_eligible_from is not null then
+            public.event_session_starts_at(
+              session.event_date,
+              session.session_start
+            ) >= request.attendance_eligible_from
+          else false
+        end as is_attendance_eligible,
         coalesce(excuse.is_excused, false) as is_excused,
         coalesce(session.sanctions_enabled, false) as sanctions_enabled,
         coalesce(linked_fine.id, session_fine.id) as fine_id,
@@ -2276,7 +2629,15 @@ begin
                 end
               else 0::numeric
             end
-          when v_fines_enabled then
+          when v_fines_enabled and
+               (request.student_id is null or (
+                 request.status in ('temporarily_approved', 'resolved_by_photo')
+                 and request.attendance_eligible_from is not null
+                 and public.event_session_starts_at(
+                   session.event_date,
+                   session.session_start
+                 ) >= request.attendance_eligible_from
+               )) then
             case
               when scan.status::text = 'late' then
                 coalesce(
@@ -2305,6 +2666,17 @@ begin
         (
           not coalesce(excuse.is_excused, false)
           and coalesce(session.sanctions_enabled, false)
+          and (
+            request.student_id is null
+            or (
+              request.status in ('temporarily_approved', 'resolved_by_photo')
+              and request.attendance_eligible_from is not null
+              and public.event_session_starts_at(
+                session.event_date,
+                session.session_start
+              ) >= request.attendance_eligible_from
+            )
+          )
           and coalesce(scan.status::text, 'no_record') in ('late', 'absent')
         ) as is_sanctioned
       from completed_sessions session
@@ -2320,6 +2692,8 @@ begin
         on scan.event_id = session.event_id
         and scan.student_id = profile.id
         and scan.session_label = session.session_label
+      left join public.student_id_exception_requests request
+        on request.student_id = profile.id
       left join lateral (
         select fine.id, fine.amount, fine.status
         from public.fines fine
@@ -2355,14 +2729,22 @@ begin
     session_program_aggregates as (
       select
         record.program_label as label,
-        count(*) filter (where not record.is_excused) as total,
+        count(*) filter (
+          where not record.is_excused
+            and (record.record_status <> 'no_record'
+              or record.is_attendance_eligible)
+        ) as total,
         count(*) filter (
           where record.record_status in ('present', 'late')
             and record.scan_in_at is not null
         ) as present,
         count(*) filter (
           where not record.is_excused
-            and record.record_status in ('absent', 'no_record')
+            and (
+              record.record_status = 'absent'
+              or (record.record_status = 'no_record'
+                and record.is_attendance_eligible)
+            )
         ) as absent,
         count(*) filter (where record.is_excused) as excused,
         count(*) filter (where record.record_status = 'late') as late,
@@ -2412,7 +2794,11 @@ begin
         ) as report_attended_sessions,
         count(*) filter (
           where not record.is_excused
-            and record.record_status in ('absent', 'no_record')
+            and (
+              record.record_status = 'absent'
+              or (record.record_status = 'no_record'
+                and record.is_attendance_eligible)
+            )
         ) as report_absent_sessions,
         count(*) filter (where record.is_excused) as report_excused_sessions,
         count(*) filter (where record.record_status = 'late') as report_late_sessions,

@@ -21,6 +21,10 @@ create policy profiles_admin_full_access
   using (public.is_admin())
   with check (public.is_admin());
 
+create policy student_id_exception_requests_select_owner_or_admin
+  on public.student_id_exception_requests for select to authenticated
+  using (auth.uid() = student_id or public.is_admin());
+
 create policy events_select_authenticated
   on public.events for select to authenticated
   using (true);
@@ -229,6 +233,7 @@ revoke create on schema public from public, anon, authenticated, service_role;
 -- Regrant only the operations used by the app and the cleanup worker.
 revoke all privileges on table
   public.profiles,
+  public.student_id_exception_requests,
   public.events,
   public.attendance_logs,
   public.attendance_scans,
@@ -245,6 +250,7 @@ from public, anon, authenticated, service_role;
 
 grant select, insert, update on table public.profiles to authenticated;
 grant select on table public.profiles to service_role;
+grant select on table public.student_id_exception_requests to authenticated;
 
 grant select, insert, update, delete on table public.events to authenticated;
 grant select on table public.events to service_role;
@@ -293,6 +299,22 @@ grant execute on function public.is_admin()
 revoke all on function public.prevent_admin_self_demotion()
   from public, anon, authenticated, service_role;
 revoke all on function public.handle_new_user()
+  from public, anon, authenticated, service_role;
+revoke all on function public.submit_student_id_exception(
+  text, text, text, text, text, text, text, text, text
+) from public, anon, authenticated, service_role;
+grant execute on function public.submit_student_id_exception(
+  text, text, text, text, text, text, text, text, text
+) to authenticated;
+revoke all on function public.approve_student_id_exception(uuid)
+  from public, anon, authenticated, service_role;
+grant execute on function public.approve_student_id_exception(uuid)
+  to authenticated;
+revoke all on function public.acknowledge_student_id_exception()
+  from public, anon, authenticated, service_role;
+grant execute on function public.acknowledge_student_id_exception()
+  to authenticated;
+revoke all on function public.resolve_pending_id_exception_by_photo()
   from public, anon, authenticated, service_role;
 revoke all on function public.clear_student_fields_for_admin()
   from public, anon, authenticated, service_role;
@@ -345,6 +367,10 @@ revoke all on function public.event_session_fine_amount(
 ) from public, anon, authenticated, service_role;
 revoke all on function public.event_session_has_ended(date, time)
   from public, anon, authenticated, service_role;
+revoke all on function public.event_session_starts_at(date, time)
+  from public, anon, authenticated, service_role;
+grant execute on function public.event_session_starts_at(date, time)
+  to authenticated;
 
 revoke all on function public.submit_excuse_request(uuid, text, text, text)
   from public, anon, authenticated, service_role;

@@ -6,6 +6,46 @@ where table_schema = 'public'
   and table_type = 'BASE TABLE'
 order by table_name;
 
+with role_names(role_name) as (
+  values ('anon'::name), ('authenticated'::name), ('service_role'::name)
+)
+select role_name,
+       has_table_privilege(
+         role_name, 'public.student_id_exception_requests', 'SELECT'
+       ) as can_select,
+       has_table_privilege(
+         role_name, 'public.student_id_exception_requests', 'INSERT'
+       ) as can_insert,
+       has_table_privilege(
+         role_name, 'public.student_id_exception_requests', 'UPDATE'
+       ) as can_update,
+       has_table_privilege(
+         role_name, 'public.student_id_exception_requests', 'DELETE'
+       ) as can_delete
+from role_names
+order by role_name;
+
+select p.oid::regprocedure::text as function_name,
+       pg_get_function_result(p.oid) as return_type,
+       p.prosecdef as security_definer,
+       p.proconfig as function_settings,
+       has_function_privilege('anon', p.oid, 'EXECUTE') as anon_execute,
+       has_function_privilege('authenticated', p.oid, 'EXECUTE')
+         as authenticated_execute,
+       has_function_privilege('service_role', p.oid, 'EXECUTE')
+         as service_role_execute
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname in (
+    'submit_student_id_exception',
+    'approve_student_id_exception',
+    'acknowledge_student_id_exception',
+    'resolve_pending_id_exception_by_photo',
+    'event_session_starts_at'
+  )
+order by p.oid::regprocedure::text;
+
 select column_name,
        data_type,
        is_nullable,

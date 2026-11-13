@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { createServerClient } from "@supabase/ssr"
 
-import { isProfileComplete } from "@/lib/profileCompletion"
+import {
+  hasUnacknowledgedIdException,
+  isProfileComplete,
+} from "@/lib/profileCompletion"
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -57,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     .from("profiles")
 
-    .select("*")
+    .select("*,student_id_exception_requests(status,continued_at)")
 
     .eq("id", uid)
 
@@ -71,7 +74,11 @@ export async function GET(request: NextRequest) {
     return redirectResponse
   }
 
-  if (!profile || !isProfileComplete(profile)) {
+  if (
+    !profile ||
+    !isProfileComplete(profile) ||
+    hasUnacknowledgedIdException(profile)
+  ) {
     redirectResponse.headers.set(
       "location",
       new URL("/onboarding?freshLogin=1", origin).toString(),

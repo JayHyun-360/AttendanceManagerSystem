@@ -111,6 +111,22 @@ export default function OnboardingRoute() {
 
       const validStudentId = /^\d{7,}$/.test(d.studentId.trim())
 
+      const requestTemporaryIdException =
+        d.requestTemporaryIdException === true && !d.idPhotoUrl
+
+      if (
+        requestTemporaryIdException &&
+        d.yearLevel.trim().toLowerCase() !== "1st year"
+      ) {
+        toast.error("Temporary ID exceptions are available to first-year students only.")
+        return false
+      }
+
+      const validIdEvidence =
+        !!d.idPhotoUrl ||
+        (requestTemporaryIdException &&
+          d.yearLevel.trim().toLowerCase() === "1st year")
+
       const validProfile =
         d.firstName.trim() &&
         d.surname.trim() &&
@@ -119,7 +135,7 @@ export default function OnboardingRoute() {
         validStudentId &&
         d.program.trim() &&
         d.yearLevel.trim() &&
-        d.idPhotoUrl &&
+        validIdEvidence &&
         d.agreedToTerms === true
 
       if (!validProfile) {
@@ -129,6 +145,31 @@ export default function OnboardingRoute() {
         )
 
         return false
+      }
+
+      if (requestTemporaryIdException) {
+        const { error } = await supabase.rpc("submit_student_id_exception", {
+          p_first_name: d.firstName.trim(),
+          p_middle_initial: d.middleInitial.trim(),
+          p_surname: d.surname.trim(),
+          p_student_id: d.studentId.trim(),
+          p_program: d.program.trim(),
+          p_year_level: d.yearLevel.trim(),
+          p_section: d.section.trim(),
+          p_phone: d.phone.trim(),
+          p_contact_email: d.contactEmail.trim(),
+        })
+
+        if (error) {
+          console.error("Could not submit the ID exception request", error)
+          toast.error("Your request could not be submitted", {
+            description: getProfileSaveErrorMessage(error),
+            duration: 10000,
+          })
+          return false
+        }
+
+        return true
       }
 
       const payload = {
@@ -193,7 +234,38 @@ export default function OnboardingRoute() {
     }
   }
 
+  const handleContinueException = async () => {
+    if (submitting) return false
+
+    setSubmitting(true)
+
+    try {
+      const { error } = await supabase.rpc(
+        "acknowledge_student_id_exception",
+      )
+
+      if (error) {
+        console.error("Could not acknowledge the approved ID exception", error)
+        toast.error("You could not continue. Please try again.")
+        return false
+      }
+
+      router.replace("/dashboard?freshLogin=1")
+      return true
+    } catch (caughtError) {
+      console.error("Could not acknowledge the approved ID exception", caughtError)
+      toast.error("You could not continue. Please try again.")
+      return false
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
-    <OnboardingPage onComplete={handleOnboarding} submitting={submitting} />
+    <OnboardingPage
+      onComplete={handleOnboarding}
+      onContinueException={handleContinueException}
+      submitting={submitting}
+    />
   )
 }

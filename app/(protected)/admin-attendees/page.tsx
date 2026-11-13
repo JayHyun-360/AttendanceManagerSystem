@@ -13,6 +13,8 @@ import {
 } from "../../shared-page";
 
 import { supabase } from "@/lib/supabase";
+import { getStudentIdException } from "@/lib/profileCompletion";
+import { isAttendanceSessionEligibleForAbsence } from "@/lib/attendance-fines";
 
 import { getPublicSystemSettings } from "@/lib/systemSettings";
 
@@ -126,7 +128,7 @@ export default function AdminAttendeesRoutePage() {
             supabase
               .from("events")
               .select(
-                "id, title, event_date, start_time, end_time, location, description, program, status, media_urls, image_url, multi_session, sanctions_enabled, morning_end, afternoon_end, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+                "id, title, event_date, start_time, end_time, location, description, program, status, media_urls, image_url, multi_session, sanctions_enabled, morning_start, morning_end, afternoon_start, afternoon_end, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
               )
               .is("archived_at", null)
               .order("event_date", { ascending: false })
@@ -137,7 +139,7 @@ export default function AdminAttendeesRoutePage() {
             supabase
               .from("profiles")
               .select(
-                "id, first_name, surname, email, student_id, program, year_level, section, phone, contact_email, photo_url, id_photo_url, created_at",
+                "id, first_name, surname, email, student_id, program, year_level, section, phone, contact_email, photo_url, id_photo_url, created_at,student_id_exception_requests(status,requested_at,approved_by,approved_at,attendance_eligible_from,continued_at)",
               )
               .eq("role", "student")
               .order("surname", { ascending: true })
@@ -174,6 +176,8 @@ export default function AdminAttendeesRoutePage() {
 
           endTime: row.end_time ?? undefined,
 
+          startTime: row.start_time ?? undefined,
+
           location: row.location,
 
           description: row.description,
@@ -201,7 +205,11 @@ export default function AdminAttendeesRoutePage() {
 
           multiSession: Boolean(row.multi_session),
 
+          morningStart: row.morning_start ?? undefined,
+
           morningEnd: row.morning_end ?? undefined,
+
+          afternoonStart: row.afternoon_start ?? undefined,
 
           afternoonEnd: row.afternoon_end ?? undefined,
 
@@ -255,6 +263,8 @@ export default function AdminAttendeesRoutePage() {
             photoUrl: row.photo_url || undefined,
 
             idPhotoUrl: row.id_photo_url || undefined,
+
+            idException: getStudentIdException(row),
 
             joinedDate: new Date(row.created_at).toLocaleDateString("en-US", {
               month: "short",
@@ -412,6 +422,26 @@ export default function AdminAttendeesRoutePage() {
           const studentName =
             `${profile?.first_name ?? ""} ${profile?.surname ?? ""}`.trim();
           const studentId = profile?.student_id || row.student_id;
+          const scanSessionLabel =
+            row.session_label === "afternoon" ? "afternoon" : "morning";
+          const scanEvent = events.find((event) => event.id === eventId);
+          const scanStudent = students.find(
+            (student) => student.profileId === row.student_id,
+          );
+          const attendanceEligible =
+            scanEvent && scanStudent
+              ? isAttendanceSessionEligibleForAbsence(
+                  {
+                    event_date: scanEvent.date,
+                    multi_session: scanEvent.multiSession,
+                    start_time: scanEvent.startTime,
+                    morning_start: scanEvent.morningStart,
+                    afternoon_start: scanEvent.afternoonStart,
+                  },
+                  scanSessionLabel,
+                  scanStudent.idException,
+                )
+              : true;
           if (!byEvent[eventId]) byEvent[eventId] = [];
 
           byEvent[eventId].push({
@@ -442,12 +472,12 @@ export default function AdminAttendeesRoutePage() {
               Boolean(
                 events.find((event) => event.id === eventId)?.sanctionsEnabled,
               ) &&
+              attendanceEligible &&
               (row.status === "late" || row.status === "absent") &&
               !nextApprovedExcuseKeys.has(
                 `${eventId}:${row.student_id}:${row.session_label ?? "morning"}`,
               ),
-            sessionLabel:
-              row.session_label === "afternoon" ? "afternoon" : "morning",
+            sessionLabel: scanSessionLabel,
             dbId: String(row.id),
             fineStatus: undefined,
           });

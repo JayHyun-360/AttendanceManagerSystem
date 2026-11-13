@@ -28,7 +28,10 @@ import {
 import { DevNotesProvider, useDevNotes } from "../DevNotesPage"
 
 import { supabase } from "@/lib/supabase"
-import { isProfileComplete } from "@/lib/profileCompletion"
+import {
+  hasUnacknowledgedIdException,
+  isProfileComplete,
+} from "@/lib/profileCompletion"
 
 import { getPublicSystemSettings } from "@/lib/systemSettings"
 
@@ -243,7 +246,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
           .from("profiles")
 
-          .select("*")
+          .select("*,student_id_exception_requests(status,continued_at)")
 
           .eq("id", uid)
 
@@ -284,8 +287,13 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           }
         }
 
-        if (!isProfileComplete(profile)) {
-          router.push("/onboarding")
+        if (
+          !isProfileComplete(profile) ||
+          hasUnacknowledgedIdException(profile)
+        ) {
+          if (pathname !== "/onboarding") {
+            router.push("/onboarding")
+          }
 
           return
         }

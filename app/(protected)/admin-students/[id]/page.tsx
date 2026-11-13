@@ -32,7 +32,13 @@ import { useProtectedUser } from "../../layout"
 import {
   buildAttendanceSessionRecords,
   getSchoolDate,
+  isAttendanceSessionEligibleForAbsence,
 } from "@/lib/attendance-fines"
+import {
+  getStudentIdException,
+  isProfileComplete,
+  type StudentIdException,
+} from "@/lib/profileCompletion"
 
 interface StudentDetail {
   id: string
@@ -59,6 +65,10 @@ interface StudentDetail {
 
   idPhotoUrl?: string
 
+  profileComplete: boolean
+
+  idException?: StudentIdException | null
+
   joinedDate: string
 }
 
@@ -72,6 +82,8 @@ interface AttendanceEvent {
   status: "upcoming" | "active" | "closed" | "cancelled"
 
   multiSession: boolean
+
+  startTime?: string | null
 
   sanctionsEnabled: boolean
 
@@ -236,6 +248,8 @@ export default function StudentDetailRoutePage() {
 
   const [metricsRefreshKey, setMetricsRefreshKey] = useState(0)
 
+  const [isApprovingIdException, setIsApprovingIdException] = useState(false)
+
   const [finesEnabled, setFinesEnabled] = useState(false)
 
   const [approvedExcuseKeys, setApprovedExcuseKeys] = useState<Set<string>>(
@@ -259,7 +273,9 @@ export default function StudentDetailRoutePage() {
 
           .from("profiles")
 
-          .select("*")
+          .select(
+            "*,student_id_exception_requests(status,requested_at,approved_by,approved_at,attendance_eligible_from,continued_at)",
+          )
 
           .eq("id", routeId)
 
@@ -302,6 +318,10 @@ export default function StudentDetailRoutePage() {
           coverPhotoUrl: data.cover_photo_url || undefined,
 
           idPhotoUrl: data.id_photo_url || undefined,
+
+          profileComplete: isProfileComplete(data),
+
+          idException: getStudentIdException(data),
 
           joinedDate: new Date(data.created_at).toLocaleDateString("en-US", {
             month: "short",
@@ -349,7 +369,7 @@ export default function StudentDetailRoutePage() {
           .from("events")
 
           .select(
-            "id, title, event_date, end_time, morning_end, afternoon_end, program, status, multi_session, sanctions_enabled, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+            "id, title, event_date, start_time, end_time, morning_start, morning_end, afternoon_start, afternoon_end, program, status, multi_session, sanctions_enabled, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
           ),
 
         supabase
@@ -422,6 +442,8 @@ export default function StudentDetailRoutePage() {
         ),
 
         approvedKeys,
+
+        student?.idException,
       )
 
       const finesEnabled = Boolean(
@@ -431,7 +453,11 @@ export default function StudentDetailRoutePage() {
 
       setFinesEnabled(finesEnabled)
 
-      const rateEligibleRecords = records.filter((record) => !record.excused)
+      const rateEligibleRecords = records.filter(
+        (record) =>
+          !record.excused &&
+          (record.status !== "no_record" || record.attendanceEligible),
+      )
 
       const totalSessions = rateEligibleRecords.length
 
@@ -496,7 +522,13 @@ export default function StudentDetailRoutePage() {
     return () => {
       cancelled = true
     }
-  }, [metricsRefreshKey, routeId, student?.program, user?.role])
+  }, [
+    metricsRefreshKey,
+    routeId,
+    student?.program,
+    student?.idException,
+    user?.role,
+  ])
 
   useEffect(() => {
     let cancelled = false
@@ -507,7 +539,7 @@ export default function StudentDetailRoutePage() {
         .from("events")
 
         .select(
-          "id, title, event_date, status, multi_session, sanctions_enabled, end_time, morning_start, morning_end, afternoon_start, afternoon_end",
+          "id, title, event_date, status, multi_session, sanctions_enabled, start_time, end_time, morning_start, morning_end, afternoon_start, afternoon_end",
         )
 
         .order("event_date", { ascending: false })
@@ -529,6 +561,8 @@ export default function StudentDetailRoutePage() {
           status: event.status,
 
           multiSession: Boolean(event.multi_session),
+
+          startTime: event.start_time,
 
           sanctionsEnabled: Boolean(event.sanctions_enabled),
 
@@ -633,6 +667,20 @@ export default function StudentDetailRoutePage() {
     !existingAttendance.scanned_by &&
     existingAttendance.method === null
 
+  const isAttendanceEligible =
+    !!selectedEvent &&
+    isAttendanceSessionEligibleForAbsence(
+      {
+        event_date: selectedEvent.date,
+        multi_session: selectedEvent.multiSession,
+        start_time: selectedEvent.startTime,
+        morning_start: selectedEvent.morningStart,
+        afternoon_start: selectedEvent.afternoonStart,
+      },
+      sessionLabel,
+      student?.idException,
+    )
+
   const approvedExcuseForSession = approvedExcuseKeys.has(
     `${selectedEventId}:${sessionLabel}`,
   )
@@ -640,7 +688,8 @@ export default function StudentDetailRoutePage() {
   const sanctionStatus =
     !selectedEvent?.sanctionsEnabled ||
     selectedEvent.status === "cancelled" ||
-    isCheckingAttendance
+    isCheckingAttendance ||
+    !isAttendanceEligible
       ? null
       : approvedExcuseForSession
         ? "Excused"
@@ -869,6 +918,68 @@ export default function StudentDetailRoutePage() {
     [student],
   )
 
+  const confirmStudent = async () => {
+    if (
+      !student ||
+      !routeId ||
+      user?.role !== "admin" ||
+      student.idException?.status !== "pending" ||
+      student.idPhotoUrl ||
+      isApprovingIdException
+    ) {
+      return
+    }
+
+    const confirmed = window.confirm(
+      "Confirm that this student is officially enrolled and approve their temporary ID exception?",
+    )
+    if (!confirmed) return
+
+    setIsApprovingIdException(true)
+
+    try {
+      const { data, error } = await supabase.rpc(
+        "approve_student_id_exception",
+        { p_student_id: routeId },
+      )
+
+      if (error) {
+        console.error("Could not approve the ID exception", error)
+        toast.error("The student could not be confirmed. Please try again.")
+        return
+      }
+
+      const approvedRequest = getStudentIdException({
+        student_id_exception_requests: data,
+      })
+
+      if (approvedRequest?.status !== "temporarily_approved") {
+        console.error("The approval RPC did not return an approved request")
+        toast.error(
+          "The request was not returned as approved. Refresh this profile before continuing.",
+        )
+        return
+      }
+
+      setStudent((current) =>
+        current
+          ? {
+              ...current,
+              idException: approvedRequest,
+              profileComplete: true,
+            }
+          : current,
+      )
+      setMetricsRefreshKey((current) => current + 1)
+      toast.success("Student confirmed and temporary ID exception approved.")
+    } catch (caughtError) {
+      console.error("Could not approve the ID exception", caughtError)
+      toast.error("The student could not be confirmed. Please try again.")
+    } finally {
+      setIsApprovingIdException(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <>
@@ -952,6 +1063,67 @@ export default function StudentDetailRoutePage() {
                     Active
                   </span>
                 </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      student.profileComplete
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-amber-50 text-amber-700"
+                    }`}
+                  >
+                    Profile: {student.profileComplete ? "Complete" : "Incomplete"}
+                  </span>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      student.idPhotoUrl
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    Student ID:{" "}
+                    {student.idPhotoUrl ? "Photo submitted" : "Not Submitted"}
+                  </span>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      student.idException?.status === "pending"
+                        ? "bg-amber-50 text-amber-700"
+                        : student.idException?.status === "temporarily_approved"
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    ID Exception:{" "}
+                    {student.idException?.status === "pending"
+                      ? "Awaiting Approval"
+                      : student.idException?.status === "temporarily_approved"
+                        ? "Temporarily Approved"
+                        : student.idException?.status === "resolved_by_photo"
+                          ? "Resolved by ID photo"
+                          : "Not Requested"}
+                  </span>
+                </div>
+                {user?.role === "admin" &&
+                  student.idException?.status === "pending" &&
+                  !student.idPhotoUrl && (
+                    <button
+                      type="button"
+                      disabled={isApprovingIdException}
+                      onClick={() => void confirmStudent()}
+                      className="mt-4 h-10 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isApprovingIdException
+                        ? "Confirming..."
+                        : "Confirm Student"}
+                    </button>
+                  )}
+                {student.idException?.approved_by &&
+                  student.idException.approved_at && (
+                    <p className="mt-3 text-xs text-slate-500">
+                      Approved by administrator {student.idException.approved_by}{" "}
+                      on{" "}
+                      {new Date(student.idException.approved_at).toLocaleString()}
+                    </p>
+                  )}
                 <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">
                   <span>{student.email || "Email not provided"}</span>
                   <span>{student.phone || "Phone not provided"}</span>

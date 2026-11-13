@@ -1,4 +1,5 @@
 import { eventMatchesProgram } from "@/lib/programMatching"
+import type { StudentIdException } from "@/lib/profileCompletion"
 
 export type SessionLabel = "morning" | "afternoon"
 
@@ -15,7 +16,13 @@ export interface FineEventLike {
 
   multi_session?: boolean | null
 
+  start_time?: string | null
+
+  morning_start?: string | null
+
   end_time?: string | null
+
+  afternoon_start?: string | null
 
   morning_end?: string | null
 
@@ -80,6 +87,8 @@ export interface AttendanceSessionRecord {
   fineAmount: number
 
   fineStatus?: FineRowLike["status"]
+
+  attendanceEligible: boolean
 
   sanctioned: boolean
 
@@ -184,6 +193,57 @@ export function isAttendanceSessionComplete(
   return hour * 3600 + minute * 60 + second <= clock.seconds
 }
 
+export function isAttendanceSessionEligibleForAbsence(
+  event: Pick<
+    FineEventLike,
+    | "event_date"
+    | "multi_session"
+    | "start_time"
+    | "morning_start"
+    | "afternoon_start"
+  >,
+  session: SessionLabel,
+  exception?: StudentIdException | null,
+) {
+  if (!exception) return true
+  if (exception.status === "pending") return false
+  if (
+    exception.status !== "temporarily_approved" &&
+    exception.status !== "resolved_by_photo"
+  ) {
+    return false
+  }
+
+  const sessionStart =
+    session === "afternoon"
+      ? event.afternoon_start
+      : event.multi_session
+        ? event.morning_start
+        : (event.morning_start ?? event.start_time)
+  const match = sessionStart?.trim().match(
+    /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/,
+  )
+
+  if (!match) return false
+
+  const hour = Number(match[1])
+  const minute = Number(match[2])
+  const second = Number(match[3] ?? 0)
+
+  if (hour > 23 || minute > 59 || second > 59) return false
+
+  const sessionStartAt = Date.parse(
+    `${event.event_date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:${String(second).padStart(2, "0")}+08:00`,
+  )
+  const eligibleFrom = Date.parse(exception.attendance_eligible_from ?? "")
+
+  return (
+    Number.isFinite(sessionStartAt) &&
+    Number.isFinite(eligibleFrom) &&
+    sessionStartAt >= eligibleFrom
+  )
+}
+
 export function sessionFineAmount(
   event: FineEventLike,
 
@@ -220,6 +280,8 @@ export function buildAttendanceSessionRecords(
   finesEnabled = false,
 
   approvedExcuseKeys: ReadonlySet<string> = new Set(),
+
+  exception?: StudentIdException | null,
 ): AttendanceSessionRecord[] {
   const applicableEvents = events.filter(
     (event) =>
@@ -272,10 +334,16 @@ export function buildAttendanceSessionRecords(
 
         const excused = approvedExcuseKeys.has(key)
 
+        const attendanceEligible = isAttendanceSessionEligibleForAbsence(
+          event,
+          sessionLabel,
+          exception,
+        )
+
         const display = getAttendanceDisplayState(
           status,
 
-          !!event.sanctions_enabled,
+          !!event.sanctions_enabled && attendanceEligible,
 
           excused,
         )
@@ -287,6 +355,7 @@ export function buildAttendanceSessionRecords(
               ? Number(linkedFine.amount ?? 0)
               : 0
             : finesEnabled
+              && attendanceEligible
               ? sessionFineAmount(event, sessionLabel, status)
               : 0
 
@@ -308,6 +377,8 @@ export function buildAttendanceSessionRecords(
           fineAmount: countedFine,
 
           fineStatus: linkedFine?.status,
+
+          attendanceEligible,
 
           sanctioned: display.sanctioned,
 

@@ -18,6 +18,10 @@ create trigger profiles_guard_storage_references
   before insert or update on public.profiles
   for each row execute function public.guard_new_storage_references();
 
+create trigger profiles_resolve_pending_id_exception_by_photo
+  after update of id_photo_url on public.profiles
+  for each row execute function public.resolve_pending_id_exception_by_photo();
+
 create trigger profiles_materialize_student_absences_insert
   after insert on public.profiles
   for each row execute function public.materialize_student_absences_after_profile_change();

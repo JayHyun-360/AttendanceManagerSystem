@@ -181,7 +181,10 @@ import QRCode from "qrcode"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
 import { validateEmail } from "@/lib/validateEmail"
-import { isProfileComplete } from "@/lib/profileCompletion"
+import {
+  hasUnacknowledgedIdException,
+  isProfileComplete,
+} from "@/lib/profileCompletion"
 import type { Session } from "@supabase/supabase-js"
 import { invalidateEventMedia } from "@/lib/eventMediaCache"
 import {
@@ -3204,7 +3207,7 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
 
       .from("profiles")
 
-      .select("*")
+      .select("*,student_id_exception_requests(status,continued_at)")
 
       .eq("id", user.id)
 
@@ -3214,7 +3217,10 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
       console.error(profileError)
     }
 
-    if (!isProfileComplete(profile)) {
+    if (
+      !isProfileComplete(profile) ||
+      hasUnacknowledgedIdException(profile)
+    ) {
       router.push("/onboarding?freshLogin=1")
 
       return
@@ -10043,7 +10049,7 @@ export default function LandingExperienceClient({
       try {
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("*")
+          .select("*,student_id_exception_requests(status,continued_at)")
           .eq("id", session.user.id)
           .maybeSingle()
 
@@ -10059,6 +10065,16 @@ export default function LandingExperienceClient({
             if (redirectAfterLogin) {
               router.replace("/onboarding?freshLogin=1")
             }
+          }
+
+          return
+        }
+
+        if (hasUnacknowledgedIdException(profile)) {
+          if (isCurrentRequest()) {
+            setUser(null)
+            setAuthState("profile-incomplete")
+            router.replace("/onboarding?freshLogin=1")
           }
 
           return

@@ -25,6 +25,7 @@ import {
   type FineRowLike,
   type FineScanLike,
 } from "@/lib/attendance-fines";
+import { getStudentIdException } from "@/lib/profileCompletion";
 
 const EVENT_PAGE_SIZE = 25;
 
@@ -66,7 +67,9 @@ export default function MyFinesRoutePage() {
         const [profileResult, settingsResult, programsResult] = await Promise.all([
           supabase
             .from("profiles")
-            .select("program")
+            .select(
+              "program,student_id_exception_requests(status,attendance_eligible_from)",
+            )
             .eq("id", authUserId)
             .single(),
           getPublicSystemSettings(),
@@ -76,7 +79,7 @@ export default function MyFinesRoutePage() {
         let eventsQuery = supabase
           .from("events")
           .select(
-            "id, title, event_date, end_time, morning_end, afternoon_end, status, program, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
+            "id, title, event_date, start_time, end_time, morning_start, morning_end, afternoon_start, afternoon_end, status, program, multi_session, absent_fine, late_fine, morning_absent_fine, morning_late_fine, afternoon_absent_fine, afternoon_late_fine",
             { count: "exact" },
           )
           .lte("event_date", getSchoolDate())
@@ -214,6 +217,7 @@ export default function MyFinesRoutePage() {
                     `${request.event_id}:${request.session_label}`,
                 ),
             ),
+            getStudentIdException(profileResult.data),
           );
 
           const canonicalFines = records

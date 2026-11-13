@@ -8,6 +8,8 @@ import { supabase } from "@/lib/supabase";
 import { debounce } from "@/lib/debounce";
 import { useProtectedUser } from "../layout";
 import { FeedbackState } from "@/components/ui/feedback";
+import { getStudentIdException } from "@/lib/profileCompletion";
+import { isAttendanceSessionEligibleForAbsence } from "@/lib/attendance-fines";
 
 export default function DashboardRoute() {
   const router = useRouter();
@@ -143,11 +145,16 @@ export default function DashboardRoute() {
           return;
         }
 
-        const [eventsResult, attendanceResult, fineResult] = await Promise.all([
+        const [
+          eventsResult,
+          attendanceResult,
+          fineResult,
+          profileResult,
+        ] = await Promise.all([
           supabase
             .from("events")
             .select(
-              "id, title, event_date, location, status, multi_session, media_urls",
+              "id, title, event_date, start_time, morning_start, afternoon_start, location, status, multi_session, media_urls",
             )
             .is("archived_at", null)
             .order("event_date", { ascending: true }),
@@ -159,6 +166,13 @@ export default function DashboardRoute() {
             .from("fines")
             .select("amount, status")
             .eq("student_id", authUserId),
+          supabase
+            .from("profiles")
+            .select(
+              "program,student_id_exception_requests(status,attendance_eligible_from)",
+            )
+            .eq("id", authUserId)
+            .maybeSingle(),
         ]);
 
         if (eventsResult.error) {
@@ -174,6 +188,12 @@ export default function DashboardRoute() {
         if (fineResult.error) {
           console.error(fineResult.error);
           if (!cancelled) setLoadError("Dashboard data could not be loaded.");
+        }
+
+        if (profileResult.error) {
+          console.error(profileResult.error);
+          if (!cancelled) setLoadError("Dashboard data could not be loaded.");
+          return;
         }
 
         if (cancelled) {
@@ -203,8 +223,42 @@ export default function DashboardRoute() {
         const completedEventRows = eventRows.filter((row: any) =>
           completedEventIds.has(row.id),
         );
+        const attendanceKeys = new Set<string>(
+          attendanceRows.map(
+            (row: any) => `${row.event_id}:${row.session_label ?? "morning"}`,
+          ),
+        );
+        const exception = getStudentIdException(profileResult.data);
         const totalSessions = completedEventRows.reduce(
-          (total: number, row: any) => total + (row.multi_session ? 2 : 1),
+          (total: number, row: any) => {
+            const sessions = row.multi_session
+              ? (["morning", "afternoon"] as const)
+              : (["morning"] as const);
+
+            return (
+              total +
+              sessions.filter((sessionLabel) => {
+                const hasScan = attendanceKeys.has(
+                  `${row.id}:${sessionLabel}`,
+                );
+
+                return (
+                  hasScan ||
+                  isAttendanceSessionEligibleForAbsence(
+                    {
+                      event_date: row.event_date,
+                      multi_session: row.multi_session,
+                      start_time: row.start_time,
+                      morning_start: row.morning_start,
+                      afternoon_start: row.afternoon_start,
+                    },
+                    sessionLabel,
+                    exception,
+                  )
+                );
+              }).length
+            );
+          },
           0,
         );
         const presentCount = attendanceRows.filter(
