@@ -3,6 +3,7 @@
 
 :root {
   --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --admin-bottom-nav-height: calc(4rem + 1px + env(safe-area-inset-bottom));
 
   --color-brand-50: #ecfdf5;
   --color-brand-100: #d1fae5;
@@ -392,4 +393,38 @@ video {
 /* Upcoming event card — concave photo boundary (desktop) */
 .event-photo-clip {
   clip-path: path("M 0 0 C 60 0 60 100% 0 100% L 100% 100% L 100% 0 Z");
+}
+
+.admin-mobile-navigation-root,
+.admin-dashboard-stat-view {
+  display: none;
+}
+
+@media (max-width: 767px),
+  (min-width: 768px) and (max-width: 1439px) and (any-pointer: coarse) {
+  .admin-mobile-navigation-root {
+    display: block;
+  }
+
+  [data-admin-bottom-nav="enabled"]
+    .protected-persistent-sidebar
+    .protected-sidebar-content {
+    padding-bottom: var(--admin-bottom-nav-height);
+  }
+
+  [data-admin-bottom-nav="enabled"] .protected-persistent-sidebar {
+    height: calc(100dvh - 57px);
+  }
+
+  .admin-dashboard-stat-view {
+    display: flex;
+  }
+
+  .admin-dashboard-stat-card-content {
+    padding-right: 3.25rem;
+  }
+
+  .admin-protected-main {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
 }

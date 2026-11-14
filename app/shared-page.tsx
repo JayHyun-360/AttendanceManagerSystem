@@ -699,6 +699,7 @@ import {
   useState,
   useRef,
   useEffect,
+  useLayoutEffect,
   useMemo,
   Fragment,
 } from "react";
@@ -4663,7 +4664,7 @@ export function Sidebar({
   };
 
   const inner = (
-    <div className="flex flex-col h-full bg-white">
+    <div className="protected-sidebar-content flex flex-col h-full bg-white">
       {}
       <div className="flex items-center justify-between px-4 h-[52px] border-b border-slate-100 lg:hidden shrink-0">
         <span className="flex items-center gap-2" aria-label="Adesse">
@@ -4831,7 +4832,7 @@ export function Sidebar({
     <>
       {}
       <motion.aside
-        className="sidebar-motion sticky top-[56px] hidden h-[calc(100vh-56px)] shrink-0 self-start overflow-hidden border-r border-slate-100 bg-white shadow-[4px_0_16px_rgba(15,23,42,0.06)] lg:flex lg:flex-col"
+        className="sidebar-motion protected-persistent-sidebar sticky top-[56px] hidden h-[calc(100vh-56px)] shrink-0 self-start overflow-hidden border-r border-slate-100 bg-white shadow-[4px_0_16px_rgba(15,23,42,0.06)] lg:flex lg:flex-col"
         initial={false}
         animate={{ width: collapsed ? 80 : 240 }}
         transition={
@@ -10490,6 +10491,10 @@ export function AdminDashboard({
             sub: "Scanned today",
 
             c: "text-emerald-500",
+
+            href: "/admin-attendees",
+
+            actionLabel: "View attendance records",
           },
 
           {
@@ -10500,6 +10505,10 @@ export function AdminDashboard({
             sub: "Rejected",
 
             c: "text-red-500",
+
+            href: "/admin-attendees?tab=duplicates",
+
+            actionLabel: "View duplicate attendance records",
           },
 
           {
@@ -10510,6 +10519,10 @@ export function AdminDashboard({
             sub: "Live now",
 
             c: "text-sky-600",
+
+            href: "/admin-events",
+
+            actionLabel: "View events",
           },
 
           {
@@ -10520,15 +10533,30 @@ export function AdminDashboard({
             sub: "Registered",
 
             c: "text-slate-700",
+
+            href: "/admin-students",
+
+            actionLabel: "View students",
           },
         ].map((s) => (
           <div
             key={s.l}
-            className="rounded-xl border border-slate-100 bg-white px-3 py-3 md:px-4 md:py-4"
+            className="relative rounded-xl border border-slate-100 bg-white px-3 py-3 md:px-4 md:py-4"
           >
-            <p className={`text-2xl font-bold ${s.c}`}>{s.v}</p>
-            <p className="text-xs font-semibold text-slate-600 mt-1">{s.l}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">{s.sub}</p>
+            <div className="admin-dashboard-stat-card-content">
+              <p className={`text-2xl font-bold ${s.c}`}>{s.v}</p>
+              <p className="text-xs font-semibold text-slate-600 mt-1">
+                {s.l}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-0.5">{s.sub}</p>
+            </div>
+            <Link
+              href={s.href}
+              aria-label={s.actionLabel}
+              className="admin-dashboard-stat-view absolute right-2 top-1/2 min-h-11 min-w-11 -translate-y-1/2 items-center justify-center gap-1 rounded-lg text-[11px] font-semibold text-emerald-600 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            >
+              View <span aria-hidden="true">→</span>
+            </Link>
           </div>
         ))}
       </div>
@@ -14765,6 +14793,8 @@ export function AdminAttendeesPage({
 
   students = [],
 
+  initialTab = "present",
+
   scanState: initialScanState,
 
   fineRows = [],
@@ -14782,6 +14812,8 @@ export function AdminAttendeesPage({
   events?: EventData[];
 
   students?: StudentProfile[];
+
+  initialTab?: "present" | "duplicates";
 
   scanState?: Record<string, ScanRecord[]>;
 
@@ -14805,9 +14837,15 @@ export function AdminAttendeesPage({
     initialScanState ?? {},
   );
 
-  const [tab, setTab] = useState<"present" | "late" | "absent" | "duplicates">(
-    "present",
-  );
+  const [tab, setTab] = useState<
+    "present" | "late" | "absent" | "duplicates"
+  >(initialTab);
+
+  useLayoutEffect(() => {
+    setTab((currentTab) =>
+      currentTab === initialTab ? currentTab : initialTab,
+    );
+  }, [initialTab]);
 
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
 

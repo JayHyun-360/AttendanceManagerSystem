@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -44,8 +44,33 @@ async function fetchAllPages(
   }
 }
 
+function AttendanceLoadingState() {
+  return (
+    <div className="space-y-3 pt-2">
+      <Skeleton className="h-8 w-40 rounded-lg" />
+      <div className="flex gap-2">
+        {[0, 1, 2].map((item) => (
+          <Skeleton key={item} className="h-8 w-20 rounded-lg" />
+        ))}
+      </div>
+      {[0, 1, 2].map((item) => (
+        <Skeleton key={item} className="h-24 w-full rounded-xl" />
+      ))}
+    </div>
+  );
+}
+
 export default function AdminAttendeesRoutePage() {
+  return (
+    <Suspense fallback={<AttendanceLoadingState />}>
+      <AdminAttendeesRouteContent />
+    </Suspense>
+  );
+}
+
+function AdminAttendeesRouteContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const { user } = useProtectedUser();
 
@@ -64,6 +89,9 @@ export default function AdminAttendeesRoutePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [isAttendanceRefreshing, setIsAttendanceRefreshing] = useState(false);
+
+  const initialTab =
+    searchParams.get("tab") === "duplicates" ? "duplicates" : "present";
 
   const hasLoadedAttendance = useRef(false);
 
@@ -592,19 +620,7 @@ export default function AdminAttendeesRoutePage() {
   };
 
   if (isLoading || (isAttendanceRefreshing && !hasLoadedAttendance.current)) {
-    return (
-      <div className="space-y-3 pt-2">
-        <Skeleton className="h-8 w-40 rounded-lg" />
-        <div className="flex gap-2">
-          {[0, 1, 2].map((item) => (
-            <Skeleton key={item} className="h-8 w-20 rounded-lg" />
-          ))}
-        </div>
-        {[0, 1, 2].map((item) => (
-          <Skeleton key={item} className="h-24 w-full rounded-xl" />
-        ))}
-      </div>
-    );
+    return <AttendanceLoadingState />;
   }
 
   if (loadError) {
@@ -622,6 +638,7 @@ export default function AdminAttendeesRoutePage() {
       onNav={onNav}
       events={events}
       students={students}
+      initialTab={initialTab}
       scanState={scanState}
       fineRows={fineRows}
       approvedExcuseKeys={approvedExcuseKeys}

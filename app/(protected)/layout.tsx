@@ -6,6 +6,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useState,
   type ComponentProps,
   type Dispatch,
@@ -24,6 +25,8 @@ import {
   type User,
   type EventData,
 } from "../shared-page"
+
+import AdminMobileNavigation from "./admin-mobile-navigation"
 
 import { DevNotesProvider, useDevNotes } from "../DevNotesPage"
 
@@ -161,7 +164,39 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
   const isPublicEventsRoute = pathname === "/events"
 
-  const page = pathToPage[pathname] ?? "dashboard"
+  const isStudentDetailRoute = pathname.startsWith("/admin-students/")
+
+  const [isMobileTabletViewport, setIsMobileTabletViewport] = useState(false)
+
+  useLayoutEffect(() => {
+    if (!isStudentDetailRoute) return
+
+    const responsiveNavigation = window.matchMedia(
+      "(max-width: 767px), (min-width: 768px) and (max-width: 1439px) and (any-pointer: coarse)",
+    )
+    const updateResponsiveNavigation = () => {
+      const nextValue = responsiveNavigation.matches
+      setIsMobileTabletViewport((currentValue) =>
+        currentValue === nextValue ? currentValue : nextValue,
+      )
+    }
+
+    updateResponsiveNavigation()
+
+    responsiveNavigation.addEventListener("change", updateResponsiveNavigation)
+
+    return () => {
+      responsiveNavigation.removeEventListener(
+        "change",
+        updateResponsiveNavigation,
+      )
+    }
+  }, [isStudentDetailRoute])
+
+  const page =
+    isMobileTabletViewport && isStudentDetailRoute
+      ? "admin-students"
+      : (pathToPage[pathname] ?? "dashboard")
 
   const [user, setUser] = useState<User | null>(null)
 
@@ -602,6 +637,9 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     )
   }
 
+  const hasVisibleAdminBottomNavigation =
+    user?.role === "admin" && pathname !== "/admin-scanner"
+
   return (
     <ProtectedUserContext.Provider
       value={{
@@ -629,43 +667,57 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
       }}
     >
       <DevNotesProvider enabled={Boolean(user)}>
-        <div className="w-full min-h-screen m-0 p-0 bg-white md:h-screen md:overflow-hidden md:bg-[#f8faf9] md:relative">
-          {showGlobalLoading && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#f8faf9]/85 backdrop-blur-[1px]">
-              <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
-                <span className="h-4 w-4 rounded-full border-2 border-slate-200 border-t-emerald-500 animate-spin" />
-                Loading Adesse...
+        <>
+          <div
+            data-admin-bottom-nav={
+              hasVisibleAdminBottomNavigation ? "enabled" : undefined
+            }
+            className="w-full min-h-screen m-0 p-0 bg-white md:h-screen md:overflow-hidden md:bg-[#f8faf9] md:relative"
+          >
+            {showGlobalLoading && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#f8faf9]/85 backdrop-blur-[1px]">
+                <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
+                  <span className="h-4 w-4 rounded-full border-2 border-slate-200 border-t-emerald-500 animate-spin" />
+                  Loading Adesse...
+                </div>
               </div>
-            </div>
-          )}
-          <TopBar
-            user={user}
-            onNav={onNav}
-            onMenuOpen={() => setOpen(true)}
-            sidebarCollapsed={sidebarCollapsed}
-            onSidebarToggle={() => setSidebarCollapsed((value) => !value)}
-            showFees={showFees}
-          />
-          <div className="w-full md:flex md:min-h-0 md:h-[calc(100vh-56px)]">
-            <ProtectedSidebar
-              page={page}
+            )}
+            <TopBar
               user={user}
-              open={open}
               onNav={onNav}
-              onClose={() => setOpen(false)}
-              onLogout={onLogout}
-              collapsed={sidebarCollapsed}
-              onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
+              onMenuOpen={() => setOpen(true)}
+              sidebarCollapsed={sidebarCollapsed}
+              onSidebarToggle={() => setSidebarCollapsed((value) => !value)}
               showFees={showFees}
             />
-            <main
-              id="protected-main-content"
-              className="w-full min-w-0 md:min-h-0 md:flex-1 md:overflow-x-hidden md:overflow-y-auto md:overscroll-contain md:[scrollbar-gutter:stable]"
-            >
-              <PageShell>{children}</PageShell>
-            </main>
+            <div className="w-full md:flex md:min-h-0 md:h-[calc(100vh-56px)]">
+              <ProtectedSidebar
+                page={page}
+                user={user}
+                open={open}
+                onNav={onNav}
+                onClose={() => setOpen(false)}
+                onLogout={onLogout}
+                collapsed={sidebarCollapsed}
+                onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
+                showFees={showFees}
+              />
+              <main
+                id="protected-main-content"
+                className={`w-full min-w-0 md:min-h-0 md:flex-1 md:overflow-x-hidden md:overflow-y-auto md:overscroll-contain md:[scrollbar-gutter:stable] ${
+                  user?.role === "admin" && pathname !== "/admin-scanner"
+                    ? "admin-protected-main"
+                    : ""
+                }`}
+              >
+                <PageShell>{children}</PageShell>
+              </main>
+            </div>
           </div>
-        </div>
+          {user?.role === "admin" && (
+            <AdminMobileNavigation onNavigate={onNav} />
+          )}
+        </>
       </DevNotesProvider>
     </ProtectedUserContext.Provider>
   )
