@@ -9,7 +9,10 @@ history.
 Upgrade 001 has already been applied to the live database. The revised,
 atomic Upgrade 002 has also already been applied, and its post-upgrade
 inspection passed. Do not run Upgrade 001, Upgrade 002, or the fallback
-lockout on that database again.
+lockout on that database again. The separate Reports RPC correction in
+`003_fix_admin_report_fine_projection.sql` is a one-time forward-only fix for
+the affected RPC; apply it only after confirming the installed function has
+the expected Upgrade 002 definition.
 
 ## Files and effects
 
@@ -21,11 +24,13 @@ lockout on that database again.
 | `002_expand_student_id_exception.sql` | Expands the workflow to request history and all supported student reasons. It assigns request IDs to existing rows and adds the new request fields, constraints, indexes, policies, and RPCs. The legacy RPC lockout and assertions are part of the same transaction. | Modifies schema, existing request rows, routines, policies, and grants. Run once only on a verified post-001, pre-002 database. |
 | `002_expand_student_id_exception_inspect.sql` | Inspects the resulting request table, policies, privileges, triggers, and RPC definitions after Upgrade 002. | Read-only; repeatable. |
 | `002_post_cutover_disable_legacy_rpcs.sql` | Redundant permission-only fallback for a database that already ran an older, non-atomic Upgrade 002 revision. | Modifies legacy RPC EXECUTE grants. Not a normal step after the revised atomic Upgrade 002. |
+| `003_fix_admin_report_fine_projection.sql` | Adds the omitted `attendance_scan_id` column to the Upgrade 002 report function's `eligible_fines` CTE projection. Includes a post-upgrade function-definition query. | Replaces only the existing RPC definition; preserves its attributes and grants. Run once only after confirming the installed function matches the expected Upgrade 002 definition. |
 
 The inspection and preflight files contain SELECT-only queries. Upgrade 001,
-Upgrade 002, and the fallback contain database changes. Upgrade 002 has an
-explicit transaction; its legacy lockout checks run before its `COMMIT`.
-Read-only queries after that `COMMIT` cannot roll back a completed upgrade.
+Upgrade 002, the fallback, and the separate Reports RPC correction contain
+database changes. Upgrade 002 has an explicit transaction; its legacy lockout
+checks run before its `COMMIT`. Read-only queries after that `COMMIT` cannot
+roll back a completed upgrade.
 
 ## Choose the correct database path
 
@@ -42,8 +47,10 @@ Read-only queries after that `COMMIT` cannot roll back a completed upgrade.
 3. **Existing post-001, pre-002 project:** follow the Upgrade 002 sequence
    below. Do not use archived migrations as a substitute for checking the
    actual database.
-4. **Current live project:** both upgrades are already complete. Do not run
-   any mutating SQL in this directory against it.
+4. **Current live project:** both upgrades are already complete. Do not rerun
+   them. The Reports RPC correction is separate; use
+   `003_fix_admin_report_fine_projection.sql` only after confirming that the
+   installed function has the expected Upgrade 002 definition.
 
 ## Upgrade 002 sequence for an eligible pre-002 database
 
