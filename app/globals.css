@@ -358,6 +358,10 @@ textarea {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .protected-back-to-top {
+    transition: none !important;
+  }
+
   .scanner-enter,
   .scan-sweep,
   .scanner-state-enter,
@@ -400,8 +404,21 @@ video {
   display: none;
 }
 
+.protected-back-to-top {
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  transition:
+    opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 200ms ease,
+    background-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
 @media (max-width: 767px),
   (min-width: 768px) and (max-width: 1439px) and (any-pointer: coarse) {
+  .protected-back-to-top[data-admin-bottom-nav="enabled"] {
+    bottom: calc(var(--admin-bottom-nav-height) + 1rem);
+  }
+
   .admin-mobile-navigation-root {
     display: block;
   }

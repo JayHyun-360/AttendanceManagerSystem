@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useLayoutEffect,
+  useRef,
   useState,
   type ComponentProps,
   type Dispatch,
@@ -15,6 +16,8 @@ import {
 } from "react"
 
 import { usePathname, useRouter } from "next/navigation"
+
+import { ArrowUp } from "lucide-react"
 
 import {
   TopBar,
@@ -118,6 +121,129 @@ function ProtectedSidebar(props: ProtectedSidebarProps) {
   const { unreadCount } = useDevNotes()
 
   return <Sidebar {...props} badges={{ "dev-notes": unreadCount }} />
+}
+
+function BackToTopButton({
+  adminBottomNavEnabled,
+}: {
+  adminBottomNavEnabled: boolean
+}) {
+  const pathname = usePathname()
+  const isVisibleRef = useRef(false)
+  const [isVisible, setIsVisible] = useState(false)
+  const [buttonCenter, setButtonCenter] = useState<number | null>(null)
+
+  useEffect(() => {
+    const mainContent = document.getElementById("protected-main-content")
+    const desktopViewport = window.matchMedia("(min-width: 768px)")
+    let hideTimer: number | undefined
+
+    const clearHideTimer = () => {
+      if (hideTimer !== undefined) {
+        window.clearTimeout(hideTimer)
+        hideTimer = undefined
+      }
+    }
+
+    const getActiveScrollTop = () =>
+      desktopViewport.matches ? (mainContent?.scrollTop ?? 0) : window.scrollY
+
+    const updateVisibility = (nextIsVisible: boolean) => {
+      if (isVisibleRef.current === nextIsVisible) return
+
+      isVisibleRef.current = nextIsVisible
+      setIsVisible(nextIsVisible)
+    }
+
+    const updateButtonCenter = () => {
+      const bounds = mainContent?.getBoundingClientRect()
+      const nextCenter = bounds
+        ? bounds.left + bounds.width / 2
+        : window.innerWidth / 2
+
+      setButtonCenter((currentCenter) =>
+        currentCenter === nextCenter ? currentCenter : nextCenter,
+      )
+    }
+
+    const handleScroll = () => {
+      if (getActiveScrollTop() <= 200) {
+        clearHideTimer()
+        updateVisibility(false)
+        return
+      }
+
+      updateVisibility(true)
+      clearHideTimer()
+      hideTimer = window.setTimeout(() => {
+        updateVisibility(false)
+        hideTimer = undefined
+      }, 1200)
+    }
+
+    const handleViewportChange = () => {
+      updateButtonCenter()
+      if (getActiveScrollTop() <= 200) {
+        clearHideTimer()
+        updateVisibility(false)
+      }
+    }
+
+    updateVisibility(false)
+    updateButtonCenter()
+    const animationFrame = window.requestAnimationFrame(updateButtonCenter)
+    const resizeObserver = new ResizeObserver(updateButtonCenter)
+    if (mainContent) resizeObserver.observe(mainContent)
+
+    window.addEventListener("scroll", handleScroll)
+    mainContent?.addEventListener("scroll", handleScroll)
+    window.addEventListener("resize", handleViewportChange)
+    desktopViewport.addEventListener("change", handleViewportChange)
+
+    return () => {
+      clearHideTimer()
+      window.cancelAnimationFrame(animationFrame)
+      resizeObserver.disconnect()
+      window.removeEventListener("scroll", handleScroll)
+      mainContent?.removeEventListener("scroll", handleScroll)
+      window.removeEventListener("resize", handleViewportChange)
+      desktopViewport.removeEventListener("change", handleViewportChange)
+    }
+  }, [pathname])
+
+  const scrollToTop = () => {
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)")
+      .matches
+      ? "auto"
+      : "smooth"
+
+    if (window.matchMedia("(min-width: 768px)").matches) {
+      document
+        .getElementById("protected-main-content")
+        ?.scrollTo({ top: 0, behavior })
+    } else {
+      window.scrollTo({ top: 0, behavior })
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={scrollToTop}
+      aria-label="Back to top"
+      aria-hidden={!isVisible}
+      tabIndex={isVisible ? 0 : -1}
+      data-admin-bottom-nav={adminBottomNavEnabled ? "enabled" : undefined}
+      style={{ left: buttonCenter === null ? "50%" : `${buttonCenter}px` }}
+      className={`protected-back-to-top fixed z-20 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-emerald-700 bg-emerald-600 text-white shadow-lg hover:-translate-y-0.5 hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
+        isVisible
+          ? "pointer-events-auto translate-y-0 opacity-100"
+          : "pointer-events-none translate-y-1 opacity-0"
+      }`}
+    >
+      <ArrowUp aria-hidden="true" className="h-4 w-4" />
+    </button>
+  )
 }
 
 const pathToPage: Partial<Record<string, Page>> = {
@@ -733,6 +859,9 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
               </main>
             </div>
           </div>
+          <BackToTopButton
+            adminBottomNavEnabled={hasVisibleAdminBottomNavigation}
+          />
           {user?.role === "admin" && (
             <AdminMobileNavigation onNavigate={onNav} />
           )}
