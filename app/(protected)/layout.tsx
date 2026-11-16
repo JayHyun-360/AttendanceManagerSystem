@@ -34,6 +34,7 @@ import { supabase } from "@/lib/supabase"
 import {
   hasUnacknowledgedIdException,
   isProfileComplete,
+  parseStudentIdExceptionAccessState,
 } from "@/lib/profileCompletion"
 
 import { getPublicSystemSettings } from "@/lib/systemSettings"
@@ -281,7 +282,9 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
           .from("profiles")
 
-          .select("*,student_id_exception_requests(status,continued_at)")
+          .select(
+            "*,student_id_exception_requests(request_id,status,requested_at,continued_at)",
+          )
 
           .eq("id", uid)
 
@@ -304,6 +307,22 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           return
         }
 
+        let exceptionAccessState: ReturnType<
+          typeof parseStudentIdExceptionAccessState
+        > = null
+        if (profile.role === "student") {
+          const { data: accessRows, error: accessError } = await supabase.rpc(
+            "get_my_student_id_exception_access_state",
+          )
+          if (accessError) throw accessError
+
+          exceptionAccessState =
+            parseStudentIdExceptionAccessState(accessRows)
+          if (!exceptionAccessState) {
+            throw new Error("The ID exception access state was invalid.")
+          }
+        }
+
         if (!profile.photo_url && googleAvatarUrl) {
           const { error: avatarUpdateError } = await supabase
 
@@ -323,8 +342,8 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
         }
 
         if (
-          !isProfileComplete(profile) ||
-          hasUnacknowledgedIdException(profile)
+          !isProfileComplete(profile, exceptionAccessState) ||
+          hasUnacknowledgedIdException(profile, exceptionAccessState)
         ) {
           if (pathname !== "/onboarding") {
             router.push("/onboarding")

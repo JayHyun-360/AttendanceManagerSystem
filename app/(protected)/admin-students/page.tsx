@@ -11,6 +11,7 @@ import { AdminStudentsPage, type EventData } from "../../shared-page";
 import { supabase } from "@/lib/supabase";
 import {
   getStudentIdException,
+  hasActiveTemporaryIdException,
   isProfileComplete,
 } from "@/lib/profileCompletion";
 
@@ -70,7 +71,7 @@ export default function AdminStudentsRoutePage() {
             const { data, error } = await supabase
               .from("profiles")
               .select(
-                "id, role, first_name, surname, email, student_id, program, year_level, section, photo_url, id_photo_url, created_at,student_id_exception_requests(status)",
+                "id, role, first_name, surname, email, student_id, program, year_level, section, photo_url, id_photo_url, created_at,student_id_exception_requests(request_id,status,requested_at,attendance_eligible_from,continued_at)",
               )
               .eq("role", "student")
               .order("surname", { ascending: true })
@@ -174,6 +175,8 @@ export default function AdminStudentsRoutePage() {
             idPhotoUrl: row.id_photo_url || undefined,
 
             idException: getStudentIdException(row),
+
+            activeIdException: hasActiveTemporaryIdException(row),
 
             profileComplete: isProfileComplete(row),
 

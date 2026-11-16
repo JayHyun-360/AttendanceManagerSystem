@@ -36,7 +36,10 @@ import {
 } from "@/lib/attendance-fines"
 import {
   getStudentIdException,
+  getStudentIdExceptionHistory,
+  isApprovedStudentIdExceptionStatus,
   isProfileComplete,
+  STUDENT_ID_EXCEPTION_REASON_OPTIONS,
   type StudentIdException,
 } from "@/lib/profileCompletion"
 
@@ -68,6 +71,8 @@ interface StudentDetail {
   profileComplete: boolean
 
   idException?: StudentIdException | null
+
+  idExceptionHistory: StudentIdException[]
 
   joinedDate: string
 }
@@ -248,7 +253,7 @@ export default function StudentDetailRoutePage() {
 
   const [metricsRefreshKey, setMetricsRefreshKey] = useState(0)
 
-  const [isApprovingIdException, setIsApprovingIdException] = useState(false)
+  const [isDecidingIdException, setIsDecidingIdException] = useState(false)
 
   const [finesEnabled, setFinesEnabled] = useState(false)
 
@@ -274,7 +279,7 @@ export default function StudentDetailRoutePage() {
           .from("profiles")
 
           .select(
-            "*,student_id_exception_requests(status,requested_at,approved_by,approved_at,attendance_eligible_from,continued_at)",
+            "*,student_id_exception_requests(request_id,status,reason,explanation,requested_at,approved_by,approved_at,attendance_eligible_from,continued_at,rejected_by,rejected_at)",
           )
 
           .eq("id", routeId)
@@ -289,6 +294,25 @@ export default function StudentDetailRoutePage() {
 
         if (!data || cancelled) {
           return
+        }
+
+        const { data: requestRows, error: requestHistoryError } =
+          await supabase.rpc("get_student_id_exception_request_history", {
+            p_student_id: routeId,
+          })
+
+        if (requestHistoryError) {
+          console.error("Could not load ID exception request history", requestHistoryError)
+          toast.error("The student's ID exception history could not be loaded.")
+          return
+        }
+
+        const requestHistory = getStudentIdExceptionHistory({
+          student_id_exception_requests: requestRows ?? [],
+        })
+        const profileWithRequestHistory = {
+          ...data,
+          student_id_exception_requests: requestHistory,
         }
 
         setStudent({
@@ -319,9 +343,11 @@ export default function StudentDetailRoutePage() {
 
           idPhotoUrl: data.id_photo_url || undefined,
 
-          profileComplete: isProfileComplete(data),
+          profileComplete: isProfileComplete(profileWithRequestHistory),
 
-          idException: getStudentIdException(data),
+          idException: getStudentIdException(profileWithRequestHistory),
+
+          idExceptionHistory: requestHistory,
 
           joinedDate: new Date(data.created_at).toLocaleDateString("en-US", {
             month: "short",
@@ -443,7 +469,7 @@ export default function StudentDetailRoutePage() {
 
         approvedKeys,
 
-        student?.idException,
+        student?.idExceptionHistory ?? [],
       )
 
       const finesEnabled = Boolean(
@@ -526,7 +552,7 @@ export default function StudentDetailRoutePage() {
     metricsRefreshKey,
     routeId,
     student?.program,
-    student?.idException,
+    student?.idExceptionHistory,
     user?.role,
   ])
 
@@ -678,7 +704,7 @@ export default function StudentDetailRoutePage() {
         afternoon_start: selectedEvent.afternoonStart,
       },
       sessionLabel,
-      student?.idException,
+      student?.idExceptionHistory ?? [],
     )
 
   const approvedExcuseForSession = approvedExcuseKeys.has(
@@ -918,6 +944,11 @@ export default function StudentDetailRoutePage() {
     [student],
   )
 
+  const getExceptionReasonLabel = (reason?: StudentIdException["reason"]) =>
+    STUDENT_ID_EXCEPTION_REASON_OPTIONS.find(
+      (option) => option.value === reason,
+    )?.label ?? "Legacy request — reason not recorded."
+
   const confirmStudent = async () => {
     if (
       !student ||
@@ -925,7 +956,8 @@ export default function StudentDetailRoutePage() {
       user?.role !== "admin" ||
       student.idException?.status !== "pending" ||
       student.idPhotoUrl ||
-      isApprovingIdException
+      !student.idException.request_id ||
+      isDecidingIdException
     ) {
       return
     }
@@ -935,12 +967,12 @@ export default function StudentDetailRoutePage() {
     )
     if (!confirmed) return
 
-    setIsApprovingIdException(true)
+    setIsDecidingIdException(true)
 
     try {
       const { data, error } = await supabase.rpc(
-        "approve_student_id_exception",
-        { p_student_id: routeId },
+        "approve_student_id_exception_request",
+        { p_request_id: student.idException.request_id },
       )
 
       if (error) {
@@ -953,7 +985,7 @@ export default function StudentDetailRoutePage() {
         student_id_exception_requests: data,
       })
 
-      if (approvedRequest?.status !== "temporarily_approved") {
+      if (!isApprovedStudentIdExceptionStatus(approvedRequest?.status)) {
         console.error("The approval RPC did not return an approved request")
         toast.error(
           "The request was not returned as approved. Refresh this profile before continuing.",
@@ -966,6 +998,13 @@ export default function StudentDetailRoutePage() {
           ? {
               ...current,
               idException: approvedRequest,
+              idExceptionHistory: [
+                approvedRequest,
+                ...current.idExceptionHistory.filter(
+                  (request) =>
+                    request.request_id !== approvedRequest.request_id,
+                ),
+              ],
               profileComplete: true,
             }
           : current,
@@ -976,7 +1015,72 @@ export default function StudentDetailRoutePage() {
       console.error("Could not approve the ID exception", caughtError)
       toast.error("The student could not be confirmed. Please try again.")
     } finally {
-      setIsApprovingIdException(false)
+      setIsDecidingIdException(false)
+    }
+  }
+
+  const rejectStudent = async () => {
+    if (
+      !student ||
+      user?.role !== "admin" ||
+      student.idException?.status !== "pending" ||
+      !student.idException.request_id ||
+      isDecidingIdException
+    ) {
+      return
+    }
+
+    if (!window.confirm("Reject this temporary ID exception request?")) return
+
+    setIsDecidingIdException(true)
+
+    try {
+      const { data, error } = await supabase.rpc(
+        "reject_student_id_exception_request",
+        { p_request_id: student.idException.request_id },
+      )
+
+      if (error) {
+        console.error("Could not reject the ID exception", error)
+        toast.error("The request could not be rejected. Please try again.")
+        return
+      }
+
+      const rejectedRequest = getStudentIdException({
+        student_id_exception_requests: data,
+      })
+
+      if (rejectedRequest?.status !== "rejected") {
+        console.error("The rejection RPC did not return a rejected request")
+        toast.error(
+          "The request was not returned as rejected. Refresh this profile before continuing.",
+        )
+        return
+      }
+
+      setStudent((current) =>
+        current
+          ? {
+              ...current,
+              idException: rejectedRequest,
+              idExceptionHistory: [
+                rejectedRequest,
+                ...current.idExceptionHistory.filter(
+                  (request) =>
+                    request.request_id !== rejectedRequest.request_id,
+                ),
+              ],
+              profileComplete: false,
+            }
+          : current,
+      )
+      setMetricsRefreshKey((current) => current + 1)
+      toast.success("The temporary ID exception request was rejected.")
+    } catch (caughtError) {
+      console.error("Could not reject the ID exception", caughtError)
+      toast.error("The request could not be rejected. Please try again.")
+    } finally {
+      setIsDecidingIdException(false)
     }
   }
 
@@ -1087,34 +1191,78 @@ export default function StudentDetailRoutePage() {
                     className={`rounded-full px-3 py-1 text-xs font-semibold ${
                       student.idException?.status === "pending"
                         ? "bg-amber-50 text-amber-700"
-                        : student.idException?.status === "temporarily_approved"
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-slate-100 text-slate-600"
+                        : student.idException?.status === "rejected"
+                          ? "bg-rose-50 text-rose-700"
+                          : isApprovedStudentIdExceptionStatus(
+                                student.idException?.status,
+                              )
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-slate-100 text-slate-600"
                     }`}
                   >
                     ID Exception:{" "}
                     {student.idException?.status === "pending"
                       ? "Awaiting Approval"
-                      : student.idException?.status === "temporarily_approved"
-                        ? "Temporarily Approved"
-                        : student.idException?.status === "resolved_by_photo"
-                          ? "Resolved by ID photo"
-                          : "Not Requested"}
+                      : isApprovedStudentIdExceptionStatus(
+                          student.idException?.status,
+                        )
+                        ? student.idPhotoUrl
+                          ? "Approved — Photo Submitted"
+                          : "Approved"
+                        : student.idException?.status === "rejected"
+                          ? "Rejected"
+                          : student.idException?.status === "resolved_by_photo"
+                            ? "Resolved by ID photo"
+                            : "Not Requested"}
                   </span>
                 </div>
+                {student.idException && (
+                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-semibold text-slate-800">
+                      Latest request
+                    </p>
+                    <p className="mt-2 text-sm text-slate-700">
+                      Reason:{" "}
+                      {getExceptionReasonLabel(student.idException.reason)}
+                    </p>
+                    {student.idException.explanation && (
+                      <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">
+                        Explanation: {student.idException.explanation}
+                      </p>
+                    )}
+                    {student.idException.requested_at && (
+                      <p className="mt-1 text-xs text-slate-500">
+                        Submitted{" "}
+                        {new Date(
+                          student.idException.requested_at,
+                        ).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
                 {user?.role === "admin" &&
                   student.idException?.status === "pending" &&
                   !student.idPhotoUrl && (
-                    <button
-                      type="button"
-                      disabled={isApprovingIdException}
-                      onClick={() => void confirmStudent()}
-                      className="mt-4 h-10 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isApprovingIdException
-                        ? "Confirming..."
-                        : "Confirm Student"}
-                    </button>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={isDecidingIdException}
+                        onClick={() => void confirmStudent()}
+                        className="h-10 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isDecidingIdException
+                          ? "Saving decision..."
+                          : "Confirm Student"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isDecidingIdException}
+                        onClick={() => void rejectStudent()}
+                        className="h-10 rounded-lg border border-rose-200 bg-white px-4 text-sm font-semibold text-rose-700 shadow-sm transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Reject Request
+                      </button>
+                    </div>
                   )}
                 {student.idException?.approved_by &&
                   student.idException.approved_at && (
@@ -1124,6 +1272,64 @@ export default function StudentDetailRoutePage() {
                       {new Date(student.idException.approved_at).toLocaleString()}
                     </p>
                   )}
+                {student.idExceptionHistory.length > 0 && (
+                  <div className="mt-4 rounded-xl border border-slate-200 p-4">
+                    <p className="text-sm font-semibold text-slate-800">
+                      Request history ({student.idExceptionHistory.length})
+                    </p>
+                    <div className="mt-3 space-y-3">
+                      {student.idExceptionHistory.map((request, index) => (
+                        <div
+                          key={
+                            request.request_id ??
+                            `${request.status}-${request.requested_at ?? index}`
+                          }
+                          className="border-t border-slate-100 pt-3 first:border-t-0 first:pt-0"
+                        >
+                          <p className="text-xs font-semibold text-slate-700">
+                            {isApprovedStudentIdExceptionStatus(request.status)
+                              ? "Approved"
+                              : request.status === "resolved_by_photo"
+                                ? "Resolved by photo"
+                                : request.status === "rejected"
+                                  ? "Rejected"
+                                  : "Pending"}{" "}
+                            · {getExceptionReasonLabel(request.reason)}
+                          </p>
+                          {request.explanation && (
+                            <p className="mt-1 whitespace-pre-wrap text-xs text-slate-600">
+                              {request.explanation}
+                            </p>
+                          )}
+                          {request.requested_at && (
+                            <p className="mt-1 text-[11px] text-slate-500">
+                              Submitted{" "}
+                              {new Date(request.requested_at).toLocaleString()}
+                            </p>
+                          )}
+                          {request.approved_by && request.approved_at && (
+                            <p className="mt-1 text-[11px] text-slate-500">
+                              Approved by {request.approved_by} on{" "}
+                              {new Date(request.approved_at).toLocaleString()}
+                            </p>
+                          )}
+                          {request.rejected_by && request.rejected_at && (
+                            <p className="mt-1 text-[11px] text-slate-500">
+                              Rejected by {request.rejected_by} on{" "}
+                              {new Date(request.rejected_at).toLocaleString()}
+                            </p>
+                          )}
+                          {request.continued_at && (
+                            <p className="mt-1 text-[11px] text-slate-500">
+                              Acknowledged{" "}
+                              {new Date(request.continued_at).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">
                   <span>{student.email || "Email not provided"}</span>
                   <span>{student.phone || "Phone not provided"}</span>

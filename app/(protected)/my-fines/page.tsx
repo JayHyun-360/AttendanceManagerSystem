@@ -25,7 +25,7 @@ import {
   type FineRowLike,
   type FineScanLike,
 } from "@/lib/attendance-fines";
-import { getStudentIdException } from "@/lib/profileCompletion";
+import { getStudentIdExceptionHistory } from "@/lib/profileCompletion";
 
 const EVENT_PAGE_SIZE = 25;
 
@@ -68,7 +68,7 @@ export default function MyFinesRoutePage() {
           supabase
             .from("profiles")
             .select(
-              "program,student_id_exception_requests(status,attendance_eligible_from)",
+              "program,student_id_exception_requests(request_id,status,requested_at,attendance_eligible_from,continued_at)",
             )
             .eq("id", authUserId)
             .single(),
@@ -217,7 +217,7 @@ export default function MyFinesRoutePage() {
                     `${request.event_id}:${request.session_label}`,
                 ),
             ),
-            getStudentIdException(profileResult.data),
+            getStudentIdExceptionHistory(profileResult.data),
           );
 
           const canonicalFines = records

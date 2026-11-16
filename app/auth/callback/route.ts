@@ -5,6 +5,7 @@ import { createServerClient } from "@supabase/ssr"
 import {
   hasUnacknowledgedIdException,
   isProfileComplete,
+  parseStudentIdExceptionAccessState,
 } from "@/lib/profileCompletion"
 
 export async function GET(request: NextRequest) {
@@ -60,7 +61,9 @@ export async function GET(request: NextRequest) {
 
     .from("profiles")
 
-    .select("*,student_id_exception_requests(status,continued_at)")
+    .select(
+      "*,student_id_exception_requests(request_id,status,requested_at,continued_at)",
+    )
 
     .eq("id", uid)
 
@@ -74,10 +77,37 @@ export async function GET(request: NextRequest) {
     return redirectResponse
   }
 
+  let exceptionAccessState: ReturnType<
+    typeof parseStudentIdExceptionAccessState
+  > = null
+  if (profile?.role === "student") {
+    const { data: accessRows, error: accessError } = await supabase.rpc(
+      "get_my_student_id_exception_access_state",
+    )
+    if (accessError) {
+      console.error("Could not verify ID exception access", accessError)
+      redirectResponse.headers.set(
+        "location",
+        new URL("/onboarding?freshLogin=1", origin).toString(),
+      )
+      return redirectResponse
+    }
+
+    exceptionAccessState = parseStudentIdExceptionAccessState(accessRows)
+    if (!exceptionAccessState) {
+      console.error("The ID exception access RPC returned an invalid result")
+      redirectResponse.headers.set(
+        "location",
+        new URL("/onboarding?freshLogin=1", origin).toString(),
+      )
+      return redirectResponse
+    }
+  }
+
   if (
     !profile ||
-    !isProfileComplete(profile) ||
-    hasUnacknowledgedIdException(profile)
+    !isProfileComplete(profile, exceptionAccessState) ||
+    hasUnacknowledgedIdException(profile, exceptionAccessState)
   ) {
     redirectResponse.headers.set(
       "location",

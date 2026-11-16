@@ -184,6 +184,7 @@ import { validateEmail } from "@/lib/validateEmail"
 import {
   hasUnacknowledgedIdException,
   isProfileComplete,
+  parseStudentIdExceptionAccessState,
 } from "@/lib/profileCompletion"
 import type { Session } from "@supabase/supabase-js"
 import { invalidateEventMedia } from "@/lib/eventMediaCache"
@@ -3207,7 +3208,9 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
 
       .from("profiles")
 
-      .select("*,student_id_exception_requests(status,continued_at)")
+      .select(
+        "*,student_id_exception_requests(request_id,status,requested_at,continued_at)",
+      )
 
       .eq("id", user.id)
 
@@ -3217,9 +3220,30 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
       console.error(profileError)
     }
 
+    let exceptionAccessState: ReturnType<
+      typeof parseStudentIdExceptionAccessState
+    > = null
+    if (profile?.role === "student") {
+      const { data: accessRows, error: accessError } = await supabase.rpc(
+        "get_my_student_id_exception_access_state",
+      )
+      if (accessError) {
+        console.error("Could not verify ID exception access", accessError)
+        router.push("/onboarding?freshLogin=1")
+        return
+      }
+
+      exceptionAccessState = parseStudentIdExceptionAccessState(accessRows)
+      if (!exceptionAccessState) {
+        console.error("The ID exception access RPC returned an invalid result")
+        router.push("/onboarding?freshLogin=1")
+        return
+      }
+    }
+
     if (
-      !isProfileComplete(profile) ||
-      hasUnacknowledgedIdException(profile)
+      !isProfileComplete(profile, exceptionAccessState) ||
+      hasUnacknowledgedIdException(profile, exceptionAccessState)
     ) {
       router.push("/onboarding?freshLogin=1")
 
@@ -10049,7 +10073,9 @@ export default function LandingExperienceClient({
       try {
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("*,student_id_exception_requests(status,continued_at)")
+          .select(
+            "*,student_id_exception_requests(request_id,status,requested_at,continued_at)",
+          )
           .eq("id", session.user.id)
           .maybeSingle()
 
@@ -10057,7 +10083,23 @@ export default function LandingExperienceClient({
           throw profileError
         }
 
-        if (!isProfileComplete(profile)) {
+        let exceptionAccessState: ReturnType<
+          typeof parseStudentIdExceptionAccessState
+        > = null
+        if (profile?.role === "student") {
+          const { data: accessRows, error: accessError } = await supabase.rpc(
+            "get_my_student_id_exception_access_state",
+          )
+          if (accessError) throw accessError
+
+          exceptionAccessState =
+            parseStudentIdExceptionAccessState(accessRows)
+          if (!exceptionAccessState) {
+            throw new Error("The ID exception access state was invalid.")
+          }
+        }
+
+        if (!isProfileComplete(profile, exceptionAccessState)) {
           if (isCurrentRequest()) {
             setUser(null)
             setAuthState("profile-incomplete")
@@ -10070,7 +10112,9 @@ export default function LandingExperienceClient({
           return
         }
 
-        if (hasUnacknowledgedIdException(profile)) {
+        if (
+          hasUnacknowledgedIdException(profile, exceptionAccessState)
+        ) {
           if (isCurrentRequest()) {
             setUser(null)
             setAuthState("profile-incomplete")

@@ -32,7 +32,7 @@ import {
   type FineRowLike,
   type FineScanLike,
 } from "@/lib/attendance-fines";
-import { getStudentIdException } from "@/lib/profileCompletion";
+import { getStudentIdExceptionHistory } from "@/lib/profileCompletion";
 
 type ManilaClock = {
   date: string;
@@ -130,7 +130,7 @@ export default function AttendanceHistoryRoutePage() {
           supabase
             .from("profiles")
             .select(
-              "program,student_id_exception_requests(status,attendance_eligible_from)",
+              "program,student_id_exception_requests(request_id,status,requested_at,attendance_eligible_from,continued_at)",
             )
             .eq("id", authUserId)
             .single(),
@@ -377,7 +377,7 @@ export default function AttendanceHistoryRoutePage() {
                       afternoon_start: event.afternoon_start,
                     },
                     sessionLabel,
-                    getStudentIdException(profileResult.data),
+                    getStudentIdExceptionHistory(profileResult.data),
                   )
                 );
               })
@@ -428,7 +428,7 @@ export default function AttendanceHistoryRoutePage() {
 
               .map((row: any) => `${row.event_id}:${row.session_label}`),
           ),
-          getStudentIdException(profileResult.data),
+          getStudentIdExceptionHistory(profileResult.data),
         );
 
         const canonicalFines = records

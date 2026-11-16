@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation"
 import { OnboardingPage, type OBForm } from "../../shared-page"
 import { supabase } from "@/lib/supabase"
 import { deleteImage } from "@/lib/uploadImage"
+import { isStudentIdExceptionReason } from "@/lib/profileCompletion"
 
 function getProfileSaveErrorMessage(error: {
   code?: string
@@ -114,18 +115,15 @@ export default function OnboardingRoute() {
       const requestTemporaryIdException =
         d.requestTemporaryIdException === true && !d.idPhotoUrl
 
-      if (
-        requestTemporaryIdException &&
-        d.yearLevel.trim().toLowerCase() !== "1st year"
-      ) {
-        toast.error("Temporary ID exceptions are available to first-year students only.")
-        return false
-      }
+      const validExceptionReason = isStudentIdExceptionReason(d.exceptionReason)
+      const validOtherExplanation =
+        d.exceptionReason !== "other" || !!d.exceptionExplanation?.trim()
 
       const validIdEvidence =
         !!d.idPhotoUrl ||
         (requestTemporaryIdException &&
-          d.yearLevel.trim().toLowerCase() === "1st year")
+          validExceptionReason &&
+          validOtherExplanation)
 
       const validProfile =
         d.firstName.trim() &&
@@ -148,17 +146,41 @@ export default function OnboardingRoute() {
       }
 
       if (requestTemporaryIdException) {
-        const { error } = await supabase.rpc("submit_student_id_exception", {
-          p_first_name: d.firstName.trim(),
-          p_middle_initial: d.middleInitial.trim(),
-          p_surname: d.surname.trim(),
-          p_student_id: d.studentId.trim(),
-          p_program: d.program.trim(),
-          p_year_level: d.yearLevel.trim(),
-          p_section: d.section.trim(),
-          p_phone: d.phone.trim(),
-          p_contact_email: d.contactEmail.trim(),
-        })
+        const { error: profileSaveError } = await supabase
+          .from("profiles")
+          .upsert(
+            {
+              id: uid,
+              first_name: d.firstName.trim(),
+              middle_initial: d.middleInitial.trim(),
+              surname: d.surname.trim(),
+              student_id: d.studentId.trim(),
+              program: d.program.trim(),
+              year_level: d.yearLevel.trim(),
+              section: d.section.trim(),
+              phone: d.phone.trim(),
+              contact_email: d.contactEmail.trim(),
+              role: existingProfile?.role ?? "student",
+            },
+            { onConflict: "id" },
+          )
+
+        if (profileSaveError) {
+          console.error("Could not save the student profile before requesting an ID exception", profileSaveError)
+          toast.error("Your profile could not be saved", {
+            description: getProfileSaveErrorMessage(profileSaveError),
+            duration: 10000,
+          })
+          return false
+        }
+
+        const { error } = await supabase.rpc(
+          "submit_student_id_exception_request",
+          {
+            p_reason: d.exceptionReason ?? "",
+            p_explanation: d.exceptionExplanation?.trim() ?? "",
+          },
+        )
 
         if (error) {
           console.error("Could not submit the ID exception request", error)
@@ -234,14 +256,15 @@ export default function OnboardingRoute() {
     }
   }
 
-  const handleContinueException = async () => {
+  const handleContinueException = async (requestId: string) => {
     if (submitting) return false
 
     setSubmitting(true)
 
     try {
       const { error } = await supabase.rpc(
-        "acknowledge_student_id_exception",
+        "acknowledge_student_id_exception_request",
+        { p_request_id: requestId },
       )
 
       if (error) {
@@ -250,7 +273,7 @@ export default function OnboardingRoute() {
         return false
       }
 
-      router.replace("/dashboard?freshLogin=1")
+      window.location.assign("/dashboard?freshLogin=1")
       return true
     } catch (caughtError) {
       console.error("Could not acknowledge the approved ID exception", caughtError)

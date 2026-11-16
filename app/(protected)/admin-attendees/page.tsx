@@ -13,7 +13,10 @@ import {
 } from "../../shared-page";
 
 import { supabase } from "@/lib/supabase";
-import { getStudentIdException } from "@/lib/profileCompletion";
+import {
+  getStudentIdException,
+  getStudentIdExceptionHistory,
+} from "@/lib/profileCompletion";
 import { isAttendanceSessionEligibleForAbsence } from "@/lib/attendance-fines";
 
 import { getPublicSystemSettings } from "@/lib/systemSettings";
@@ -167,7 +170,7 @@ function AdminAttendeesRouteContent() {
             supabase
               .from("profiles")
               .select(
-                "id, first_name, surname, email, student_id, program, year_level, section, phone, contact_email, photo_url, id_photo_url, created_at,student_id_exception_requests(status,requested_at,approved_by,approved_at,attendance_eligible_from,continued_at)",
+                "id, first_name, surname, email, student_id, program, year_level, section, phone, contact_email, photo_url, id_photo_url, created_at,student_id_exception_requests(request_id,status,requested_at,approved_by,approved_at,attendance_eligible_from,continued_at)",
               )
               .eq("role", "student")
               .order("surname", { ascending: true })
@@ -293,6 +296,8 @@ function AdminAttendeesRouteContent() {
             idPhotoUrl: row.id_photo_url || undefined,
 
             idException: getStudentIdException(row),
+
+            idExceptionHistory: getStudentIdExceptionHistory(row),
 
             joinedDate: new Date(row.created_at).toLocaleDateString("en-US", {
               month: "short",
@@ -467,7 +472,7 @@ function AdminAttendeesRouteContent() {
                     afternoon_start: scanEvent.afternoonStart,
                   },
                   scanSessionLabel,
-                  scanStudent.idException,
+                  scanStudent.idExceptionHistory ?? [],
                 )
               : true;
           if (!byEvent[eventId]) byEvent[eventId] = [];

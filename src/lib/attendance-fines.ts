@@ -203,16 +203,13 @@ export function isAttendanceSessionEligibleForAbsence(
     | "afternoon_start"
   >,
   session: SessionLabel,
-  exception?: StudentIdException | null,
+  exception?: StudentIdException | StudentIdException[] | null,
 ) {
   if (!exception) return true
-  if (exception.status === "pending") return false
-  if (
-    exception.status !== "temporarily_approved" &&
-    exception.status !== "resolved_by_photo"
-  ) {
-    return false
-  }
+
+  const exceptionHistory = Array.isArray(exception) ? exception : [exception]
+
+  if (exceptionHistory.length === 0) return true
 
   const sessionStart =
     session === "afternoon"
@@ -235,13 +232,28 @@ export function isAttendanceSessionEligibleForAbsence(
   const sessionStartAt = Date.parse(
     `${event.event_date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:${String(second).padStart(2, "0")}+08:00`,
   )
-  const eligibleFrom = Date.parse(exception.attendance_eligible_from ?? "")
 
-  return (
-    Number.isFinite(sessionStartAt) &&
-    Number.isFinite(eligibleFrom) &&
-    sessionStartAt >= eligibleFrom
-  )
+  return exceptionHistory.some((candidate) => {
+    if (!candidate) return false
+    if (
+      candidate.status !== "approved" &&
+      candidate.status !== "temporarily_approved"
+    ) {
+      return false
+    }
+
+    if (!candidate.continued_at) return false
+
+    const approvedAt = Date.parse(
+      candidate.approved_at ?? candidate.attendance_eligible_from ?? "",
+    )
+
+    return (
+      Number.isFinite(sessionStartAt) &&
+      Number.isFinite(approvedAt) &&
+      sessionStartAt >= approvedAt
+    )
+  })
 }
 
 export function sessionFineAmount(
@@ -281,7 +293,7 @@ export function buildAttendanceSessionRecords(
 
   approvedExcuseKeys: ReadonlySet<string> = new Set(),
 
-  exception?: StudentIdException | null,
+  exception?: StudentIdException | StudentIdException[] | null,
 ): AttendanceSessionRecord[] {
   const applicableEvents = events.filter(
     (event) =>

@@ -770,6 +770,10 @@ import {
   hasUnacknowledgedIdException,
   getStudentIdException,
   isProfileComplete,
+  parseStudentIdExceptionAccessState,
+  isApprovedStudentIdExceptionStatus,
+  STUDENT_ID_EXCEPTION_REASON_OPTIONS,
+  isStudentIdExceptionReason,
   type StudentIdException,
 } from "@/lib/profileCompletion";
 
@@ -1477,6 +1481,10 @@ export interface StudentProfile {
   profileComplete?: boolean;
 
   idException?: StudentIdException | null;
+
+  idExceptionHistory?: StudentIdException[];
+
+  activeIdException?: boolean;
 
   joinedDate: string;
 }
@@ -5281,7 +5289,9 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
 
       .from("profiles")
 
-      .select("*,student_id_exception_requests(status,continued_at)")
+      .select(
+        "*,student_id_exception_requests(request_id,status,requested_at,continued_at)",
+      )
 
       .eq("id", user.id)
 
@@ -5293,10 +5303,31 @@ export function LoginPage({ onBack }: { onBack: () => void }) {
       return;
     }
 
+    let exceptionAccessState: ReturnType<
+      typeof parseStudentIdExceptionAccessState
+    > = null;
+    if (profile?.role === "student") {
+      const { data: accessRows, error: accessError } = await supabase.rpc(
+        "get_my_student_id_exception_access_state",
+      );
+      if (accessError) {
+        console.error("Could not verify ID exception access", accessError);
+        router.push("/onboarding?freshLogin=1");
+        return;
+      }
+
+      exceptionAccessState = parseStudentIdExceptionAccessState(accessRows);
+      if (!exceptionAccessState) {
+        console.error("The ID exception access RPC returned an invalid result");
+        router.push("/onboarding?freshLogin=1");
+        return;
+      }
+    }
+
     if (
       !profile ||
-      !isProfileComplete(profile) ||
-      hasUnacknowledgedIdException(profile)
+      !isProfileComplete(profile, exceptionAccessState) ||
+      hasUnacknowledgedIdException(profile, exceptionAccessState)
     ) {
       router.push("/onboarding?freshLogin=1");
 
@@ -5726,6 +5757,10 @@ export interface OBForm {
 
   requestTemporaryIdException?: boolean;
 
+  exceptionReason?: StudentIdException["reason"];
+
+  exceptionExplanation?: string;
+
   agreedToTerms?: boolean;
 }
 
@@ -5738,12 +5773,10 @@ export function OnboardingPage({
 }: {
   onComplete: (d: OBForm) => Promise<boolean> | boolean | void;
 
-  onContinueException?: () => Promise<boolean>;
+  onContinueException?: (requestId: string) => Promise<boolean>;
 
   submitting?: boolean;
 }) {
-  const router = useRouter();
-
   const [step, setStep] = useState(1);
 
   const [idPhotoUploadState, setIdPhotoUploadState] = useState<
@@ -5768,6 +5801,8 @@ export function OnboardingPage({
     yearLevel: "",
 
     section: "",
+
+    exceptionExplanation: "",
   });
 
   const [agreed, setAgreed] = useState(false);
@@ -5775,6 +5810,13 @@ export function OnboardingPage({
   const [idException, setIdException] = useState<StudentIdException | null>(
     null,
   );
+
+  const [profileLoadState, setProfileLoadState] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
+
+  const [resubmittingRejectedRequest, setResubmittingRejectedRequest] =
+    useState(false);
 
   const [pendingPhotoUploading, setPendingPhotoUploading] = useState(false);
 
@@ -5808,67 +5850,67 @@ export function OnboardingPage({
     let cancelled = false;
 
     async function loadExistingProfile() {
-      const {
-        data: { user: authUser },
-        error: authError,
-      } = await supabase.auth.getUser();
+      try {
+        const {
+          data: { user: authUser },
+          error: authError,
+        } = await supabase.auth.getUser();
 
-      if (authError) {
-        console.error(
-          "Could not check the current onboarding profile",
-          authError,
-        );
-        return;
-      }
-
-      if (!authUser) return;
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select(
-          "first_name,middle_initial,surname,phone,contact_email,student_id,program,year_level,section,id_photo_url,student_id_exception_requests(status,continued_at)",
-        )
-        .eq("id", authUser.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error(
-          "Could not prefill the existing onboarding profile",
-          error,
-        );
-        return;
-      }
-
-      if (!data || cancelled) return;
-
-      if (!completionCommittedRef.current) {
-        setIdException(getStudentIdException(data));
-      }
-      originalIdPhotoUrlRef.current = data.id_photo_url ?? undefined;
-      setF((current) => {
-        if (
-          current.firstName ||
-          current.surname ||
-          current.studentId ||
-          current.idPhotoUrl
-        ) {
-          return current;
+        if (authError) throw authError;
+        if (!authUser) {
+          if (!cancelled) setProfileLoadState("ready");
+          return;
         }
 
-        return {
-          ...current,
-          firstName: data.first_name ?? "",
-          middleInitial: data.middle_initial ?? "",
-          surname: data.surname ?? "",
-          phone: data.phone ?? "",
-          contactEmail: data.contact_email ?? "",
-          studentId: data.student_id ?? "",
-          program: data.program ?? "",
-          yearLevel: data.year_level ?? "",
-          section: data.section ?? "",
-          idPhotoUrl: data.id_photo_url ?? undefined,
-        };
-      });
+        const { data, error } = await supabase
+          .from("profiles")
+          .select(
+            "first_name,middle_initial,surname,phone,contact_email,student_id,program,year_level,section,id_photo_url,student_id_exception_requests(request_id,status,reason,explanation,requested_at,approved_by,approved_at,attendance_eligible_from,continued_at,rejected_by,rejected_at)",
+          )
+          .eq("id", authUser.id)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (cancelled) return;
+
+        if (data) {
+          const currentRequest = getStudentIdException(data);
+
+          if (!completionCommittedRef.current) {
+            setIdException(currentRequest);
+          }
+          originalIdPhotoUrlRef.current = data.id_photo_url ?? undefined;
+          setF((current) => ({
+            ...current,
+            firstName: data.first_name ?? "",
+            middleInitial: data.middle_initial ?? "",
+            surname: data.surname ?? "",
+            phone: data.phone ?? "",
+            contactEmail: data.contact_email ?? "",
+            studentId: data.student_id ?? "",
+            program: data.program ?? "",
+            yearLevel: data.year_level ?? "",
+            section: data.section ?? "",
+            idPhotoUrl: data.id_photo_url ?? undefined,
+            exceptionReason:
+              currentRequest?.status === "rejected"
+                ? currentRequest.reason ?? undefined
+                : current.exceptionReason,
+            exceptionExplanation:
+              currentRequest?.status === "rejected"
+                ? currentRequest.explanation ?? ""
+                : current.exceptionExplanation,
+          }));
+        }
+
+        setProfileLoadState("ready");
+      } catch (error) {
+        console.error(
+          "Could not restore the existing onboarding profile",
+          error,
+        );
+        if (!cancelled) setProfileLoadState("error");
+      }
     }
 
     void loadExistingProfile();
@@ -5934,7 +5976,7 @@ export function OnboardingPage({
     {
       t: "School ID photo",
 
-      d: "Upload your ID photo, or request a temporary exception if you have not received one.",
+      d: "Upload an official ID photo or request temporary permission while it is unavailable.",
     },
 
     { t: "Terms & Privacy", d: "Please read and agree to continue." },
@@ -5965,7 +6007,13 @@ export function OnboardingPage({
     }
 
     if (step === 5) {
-      return !!f.idPhotoUrl || f.requestTemporaryIdException === true;
+      return (
+        !!f.idPhotoUrl ||
+        (f.requestTemporaryIdException === true &&
+          isStudentIdExceptionReason(f.exceptionReason) &&
+          (f.exceptionReason !== "other" ||
+            !!f.exceptionExplanation?.trim()))
+      );
     }
 
     if (step === 6) {
@@ -6034,7 +6082,7 @@ export function OnboardingPage({
       completionCommittedRef.current = true;
       setF((current) => ({ ...current, idPhotoUrl: upload.path }));
       setIdException(null);
-      router.replace("/dashboard?freshLogin=1");
+      window.location.assign("/dashboard?freshLogin=1");
     } catch (caughtError) {
       console.error("Could not upload an ID photo for a pending request", caughtError);
       toast.error("Your ID photo could not be uploaded. Please try again.");
@@ -6042,6 +6090,45 @@ export function OnboardingPage({
       setPendingPhotoUploading(false);
     }
   };
+
+  const reasonLabel = (reason: StudentIdException["reason"]) =>
+    STUDENT_ID_EXCEPTION_REASON_OPTIONS.find(
+      (option) => option.value === reason,
+    )?.label ?? "Legacy request — reason not recorded."
+
+  if (profileLoadState === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f8faf9] p-4">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6">
+          <Skeleton className="h-5 w-40 rounded" />
+          <Skeleton className="mt-4 h-4 w-full rounded" />
+          <Skeleton className="mt-2 h-4 w-3/4 rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  if (profileLoadState === "error") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f8faf9] p-4">
+        <div className="w-full max-w-md rounded-2xl border border-rose-200 bg-white p-6 text-center">
+          <p className="text-sm font-semibold text-rose-800">
+            Your onboarding status could not be loaded.
+          </p>
+          <p className="mt-2 text-sm text-slate-600">
+            Refresh to safely check for an existing request before continuing.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-5 h-10 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (idException?.status === "pending") {
     return (
@@ -6058,6 +6145,14 @@ export function OnboardingPage({
             administrator will review your information. You can check the
             status here the next time you sign in.
           </p>
+          <p className="mt-4 text-sm font-semibold text-slate-700">
+            Reason: {reasonLabel(idException.reason)}
+          </p>
+          {idException.explanation && (
+            <p className="mt-1 text-sm text-slate-600">
+              Explanation: {idException.explanation}
+            </p>
+          )}
           <input
             ref={pendingIdPhotoRef}
             type="file"
@@ -6080,9 +6175,57 @@ export function OnboardingPage({
     );
   }
 
+  if (idException?.status === "rejected" && !resubmittingRejectedRequest) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f8faf9] p-4">
+        <div className="w-full max-w-md rounded-2xl border border-rose-200 bg-white p-6 text-center shadow-sm">
+          <span className="inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">
+            Request Rejected
+          </span>
+          <h1 className="mt-4 text-xl font-bold text-slate-900">
+            Your request was not approved.
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            You may submit another request now, or upload your official ID
+            photo to complete onboarding.
+          </p>
+          <p className="mt-4 text-sm font-semibold text-slate-700">
+            Reason: {reasonLabel(idException.reason)}
+          </p>
+          {idException.explanation && (
+            <p className="mt-1 text-sm text-slate-600">
+              Explanation: {idException.explanation}
+            </p>
+          )}
+          {idException.rejected_at && (
+            <p className="mt-2 text-xs text-slate-500">
+              Rejected{" "}
+              {new Date(idException.rejected_at).toLocaleString()}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setResubmittingRejectedRequest(true);
+              setF((current) => ({
+                ...current,
+                requestTemporaryIdException: !current.idPhotoUrl,
+              }));
+              setStep(5);
+            }}
+            className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white transition-colors hover:bg-emerald-700"
+          >
+            Submit another request or upload ID
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (
-    idException?.status === "temporarily_approved" &&
-    !idException.continued_at
+    isApprovedStudentIdExceptionStatus(idException?.status) &&
+    !idException.continued_at &&
+    !f.idPhotoUrl
   ) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8faf9] p-4">
@@ -6098,14 +6241,29 @@ export function OnboardingPage({
             approved your temporary ID exception. You may now continue to
             ADESSE.
           </p>
+          <p className="mt-4 text-sm font-semibold text-slate-700">
+            Reason: {reasonLabel(idException.reason)}
+          </p>
+          {idException.explanation && (
+            <p className="mt-1 text-sm text-slate-600">
+              Explanation: {idException.explanation}
+            </p>
+          )}
           <button
             type="button"
             disabled={continuingException || submitting}
             onClick={async () => {
-              if (!onContinueException || continuingException) return;
+              if (
+                !onContinueException ||
+                !idException.request_id ||
+                continuingException
+              ) {
+                toast.error("The approved request could not be identified.");
+                return;
+              }
               setContinuingException(true);
               try {
-                await onContinueException();
+                await onContinueException(idException.request_id);
               } finally {
                 setContinuingException(false);
               }
@@ -6223,10 +6381,6 @@ export function OnboardingPage({
                     setF((current) => ({
                       ...current,
                       yearLevel,
-                      requestTemporaryIdException:
-                        yearLevel.trim().toLowerCase() === "1st year"
-                          ? current.requestTemporaryIdException
-                          : false,
                     }));
                   }}
                 >
@@ -6370,26 +6524,83 @@ export function OnboardingPage({
                   used to verify your identity.
                 </p>
                 {!f.idPhotoUrl &&
-                  !idException &&
-                  f.yearLevel.trim().toLowerCase() === "1st year" && (
-                  <label className="flex w-full items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left">
-                    <input
-                      type="checkbox"
-                      checked={f.requestTemporaryIdException === true}
-                      disabled={idPhotoUploadState === "uploading" || submitting}
-                      onChange={(event) =>
-                        setF((current) => ({
-                          ...current,
-                          requestTemporaryIdException: event.target.checked,
-                        }))
-                      }
-                      className="mt-0.5 h-4 w-4 accent-emerald-600"
-                    />
-                    <span className="text-sm font-medium leading-5 text-slate-700">
-                      I haven&apos;t received my school ID yet.
-                    </span>
-                  </label>
-                )}
+                  (!idException ||
+                    idException.status === "rejected" ||
+                    idException.status === "resolved_by_photo") && (
+                    <>
+                      <label className="flex w-full items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left">
+                        <input
+                          type="checkbox"
+                          checked={f.requestTemporaryIdException === true}
+                          disabled={
+                            idPhotoUploadState === "uploading" || submitting
+                          }
+                          onChange={(event) =>
+                            setF((current) => ({
+                              ...current,
+                              requestTemporaryIdException:
+                                event.target.checked,
+                            }))
+                          }
+                          className="mt-0.5 h-4 w-4 accent-emerald-600"
+                        />
+                        <span className="text-sm font-medium leading-5 text-slate-700">
+                          I need temporary permission while my official ID
+                          photo is unavailable.
+                        </span>
+                      </label>
+                      {f.requestTemporaryIdException && (
+                        <div className="w-full space-y-3">
+                          <FieldSelect
+                            label="Request reason"
+                            required
+                            value={f.exceptionReason ?? ""}
+                            onChange={(event) => {
+                              const value = event.target.value;
+                              if (isStudentIdExceptionReason(value)) {
+                                setF((current) => ({
+                                  ...current,
+                                  exceptionReason: value,
+                                }));
+                              } else {
+                                setF((current) => ({
+                                  ...current,
+                                  exceptionReason: undefined,
+                                }));
+                              }
+                            }}
+                          >
+                            <option value="">Select a reason</option>
+                            {STUDENT_ID_EXCEPTION_REASON_OPTIONS.map(
+                              (option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ),
+                            )}
+                          </FieldSelect>
+                          {f.exceptionReason === "other" && (
+                            <label className="block text-xs font-medium text-slate-600">
+                              Explanation <span className="text-rose-500">*</span>
+                              <textarea
+                                rows={3}
+                                value={f.exceptionExplanation ?? ""}
+                                onChange={(event) =>
+                                  setF((current) => ({
+                                    ...current,
+                                    exceptionExplanation: event.target.value,
+                                  }))
+                                }
+                                className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                                placeholder="Please explain your situation."
+                                required
+                              />
+                            </label>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
               </div>
             )}
             {step === 6 && (
@@ -6495,7 +6706,15 @@ export function OnboardingPage({
                     f.requestTemporaryIdException === true &&
                     !f.idPhotoUrl
                   ) {
-                    setIdException({ status: "pending" });
+                    setIdException({
+                      status: "pending",
+                      reason: isStudentIdExceptionReason(f.exceptionReason)
+                        ? f.exceptionReason
+                        : null,
+                      explanation: f.exceptionExplanation?.trim() || null,
+                      requested_at: new Date().toISOString(),
+                    });
+                    setResubmittingRejectedRequest(false);
                   }
                 } else if (
                   f.idPhotoUrl &&
@@ -14989,7 +15208,7 @@ export function AdminAttendeesPage({
         afternoon_start: selectedEvent.afternoonStart,
       },
       selectedSession,
-      student.idException,
+      student.idExceptionHistory ?? [],
     );
 
   const absentees: ScanRecord[] = visibleStudents
@@ -15182,7 +15401,7 @@ export function AdminAttendeesPage({
 
         matchedStudentExcuseKeys,
 
-        matchedStudent.idException,
+        matchedStudent.idExceptionHistory ?? [],
       ).map((record) => {
         const event = events.find((item) => item.id === record.eventId);
 
@@ -15968,6 +16187,7 @@ export function AdminStudentsPage({
   type StudentFilter =
     | "all"
     | "incomplete"
+    | "id_incomplete"
     | "pending"
     | "temporarily_approved"
     | "id_uploaded";
@@ -16012,10 +16232,12 @@ export function AdminStudentsPage({
     switch (studentFilter) {
       case "incomplete":
         return !student.profileComplete;
+      case "id_incomplete":
+        return !student.idPhotoUrl?.trim();
       case "pending":
         return student.idException?.status === "pending";
       case "temporarily_approved":
-        return student.idException?.status === "temporarily_approved";
+        return student.activeIdException === true;
       case "id_uploaded":
         return Boolean(student.idPhotoUrl?.trim());
       default:
@@ -16026,11 +16248,15 @@ export function AdminStudentsPage({
   const pendingRequestCount = students.filter(
     (student) => student.idException?.status === "pending",
   ).length;
+  const activeExceptionCount = students.filter(
+    (student) => student.activeIdException,
+  ).length;
   const filterLabels: Record<StudentFilter, string> = {
     all: "All Students",
     incomplete: "Incomplete Profiles",
+    id_incomplete: "ID Incomplete",
     pending: "Pending ID Requests",
-    temporarily_approved: "Temporarily Approved",
+    temporarily_approved: "Approved ID Exceptions",
     id_uploaded: "ID Uploaded",
   };
   const lastPage = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -16288,6 +16514,7 @@ export function AdminStudentsPage({
             [
               "all",
               "incomplete",
+              "id_incomplete",
               "pending",
               "temporarily_approved",
               "id_uploaded",
@@ -16308,16 +16535,24 @@ export function AdminStudentsPage({
               }`}
             >
               <span className="truncate">{filterLabels[filter]}</span>
-              {filter === "pending" && (
+              {(filter === "pending" || filter === "temporarily_approved") && (
                 <span
                   className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] leading-none ${
                     studentFilter === filter
                       ? "bg-white/20 text-white"
-                      : "bg-amber-100 text-amber-800"
+                      : filter === "pending"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-emerald-100 text-emerald-800"
                   }`}
-                  aria-label={`${pendingRequestCount} pending ID requests`}
+                  aria-label={
+                    filter === "pending"
+                      ? `${pendingRequestCount} pending ID requests`
+                      : `${activeExceptionCount} active temporary exceptions`
+                  }
                 >
-                  {pendingRequestCount}
+                  {filter === "pending"
+                    ? pendingRequestCount
+                    : activeExceptionCount}
                 </span>
               )}
             </button>
@@ -19029,7 +19264,9 @@ export default function LandingExperienceClient({
 
           .from("profiles")
 
-          .select("*,student_id_exception_requests(status,continued_at)")
+          .select(
+            "*,student_id_exception_requests(request_id,status,requested_at,continued_at)",
+          )
 
           .eq("id", session.user.id)
 
@@ -19047,7 +19284,23 @@ export default function LandingExperienceClient({
           return;
         }
 
-        if (!isProfileComplete(profile)) {
+        let exceptionAccessState: ReturnType<
+          typeof parseStudentIdExceptionAccessState
+        > = null;
+        if (profile.role === "student") {
+          const { data: accessRows, error: accessError } = await supabase.rpc(
+            "get_my_student_id_exception_access_state",
+          );
+          if (accessError) throw accessError;
+
+          exceptionAccessState =
+            parseStudentIdExceptionAccessState(accessRows);
+          if (!exceptionAccessState) {
+            throw new Error("The ID exception access state was invalid.");
+          }
+        }
+
+        if (!isProfileComplete(profile, exceptionAccessState)) {
           if (!cancelled) {
             setUser(null);
           }
@@ -19055,7 +19308,9 @@ export default function LandingExperienceClient({
           return;
         }
 
-        if (hasUnacknowledgedIdException(profile)) {
+        if (
+          hasUnacknowledgedIdException(profile, exceptionAccessState)
+        ) {
           if (!cancelled) {
             setUser(null);
             router.replace("/onboarding?freshLogin=1");

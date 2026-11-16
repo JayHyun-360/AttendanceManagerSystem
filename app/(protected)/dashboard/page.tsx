@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { debounce } from "@/lib/debounce";
 import { useProtectedUser } from "../layout";
 import { FeedbackState } from "@/components/ui/feedback";
-import { getStudentIdException } from "@/lib/profileCompletion";
+import { getStudentIdExceptionHistory } from "@/lib/profileCompletion";
 import { isAttendanceSessionEligibleForAbsence } from "@/lib/attendance-fines";
 
 export default function DashboardRoute() {
@@ -169,7 +169,7 @@ export default function DashboardRoute() {
           supabase
             .from("profiles")
             .select(
-              "program,student_id_exception_requests(status,attendance_eligible_from)",
+              "program,student_id_exception_requests(request_id,status,requested_at,attendance_eligible_from,continued_at)",
             )
             .eq("id", authUserId)
             .maybeSingle(),
@@ -228,7 +228,7 @@ export default function DashboardRoute() {
             (row: any) => `${row.event_id}:${row.session_label ?? "morning"}`,
           ),
         );
-        const exception = getStudentIdException(profileResult.data);
+        const exceptionHistory = getStudentIdExceptionHistory(profileResult.data);
         const totalSessions = completedEventRows.reduce(
           (total: number, row: any) => {
             const sessions = row.multi_session
@@ -253,7 +253,7 @@ export default function DashboardRoute() {
                       afternoon_start: row.afternoon_start,
                     },
                     sessionLabel,
-                    exception,
+                    exceptionHistory,
                   )
                 );
               }).length

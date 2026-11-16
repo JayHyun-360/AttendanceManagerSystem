@@ -3,6 +3,11 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 import { createServerClient } from "@supabase/ssr"
+import {
+  hasUnacknowledgedIdException,
+  isProfileComplete,
+  parseStudentIdExceptionAccessState,
+} from "@/lib/profileCompletion"
 
 const protectedRoutePrefixes = [
   "/dashboard",
@@ -65,6 +70,15 @@ export async function proxy(request: NextRequest) {
   }
 
   const response = NextResponse.next()
+  const redirectToOnboarding = () => {
+    const redirectResponse = NextResponse.redirect(
+      new URL("/onboarding", request.url),
+    )
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie)
+    })
+    return redirectResponse
+  }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -91,8 +105,52 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/login", request.url))
     }
 
+    if (pathname !== "/onboarding" && !pathname.startsWith("/onboarding/")) {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select(
+          "first_name,surname,role,student_id,program,year_level,id_photo_url,student_id_exception_requests(request_id,status,requested_at,continued_at)",
+        )
+        .eq("id", user.id)
+        .maybeSingle()
+
+      if (profileError) {
+        console.error(
+          "Could not verify profile completion before serving a protected route",
+          profileError,
+        )
+        return redirectToOnboarding()
+      }
+
+      const { data: accessRows, error: accessError } =
+        profile?.role === "student"
+          ? await supabase.rpc("get_my_student_id_exception_access_state")
+          : { data: null, error: null }
+      const accessState = parseStudentIdExceptionAccessState(accessRows)
+
+      if (accessError || (profile?.role === "student" && !accessState)) {
+        console.error(
+          "Could not verify ID exception access before serving a protected route",
+          accessError ?? new Error("The access-state RPC returned no valid result."),
+        )
+        return redirectToOnboarding()
+      }
+
+      if (
+        !profile ||
+        !isProfileComplete(profile, accessState) ||
+        hasUnacknowledgedIdException(profile, accessState)
+      ) {
+        return redirectToOnboarding()
+      }
+    }
+
     return response
-  } catch {
+  } catch (caughtError) {
+    console.error(
+      "Could not verify access before serving a protected route",
+      caughtError,
+    )
     return NextResponse.redirect(new URL("/login", request.url))
   }
 }
