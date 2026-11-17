@@ -17989,6 +17989,8 @@ export type AdminReportPrintData = {
 
   periodLabel: string;
 
+  eventSpecific?: boolean;
+
   programStats: Array<{
     label: string;
 
@@ -18047,6 +18049,10 @@ export function AdminReportsPage({
   isPreparingPrint = false,
   exportingFormat = null,
   printReportData,
+  eventOptions = [],
+  selectedEventId = "",
+  isEventOptionsLoading = false,
+  onEventChange,
 }: {
   events?: EventData[];
 
@@ -18113,6 +18119,20 @@ export function AdminReportsPage({
   exportingFormat?: "csv" | "excel" | null;
 
   printReportData?: AdminReportPrintData | null;
+
+  eventOptions?: Array<{
+    id: string;
+
+    title: string;
+
+    date: string;
+  }>;
+
+  selectedEventId?: string;
+
+  isEventOptionsLoading?: boolean;
+
+  onEventChange?: (eventId: string) => void;
 }) {
   const liveEvents = reportData?.events ?? events ?? [];
 
@@ -18140,7 +18160,10 @@ export function AdminReportsPage({
     0,
   );
 
-  const isReportActionBusy = isPreparingPrint || exportingFormat !== null;
+  const isReportActionBusy =
+    isPreparingPrint ||
+    exportingFormat !== null ||
+    Boolean(selectedEventId && isEventOptionsLoading);
 
   return (
     <>
@@ -18149,7 +18172,11 @@ export function AdminReportsPage({
           <header className="report-print-header">
             <div>
               <p className="report-print-brand">ADESSE</p>
-              <h1>Attendance &amp; Fees Report</h1>
+              <h1>
+                {printReportData.eventSpecific
+                  ? "Event Attendance & Fees Report"
+                  : "Attendance & Fees Report"}
+              </h1>
               <p>{printReportData.periodLabel}</p>
             </div>
             <div className="report-print-meta">
@@ -18160,7 +18187,13 @@ export function AdminReportsPage({
             </div>
           </header>
 
-          <section className="report-print-section">
+          <section
+            className={
+              printReportData.eventSpecific
+                ? "report-print-section hidden"
+                : "report-print-section"
+            }
+          >
             <h2>Attendance by program</h2>
             <table>
               <thead>
@@ -18193,7 +18226,13 @@ export function AdminReportsPage({
             </table>
           </section>
 
-          <section className="report-print-section">
+          <section
+            className={
+              printReportData.eventSpecific
+                ? "report-print-section hidden"
+                : "report-print-section"
+            }
+          >
             <h2>Fees summary</h2>
             <table>
               <thead>
@@ -18232,6 +18271,7 @@ export function AdminReportsPage({
                   <th>Excused</th>
                   <th>Late</th>
                   <th>Fees assessed</th>
+                  {printReportData.eventSpecific && <th>Sanctioned</th>}
                 </tr>
               </thead>
               <tbody>
@@ -18248,6 +18288,9 @@ export function AdminReportsPage({
                     <td>
                       ₱{(event.reportFineTotal ?? 0).toLocaleString()}
                     </td>
+                    {printReportData.eventSpecific && (
+                      <td>{event.reportSanctionedSessions ?? 0}</td>
+                    )}
                   </tr>
                 ))}
                 {printReportData.events.length === 0 && (
@@ -18340,6 +18383,22 @@ export function AdminReportsPage({
               }
               className="mt-1 block h-9 rounded-lg border border-slate-200 px-2 text-xs text-slate-700"
             />
+          </label>
+          <label className="text-[10px] font-semibold text-slate-500">
+            Event
+            <select
+              value={selectedEventId}
+              onChange={(event) => onEventChange?.(event.target.value)}
+              disabled={isReportActionBusy || isEventOptionsLoading}
+              className="mt-1 block h-9 max-w-64 rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-700 disabled:cursor-wait disabled:opacity-60"
+            >
+              <option value="">All events (clear selection)</option>
+              {eventOptions.map((event) => (
+                <option key={event.id} value={event.id}>
+                  {event.title} — {event.date || "Date not set"}
+                </option>
+              ))}
+            </select>
           </label>
           {(period.dateFrom || period.dateTo) && (
             <button

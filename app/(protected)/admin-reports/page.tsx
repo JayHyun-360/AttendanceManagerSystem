@@ -178,6 +178,7 @@ type FullReportData = {
   periodLabel: string;
   programStats: NonNullable<AdminReportPrintData["programStats"]>;
   feeSummary: ReportAggregates["fee_summary"];
+  eventSpecific?: boolean;
 };
 
 type ReportExportFormat = "csv" | "excel";
@@ -295,6 +296,97 @@ async function fetchFullReport(
   };
 }
 
+async function fetchReportEventOptions(
+  dateFrom: string,
+  dateTo: string,
+): Promise<ReportEventRow[]> {
+  const rows: ReportEventRow[] = [];
+
+  for (let offset = 0; ; offset += REPORT_EVENT_FETCH_SIZE) {
+    let eventsQuery = supabase
+      .from("events")
+      .select(REPORT_EVENT_COLUMNS)
+      .order("event_date", { ascending: false })
+      .order("id", { ascending: true })
+      .neq("status", "upcoming");
+
+    if (dateFrom) eventsQuery = eventsQuery.gte("event_date", dateFrom);
+    if (dateTo) eventsQuery = eventsQuery.lte("event_date", dateTo);
+
+    const { data, error } = await eventsQuery.range(
+      offset,
+      offset + REPORT_EVENT_FETCH_SIZE - 1,
+    );
+
+    if (error) throw error;
+
+    const batch = (data ?? []) as ReportEventRow[];
+    rows.push(...batch);
+    if (batch.length < REPORT_EVENT_FETCH_SIZE) break;
+  }
+
+  return rows;
+}
+
+async function fetchSelectedEventReport(
+  eventId: string,
+  dateFrom: string,
+  dateTo: string,
+  eventOptions: ReportEventRow[],
+): Promise<FullReportData> {
+  const eventOffset = eventOptions.findIndex(
+    (event) => String(event.id) === eventId,
+  );
+  if (eventOffset < 0) {
+    throw new Error(
+      "The selected event is no longer available in this date range. Refresh the report and try again.",
+    );
+  }
+
+  const { data, error } = await supabase.rpc("get_admin_report_aggregates", {
+    p_date_from: dateFrom || null,
+    p_date_to: dateTo || null,
+    p_event_offset: eventOffset,
+    p_event_limit: 1,
+  });
+
+  if (error) throw error;
+  if (!data) {
+    throw new Error("The selected event's report data could not be prepared.");
+  }
+
+  const aggregates = data as ReportAggregates;
+  const matchingStats = aggregates.event_stats.filter(
+    (stats) => String(stats.event_id) === eventId,
+  );
+  if (matchingStats.length !== 1) {
+    throw new Error(
+      "The selected event's report data could not be verified. Refresh the report and try again.",
+    );
+  }
+
+  const eventRow = eventOptions[eventOffset];
+  const [event] = mapReportEvents(
+    [eventRow],
+    new Map([[eventId, matchingStats[0]]]),
+  );
+
+  return {
+    events: [event],
+    eventDatesById: new Map([[eventId, eventRow.event_date ?? ""]]),
+    periodLabel: `${event.title} · ${event.date || "Date not set"}`,
+    programStats: [],
+    feeSummary: {
+      fine_count: 0,
+      assessed: 0,
+      collected: 0,
+      outstanding: 0,
+      waived: 0,
+    },
+    eventSpecific: true,
+  };
+}
+
 function createReportCsv(
   report: FullReportData,
   academicYear: string,
@@ -325,56 +417,58 @@ function createReportCsv(
   const rows: (string | number)[][] = [headers];
   const metadata = [academicYear, semester, report.periodLabel];
 
-  report.programStats.forEach((row) => {
-    rows.push([
-      ...metadata,
-      "program_attendance",
-      row.label,
-      "",
-      "",
-      "",
-      "",
-      Number(row.present),
-      Number(row.total),
-      Number(row.rate),
-      Number(row.absent ?? 0),
-      Number(row.excused ?? 0),
-      Number(row.late ?? 0),
-      Number(row.fineTotal ?? 0),
-      Number(row.sanctioned ?? 0),
-      Number(row.sanctionedLate ?? 0),
-      Number(row.sanctionedAbsent ?? 0),
-      "",
-    ]);
-  });
+  if (!report.eventSpecific) {
+    report.programStats.forEach((row) => {
+      rows.push([
+        ...metadata,
+        "program_attendance",
+        row.label,
+        "",
+        "",
+        "",
+        "",
+        Number(row.present),
+        Number(row.total),
+        Number(row.rate),
+        Number(row.absent ?? 0),
+        Number(row.excused ?? 0),
+        Number(row.late ?? 0),
+        Number(row.fineTotal ?? 0),
+        Number(row.sanctioned ?? 0),
+        Number(row.sanctionedLate ?? 0),
+        Number(row.sanctionedAbsent ?? 0),
+        "",
+      ]);
+    });
 
-  [
-    ["Total assessed", Number(report.feeSummary.assessed)],
-    ["Collected", Number(report.feeSummary.collected)],
-    ["Outstanding", Number(report.feeSummary.outstanding)],
-    ["Waived / excused", Number(report.feeSummary.waived)],
-  ].forEach(([label, amount]) => {
-    rows.push([
-      ...metadata,
-      "fees_summary",
-      String(label),
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      Number(amount),
-    ]);
-  });
+    [
+      ["Total assessed", Number(report.feeSummary.assessed)],
+      ["Collected", Number(report.feeSummary.collected)],
+      ["Outstanding", Number(report.feeSummary.outstanding)],
+      ["Waived / excused", Number(report.feeSummary.waived)],
+    ].forEach(([label, amount]) => {
+      rows.push([
+        ...metadata,
+        "fees_summary",
+        String(label),
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        Number(amount),
+      ]);
+    });
+  }
 
   report.events.forEach((event) => {
     rows.push([
@@ -496,12 +590,14 @@ async function downloadExcelReport(
   ];
 
   XLSX.utils.book_append_sheet(workbook, reportInfo, "Report info");
-  XLSX.utils.book_append_sheet(
-    workbook,
-    programAttendance,
-    "Program attendance",
-  );
-  XLSX.utils.book_append_sheet(workbook, feeSummary, "Fees summary");
+  if (!report.eventSpecific) {
+    XLSX.utils.book_append_sheet(
+      workbook,
+      programAttendance,
+      "Program attendance",
+    );
+    XLSX.utils.book_append_sheet(workbook, feeSummary, "Fees summary");
+  }
   XLSX.utils.book_append_sheet(workbook, eventDetails, "Event details");
   XLSX.writeFile(workbook, filename);
 }
@@ -513,6 +609,11 @@ export default function AdminReportsRoutePage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [eventPage, setEventPage] = useState(1);
+  const [eventOptions, setEventOptions] = useState<ReportEventRow[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState("");
+  const [isEventOptionsLoading, setIsEventOptionsLoading] = useState(true);
+  const selectedEventIdRef = useRef("");
+  const refreshEventOptionsRef = useRef<(() => void) | null>(null);
   const [printReportData, setPrintReportData] =
     useState<AdminReportPrintData | null>(null);
   const [isPreparingPrint, setIsPreparingPrint] = useState(false);
@@ -520,6 +621,85 @@ export default function AdminReportsRoutePage() {
   const [exportingFormat, setExportingFormat] =
     useState<ReportExportFormat | null>(null);
   const reportActionInFlight = useRef(false);
+
+  const changeSelectedEventId = (eventId: string) => {
+    selectedEventIdRef.current = eventId;
+    setSelectedEventId(eventId);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    let loadInFlight = false;
+    let refreshPending = false;
+    setIsEventOptionsLoading(true);
+
+    if (!user || user.role !== "admin") {
+      setIsEventOptionsLoading(false);
+      refreshEventOptionsRef.current = null;
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    async function loadEventOptions() {
+      if (cancelled) return;
+      if (loadInFlight) {
+        refreshPending = true;
+        return;
+      }
+
+      loadInFlight = true;
+      setIsEventOptionsLoading(true);
+
+      try {
+        const options = await fetchReportEventOptions(dateFrom, dateTo);
+        if (cancelled) return;
+
+        setEventOptions(options);
+        const selectedEventId = selectedEventIdRef.current;
+        if (
+          selectedEventId &&
+          !options.some((event) => String(event.id) === selectedEventId)
+        ) {
+          changeSelectedEventId("");
+          toast.info(
+            "The selected event was cleared because it is no longer available in the selected date range.",
+          );
+        }
+      } catch (caughtError) {
+        if (cancelled) return;
+        console.error("Could not load report event options", caughtError);
+        toast.error(
+          caughtError instanceof Error
+            ? caughtError.message
+            : "Could not load events for the report.",
+        );
+      } finally {
+        loadInFlight = false;
+        if (!cancelled) {
+          if (refreshPending) {
+            refreshPending = false;
+            void loadEventOptions();
+          } else {
+            setIsEventOptionsLoading(false);
+          }
+        }
+      }
+    }
+
+    const refreshEventOptions = () => {
+      void loadEventOptions();
+    };
+    refreshEventOptionsRef.current = refreshEventOptions;
+    refreshEventOptions();
+
+    return () => {
+      cancelled = true;
+      if (refreshEventOptionsRef.current === refreshEventOptions) {
+        refreshEventOptionsRef.current = null;
+      }
+    };
+  }, [dateFrom, dateTo, user]);
 
   useEffect(() => {
     if (!printRequested || !printReportData) return;
@@ -539,19 +719,35 @@ export default function AdminReportsRoutePage() {
     };
   }, [printRequested, printReportData]);
 
+  const fetchReportForCurrentScope = () =>
+    selectedEventId
+      ? fetchSelectedEventReport(
+          selectedEventId,
+          dateFrom,
+          dateTo,
+          eventOptions,
+        )
+      : fetchFullReport(dateFrom, dateTo);
+
   const preparePrintReport = async () => {
-    if (reportActionInFlight.current) return;
+    if (
+      reportActionInFlight.current ||
+      (selectedEventId && isEventOptionsLoading)
+    ) {
+      return;
+    }
 
     reportActionInFlight.current = true;
     setIsPreparingPrint(true);
 
     try {
-      const report = await fetchFullReport(dateFrom, dateTo);
+      const report = await fetchReportForCurrentScope();
       const fees = report.feeSummary;
 
       setPrintReportData({
         events: report.events,
         periodLabel: report.periodLabel,
+        eventSpecific: report.eventSpecific,
         programStats: report.programStats,
         feeSummary:
           fees.fine_count === 0
@@ -593,13 +789,18 @@ export default function AdminReportsRoutePage() {
   };
 
   const exportReport = async (format: ReportExportFormat) => {
-    if (reportActionInFlight.current) return;
+    if (
+      reportActionInFlight.current ||
+      (selectedEventId && isEventOptionsLoading)
+    ) {
+      return;
+    }
 
     reportActionInFlight.current = true;
     setExportingFormat(format);
 
     try {
-      const report = await fetchFullReport(dateFrom, dateTo);
+      const report = await fetchReportForCurrentScope();
       const filename = `adesse-report-${new Date().toISOString().slice(0, 10)}`;
 
       if (format === "csv") {
@@ -870,6 +1071,7 @@ export default function AdminReportsRoutePage() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible" && !cancelled) {
         scheduleRefresh(0);
+        refreshEventOptionsRef.current?.();
       }
     };
 
@@ -913,10 +1115,37 @@ export default function AdminReportsRoutePage() {
       onPageChange={setEventPage}
       onPrintReport={preparePrintReport}
       onExportReport={exportReport}
+      eventOptions={eventOptions.map((event) => ({
+        id: String(event.id),
+        title: event.title,
+        date: event.event_date ?? "",
+      }))}
+      selectedEventId={selectedEventId}
+      isEventOptionsLoading={isEventOptionsLoading}
+      onEventChange={changeSelectedEventId}
       isPreparingPrint={isPreparingPrint}
       exportingFormat={exportingFormat}
       printReportData={printReportData}
       onPeriodChange={(next) => {
+        if (selectedEventId) {
+          const selectedEvent = eventOptions.find(
+            (event) => String(event.id) === selectedEventId,
+          );
+          const eventDate = selectedEvent?.event_date?.slice(0, 10) ?? "";
+          const outsideDateRange =
+            !selectedEvent ||
+            (Boolean(next.dateFrom) &&
+              (!eventDate || eventDate < next.dateFrom)) ||
+            (Boolean(next.dateTo) && (!eventDate || eventDate > next.dateTo));
+
+          if (outsideDateRange) {
+            changeSelectedEventId("");
+            toast.info(
+              "The selected event was cleared because it falls outside the selected date range.",
+            );
+          }
+        }
+
         setDateFrom(next.dateFrom);
         setDateTo(next.dateTo);
         setEventPage(1);
