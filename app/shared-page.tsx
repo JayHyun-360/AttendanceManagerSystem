@@ -699,7 +699,6 @@ import {
   useState,
   useRef,
   useEffect,
-  useLayoutEffect,
   useMemo,
   Fragment,
 } from "react";
@@ -1243,6 +1242,35 @@ function getSelectedSessionMeta(
   }
 
   return getEventSessionMeta(event);
+}
+
+function getSessionPeriodLabel(
+  event: EventData | null | undefined,
+  sessionLabel: "morning" | "afternoon",
+) {
+  if (!event) return null;
+
+  const startTime = event.multiSession
+    ? sessionLabel === "morning"
+      ? event.morningStart
+      : event.afternoonStart
+    : (event.startTime ?? event.morningStart);
+
+  if (!startTime) return null;
+
+  const match = startTime
+    .trim()
+    .match(/^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(AM|PM)?$/i);
+  const minutes = toMinutes(startTime);
+
+  if (!match || minutes === null) return null;
+
+  const hour = Number(match[1]);
+  const hasMeridiem = Boolean(match[3]);
+
+  if (hasMeridiem ? hour < 1 || hour > 12 : hour > 23) return null;
+
+  return minutes < 12 * 60 ? "AM" : "PM";
 }
 
 export type Page = string;
@@ -10726,9 +10754,9 @@ export function AdminDashboard({
 
             c: "text-red-500",
 
-            href: "/admin-attendees?tab=duplicates",
+            href: "/admin-attendees",
 
-            actionLabel: "View duplicate attendance records",
+            actionLabel: "View attendance records",
           },
 
           {
@@ -14804,7 +14832,8 @@ export function AdminScannerPage({
                             : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
                         }`}
                       >
-                        {option === "morning" ? "Morning" : "Afternoon"}
+                        {getSessionPeriodLabel(selectedEvent, option) ??
+                          "Time unavailable"}
                       </button>
                     ))}
                   </div>
@@ -14816,14 +14845,18 @@ export function AdminScannerPage({
                 selectedSessionMeta.sessionLabel ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    {selectedSessionMeta.sessionLabel === "morning"
-                      ? "Morning Session Selected"
-                      : "Afternoon Session Selected"}
+                    {getSessionPeriodLabel(
+                      selectedEvent,
+                      selectedSessionMeta.sessionLabel,
+                    ) ?? "Time unavailable"}{" "}
+                    Session Selected
                   </span>
                 ) : !selectedEvent.multiSession ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Morning Session Active
+                    {getSessionPeriodLabel(selectedEvent, "morning") ??
+                      "Time unavailable"}{" "}
+                    Session Active
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200">
@@ -15013,15 +15046,11 @@ export function AdminAttendeesPage({
 
   students = [],
 
-  initialTab = "present",
-
   scanState: initialScanState,
 
   fineRows = [],
 
   approvedExcuseKeys = new Set(),
-
-  onDeleteAttendance,
 
   isAttendanceLoading = false,
 
@@ -15033,15 +15062,11 @@ export function AdminAttendeesPage({
 
   students?: StudentProfile[];
 
-  initialTab?: "present" | "duplicates";
-
   scanState?: Record<string, ScanRecord[]>;
 
   fineRows?: FineRowLike[];
 
   approvedExcuseKeys?: ReadonlySet<string>;
-
-  onDeleteAttendance?: (dbId: string | number) => Promise<boolean>;
 
   isAttendanceLoading?: boolean;
 
@@ -15057,17 +15082,7 @@ export function AdminAttendeesPage({
     initialScanState ?? {},
   );
 
-  const [tab, setTab] = useState<
-    "present" | "late" | "absent" | "duplicates"
-  >(initialTab);
-
-  useLayoutEffect(() => {
-    setTab((currentTab) =>
-      currentTab === initialTab ? currentTab : initialTab,
-    );
-  }, [initialTab]);
-
-  const [deletingId, setDeletingId] = useState<string | number | null>(null);
+  const [tab, setTab] = useState<"present" | "late" | "absent">("present");
 
   const [programCatalog, setProgramCatalog] = useState<Program[]>([]);
 
@@ -15179,8 +15194,6 @@ export function AdminAttendeesPage({
   const lateScans = scans.filter((s) => s.status === "late");
 
   const absentScans = scans.filter((s) => s.status === "absent");
-
-  const duplicates = scans.filter((s) => s.status === "duplicate");
 
   const presentIds = new Set(
     [...presentScans, ...lateScans].map((s) => s.profileId ?? s.id),
@@ -15450,38 +15463,13 @@ export function AdminAttendeesPage({
           eventTitle: event?.title ?? "Event",
 
           eventDate: event?.date ?? "",
+
+          sessionPeriodLabel: event
+            ? getSessionPeriodLabel(event, record.sessionLabel)
+            : null,
         };
       })
     : [];
-
-  const deleteRecord = async (dbId: string | number) => {
-    if (deletingId !== null) return;
-
-    if (
-      !window.confirm(
-        "Delete this attendance record? This action cannot be undone.",
-      )
-    )
-      return;
-
-    setDeletingId(dbId);
-
-    try {
-      if (onDeleteAttendance && !(await onDeleteAttendance(dbId))) {
-        return;
-      }
-
-      setScanState((st) => ({
-        ...st,
-
-        [selectedEventId]: (st[selectedEventId] ?? []).filter(
-          (r) => r.dbId !== dbId,
-        ),
-      }));
-    } finally {
-      setDeletingId(null);
-    }
-  };
 
   const exportAttendance = () => {
     if (!selectedEvent) return;
@@ -15706,7 +15694,8 @@ export function AdminAttendeesPage({
                   }`}
                 >
                   <span className="block">
-                    {session === "morning" ? "Morning" : "Afternoon"}
+                    {getSessionPeriodLabel(selectedEvent, session) ??
+                      "Time unavailable"}
                   </span>
                   <span className="mt-0.5 block text-[10px] font-medium text-slate-400">
                     Absent ₱{amount} · Late ₱{lateAmount}
@@ -15753,16 +15742,6 @@ export function AdminAttendeesPage({
             showAbsenceFine && (
               <span className="text-red-500 ml-1">· ₱{sessionFine}</span>
             )}
-        </button>
-        <button
-          onClick={() => setTab("duplicates")}
-          className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${
-            tab === "duplicates"
-              ? "bg-white shadow-sm text-slate-900"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          Duplicates ({duplicates.length})
         </button>
       </div>
       {allEventsSelected ? (
@@ -15823,9 +15802,7 @@ export function AdminAttendeesPage({
                           </p>
                           <p className="text-xs text-slate-500">
                             {row.eventDate} ·{" "}
-                            {row.sessionLabel === "morning"
-                              ? "Morning"
-                              : "Afternoon"}
+                            {row.sessionPeriodLabel ?? "Time unavailable"}
                           </p>
                         </div>
                         <div className="shrink-0 text-right">
@@ -15902,7 +15879,12 @@ export function AdminAttendeesPage({
                           {s.name}
                         </p>
                         <p className="mt-0.5 text-[11px] text-slate-500">
-                          {s.id} • {s.program} • {s.sessionLabel ?? "Morning"} •{" "}
+                          {s.id} • {s.program} •{" "}
+                          {getSessionPeriodLabel(
+                            selectedEvent,
+                            s.sessionLabel ?? "morning",
+                          ) ?? "Time unavailable"}{" "}
+                          •{" "}
                           {s.time}
                         </p>
                         {s.status === "late" && sessionLateFine > 0 && (
@@ -15930,9 +15912,10 @@ export function AdminAttendeesPage({
                       {s.program}
                     </span>
                     <span className="col-span-2 text-xs text-slate-500">
-                      {(s.sessionLabel ?? "morning").replace(/^./, (value) =>
-                        value.toUpperCase(),
-                      )}{" "}
+                      {getSessionPeriodLabel(
+                        selectedEvent,
+                        s.sessionLabel ?? "morning",
+                      ) ?? "Time unavailable"}{" "}
                       · {s.time}
                       {s.status === "late" && sessionLateFine > 0 && (
                         <span className="ml-1 font-semibold text-amber-600">
@@ -15948,110 +15931,17 @@ export function AdminAttendeesPage({
               ))}
             </div>
           )}
-          {tab === "present" && duplicates.length > 0 && (
-            <>
-              <SectionLabel>Duplicate scans — tap trash to remove</SectionLabel>
-              <div className="w-full overflow-hidden rounded-xl border border-red-100 bg-white">
-                {duplicates.map((s, i) => (
-                  <div
-                    key={s.dbId}
-                    className={`${
-                      i < duplicates.length - 1
-                        ? "border-b border-slate-50"
-                        : ""
-                    }`}
-                  >
-                    <div className="block px-3.5 py-3 md:hidden">
-                      <div className="flex items-center gap-3">
-                        <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-slate-900">
-                            {s.name}
-                          </p>
-                          <p className="mt-0.5 text-[11px] text-slate-400">
-                            {s.id} · scanned {s.time}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge status={s.status} sanctioned={s.sanctioned} />
-                          <button
-                            onClick={() => void deleteRecord(s.dbId)}
-                            disabled={deletingId === s.dbId}
-                            title="Delete attendance record"
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                          >
-                            <Icons.Trash />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="hidden items-center gap-3 px-5 py-3.5 md:flex">
-                      <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 truncate">
-                          {s.name}
-                        </p>
-                        <p className="text-[11px] text-slate-400">
-                          {s.id} · scanned {s.time}
-                        </p>
-                      </div>
-                      <Badge status={s.status} sanctioned={s.sanctioned} />
-                      <button
-                        onClick={() => void deleteRecord(s.dbId)}
-                        disabled={deletingId === s.dbId}
-                        title="Delete attendance record"
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                      >
-                        <Icons.Trash />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
         </>
-      ) : tab === "duplicates" ? (
-        <div className="w-full overflow-hidden rounded-xl border border-red-100 bg-white">
-          {duplicates.length === 0 ? (
-            <p className="px-5 py-10 text-center text-sm text-slate-400">
-              No duplicate scans.
-            </p>
-          ) : (
-            duplicates.map((s, i) => (
-              <div
-                key={s.dbId}
-                className={`flex items-center gap-3 px-5 py-3.5 ${
-                  i < duplicates.length - 1 ? "border-b border-slate-50" : ""
-                }`}
-              >
-                <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-900">
-                    {s.name}
-                  </p>
-                  <p className="text-[11px] text-slate-400">
-                    {s.id} · scanned {s.time}
-                  </p>
-                </div>
-                <Badge status={s.status} sanctioned={s.sanctioned} />
-                <button
-                  onClick={() => void deleteRecord(s.dbId)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                >
-                  <Icons.Trash />
-                </button>
-              </div>
-            ))
-          )}
-        </div>
       ) : (
         <>
           {monetaryPolicyActive && sessionFine > 0 && showAbsenceFine && (
             <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
               <Icons.AlertCircle />
               <p className="text-sm text-red-700">
-                Each {selectedSession} absentee is automatically fined{" "}
+                Each absent student in the{" "}
+                {getSessionPeriodLabel(selectedEvent, selectedSession) ??
+                  "selected"}{" "}
+                session is automatically fined{" "}
                 <span className="font-bold">₱{sessionFine}</span>.
               </p>
             </div>

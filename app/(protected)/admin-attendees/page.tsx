@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -74,7 +74,6 @@ export default function AdminAttendeesRoutePage() {
 
 function AdminAttendeesRouteContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const { user } = useProtectedUser();
 
@@ -93,9 +92,6 @@ function AdminAttendeesRouteContent() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [isAttendanceRefreshing, setIsAttendanceRefreshing] = useState(false);
-
-  const initialTab =
-    searchParams.get("tab") === "duplicates" ? "duplicates" : "present";
 
   const hasLoadedAttendance = useRef(false);
 
@@ -605,28 +601,6 @@ function AdminAttendeesRouteContent() {
     router.push(paths[page] ?? "/admin-dashboard");
   };
 
-  const deleteAttendance = async (dbId: string | number) => {
-    const { error } = await supabase
-
-      .from("attendance_scans")
-
-      .delete()
-
-      .eq("id", String(dbId));
-
-    if (error) {
-      console.error("Failed to delete attendance record", error);
-
-      toast.error("Attendance record could not be deleted. Please try again.");
-
-      return false;
-    }
-
-    toast.success("Attendance record deleted.");
-
-    return true;
-  };
-
   if (isLoading || (isAttendanceRefreshing && !hasLoadedAttendance.current)) {
     return <AttendanceLoadingState />;
   }
@@ -646,11 +620,9 @@ function AdminAttendeesRouteContent() {
       onNav={onNav}
       events={events}
       students={students}
-      initialTab={initialTab}
       scanState={scanState}
       fineRows={fineRows}
       approvedExcuseKeys={approvedExcuseKeys}
-      onDeleteAttendance={deleteAttendance}
       isAttendanceLoading={isAttendanceRefreshing}
       onSelectionChange={(eventId, search) => {
         setSelectedEventId(eventId);

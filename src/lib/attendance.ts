@@ -182,9 +182,6 @@ export async function recordAttendance({
         .from("attendance_scans")
         .update({
           scan_out_at: now.toISOString(),
-          status: "present",
-          scanned_by: scannedBy,
-          method,
         })
         .eq("id", existing.id)
 
@@ -195,7 +192,7 @@ export async function recordAttendance({
       return {
         outcome: "success",
         action: "time_out",
-        status: "confirmed",
+        status: existing.status === "late" ? "late" : "confirmed",
         recordId: existing.id,
         scannedAt: now,
       }
