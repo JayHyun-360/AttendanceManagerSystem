@@ -787,6 +787,7 @@ import { recordAttendance } from "@/lib/attendance";
 import {
   buildAttendanceSessionRecords,
   getSchoolDate,
+  isAttendanceSessionComplete,
   isAttendanceSessionEligibleForAbsence,
   type FineEventLike,
   type FineRowLike,
@@ -15118,6 +15119,30 @@ export function AdminAttendeesPage({
     ? null
     : (events.find((e) => e.id === selectedEventId) ?? events[0] ?? null);
 
+  const inferredAbsenceSession: "morning" | "afternoon" =
+    selectedEvent?.multiSession
+      ? selectedSession
+      : selectedEvent?.afternoonEnd
+        ? "afternoon"
+        : "morning";
+
+  const absenceSessionComplete = Boolean(
+    selectedEvent &&
+      selectedEvent.status !== "upcoming" &&
+      selectedEvent.status !== "cancelled" &&
+      isAttendanceSessionComplete(
+        {
+          id: selectedEvent.id,
+          event_date: selectedEvent.date,
+          multi_session: selectedEvent.multiSession,
+          end_time: selectedEvent.endTime,
+          morning_end: selectedEvent.morningEnd,
+          afternoon_end: selectedEvent.afternoonEnd,
+        },
+        inferredAbsenceSession,
+      ),
+  );
+
   useEffect(() => {
     setSelectedSession("morning");
   }, [selectedEventId]);
@@ -15197,7 +15222,10 @@ export function AdminAttendeesPage({
     absentScans.map((scan) => [scan.profileId ?? scan.id, scan]),
   );
 
-  const isEligibleForInferredAbsence = (student: StudentProfile) =>
+  const isEligibleForStudentSession = (
+    student: StudentProfile,
+    session: "morning" | "afternoon",
+  ) =>
     !!selectedEvent &&
     isAttendanceSessionEligibleForAbsence(
       {
@@ -15205,11 +15233,22 @@ export function AdminAttendeesPage({
         multi_session: selectedEvent.multiSession,
         start_time: selectedEvent.startTime,
         morning_start: selectedEvent.morningStart,
-        afternoon_start: selectedEvent.afternoonStart,
+        afternoon_start:
+          !selectedEvent.multiSession && session === "afternoon"
+            ? (selectedEvent.afternoonStart ?? selectedEvent.startTime)
+            : selectedEvent.afternoonStart,
       },
-      selectedSession,
+      session,
       student.idExceptionHistory ?? [],
     );
+
+  const isEligibleForInferredAbsence = (student: StudentProfile) =>
+    absenceSessionComplete &&
+    Boolean(student.profileComplete) &&
+    isEligibleForStudentSession(student, inferredAbsenceSession);
+
+  const showAbsenceFine =
+    absenceSessionComplete || absentScans.length > 0;
 
   const absentees: ScanRecord[] = visibleStudents
 
@@ -15230,7 +15269,7 @@ export function AdminAttendeesPage({
         return {
           ...absentScan,
           sanctioned:
-            isEligibleForInferredAbsence(student) &&
+            isEligibleForStudentSession(student, selectedSession) &&
             Boolean(absentScan.sanctioned),
         };
       }
@@ -15708,9 +15747,12 @@ export function AdminAttendeesPage({
           }`}
         >
           Absent ({visibleAbsent.length})
-          {monetaryPolicyActive && selectedEvent && sessionFine > 0 && (
-            <span className="text-red-500 ml-1">· ₱{sessionFine}</span>
-          )}
+          {monetaryPolicyActive &&
+            selectedEvent &&
+            sessionFine > 0 &&
+            showAbsenceFine && (
+              <span className="text-red-500 ml-1">· ₱{sessionFine}</span>
+            )}
         </button>
         <button
           onClick={() => setTab("duplicates")}
@@ -16005,7 +16047,7 @@ export function AdminAttendeesPage({
         </div>
       ) : (
         <>
-          {monetaryPolicyActive && sessionFine > 0 && (
+          {monetaryPolicyActive && sessionFine > 0 && showAbsenceFine && (
             <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
               <Icons.AlertCircle />
               <p className="text-sm text-red-700">
@@ -16037,8 +16079,15 @@ export function AdminAttendeesPage({
               </div>
               {visibleAbsent.map((s, i) => {
                 const profileId = s.profileId ?? s.id;
+                const hasPersistedAbsentScan =
+                  absentScanByProfileId.has(profileId);
+                const linkedFine = fineForScan(s);
 
-                const fine = fineForScan(s)?.amount ?? sessionFine;
+                const fine =
+                  linkedFine?.amount ??
+                  (absenceSessionComplete || hasPersistedAbsentScan
+                    ? sessionFine
+                    : 0);
 
                 const cleared = isAbsentCleared(profileId);
 

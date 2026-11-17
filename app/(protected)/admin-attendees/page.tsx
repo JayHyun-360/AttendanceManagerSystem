@@ -16,6 +16,7 @@ import { supabase } from "@/lib/supabase";
 import {
   getStudentIdException,
   getStudentIdExceptionHistory,
+  isProfileComplete,
 } from "@/lib/profileCompletion";
 import { isAttendanceSessionEligibleForAbsence } from "@/lib/attendance-fines";
 
@@ -273,6 +274,8 @@ function AdminAttendeesRouteContent() {
         setStudents(
           studentRows.map((row: any) => ({
             profileId: row.id,
+
+            profileComplete: isProfileComplete(row),
 
             name:
               `${row.first_name ?? ""} ${row.surname ?? ""}`.trim() ||
