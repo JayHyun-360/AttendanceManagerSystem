@@ -15476,7 +15476,12 @@ export function AdminAttendeesPage({
 
     const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
 
-    const rows = scans.map((scan) =>
+    const exportScans = [
+      ...scans.filter((scan) => scan.status !== "absent"),
+      ...absentees,
+    ];
+
+    const rows = exportScans.map((scan) =>
       [
         scan.name,
 
@@ -15486,9 +15491,12 @@ export function AdminAttendeesPage({
 
         scan.section,
 
-        scan.sessionLabel ?? "morning",
+        getSessionPeriodLabel(
+          selectedEvent,
+          scan.sessionLabel ?? "morning",
+        ),
 
-        scan.time,
+        scan.status === "absent" ? "" : scan.time,
 
         scan.status,
       ]
@@ -15562,7 +15570,9 @@ export function AdminAttendeesPage({
             )}
             <button
               onClick={exportAttendance}
-              disabled={!selectedEvent || scans.length === 0}
+              disabled={
+                !selectedEvent || (scans.length === 0 && absentees.length === 0)
+              }
               className="h-9 px-3.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               <Icons.Download />
