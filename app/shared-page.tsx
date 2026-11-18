@@ -703,6 +703,8 @@ import {
   Fragment,
 } from "react";
 
+import { createPortal } from "react-dom";
+
 import Link from "next/link";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -2598,6 +2600,8 @@ function Toggle({
 
   disabled = false,
 
+  visualOnly = false,
+
   label,
 
   desc,
@@ -2608,10 +2612,29 @@ function Toggle({
 
   disabled?: boolean;
 
+  visualOnly?: boolean;
+
   label: string;
 
   desc?: string;
 }) {
+  if (visualOnly) {
+    return (
+      <span
+        aria-hidden="true"
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-all duration-200 ${
+          on ? "bg-emerald-500" : "bg-slate-200"
+        }`}
+      >
+        <span
+          className={`absolute left-[3px] top-[3px] h-[18px] w-[18px] rounded-full bg-white shadow-md transition-transform duration-200 ${
+            on ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </span>
+    );
+  }
+
   return (
     <div className="flex items-center justify-between py-4 gap-4">
       <div className="flex-1 min-w-0">
@@ -3307,63 +3330,257 @@ export function Toast({
   );
 }
 
+type DotMenuGroup = "status" | "settings" | "manage" | "danger";
+
+type DotMenuItem = {
+  label: string;
+
+  icon?: React.ReactNode;
+
+  danger?: boolean;
+
+  group?: DotMenuGroup;
+
+  feedbackEnabled?: boolean;
+
+  keepOpen?: boolean;
+
+  onClick: () => void;
+};
+
 export function DotMenu({
   items,
+  eventCardMenu = false,
 }: {
-  items: {
-    label: string;
+  items: DotMenuItem[];
 
-    icon?: React.ReactNode;
-
-    danger?: boolean;
-
-    onClick: () => void;
-  }[];
+  eventCardMenu?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const menuGroups = (["status", "settings", "manage", "danger"] as const)
+    .map((group) => ({
+      group,
+      items: items.filter((item) => item.group === group),
+    }))
+    .filter(({ items: groupItems }) => groupItems.length > 0);
+
+  useEffect(() => {
+    if (!eventCardMenu || !open) return;
+
+    const trigger = triggerRef.current;
+    const menu = menuRef.current;
+    if (!trigger || !menu) return;
+
+    const margin = 8;
+    const triggerRect = trigger.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    const openUpward =
+      window.innerHeight - triggerRect.bottom < menuRect.height + margin;
+    const top = openUpward
+      ? Math.max(margin, triggerRect.top - menuRect.height - margin)
+      : triggerRect.bottom + margin;
+    const left = Math.min(
+      Math.max(margin, triggerRect.right - menuRect.width),
+      window.innerWidth - menuRect.width - margin,
+    );
+
+    setMenuPosition({ top, left });
+  }, [eventCardMenu, open]);
+
+  useEffect(() => {
+    if (!eventCardMenu || !open || !menuPosition) return;
+    menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+  }, [eventCardMenu, open, menuPosition]);
+
+  useEffect(() => {
+    if (!eventCardMenu || !open) return;
+
+    const closeMenu = () => setOpen(false);
+    const handleOutsidePointerDown = (event: PointerEvent) => {
+      if (!(event.target instanceof Node)) return;
+      if (
+        triggerRef.current?.contains(event.target) ||
+        menuRef.current?.contains(event.target)
+      ) {
+        return;
+      }
+      closeMenu();
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeMenu();
+      triggerRef.current?.focus();
+    };
+
+    document.addEventListener("pointerdown", handleOutsidePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("scroll", closeMenu, true);
+    window.addEventListener("resize", closeMenu);
+
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsidePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("scroll", closeMenu, true);
+      window.removeEventListener("resize", closeMenu);
+    };
+  }, [eventCardMenu, open]);
+
+  const handleMenuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+
+    const menuItems = Array.from(
+      menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [],
+    );
+    if (!menuItems.length) return;
+
+    event.preventDefault();
+    const currentIndex = menuItems.findIndex(
+      (menuItem) => menuItem === document.activeElement,
+    );
+    const direction = event.key === "ArrowDown" ? 1 : -1;
+    const nextIndex =
+      currentIndex === -1
+        ? direction === 1
+          ? 0
+          : menuItems.length - 1
+        : (currentIndex + direction + menuItems.length) % menuItems.length;
+    menuItems[nextIndex].focus();
+  };
 
   return (
-    <div className="relative">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-
-          setOpen((o) => !o);
-        }}
-        className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-      >
-        <Icons.MoreHorizontal />
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-9 z-20 bg-white border border-slate-200 rounded-xl shadow-lg py-1 min-w-[180px]">
-            {items.map((it) => (
-              <button
-                key={it.label}
-                onClick={() => {
-                  it.onClick();
-
-                  setOpen(false);
-                }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium hover:bg-slate-50 transition-colors text-left ${
-                  it.danger ? "text-red-500" : "text-slate-700"
-                }`}
-              >
-                {it.icon && (
-                  <span
-                    className={it.danger ? "text-red-400" : "text-slate-400"}
-                  >
-                    {it.icon}
-                  </span>
+    <>
+      <div className="relative">
+        <button
+          ref={eventCardMenu ? triggerRef : undefined}
+          aria-label={eventCardMenu ? "Event actions" : undefined}
+          aria-haspopup={eventCardMenu ? "menu" : undefined}
+          aria-expanded={eventCardMenu ? open : undefined}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (eventCardMenu) setMenuPosition(null);
+            setOpen((wasOpen) => !wasOpen);
+          }}
+          className={
+            eventCardMenu
+              ? "flex h-9 min-h-9 w-9 min-w-9 items-center justify-center rounded-lg text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              : "w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+          }
+        >
+          <Icons.MoreHorizontal />
+        </button>
+        {!eventCardMenu && open && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+            <div className="absolute right-0 top-9 z-20 min-w-[180px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+              {items.map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => {
+                    item.onClick();
+                    setOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium hover:bg-slate-50 transition-colors text-left ${
+                    item.danger ? "text-red-500" : "text-slate-700"
+                  }`}
+                >
+                  {item.icon && (
+                    <span
+                      className={item.danger ? "text-red-400" : "text-slate-400"}
+                    >
+                      {item.icon}
+                    </span>
+                  )}
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+      {eventCardMenu &&
+        open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            aria-label="Event actions"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={handleMenuKeyDown}
+            className="z-[100] max-h-[calc(100vh-1rem)] w-64 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-xl"
+            style={{
+              position: "fixed",
+              top: menuPosition?.top ?? 0,
+              left: menuPosition?.left ?? 0,
+              visibility: menuPosition ? "visible" : "hidden",
+            }}
+          >
+            {menuGroups.map(({ group, items: groupItems }, groupIndex) => (
+              <Fragment key={group}>
+                {groupIndex > 0 && (
+                  <div
+                    role="separator"
+                    className="my-1 border-t border-slate-100"
+                  />
                 )}
-                {it.label}
-              </button>
+                <div role="group" aria-label={group}>
+                  {groupItems.map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      role="menuitem"
+                      aria-label={
+                        item.feedbackEnabled === undefined
+                          ? undefined
+                          : `Post-event feedback ${item.feedbackEnabled ? "enabled" : "disabled"}`
+                      }
+                      onClick={(event) => {
+                        item.onClick();
+                        if (item.keepOpen) {
+                          event.currentTarget.focus();
+                          return;
+                        }
+                        setOpen(false);
+                      }}
+                      className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 ${
+                        item.danger ? "text-red-600" : "text-slate-700"
+                      }`}
+                    >
+                      <span
+                        className={
+                          item.danger ? "text-red-500" : "text-slate-400"
+                        }
+                      >
+                        {item.icon}
+                      </span>
+                      <span className="min-w-0 flex-1 whitespace-nowrap">
+                        {item.label}
+                      </span>
+                      {item.feedbackEnabled !== undefined && (
+                        <Toggle
+                          on={item.feedbackEnabled}
+                          onToggle={item.onClick}
+                          label={item.label}
+                          visualOnly
+                        />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </Fragment>
             ))}
-          </div>
-        </>
-      )}
-    </div>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
@@ -13751,6 +13968,7 @@ export function AdminEventsPage({
                           onClick={(event) => event.stopPropagation()}
                         >
                           <DotMenu
+                            eventCardMenu
                             items={[
                               ...statusOptions(e.status).map((o) => ({
                                 label: o.label,
@@ -13759,13 +13977,24 @@ export function AdminEventsPage({
 
                                 danger: o.status === "cancelled",
 
+                                group:
+                                  o.status === "cancelled"
+                                    ? ("danger" as const)
+                                    : ("status" as const),
+
                                 onClick: () => setStatus(e.id, o.status),
                               })),
 
                               {
-                                label: e.feedbackEnabled
-                                  ? "Disable post-event feedback"
-                                  : "Enable post-event feedback",
+                                label: "Post-event feedback",
+
+                                icon: <Icons.Bell />,
+
+                                group: "settings" as const,
+
+                                feedbackEnabled: e.feedbackEnabled,
+
+                                keepOpen: true,
 
                                 onClick: () => void toggleFeedback(e.id),
                               },
@@ -13774,6 +14003,8 @@ export function AdminEventsPage({
                                 label: "Edit",
 
                                 icon: <Icons.Edit />,
+
+                                group: "manage" as const,
 
                                 onClick: () => startEdit(e),
                               },
@@ -13785,7 +14016,14 @@ export function AdminEventsPage({
 
                                 danger: true,
 
-                                onClick: () => void archiveEvent(e.id),
+                                group: "danger" as const,
+
+                                onClick: () => {
+                                  if (!window.confirm(`Move ${e.title} to archive?`)) {
+                                    return;
+                                  }
+                                  void archiveEvent(e.id);
+                                },
                               },
                             ]}
                           />
