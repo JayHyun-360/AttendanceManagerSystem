@@ -24,8 +24,6 @@ export default function AdminDashboardRoute() {
   const [stats, setStats] = useState({
     scannedToday: 0,
 
-    duplicates: 0,
-
     activeEvents: 0,
 
     students: 0,
@@ -166,8 +164,6 @@ export default function AdminDashboardRoute() {
 
         const scannedToday = scannedTodayResult.count ?? 0
 
-        const duplicates = 0
-
         const recent = (recentScansResult.data ?? []).map((row: any) => ({
           name:
             `${row.student_profile?.first_name ?? ""} ${row.student_profile?.surname ?? ""}`.trim() ||
@@ -196,8 +192,6 @@ export default function AdminDashboardRoute() {
 
         setStats({
           scannedToday,
-
-          duplicates,
 
           activeEvents,
 
@@ -260,9 +254,12 @@ export default function AdminDashboardRoute() {
           <Skeleton className="h-8 w-48" />
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
-          {[0, 1, 2, 3].map((item) => (
-            <Skeleton key={item} className="h-24 rounded-xl" />
+        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-4">
+          {[0, 1, 2].map((item) => (
+            <Skeleton
+              key={item}
+              className={`h-24 rounded-xl ${item === 2 ? "col-span-2 md:col-span-1" : ""}`}
+            />
           ))}
         </div>
 

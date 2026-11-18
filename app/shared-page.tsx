@@ -10821,8 +10821,6 @@ export function AdminDashboard({
   stats?: {
     scannedToday: number;
 
-    duplicates: number;
-
     activeEvents: number;
 
     students: number;
@@ -10856,8 +10854,6 @@ export function AdminDashboard({
 
   const liveStats = stats ?? {
     scannedToday: 0,
-
-    duplicates: 0,
 
     activeEvents: 0,
 
@@ -10946,34 +10942,22 @@ export function AdminDashboard({
           {currentStatusMeta.label}
         </span>
       </div>
-      <div className="mb-4 grid w-full grid-cols-2 gap-2.5 md:mb-5 md:grid-cols-2 md:gap-4 lg:grid-cols-4">
+      <div className="mb-4 grid w-full grid-cols-2 gap-2.5 md:mb-5 md:grid-cols-3 md:gap-4">
         {[
           {
             l: "Scanned today",
 
             v: String(liveStats.scannedToday),
 
-            sub: "Scanned today",
+            sub: "All events · present/late",
 
             c: "text-emerald-500",
 
             href: "/admin-attendees",
 
             actionLabel: "View attendance records",
-          },
 
-          {
-            l: "Duplicates",
-
-            v: String(liveStats.duplicates),
-
-            sub: "Rejected",
-
-            c: "text-red-500",
-
-            href: "/admin-attendees",
-
-            actionLabel: "View attendance records",
+            className: "",
           },
 
           {
@@ -10988,6 +10972,8 @@ export function AdminDashboard({
             href: "/admin-events",
 
             actionLabel: "View events",
+
+            className: "",
           },
 
           {
@@ -11002,11 +10988,13 @@ export function AdminDashboard({
             href: "/admin-students",
 
             actionLabel: "View students",
+
+            className: "col-span-2 md:col-span-1",
           },
         ].map((s) => (
           <div
             key={s.l}
-            className="relative rounded-xl border border-slate-100 bg-white px-3 py-3 md:px-4 md:py-4"
+            className={`relative rounded-xl border border-slate-100 bg-white px-3 py-3 md:px-4 md:py-4 ${s.className}`}
           >
             <div className="admin-dashboard-stat-card-content">
               <p className={`text-2xl font-bold ${s.c}`}>{s.v}</p>
