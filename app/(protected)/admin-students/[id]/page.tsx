@@ -1267,8 +1267,7 @@ export default function StudentDetailRoutePage() {
                 {student.idException?.approved_by &&
                   student.idException.approved_at && (
                     <p className="mt-3 text-xs text-slate-500">
-                      Approved by administrator {student.idException.approved_by}{" "}
-                      on{" "}
+                      Approved on{" "}
                       {new Date(student.idException.approved_at).toLocaleString()}
                     </p>
                   )}
@@ -1309,13 +1308,13 @@ export default function StudentDetailRoutePage() {
                           )}
                           {request.approved_by && request.approved_at && (
                             <p className="mt-1 text-[11px] text-slate-500">
-                              Approved by {request.approved_by} on{" "}
+                              Approved on{" "}
                               {new Date(request.approved_at).toLocaleString()}
                             </p>
                           )}
                           {request.rejected_by && request.rejected_at && (
                             <p className="mt-1 text-[11px] text-slate-500">
-                              Rejected by {request.rejected_by} on{" "}
+                              Rejected on{" "}
                               {new Date(request.rejected_at).toLocaleString()}
                             </p>
                           )}
