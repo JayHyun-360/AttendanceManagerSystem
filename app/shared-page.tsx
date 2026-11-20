@@ -733,6 +733,7 @@ import {
   Minimize2,
   ExternalLink,
   RefreshCw,
+  Share2,
   Send,
   Star,
   Trash2,
@@ -815,6 +816,21 @@ import { ProgramSelect } from "@/components/ProgramSelect";
 import { AdminProgramCatalog } from "@/components/AdminProgramCatalog";
 import { getProgramCatalog, type Program } from "@/lib/programCatalog";
 import { eventMatchesProgram } from "@/lib/programMatching";
+
+const ADESSE_PUBLIC_URL = (() => {
+  const url = new URL(
+    "/",
+    process.env.NEXT_PUBLIC_SITE_URL || "https://www.adesse.click",
+  );
+
+  url.username = "";
+  url.password = "";
+  url.pathname = "/";
+  url.search = "";
+  url.hash = "";
+
+  return url.toString();
+})();
 
 const adesseLogoSrc = "/adesse-a.svg";
 
@@ -3778,10 +3794,14 @@ export function HelpFeedbackMenuItems({
   open,
 
   onAction,
+
+  onShare,
 }: {
   open: boolean;
 
   onAction: () => void;
+
+  onShare?: () => void;
 }) {
   const [feedbackUrl, setFeedbackUrl] = useState("");
 
@@ -3897,6 +3917,28 @@ export function HelpFeedbackMenuItems({
           </span>
         </span>
       </Link>
+      {onShare ? (
+        <button
+          type="button"
+          onClick={() => {
+            onAction();
+            onShare();
+          }}
+          className="group flex w-full items-start gap-3 border-t border-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-50"
+        >
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-600 transition-colors group-hover:bg-slate-100">
+            <Share2 className="h-4 w-4" />
+          </span>
+          <span>
+            <span className="block text-sm font-semibold text-slate-800">
+              Share Adesse
+            </span>
+            <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-400">
+              QR code and link to the site
+            </span>
+          </span>
+        </button>
+      ) : null}
     </>
   );
 }
@@ -3944,6 +3986,38 @@ export function TopBar({
   const notificationDest = isMod ? "/admin-announcements" : "/announcements";
 
   const [dotOpen, setDotOpen] = useState(false);
+
+  const [shareOpen, setShareOpen] = useState(false);
+
+  const [shareQrDataUrl, setShareQrDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!shareOpen) {
+      setShareQrDataUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    void QRCode.toDataURL(ADESSE_PUBLIC_URL, {
+      width: 360,
+      margin: 1,
+      color: { dark: "#111827", light: "#ffffff" },
+      errorCorrectionLevel: "H",
+    })
+      .then((dataUrl) => {
+        if (!cancelled) setShareQrDataUrl(dataUrl);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        console.error("Failed to generate Adesse QR code", error);
+        toast.error("Could not generate QR code");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [shareOpen]);
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -4740,6 +4814,7 @@ export function TopBar({
                       <HelpFeedbackMenuItems
                         open={dotOpen}
                         onAction={() => setDotOpen(false)}
+                        onShare={() => setShareOpen(true)}
                       />
                     </div>
                   </>
@@ -4756,6 +4831,46 @@ export function TopBar({
           )}
         </div>
       </div>
+      {shareOpen &&
+        createPortal(
+          <FormModal
+            title="Share Adesse"
+            onClose={() => setShareOpen(false)}
+          >
+            <div className="flex w-full min-w-0 flex-col items-center gap-4">
+              {shareQrDataUrl ? (
+                <OptimizedImage
+                  src={shareQrDataUrl}
+                  width={180}
+                  height={180}
+                  alt="QR code for Adesse"
+                  style={{ display: "block", imageRendering: "pixelated" }}
+                />
+              ) : null}
+              <p className="w-full min-w-0 break-all rounded-lg bg-slate-50 px-3 py-2 text-center text-sm text-slate-600 select-all">
+                {ADESSE_PUBLIC_URL}
+              </p>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(ADESSE_PUBLIC_URL);
+                    toast.success("Link copied");
+                  } catch (error) {
+                    console.error("Failed to copy Adesse link", error);
+                    toast.error(
+                      "Couldn't copy. Select the link and copy it manually",
+                    );
+                  }
+                }}
+                className="flex h-11 w-full items-center justify-center rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+              >
+                Copy link
+              </button>
+            </div>
+          </FormModal>,
+          document.body,
+        )}
     </header>
   );
 }
