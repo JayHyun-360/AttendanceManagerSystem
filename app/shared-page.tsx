@@ -1408,6 +1408,8 @@ interface ScanRecord {
 
   time: string;
 
+  timeOut?: string;
+
   status: "present" | "confirmed" | "late" | "absent" | "duplicate";
 
   sanctioned?: boolean;
@@ -15724,6 +15726,8 @@ export function AdminAttendeesPage({
 
         scan.status === "absent" ? "" : scan.time,
 
+        scan.status === "absent" ? "" : (scan.timeOut ?? ""),
+
         scan.status,
       ]
 
@@ -15744,7 +15748,9 @@ export function AdminAttendeesPage({
 
         "Session",
 
-        "Time",
+        "Time in",
+
+        "Time out",
 
         "Status",
       ]
@@ -16120,8 +16126,8 @@ export function AdminAttendeesPage({
                             selectedEvent,
                             s.sessionLabel ?? "morning",
                           ) ?? "Time unavailable"}{" "}
-                          •{" "}
-                          {s.time}
+                          • In {s.time}
+                          {s.timeOut && <> • Out {s.timeOut}</>}
                         </p>
                         {s.status === "late" && sessionLateFine > 0 && (
                           <p className="mt-0.5 text-[11px] font-semibold text-amber-600">
@@ -16152,7 +16158,8 @@ export function AdminAttendeesPage({
                         selectedEvent,
                         s.sessionLabel ?? "morning",
                       ) ?? "Time unavailable"}{" "}
-                      · {s.time}
+                      · In {s.time}
+                      {s.timeOut && <> · Out {s.timeOut}</>}
                       {s.status === "late" && sessionLateFine > 0 && (
                         <span className="ml-1 font-semibold text-amber-600">
                           · ₱{sessionLateFine}

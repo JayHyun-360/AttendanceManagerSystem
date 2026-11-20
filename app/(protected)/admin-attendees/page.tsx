@@ -363,7 +363,7 @@ function AdminAttendeesRouteContent() {
             supabase
               .from("attendance_scans")
               .select(
-                "id, event_id, student_id, session_label, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(student_id, first_name, surname, program, section, photo_url)",
+                "id, event_id, student_id, session_label, scan_in_at, scan_out_at, status, student_profile:profiles!attendance_scans_student_id_fkey(student_id, first_name, surname, program, section, photo_url)",
               )
               .eq("student_id", student.profileId)
               .order("scan_in_at", { ascending: false })
@@ -396,7 +396,7 @@ function AdminAttendeesRouteContent() {
             supabase
               .from("attendance_scans")
               .select(
-                "id, event_id, student_id, session_label, scan_in_at, status, student_profile:profiles!attendance_scans_student_id_fkey(student_id, first_name, surname, program, section, photo_url)",
+                "id, event_id, student_id, session_label, scan_in_at, scan_out_at, status, student_profile:profiles!attendance_scans_student_id_fkey(student_id, first_name, surname, program, section, photo_url)",
               )
               .eq("event_id", selectedEventId)
               .order("scan_in_at", { ascending: false })
@@ -485,6 +485,12 @@ function AdminAttendeesRouteContent() {
             photoUrl: profile?.photo_url || undefined,
             time: row.scan_in_at
               ? new Date(row.scan_in_at).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "",
+            timeOut: row.scan_out_at
+              ? new Date(row.scan_out_at).toLocaleTimeString("en-US", {
                   hour: "2-digit",
                   minute: "2-digit",
                 })
