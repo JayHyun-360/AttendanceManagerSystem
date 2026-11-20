@@ -3013,7 +3013,7 @@ function SessionFields({
       <InlineToggle
         on={strict}
         onToggle={onStrict}
-        label="Strict attendance (require time-out scan)"
+        label="Enable time-out scans after session end"
       />
     </div>
   );
@@ -10979,11 +10979,11 @@ export function AdminDashboard({
           },
 
           {
-            l: "Students on Adesse",
+            l: "Registered students",
 
             v: String(liveStats.students),
 
-            sub: "Registered",
+            sub: "With a student profile",
 
             c: "text-slate-700",
 
@@ -11058,9 +11058,14 @@ export function AdminDashboard({
         </button>
       </div>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-semibold text-slate-900">
-          Recent scans — {featuredEventTitle || "Adesse overview"}
-        </p>
+        <div>
+          <p className="text-sm font-semibold text-slate-900">
+            Recent scans — {featuredEventTitle || "Adesse overview"}
+          </p>
+          {liveRecentScans.length === 0 && (
+            <p className="mt-1 text-xs text-slate-400">No recent scans yet</p>
+          )}
+        </div>
         <button
           onClick={() => onNav("admin-attendees")}
           className="text-xs text-emerald-500 font-semibold hover:text-emerald-600 flex items-center gap-0.5"
@@ -13175,7 +13180,7 @@ export function AdminEventsPage({
                     <InlineToggle
                       on={draft.strictMorning}
                       onToggle={toggleD("strictMorning")}
-                      label="Strict attendance (require time-out scan)"
+                      label="Enable time-out scans after session end"
                     />
                   </div>
                 ) : (
@@ -13665,7 +13670,7 @@ export function AdminEventsPage({
                           d ? { ...d, strictMorning: !d.strictMorning } : d,
                         )
                       }
-                      label="Strict attendance (require time-out scan)"
+                      label="Enable time-out scans after session end"
                     />
                     <SessionExtensionControls
                       label="Morning"
@@ -14775,7 +14780,7 @@ function CameraScanner({
                     : result.action === "event_not_active"
                       ? "Rejected: Event is not active."
                       : result.action === "time_out_rejected"
-                        ? "Rejected: QR already scanned, wait for time-out."
+                        ? "Already scanned. Time-out scan opens after the session ends."
                         : result.action === "time_out"
                           ? "Time-out Recorded"
                           : "Already Scanned for This Session"}
@@ -15096,7 +15101,7 @@ export function AdminScannerPage({
                 {selectedSessionMeta.sessionLabel &&
                   selectedSessionMeta.strict && (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 ring-1 ring-violet-200">
-                      Strict Mode: Time-in + Time-out required
+                      Time-out scan enabled
                     </span>
                   )}
               </div>
@@ -15199,7 +15204,7 @@ export function AdminScannerPage({
                     <span className="text-slate-400">Attendance rule</span>
                     <span className="font-semibold text-slate-700 text-right">
                       {selectedSessionMeta.strict
-                        ? "Time-in + Time-out"
+                        ? "Time-in + optional time-out"
                         : "Standard scan"}
                     </span>
                   </div>
