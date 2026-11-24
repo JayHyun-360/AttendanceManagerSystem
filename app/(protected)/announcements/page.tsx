@@ -11,6 +11,16 @@ import { AnnouncementsPage } from "../../shared-page"
 
 import { supabase } from "@/lib/supabase"
 
+type AnnouncementRow = {
+  id: string
+  title: string
+  content: string
+  target_role: "student" | "admin"
+  created_at: string
+  posted_by: string | null
+  media_url: string | null
+}
+
 function AnnouncementsSkeleton() {
   return (
     <div className="space-y-5 pt-2">
@@ -75,7 +85,7 @@ export default function AnnouncementsRoutePage() {
 
           .from("announcements")
 
-          .select("*")
+          .select("id, title, content, target_role, created_at, posted_by, media_url")
 
           .eq("target_role", "student")
 
@@ -93,7 +103,7 @@ export default function AnnouncementsRoutePage() {
         if (!cancelled) {
           setLoadError(null)
           setAnnouncements(
-            (data ?? []).map((row: any) => ({
+            ((data ?? []) as AnnouncementRow[]).map((row) => ({
               id: String(row.id),
 
               title: row.title,

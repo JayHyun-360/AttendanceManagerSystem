@@ -1915,6 +1915,8 @@ function Avatar({
       <OptimizedImage
         src={photoUrl}
         alt={name}
+        width={imageSize}
+        height={imageSize}
         sizes={`${imageSize}px`}
         className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200`}
       />
@@ -2014,6 +2016,8 @@ export function ProfileIcon({
     <OptimizedImage
       src={photoUrl}
       alt="Profile"
+      width={imageSize}
+      height={imageSize}
       sizes={`${imageSize}px`}
       className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200 transition-transform duration-200`}
     />

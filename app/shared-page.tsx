@@ -474,6 +474,7 @@ import { Skeleton } from "@/components/ui/skeleton";
                   import { Skeleton } from "@/components/ui/skeleton";
 
                   const adesseLogoSrc = "/adesse-a.svg";
+                  const studentQRDataUrlCache = new Map<string, string>();
 
                   const dashboardDateLabel = format(new Date(), "MMM d, yyyy · EEEE");
 
@@ -700,6 +701,9 @@ import {
   useRef,
   useEffect,
   useMemo,
+  useCallback,
+  useDeferredValue,
+  memo,
   Fragment,
 } from "react";
 
@@ -833,6 +837,7 @@ const ADESSE_PUBLIC_URL = (() => {
 })();
 
 const adesseLogoSrc = "/adesse-a.svg";
+const studentQRDataUrlCache = new Map<string, string>();
 
 export function VideoPosterTile({
   poster,
@@ -1539,7 +1544,8 @@ export interface StudentProfile {
 }
 
 function fullName(u: Pick<User, "firstName" | "middleInitial" | "surname">) {
-  const mid = u.middleInitial ? ` ${u.middleInitial}.` : "";
+  const middleInitial = u.middleInitial?.trim().replace(/\.+$/, "") ?? "";
+  const mid = middleInitial ? ` ${middleInitial}.` : "";
 
   return `${u.firstName}${mid} ${u.surname}`.trim();
 }
@@ -3166,6 +3172,8 @@ function Avatar({
       <OptimizedImage
         src={photoUrl}
         alt={name}
+        width={imageSize}
+        height={imageSize}
         sizes={`${imageSize}px`}
         className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200`}
       />
@@ -3265,6 +3273,8 @@ export function ProfileIcon({
     <OptimizedImage
       src={photoUrl}
       alt="Profile"
+      width={imageSize}
+      height={imageSize}
       sizes={`${imageSize}px`}
       className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-slate-200 transition-transform duration-200 group-hover:scale-[1.02]`}
     />
@@ -3753,10 +3763,27 @@ export function StudentQR({
 
   size: number;
 }) {
-  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const encodedValue = `ADESSE:${studentId}:v${qrVersion}`;
+  const cacheKey = `${encodedValue}:${size}`;
+  const [generatedQr, setGeneratedQr] = useState<{
+    cacheKey: string;
+    dataUrl: string | null;
+  } | null>(null);
+  const dataUrl =
+    studentQRDataUrlCache.get(cacheKey) ??
+    (generatedQr?.cacheKey === cacheKey ? generatedQr.dataUrl : null);
 
   useEffect(() => {
-    QRCode.toDataURL(`ADESSE:${studentId}:v${qrVersion}`, {
+    let cancelled = false;
+    const cachedDataUrl = studentQRDataUrlCache.get(cacheKey);
+
+    if (cachedDataUrl) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    QRCode.toDataURL(encodedValue, {
       width: size * 2,
 
       margin: 1,
@@ -3766,10 +3793,19 @@ export function StudentQR({
       errorCorrectionLevel: "H",
     })
 
-      .then(setDataUrl)
+      .then((nextDataUrl) => {
+        if (cancelled) return;
+        studentQRDataUrlCache.set(cacheKey, nextDataUrl);
+        setGeneratedQr({ cacheKey, dataUrl: nextDataUrl });
+      })
+      .catch(() => {
+        if (!cancelled) setGeneratedQr({ cacheKey, dataUrl: null });
+      });
 
-      .catch(() => setDataUrl(null));
-  }, [qrVersion, studentId, size]);
+    return () => {
+      cancelled = true;
+    };
+  }, [cacheKey, encodedValue, size]);
 
   if (!dataUrl)
     return (
@@ -11201,6 +11237,9 @@ export function AdminDashboard({
               <OptimizedImage
                 src={s.photoUrl}
                 alt=""
+                width={36}
+                height={36}
+                sizes="36px"
                 className="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-slate-200"
               />
             ) : (
@@ -16441,6 +16480,115 @@ export function AdminAttendeesPage({
   );
 }
 
+const AdminStudentRow = memo(function AdminStudentRow({
+  student,
+  isLast,
+  bulkSelectionEnabled,
+  isSelected,
+  onOpen,
+  onToggleSelected,
+}: {
+  student: StudentProfile;
+  isLast: boolean;
+  bulkSelectionEnabled: boolean;
+  isSelected: boolean;
+  onOpen: (student: StudentProfile) => void;
+  onToggleSelected: (studentId: string) => void;
+}) {
+  const studentId = student.profileId ?? student.id;
+
+  return (
+    <Fragment>
+      <div
+        className={`flex w-full items-center gap-3 px-3.5 py-3.5 transition-colors hover:bg-slate-50/80 active:bg-slate-100 md:hidden ${
+          isLast ? "" : "border-b border-gray-100"
+        }`}
+      >
+        {bulkSelectionEnabled && (
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onToggleSelected(studentId)}
+            aria-label={`Select ${student.name}`}
+            className="h-4 w-4 shrink-0 accent-emerald-600"
+          />
+        )}
+        <button
+          type="button"
+          onClick={() => onOpen(student)}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+        >
+          <div className="shrink-0">
+            <Avatar name={student.name} photoUrl={student.photoUrl} size="sm" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-slate-900">
+              {student.name}
+            </p>
+            <p className="mt-0.5 text-[11px] text-slate-500 truncate">
+              {student.id}
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {[student.program, student.section].filter(Boolean).map((item) => (
+                <span
+                  key={`${student.id}-${item}`}
+                  className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-medium text-slate-600"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+          <span className="flex shrink-0 text-slate-300">
+            <Icons.ChevronRight />
+          </span>
+        </button>
+      </div>
+      <div
+        className={`hidden w-full px-5 py-3.5 md:grid md:grid-cols-12 md:items-center md:text-left md:hover:bg-slate-50 md:transition-colors ${
+          isLast ? "" : "border-b border-slate-50"
+        }`}
+      >
+        {bulkSelectionEnabled && (
+          <div className="col-span-1">
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={() => onToggleSelected(studentId)}
+              aria-label={`Select ${student.name}`}
+              className="h-4 w-4 accent-emerald-600"
+            />
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => onOpen(student)}
+          className={`${
+            bulkSelectionEnabled ? "col-span-4" : "col-span-5"
+          } flex min-w-0 items-center gap-3 text-left`}
+        >
+          <Avatar name={student.name} photoUrl={student.photoUrl} size="sm" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-slate-900 truncate">
+              {student.name}
+            </p>
+            <p className="text-[11px] text-slate-400">{student.id}</p>
+          </div>
+        </button>
+        <span className="col-span-3 text-xs text-slate-500 font-medium">
+          {student.program}
+        </span>
+        <span className="col-span-3 text-xs text-slate-500 font-medium">
+          {student.section}
+        </span>
+        <span className="col-span-1 flex justify-end text-slate-300">
+          <Icons.ChevronRight />
+        </span>
+      </div>
+    </Fragment>
+  );
+});
+
 export function AdminStudentsPage({
   students = [],
 
@@ -16517,42 +16665,55 @@ export function AdminStudentsPage({
   const [isChecking, setIsChecking] = useState(false);
 
   const [isMarking, setIsMarking] = useState(false);
+  const deferredQuery = useDeferredValue(query);
+  const deferredStudentFilter = useDeferredValue(studentFilter);
 
-  const searchedStudents = students.filter((s) => {
-    const q = query.toLowerCase();
+  const searchedStudents = useMemo(() => {
+    const q = deferredQuery.toLowerCase();
 
-    return (
-      s.name.toLowerCase().includes(q) ||
-      s.id.toLowerCase().includes(q) ||
-      s.program.toLowerCase().includes(q) ||
-      s.section.toLowerCase().includes(q) ||
-      s.email.toLowerCase().includes(q)
-    );
-  });
+    return students.filter((s) => {
+      return (
+        s.name.toLowerCase().includes(q) ||
+        s.id.toLowerCase().includes(q) ||
+        s.program.toLowerCase().includes(q) ||
+        s.section.toLowerCase().includes(q) ||
+        s.email.toLowerCase().includes(q)
+      );
+    });
+  }, [students, deferredQuery]);
 
-  const filtered = searchedStudents.filter((student) => {
-    switch (studentFilter) {
-      case "incomplete":
-        return !student.profileComplete;
-      case "id_incomplete":
-        return !student.idPhotoUrl?.trim();
-      case "pending":
-        return student.idException?.status === "pending";
-      case "temporarily_approved":
-        return student.activeIdException === true;
-      case "id_uploaded":
-        return Boolean(student.idPhotoUrl?.trim());
-      default:
-        return true;
-    }
-  });
+  const filtered = useMemo(
+    () =>
+      searchedStudents.filter((student) => {
+        switch (deferredStudentFilter) {
+          case "incomplete":
+            return !student.profileComplete;
+          case "id_incomplete":
+            return !student.idPhotoUrl?.trim();
+          case "pending":
+            return student.idException?.status === "pending";
+          case "temporarily_approved":
+            return student.activeIdException === true;
+          case "id_uploaded":
+            return Boolean(student.idPhotoUrl?.trim());
+          default:
+            return true;
+        }
+      }),
+    [searchedStudents, deferredStudentFilter],
+  );
 
-  const pendingRequestCount = students.filter(
-    (student) => student.idException?.status === "pending",
-  ).length;
-  const activeExceptionCount = students.filter(
-    (student) => student.activeIdException,
-  ).length;
+  const { pendingRequestCount, activeExceptionCount } = useMemo(
+    () => ({
+      pendingRequestCount: students.filter(
+        (student) => student.idException?.status === "pending",
+      ).length,
+      activeExceptionCount: students.filter(
+        (student) => student.activeIdException,
+      ).length,
+    }),
+    [students],
+  );
   const filterLabels: Record<StudentFilter, string> = {
     all: "All Students",
     incomplete: "Incomplete Profiles",
@@ -16593,11 +16754,11 @@ export function AdminStudentsPage({
     suggestedSessionLabel !== null &&
     suggestedSessionLabel !== sessionLabel;
 
-  const openStudent = (student: StudentProfile) => {
+  const openStudent = useCallback((student: StudentProfile) => {
     const targetId = student.profileId ?? student.id;
 
     router.push(`/admin-students/${encodeURIComponent(targetId)}`);
-  };
+  }, [router]);
 
   useEffect(() => {
     if (!events.some((event) => event.id === selectedEventId) && events[0]) {
@@ -16615,7 +16776,7 @@ export function AdminStudentsPage({
     );
   }, [selectedEvent]);
 
-  const toggleStudent = (studentId: string) => {
+  const toggleStudent = useCallback((studentId: string) => {
     setSelectedStudentIds((current) => {
       const next = new Set(current);
 
@@ -16624,7 +16785,7 @@ export function AdminStudentsPage({
 
       return next;
     });
-  };
+  }, []);
 
   const toggleVisibleStudents = () => {
     setSelectedStudentIds((current) => {
@@ -17001,98 +17162,15 @@ export function AdminStudentsPage({
             <span className="col-span-1"></span>
           </div>
           {visibleStudents.map((s, i) => (
-            <Fragment key={s.profileId ?? s.id}>
-              <div
-                className={`flex w-full items-center gap-3 px-3.5 py-3.5 transition-colors hover:bg-slate-50/80 active:bg-slate-100 md:hidden ${
-                  i < visibleStudents.length - 1
-                    ? "border-b border-gray-100"
-                    : ""
-                }`}
-              >
-                {bulkSelectionEnabled && (
-                  <input
-                    type="checkbox"
-                    checked={selectedStudentIds.has(s.profileId ?? s.id)}
-                    onChange={() => toggleStudent(s.profileId ?? s.id)}
-                    aria-label={`Select ${s.name}`}
-                    className="h-4 w-4 shrink-0 accent-emerald-600"
-                  />
-                )}
-                <button
-                  type="button"
-                  onClick={() => openStudent(s)}
-                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                >
-                  <div className="shrink-0">
-                    <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-slate-900">
-                      {s.name}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-slate-500 truncate">
-                      {s.id}
-                    </p>
-                    <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {[s.program, s.section].filter(Boolean).map((item) => (
-                        <span
-                          key={`${s.id}-${item}`}
-                          className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-medium text-slate-600"
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <span className="flex shrink-0 text-slate-300">
-                    <Icons.ChevronRight />
-                  </span>
-                </button>
-              </div>
-              <div
-                className={`hidden w-full px-5 py-3.5 md:grid md:grid-cols-12 md:items-center md:text-left md:hover:bg-slate-50 md:transition-colors ${
-                  i < visibleStudents.length - 1
-                    ? "border-b border-slate-50"
-                    : ""
-                }`}
-              >
-                {bulkSelectionEnabled && (
-                  <div className="col-span-1">
-                    <input
-                      type="checkbox"
-                      checked={selectedStudentIds.has(s.profileId ?? s.id)}
-                      onChange={() => toggleStudent(s.profileId ?? s.id)}
-                      aria-label={`Select ${s.name}`}
-                      className="h-4 w-4 accent-emerald-600"
-                    />
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => openStudent(s)}
-                  className={`${
-                    bulkSelectionEnabled ? "col-span-4" : "col-span-5"
-                  } flex min-w-0 items-center gap-3 text-left`}
-                >
-                  <Avatar name={s.name} photoUrl={s.photoUrl} size="sm" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 truncate">
-                      {s.name}
-                    </p>
-                    <p className="text-[11px] text-slate-400">{s.id}</p>
-                  </div>
-                </button>
-                <span className="col-span-3 text-xs text-slate-500 font-medium">
-                  {s.program}
-                </span>
-                <span className="col-span-3 text-xs text-slate-500 font-medium">
-                  {s.section}
-                </span>
-                <span className="col-span-1 flex justify-end text-slate-300">
-                  <Icons.ChevronRight />
-                </span>
-              </div>
-            </Fragment>
+            <AdminStudentRow
+              key={s.profileId ?? s.id}
+              student={s}
+              isLast={i === visibleStudents.length - 1}
+              bulkSelectionEnabled={bulkSelectionEnabled}
+              isSelected={selectedStudentIds.has(s.profileId ?? s.id)}
+              onOpen={openStudent}
+              onToggleSelected={toggleStudent}
+            />
           ))}
         </div>
       )}
